@@ -15,6 +15,7 @@ import bcrypt
 import jwt
 from bson import ObjectId
 from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionResponse, CheckoutStatusResponse, CheckoutSessionRequest
+from notifications import notification_service
 
 ROOT_DIR = Path(__file__).parent
 
@@ -149,6 +150,10 @@ class ResultDeclare(BaseModel):
     date: str  # YYYY-MM-DD
     single_result: str  # 0-9
     jodi_result: str  # 00-99
+
+class NotificationSubscribe(BaseModel):
+    telegram_chat_id: Optional[str] = None
+    whatsapp_number: Optional[str] = None
 
 # Auth Routes
 @api_router.post("/auth/register")
@@ -676,6 +681,20 @@ async def declare_result(result: ResultDeclare, request: Request):
         {"$set": {"status": "lost"}}
     )
     
+    # Send notifications to all subscribers
+    subscribers = await db.notification_subscribers.find({}).to_list(1000)
+    if subscribers:
+        game_info = GAMES[result.game_id]
+        notification_result = await notification_service.send_result_notification(
+            game_name=game_info["name"],
+            game_name_hi=game_info["name_hi"],
+            date=result.date,
+            single_result=result.single_result,
+            jodi_result=result.jodi_result,
+            subscribers=subscribers
+        )
+        logger.info(f"Notifications sent: {notification_result}")
+    
     return {
         "message": "Result declared successfully",
         "winners": {
@@ -761,11 +780,89 @@ async def get_admin_stats(request: Request):
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     today_bets = await db.bets.count_documents({"date": today})
     
+    # Notification stats
+    notification_status = notification_service.get_status()
+    total_subscribers = await db.notification_subscribers.count_documents({})
+    
     return {
         "total_users": total_users,
         "total_bets": total_bets,
         "pending_withdrawals": pending_withdrawals,
-        "today_bets": today_bets
+        "today_bets": today_bets,
+        "notifications": {
+            **notification_status,
+            "total_subscribers": total_subscribers
+        }
+    }
+
+# Notification Routes
+@api_router.post("/notifications/subscribe")
+async def subscribe_notifications(data: NotificationSubscribe, request: Request):
+    user = await get_current_user(request)
+    
+    if not data.telegram_chat_id and not data.whatsapp_number:
+        raise HTTPException(status_code=400, detail="Provide Telegram chat ID or WhatsApp number")
+    
+    # Check if already subscribed
+    existing = await db.notification_subscribers.find_one({"user_id": user["_id"]})
+    
+    subscription_doc = {
+        "user_id": user["_id"],
+        "email": user["email"],
+        "telegram_chat_id": data.telegram_chat_id,
+        "whatsapp_number": data.whatsapp_number,
+        "subscribed_at": datetime.now(timezone.utc)
+    }
+    
+    if existing:
+        await db.notification_subscribers.update_one(
+            {"user_id": user["_id"]},
+            {"$set": subscription_doc}
+        )
+    else:
+        await db.notification_subscribers.insert_one(subscription_doc)
+    
+    return {"message": "Subscribed to notifications successfully"}
+
+@api_router.delete("/notifications/unsubscribe")
+async def unsubscribe_notifications(request: Request):
+    user = await get_current_user(request)
+    
+    result = await db.notification_subscribers.delete_one({"user_id": user["_id"]})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Not subscribed")
+    
+    return {"message": "Unsubscribed from notifications"}
+
+@api_router.get("/notifications/status")
+async def get_notification_status(request: Request):
+    user = await get_current_user(request)
+    
+    subscription = await db.notification_subscribers.find_one(
+        {"user_id": user["_id"]},
+        {"_id": 0, "user_id": 0}
+    )
+    
+    service_status = notification_service.get_status()
+    
+    return {
+        "subscribed": subscription is not None,
+        "subscription": subscription,
+        "service_status": service_status
+    }
+
+@api_router.get("/notifications/telegram-instructions")
+async def get_telegram_instructions():
+    """Get instructions for setting up Telegram notifications"""
+    return {
+        "steps": [
+            "1. Telegram में @SattaMatkaResultBot खोजें (या admin द्वारा बताया गया bot)",
+            "2. Bot को /start भेजें",
+            "3. Bot आपको आपका Chat ID देगा",
+            "4. वह Chat ID यहाँ दर्ज करें"
+        ],
+        "note": "रिजल्ट घोषित होते ही आपको Telegram पर notification मिलेगी"
     }
 
 # Include the router in the main app

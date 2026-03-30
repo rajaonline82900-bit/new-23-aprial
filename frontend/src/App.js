@@ -14,6 +14,7 @@ import BetsPage from "./pages/BetsPage";
 import ResultsPage from "./pages/ResultsPage";
 import ProfilePage from "./pages/ProfilePage";
 import AdminPage from "./pages/AdminPage";
+import NotificationsPage from "./pages/NotificationsPage";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -128,6 +129,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <AdminPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/notifications"
+        element={
+          <ProtectedRoute>
+            <NotificationsPage />
           </ProtectedRoute>
         }
       />

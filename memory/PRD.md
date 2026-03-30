@@ -39,6 +39,9 @@
 - [x] Admin panel - user management
 - [x] Automatic winner calculation when result declared
 - [x] Dark luxury theme with gold/emerald accents
+- [x] Telegram notification integration
+- [x] WhatsApp notification integration (Twilio)
+- [x] Notification subscription page
 
 ## Deposit Packages
 - ₹100, ₹500 (popular), ₹1000, ₹2000, ₹5000
@@ -84,7 +87,6 @@
 
 ### P1 (High)
 - Real-time game status (live/closed based on time)
-- Notification system for results
 
 ### P2 (Medium)
 - Mobile responsive improvements
@@ -96,9 +98,24 @@
 - Referral system
 - Email notifications
 
+## Notification Setup
+
+### Telegram
+1. Create bot via @BotFather on Telegram
+2. Get Bot Token
+3. Add to .env: `TELEGRAM_BOT_TOKEN="your_token"`
+4. Users subscribe with their Chat ID
+
+### WhatsApp (Twilio)
+1. Create Twilio account
+2. Get Account SID, Auth Token, WhatsApp Sandbox Number
+3. Add to .env:
+   - `TWILIO_ACCOUNT_SID="your_sid"`
+   - `TWILIO_AUTH_TOKEN="your_token"`
+   - `TWILIO_WHATSAPP_NUMBER="+14155238886"`
+
 ## Next Tasks
-1. Add real-time notifications when results are declared
-2. Implement time-based game locking (can't bet after game closes)
-3. Add bet confirmation dialog
-4. Improve mobile responsiveness
-5. Add transaction history export
+1. Implement time-based game locking (can't bet after game closes)
+2. Add bet confirmation dialog
+3. Improve mobile responsiveness
+4. Add transaction history export
