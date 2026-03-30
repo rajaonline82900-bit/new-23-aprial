@@ -47,21 +47,16 @@ import {
   ArrowUpRight,
   Coins,
   History,
-  PieChart
+  PieChart,
+  Settings,
+  Edit,
+  Trash2,
+  Save
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
-
-const GAMES = [
-  { id: 'delhi_bazaar', name: 'दिल्ली बाजार' },
-  { id: 'shri_ganesh', name: 'श्री गणेश' },
-  { id: 'faridabad', name: 'फरीदाबाद' },
-  { id: 'ghaziabad', name: 'गाजियाबाद' },
-  { id: 'gali', name: 'गली' },
-  { id: 'disawar', name: 'दिसावर' }
-];
 
 const AdminPage = () => {
   const { user } = useAuth();
@@ -71,12 +66,26 @@ const AdminPage = () => {
   const [users, setUsers] = useState([]);
   const [withdrawals, setWithdrawals] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [games, setGames] = useState([]);
   
   // Result declaration state
   const [selectedGame, setSelectedGame] = useState('');
   const [resultDate, setResultDate] = useState(new Date());
   const [jodiResult, setJodiResult] = useState('');
   const [declaring, setDeclaring] = useState(false);
+
+  // Game settings state
+  const [editingGame, setEditingGame] = useState(null);
+  const [gameFormOpen, setGameFormOpen] = useState(false);
+  const [gameForm, setGameForm] = useState({
+    game_id: '',
+    name: '',
+    name_hi: '',
+    time: '',
+    display_time: '',
+    is_active: true
+  });
+  const [savingGame, setSavingGame] = useState(false);
 
   // User detail modal state
   const [selectedUser, setSelectedUser] = useState(null);
@@ -117,23 +126,108 @@ const AdminPage = () => {
     if (activeTab === 'bets') {
       fetchBetDistribution();
     }
+    if (activeTab === 'games') {
+      fetchGames();
+    }
   }, [activeTab, betDistDate, betDistGame]);
 
   const fetchData = async () => {
     try {
-      const [statsRes, usersRes, withdrawalsRes] = await Promise.all([
+      const [statsRes, usersRes, withdrawalsRes, gamesRes] = await Promise.all([
         axios.get(`${API_URL}/api/admin/stats`, { withCredentials: true }),
         axios.get(`${API_URL}/api/admin/users`, { withCredentials: true }),
-        axios.get(`${API_URL}/api/admin/withdrawals`, { withCredentials: true })
+        axios.get(`${API_URL}/api/admin/withdrawals`, { withCredentials: true }),
+        axios.get(`${API_URL}/api/admin/games`, { withCredentials: true })
       ]);
       
       setStats(statsRes.data);
       setUsers(usersRes.data.users);
       setWithdrawals(withdrawalsRes.data.withdrawals);
+      setGames(gamesRes.data.games);
     } catch (error) {
       toast.error('डेटा लोड नहीं हो पाया');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchGames = async () => {
+    try {
+      const { data } = await axios.get(`${API_URL}/api/admin/games`, { withCredentials: true });
+      setGames(data.games);
+    } catch (error) {
+      toast.error('Games load नहीं हो पाए');
+    }
+  };
+
+  const openGameForm = (game = null) => {
+    if (game) {
+      setEditingGame(game.game_id);
+      setGameForm({
+        game_id: game.game_id,
+        name: game.name,
+        name_hi: game.name_hi,
+        time: game.time,
+        display_time: game.display_time,
+        is_active: game.is_active !== false
+      });
+    } else {
+      setEditingGame(null);
+      setGameForm({
+        game_id: '',
+        name: '',
+        name_hi: '',
+        time: '',
+        display_time: '',
+        is_active: true
+      });
+    }
+    setGameFormOpen(true);
+  };
+
+  const handleSaveGame = async () => {
+    if (!gameForm.name || !gameForm.name_hi || !gameForm.time) {
+      toast.error('सभी required fields भरें');
+      return;
+    }
+
+    setSavingGame(true);
+
+    try {
+      if (editingGame) {
+        await axios.put(`${API_URL}/api/admin/games/${editingGame}`, {
+          name: gameForm.name,
+          name_hi: gameForm.name_hi,
+          time: gameForm.time,
+          display_time: gameForm.display_time,
+          is_active: gameForm.is_active
+        }, { withCredentials: true });
+        toast.success('Game updated successfully');
+      } else {
+        await axios.post(`${API_URL}/api/admin/games`, gameForm, { withCredentials: true });
+        toast.success('Game created successfully');
+      }
+      
+      setGameFormOpen(false);
+      fetchGames();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Save failed');
+    } finally {
+      setSavingGame(false);
+    }
+  };
+
+  const handleDeleteGame = async (gameId) => {
+    if (!confirm('क्या आप वाकई इस game को delete करना चाहते हैं?')) {
+      return;
+    }
+
+    try {
+      await axios.delete(`${API_URL}/api/admin/games/${gameId}`, { withCredentials: true });
+      toast.success('Game deleted');
+      fetchGames();
+    } catch (error) {
+      toast.error('Delete failed');
     }
   };
 
@@ -422,7 +516,7 @@ const AdminPage = () => {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="bg-[#141418] border border-white/10 mb-6">
+          <TabsList className="bg-[#141418] border border-white/10 mb-6 flex-wrap">
             <TabsTrigger 
               value="results"
               data-testid="admin-results-tab"
@@ -438,11 +532,18 @@ const AdminPage = () => {
               बेट रिपोर्ट
             </TabsTrigger>
             <TabsTrigger 
+              value="games"
+              data-testid="admin-games-tab"
+              className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black"
+            >
+              गेम सेटिंग्स
+            </TabsTrigger>
+            <TabsTrigger 
               value="withdrawals"
               data-testid="admin-withdrawals-tab"
               className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black"
             >
-              निकासी अनुरोध
+              निकासी
             </TabsTrigger>
             <TabsTrigger 
               value="users"
@@ -471,9 +572,9 @@ const AdminPage = () => {
                         <SelectValue placeholder="गेम चुनें" />
                       </SelectTrigger>
                       <SelectContent className="bg-[#141418] border-white/10">
-                        {GAMES.map((game) => (
-                          <SelectItem key={game.id} value={game.id} className="text-white hover:bg-white/10">
-                            {game.name}
+                        {games.filter(g => g.is_active !== false).map((game) => (
+                          <SelectItem key={game.game_id} value={game.game_id} className="text-white hover:bg-white/10">
+                            {game.name_hi}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -559,9 +660,9 @@ const AdminPage = () => {
                       </SelectTrigger>
                       <SelectContent className="bg-[#141418] border-white/10">
                         <SelectItem value="all" className="text-white hover:bg-white/10">सभी गेम्स</SelectItem>
-                        {GAMES.map((game) => (
-                          <SelectItem key={game.id} value={game.id} className="text-white hover:bg-white/10">
-                            {game.name}
+                        {games.map((game) => (
+                          <SelectItem key={game.game_id} value={game.game_id} className="text-white hover:bg-white/10">
+                            {game.name_hi}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -673,6 +774,79 @@ const AdminPage = () => {
                     ))}
                   </>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Games Settings Tab */}
+          <TabsContent value="games">
+            <Card className="bg-[#141418] border-white/10">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-white font-['Unbounded'] flex items-center gap-2">
+                    <Settings className="w-5 h-5 text-[#D4AF37]" />
+                    गेम सेटिंग्स
+                  </CardTitle>
+                  <Button
+                    onClick={() => openGameForm()}
+                    className="bg-[#D4AF37] hover:bg-[#FDE047] text-black"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    नया गेम
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {games.map((game, index) => (
+                    <div
+                      key={index}
+                      className={`flex items-center justify-between p-4 bg-[#0A0A0C] rounded-lg border ${
+                        game.is_active !== false ? 'border-white/10' : 'border-red-500/30 opacity-60'
+                      }`}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#D4AF37]/20 to-[#141418] flex items-center justify-center border border-[#D4AF37]/30">
+                          <Clock className="w-6 h-6 text-[#D4AF37]" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-lg font-semibold text-white">{game.name_hi}</h4>
+                            {game.is_active === false && (
+                              <Badge className="bg-red-500/20 text-red-400">बंद</Badge>
+                            )}
+                          </div>
+                          <p className="text-gray-400 text-sm">{game.name}</p>
+                          <p className="text-gray-500 text-xs">ID: {game.game_id}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <p className="text-[#D4AF37] font-bold text-lg">{game.display_time}</p>
+                          <p className="text-gray-400 text-sm">({game.time})</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openGameForm(game)}
+                            className="border-white/10 text-gray-300 hover:bg-white/10"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDeleteGame(game.game_id)}
+                            className="border-red-500/50 text-red-400 hover:bg-red-500/10"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -1042,6 +1216,103 @@ const AdminPage = () => {
                 <>
                   {walletType === 'add' ? <Plus className="w-4 h-4 mr-2" /> : <Minus className="w-4 h-4 mr-2" />}
                   {walletType === 'add' ? 'पैसे जोड़ें' : 'पैसे काटें'}
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Game Form Dialog */}
+      <Dialog open={gameFormOpen} onOpenChange={setGameFormOpen}>
+        <DialogContent className="bg-[#141418] border-white/10 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-['Unbounded']">
+              {editingGame ? 'गेम एडिट करें' : 'नया गेम बनाएं'}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {!editingGame && (
+              <div>
+                <Label className="text-gray-300 mb-2 block">Game ID (unique)</Label>
+                <Input
+                  type="text"
+                  placeholder="जैसे: mumbai_night"
+                  value={gameForm.game_id}
+                  onChange={(e) => setGameForm({...gameForm, game_id: e.target.value.toLowerCase().replace(/\s+/g, '_')})}
+                  className="bg-[#0A0A0C] border-white/10 text-white"
+                />
+              </div>
+            )}
+
+            <div>
+              <Label className="text-gray-300 mb-2 block">Game Name (English)</Label>
+              <Input
+                type="text"
+                placeholder="Mumbai Night"
+                value={gameForm.name}
+                onChange={(e) => setGameForm({...gameForm, name: e.target.value})}
+                className="bg-[#0A0A0C] border-white/10 text-white"
+              />
+            </div>
+
+            <div>
+              <Label className="text-gray-300 mb-2 block">Game Name (Hindi)</Label>
+              <Input
+                type="text"
+                placeholder="मुंबई नाइट"
+                value={gameForm.name_hi}
+                onChange={(e) => setGameForm({...gameForm, name_hi: e.target.value})}
+                className="bg-[#0A0A0C] border-white/10 text-white"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-gray-300 mb-2 block">Time (24hr)</Label>
+                <Input
+                  type="text"
+                  placeholder="21:30"
+                  value={gameForm.time}
+                  onChange={(e) => setGameForm({...gameForm, time: e.target.value})}
+                  className="bg-[#0A0A0C] border-white/10 text-white"
+                />
+              </div>
+              <div>
+                <Label className="text-gray-300 mb-2 block">Display Time</Label>
+                <Input
+                  type="text"
+                  placeholder="9:30 PM"
+                  value={gameForm.display_time}
+                  onChange={(e) => setGameForm({...gameForm, display_time: e.target.value})}
+                  className="bg-[#0A0A0C] border-white/10 text-white"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 p-3 bg-[#0A0A0C] rounded-lg">
+              <input
+                type="checkbox"
+                id="is_active"
+                checked={gameForm.is_active}
+                onChange={(e) => setGameForm({...gameForm, is_active: e.target.checked})}
+                className="w-5 h-5 rounded border-white/10 bg-[#0A0A0C]"
+              />
+              <Label htmlFor="is_active" className="text-gray-300">Game Active है</Label>
+            </div>
+
+            <Button
+              onClick={handleSaveGame}
+              disabled={savingGame}
+              className="w-full bg-[#D4AF37] hover:bg-[#FDE047] text-black font-bold"
+            >
+              {savingGame ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  {editingGame ? 'Update करें' : 'बनाएं'}
                 </>
               )}
             </Button>

@@ -104,15 +104,39 @@ class UserResponse(BaseModel):
     balance: float
     created_at: datetime
 
-# Game Configuration - Fixed Time Slots
-GAMES = {
-    "delhi_bazaar": {"name": "Delhi Bazaar", "name_hi": "दिल्ली बाजार", "time": "15:00", "display_time": "3:00 PM"},
-    "shri_ganesh": {"name": "Shri Ganesh", "name_hi": "श्री गणेश", "time": "18:00", "display_time": "6:00 PM"},
-    "faridabad": {"name": "Faridabad", "name_hi": "फरीदाबाद", "time": "18:15", "display_time": "6:15 PM"},
-    "ghaziabad": {"name": "Ghaziabad", "name_hi": "गाजियाबाद", "time": "20:30", "display_time": "8:30 PM"},
-    "gali": {"name": "Gali", "name_hi": "गली", "time": "23:30", "display_time": "11:30 PM"},
-    "disawar": {"name": "Disawar", "name_hi": "दिसावर", "time": "05:00", "display_time": "5:00 AM"}
+# Game Configuration - Default Games (will be loaded from DB)
+DEFAULT_GAMES = {
+    "delhi_bazaar": {"name": "Delhi Bazaar", "name_hi": "दिल्ली बाजार", "time": "15:00", "display_time": "3:00 PM", "is_active": True},
+    "shri_ganesh": {"name": "Shri Ganesh", "name_hi": "श्री गणेश", "time": "18:00", "display_time": "6:00 PM", "is_active": True},
+    "faridabad": {"name": "Faridabad", "name_hi": "फरीदाबाद", "time": "18:15", "display_time": "6:15 PM", "is_active": True},
+    "ghaziabad": {"name": "Ghaziabad", "name_hi": "गाजियाबाद", "time": "20:30", "display_time": "8:30 PM", "is_active": True},
+    "gali": {"name": "Gali", "name_hi": "गली", "time": "23:30", "display_time": "11:30 PM", "is_active": True},
+    "disawar": {"name": "Disawar", "name_hi": "दिसावर", "time": "05:00", "display_time": "5:00 AM", "is_active": True}
 }
+
+# This will be populated from DB
+GAMES = {}
+
+async def load_games():
+    """Load games from database"""
+    global GAMES
+    games_from_db = await db.games.find({}).to_list(100)
+    if games_from_db:
+        GAMES = {g["game_id"]: {
+            "name": g["name"],
+            "name_hi": g["name_hi"],
+            "time": g["time"],
+            "display_time": g["display_time"],
+            "is_active": g.get("is_active", True)
+        } for g in games_from_db}
+    else:
+        GAMES = DEFAULT_GAMES.copy()
+
+async def get_games_dict():
+    """Get current games configuration"""
+    if not GAMES:
+        await load_games()
+    return GAMES
 
 # Bet Types
 BET_TYPES = {
@@ -153,6 +177,21 @@ class ResultDeclare(BaseModel):
 class NotificationSubscribe(BaseModel):
     telegram_chat_id: Optional[str] = None
     whatsapp_number: Optional[str] = None
+
+class GameCreate(BaseModel):
+    game_id: str
+    name: str
+    name_hi: str
+    time: str  # HH:MM format
+    display_time: str  # Display format like "3:00 PM"
+    is_active: bool = True
+
+class GameUpdate(BaseModel):
+    name: Optional[str] = None
+    name_hi: Optional[str] = None
+    time: Optional[str] = None
+    display_time: Optional[str] = None
+    is_active: Optional[bool] = None
 
 # Auth Routes
 @api_router.post("/auth/register")
@@ -247,7 +286,11 @@ async def get_games():
     now = datetime.now(timezone.utc)
     today = now.strftime("%Y-%m-%d")
     
-    for game_id, game in GAMES.items():
+    games_dict = await get_games_dict()
+    
+    for game_id, game in games_dict.items():
+        if not game.get("is_active", True):
+            continue
         # Get latest result for this game
         latest_result = await db.results.find_one(
             {"game_id": game_id},
@@ -271,10 +314,11 @@ async def get_games():
 
 @api_router.get("/games/{game_id}")
 async def get_game(game_id: str):
-    if game_id not in GAMES:
+    games_dict = await get_games_dict()
+    if game_id not in games_dict:
         raise HTTPException(status_code=404, detail="Game not found")
     
-    game = GAMES[game_id]
+    game = games_dict[game_id]
     
     # Get last 10 results
     results = await db.results.find(
@@ -296,7 +340,8 @@ async def get_game(game_id: str):
 async def place_bet(bet: BetCreate, request: Request):
     user = await get_current_user(request)
     
-    if bet.game_id not in GAMES:
+    games_dict = await get_games_dict()
+    if bet.game_id not in games_dict:
         raise HTTPException(status_code=400, detail="Invalid game")
     
     if bet.bet_type not in BET_TYPES:
@@ -324,11 +369,12 @@ async def place_bet(bet: BetCreate, request: Request):
     
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     
+    games_dict = await get_games_dict()
     bet_doc = {
         "id": str(uuid.uuid4()),
         "user_id": user["_id"],
         "game_id": bet.game_id,
-        "game_name": GAMES[bet.game_id]["name"],
+        "game_name": games_dict[bet.game_id]["name"],
         "bet_type": bet.bet_type,
         "number": bet.number,
         "amount": bet.amount,
@@ -602,7 +648,8 @@ async def stripe_webhook(request: Request):
 async def declare_result(result: ResultDeclare, request: Request):
     await get_admin_user(request)
     
-    if result.game_id not in GAMES:
+    games_dict = await get_games_dict()
+    if result.game_id not in games_dict:
         raise HTTPException(status_code=400, detail="Invalid game")
     
     # Validate jodi result
@@ -683,7 +730,7 @@ async def declare_result(result: ResultDeclare, request: Request):
     # Send notifications to all subscribers
     subscribers = await db.notification_subscribers.find({}).to_list(1000)
     if subscribers:
-        game_info = GAMES[result.game_id]
+        game_info = games_dict[result.game_id]
         notification_result = await notification_service.send_result_notification(
             game_name=game_info["name"],
             game_name_hi=game_info["name_hi"],
@@ -1190,6 +1237,103 @@ async def get_telegram_instructions():
         "note": "रिजल्ट घोषित होते ही आपको Telegram पर notification मिलेगी"
     }
 
+# Game Management APIs
+@api_router.get("/admin/games")
+async def get_all_games_admin(request: Request):
+    await get_admin_user(request)
+    
+    games = await db.games.find({}, {"_id": 0}).to_list(100)
+    
+    # If no games in DB, return default games
+    if not games:
+        games = [{"game_id": k, **v} for k, v in DEFAULT_GAMES.items()]
+    
+    return {"games": games}
+
+@api_router.post("/admin/games")
+async def create_game(game: GameCreate, request: Request):
+    await get_admin_user(request)
+    
+    # Check if game_id already exists
+    existing = await db.games.find_one({"game_id": game.game_id})
+    if existing:
+        raise HTTPException(status_code=400, detail="Game ID already exists")
+    
+    game_doc = {
+        "game_id": game.game_id,
+        "name": game.name,
+        "name_hi": game.name_hi,
+        "time": game.time,
+        "display_time": game.display_time,
+        "is_active": game.is_active,
+        "created_at": datetime.now(timezone.utc)
+    }
+    
+    await db.games.insert_one(game_doc)
+    
+    # Reload games
+    await load_games()
+    
+    return {"message": "Game created successfully", "game_id": game.game_id}
+
+@api_router.put("/admin/games/{game_id}")
+async def update_game(game_id: str, game: GameUpdate, request: Request):
+    await get_admin_user(request)
+    
+    # Check if game exists
+    existing = await db.games.find_one({"game_id": game_id})
+    
+    if not existing:
+        # If not in DB, might be a default game - create it first
+        if game_id in DEFAULT_GAMES:
+            default_game = DEFAULT_GAMES[game_id]
+            await db.games.insert_one({
+                "game_id": game_id,
+                **default_game,
+                "created_at": datetime.now(timezone.utc)
+            })
+        else:
+            raise HTTPException(status_code=404, detail="Game not found")
+    
+    # Build update dict
+    update_data = {}
+    if game.name is not None:
+        update_data["name"] = game.name
+    if game.name_hi is not None:
+        update_data["name_hi"] = game.name_hi
+    if game.time is not None:
+        update_data["time"] = game.time
+    if game.display_time is not None:
+        update_data["display_time"] = game.display_time
+    if game.is_active is not None:
+        update_data["is_active"] = game.is_active
+    
+    if update_data:
+        update_data["updated_at"] = datetime.now(timezone.utc)
+        await db.games.update_one(
+            {"game_id": game_id},
+            {"$set": update_data}
+        )
+    
+    # Reload games
+    await load_games()
+    
+    return {"message": "Game updated successfully"}
+
+@api_router.delete("/admin/games/{game_id}")
+async def delete_game(game_id: str, request: Request):
+    await get_admin_user(request)
+    
+    result = await db.games.delete_one({"game_id": game_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    # Reload games
+    await load_games()
+    
+    return {"message": "Game deleted successfully"}
+
 # Include the router in the main app
 app.include_router(api_router)
 
@@ -1216,6 +1360,21 @@ async def startup_event():
     await db.bets.create_index([("user_id", 1), ("created_at", -1)])
     await db.results.create_index([("game_id", 1), ("date", -1)])
     await db.transactions.create_index([("user_id", 1), ("created_at", -1)])
+    await db.games.create_index("game_id", unique=True)
+    
+    # Seed default games if not exists
+    games_count = await db.games.count_documents({})
+    if games_count == 0:
+        for game_id, game_data in DEFAULT_GAMES.items():
+            await db.games.insert_one({
+                "game_id": game_id,
+                **game_data,
+                "created_at": datetime.now(timezone.utc)
+            })
+        logger.info("Default games seeded")
+    
+    # Load games into memory
+    await load_games()
     
     # Seed admin
     admin_email = os.environ.get("ADMIN_EMAIL", "admin@sattamatka.com")
