@@ -60,7 +60,6 @@ const AdminPage = () => {
   // Result declaration state
   const [selectedGame, setSelectedGame] = useState('');
   const [resultDate, setResultDate] = useState(new Date());
-  const [singleResult, setSingleResult] = useState('');
   const [jodiResult, setJodiResult] = useState('');
   const [declaring, setDeclaring] = useState(false);
 
@@ -97,11 +96,6 @@ const AdminPage = () => {
       return;
     }
     
-    if (!singleResult || !singleResult.match(/^[0-9]$/)) {
-      toast.error('एकल रिजल्ट 0-9 होना चाहिए');
-      return;
-    }
-    
     if (!jodiResult || !jodiResult.match(/^[0-9]{2}$/)) {
       toast.error('जोड़ी रिजल्ट 00-99 होना चाहिए');
       return;
@@ -113,7 +107,6 @@ const AdminPage = () => {
       const { data } = await axios.post(`${API_URL}/api/admin/results`, {
         game_id: selectedGame,
         date: format(resultDate, 'yyyy-MM-dd'),
-        single_result: singleResult,
         jodi_result: jodiResult
       }, { withCredentials: true });
 
@@ -121,7 +114,6 @@ const AdminPage = () => {
       
       // Reset form
       setSelectedGame('');
-      setSingleResult('');
       setJodiResult('');
     } catch (error) {
       toast.error(error.response?.data?.detail || 'रिजल्ट घोषित नहीं हो पाया');
@@ -307,32 +299,20 @@ const AdminPage = () => {
                   </div>
                 </div>
 
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-gray-300 mb-2 block">एकल रिजल्ट (0-9)</Label>
-                    <Input
-                      type="text"
-                      maxLength={1}
-                      placeholder="0-9"
-                      value={singleResult}
-                      onChange={(e) => setSingleResult(e.target.value.replace(/[^0-9]/g, ''))}
-                      data-testid="admin-single-result-input"
-                      className="bg-[#0A0A0C] border-white/10 text-white text-center text-2xl h-14"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label className="text-gray-300 mb-2 block">जोड़ी रिजल्ट (00-99)</Label>
-                    <Input
-                      type="text"
-                      maxLength={2}
-                      placeholder="00-99"
-                      value={jodiResult}
-                      onChange={(e) => setJodiResult(e.target.value.replace(/[^0-9]/g, ''))}
-                      data-testid="admin-jodi-result-input"
-                      className="bg-[#0A0A0C] border-white/10 text-white text-center text-2xl h-14"
-                    />
-                  </div>
+                <div>
+                  <Label className="text-gray-300 mb-2 block">जोड़ी रिजल्ट (00-99)</Label>
+                  <Input
+                    type="text"
+                    maxLength={2}
+                    placeholder="00-99"
+                    value={jodiResult}
+                    onChange={(e) => setJodiResult(e.target.value.replace(/[^0-9]/g, ''))}
+                    data-testid="admin-jodi-result-input"
+                    className="bg-[#0A0A0C] border-white/10 text-white text-center text-4xl h-20 font-bold"
+                  />
+                  <p className="text-gray-400 text-sm mt-2">
+                    एकल रिजल्ट जोड़ी के आखिरी अंक से auto-calculate होगा
+                  </p>
                 </div>
 
                 <Button

@@ -148,8 +148,7 @@ class DepositRequest(BaseModel):
 class ResultDeclare(BaseModel):
     game_id: str
     date: str  # YYYY-MM-DD
-    single_result: str  # 0-9
-    jodi_result: str  # 00-99
+    jodi_result: str  # 00-99 (single will be auto-calculated from last digit)
 
 class NotificationSubscribe(BaseModel):
     telegram_chat_id: Optional[str] = None
@@ -606,12 +605,12 @@ async def declare_result(result: ResultDeclare, request: Request):
     if result.game_id not in GAMES:
         raise HTTPException(status_code=400, detail="Invalid game")
     
-    # Validate results
-    if not result.single_result.isdigit() or len(result.single_result) != 1:
-        raise HTTPException(status_code=400, detail="Single result must be 0-9")
-    
+    # Validate jodi result
     if not result.jodi_result.isdigit() or len(result.jodi_result) != 2:
         raise HTTPException(status_code=400, detail="Jodi result must be 00-99")
+    
+    # Auto-calculate single result from last digit of jodi
+    single_result = result.jodi_result[-1]
     
     # Check if result already exists
     existing = await db.results.find_one({
@@ -627,7 +626,7 @@ async def declare_result(result: ResultDeclare, request: Request):
         "id": str(uuid.uuid4()),
         "game_id": result.game_id,
         "date": result.date,
-        "single_result": result.single_result,
+        "single_result": single_result,
         "jodi_result": result.jodi_result,
         "declared_at": datetime.now(timezone.utc)
     }
@@ -638,7 +637,7 @@ async def declare_result(result: ResultDeclare, request: Request):
         "game_id": result.game_id,
         "date": result.date,
         "bet_type": "single",
-        "number": result.single_result,
+        "number": single_result,
         "status": "pending"
     }).to_list(1000)
     
@@ -689,7 +688,7 @@ async def declare_result(result: ResultDeclare, request: Request):
             game_name=game_info["name"],
             game_name_hi=game_info["name_hi"],
             date=result.date,
-            single_result=result.single_result,
+            single_result=single_result,
             jodi_result=result.jodi_result,
             subscribers=subscribers
         )
