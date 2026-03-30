@@ -1,0 +1,88 @@
+{
+  "theme": "dark",
+  "archetype": "5 (Jewel & Luxury) / Crypto Trading Terminal",
+  "domain": "Betting/Gaming Dashboard",
+  "design_philosophy": "E1 Anti-AI Design: Premium, high-contrast trading terminal aesthetic. Ditch the spammy betting app look. Use deep obsidian bases, glowing metallic gold and emerald green accents. Functionality meets luxury.",
+  "colors": {
+    "background": "#0A0A0C",
+    "surface": "#141418",
+    "surface_glass": "rgba(10, 10, 12, 0.6)",
+    "primary": "#D4AF37",
+    "primary_hover": "#FDE047",
+    "secondary": "#10B981",
+    "danger": "#EF4444",
+    "text_main": "#F9FAFB",
+    "text_muted": "#9CA3AF",
+    "border": "rgba(255, 255, 255, 0.08)"
+  },
+  "typography": {
+    "heading_font": "Unbounded",
+    "body_font": "Manrope",
+    "scale": {
+      "h1": "text-4xl sm:text-5xl tracking-tighter font-black text-white",
+      "h2": "text-2xl sm:text-3xl tracking-tight font-bold text-white",
+      "h3": "text-xl sm:text-2xl font-semibold text-white",
+      "body": "text-base leading-relaxed text-gray-300",
+      "small": "text-sm tracking-wide text-gray-400",
+      "overline": "text-xs tracking-[0.2em] uppercase font-bold text-gray-500"
+    }
+  },
+  "layout": {
+    "mode": "Control Room Grid",
+    "spacing": "Generous (p-6, p-8) for containers, tight (gap-4, gap-6) for internal widgets.",
+    "border_radius": "rounded-xl",
+    "structure": {
+      "header": "Sticky glassmorphism with 1px bottom border.",
+      "dashboard_grid": "grid-cols-1 md:grid-cols-3 lg:grid-cols-4. Data correlation, scanability.",
+      "cards": "Flat background (#141418), 1px subtle border, no heavy box-shadow."
+    }
+  },
+  "components": {
+    "buttons": "Shadcn based. Primary buttons use bg-[#D4AF37] text-black font-bold rounded-lg hover:bg-[#FDE047].",
+    "inputs": "Shadcn based. Dark background (#0A0A0C), 1px solid border (#27272A), focus:ring-1 focus:ring-[#D4AF37].",
+    "tables": "Shadcn based. Striped rows with hover effects. Numbers aligned to right.",
+    "tabs": "Shadcn based. Custom active state with #D4AF37 bottom border.",
+    "badges": "Emerald for 'Live/Won', Red for 'Closed/Lost', Gray for 'Pending'.",
+    "betting_grid": "Custom grid for numbers 0-9 and 00-99. Hover scale up, selected state gets primary border glow."
+  },
+  "motion": {
+    "hover": "translate-y-[-2px] transition-transform duration-200",
+    "click": "scale-[0.98]",
+    "list_stagger": "framer-motion staggered fade-up for lists",
+    "toast": "Sonner (bottom-right)"
+  },
+  "media": {
+    "icons_library": "@phosphor-icons/react",
+    "images": [
+      {
+        "category": "hero_background",
+        "url": "https://static.prod-images.emergentagent.com/jobs/2751d3ac-c817-409f-9ca6-b21fc9b6e32f/images/f62526906dfecc5c69cdf1add4d69aaa0ab6f3723185af50339014193001f1c7.png",
+        "description": "Dark midnight blue luxury casino background texture with subtle gold geometric lines. Use as a subtle blend mode overlay or hero backdrop at 30% opacity."
+      },
+      {
+        "category": "numbers_texture_background",
+        "url": "https://static.prod-images.emergentagent.com/jobs/2751d3ac-c817-409f-9ca6-b21fc9b6e32f/images/cd6b6419923c0f88dacd9c3c3cb122456bb7a29e1a1b1a548eebb89c40efaabf.png",
+        "description": "Abstract emerald and obsidian texture with digital numbers. Great for the 'Live Results' or 'Admin' section headers."
+      },
+      {
+        "category": "wallet_deposit_image",
+        "url": "https://images.pexels.com/photos/7584354/pexels-photo-7584354.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Metallic crypto/gold coins on dark background. Use for the Wallet/Deposit feature card."
+      }
+    ]
+  },
+  "testing": {
+    "data_testid_rules": "All interactive elements (buttons, inputs, tabs, betting grid items, deposit buttons, withdraw buttons) MUST have a descriptive 'data-testid' attribute in kebab-case."
+  },
+  "instructions_to_main_agent": [
+    "Install Unbounded and Manrope from Google Fonts.",
+    "Install @phosphor-icons/react for icons.",
+    "Do NOT use pure #000000. Use #0A0A0C as the darkest shade.",
+    "Ensure all text contrasting against dark backgrounds passes APCA contrast checks.",
+    "Implement the 'Control Room' grid layout for the dashboard to make it feel like a professional trading/betting terminal.",
+    "Use Shadcn UI for standard components but override classes to fit the dark luxury theme (e.g. replacing default grays with #141418 and border-white/5).",
+    "The wallet and betting amounts MUST be clearly visible, using a monospace font or tight tracking.",
+    "Implement fixed time slots logic for the games (Delhi Bazaar, Shri Ganesh, etc.) per user request.",
+    "Admin panel should maintain the same dark theme but clearly distinguish itself, maybe via a different accent color (e.g., subtle blue) for administrative tasks."
+  ]
+}
