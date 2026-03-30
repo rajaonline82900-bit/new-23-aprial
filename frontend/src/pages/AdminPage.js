@@ -272,7 +272,7 @@ const AdminPage = () => {
 
       <main className="container mx-auto px-4 py-6">
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
           <Card className="bg-[#141418] border-white/10">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
@@ -324,6 +324,65 @@ const AdminPage = () => {
                 <div>
                   <p className="text-gray-400 text-sm">लंबित निकासी</p>
                   <p className="text-xl font-bold text-white">{stats?.pending_withdrawals || 0}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Daily Stats Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+          <Card className="bg-gradient-to-br from-emerald-500/10 to-[#141418] border-emerald-500/30">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                  <ArrowDownLeft className="w-5 h-5 text-emerald-400" />
+                </div>
+                <div>
+                  <p className="text-gray-400 text-sm">आज का जमा</p>
+                  <p className="text-xl font-bold text-emerald-400">₹{stats?.today_deposit_amount || 0}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gradient-to-br from-red-500/10 to-[#141418] border-red-500/30">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
+                  <ArrowUpRight className="w-5 h-5 text-red-400" />
+                </div>
+                <div>
+                  <p className="text-gray-400 text-sm">आज की निकासी</p>
+                  <p className="text-xl font-bold text-red-400">₹{stats?.today_withdrawal_amount || 0}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gradient-to-br from-[#D4AF37]/10 to-[#141418] border-[#D4AF37]/30">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-[#D4AF37]/20 flex items-center justify-center">
+                  <Coins className="w-5 h-5 text-[#D4AF37]" />
+                </div>
+                <div>
+                  <p className="text-gray-400 text-sm">कुल जमा</p>
+                  <p className="text-xl font-bold text-[#D4AF37]">₹{stats?.total_deposit_amount || 0}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gradient-to-br from-purple-500/10 to-[#141418] border-purple-500/30">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
+                  <History className="w-5 h-5 text-purple-400" />
+                </div>
+                <div>
+                  <p className="text-gray-400 text-sm">कुल निकासी</p>
+                  <p className="text-xl font-bold text-purple-400">₹{stats?.total_withdrawal_amount || 0}</p>
                 </div>
               </div>
             </CardContent>

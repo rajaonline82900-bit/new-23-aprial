@@ -906,7 +906,44 @@ async def get_admin_stats(request: Request):
     
     # Today's stats
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
     today_bets = await db.bets.count_documents({"date": today})
+    
+    # Today's deposits
+    today_deposits = await db.transactions.find({
+        "type": "deposit",
+        "status": "completed",
+        "created_at": {"$gte": today_start}
+    }).to_list(1000)
+    today_deposit_amount = sum(d.get("amount", 0) for d in today_deposits)
+    
+    # Today's withdrawals (approved)
+    today_withdrawals = await db.transactions.find({
+        "type": "withdrawal",
+        "status": {"$in": ["approved", "completed"]},
+        "created_at": {"$gte": today_start}
+    }).to_list(1000)
+    today_withdrawal_amount = sum(w.get("amount", 0) for w in today_withdrawals)
+    
+    # Pending withdrawal amount
+    pending_withdrawal_list = await db.transactions.find({
+        "type": "withdrawal",
+        "status": "pending"
+    }).to_list(1000)
+    pending_withdrawal_amount = sum(w.get("amount", 0) for w in pending_withdrawal_list)
+    
+    # Total deposits and withdrawals (all time)
+    all_deposits = await db.transactions.find({
+        "type": "deposit",
+        "status": "completed"
+    }).to_list(10000)
+    total_deposit_amount = sum(d.get("amount", 0) for d in all_deposits)
+    
+    all_withdrawals = await db.transactions.find({
+        "type": "withdrawal",
+        "status": {"$in": ["approved", "completed"]}
+    }).to_list(10000)
+    total_withdrawal_amount = sum(w.get("amount", 0) for w in all_withdrawals)
     
     # Notification stats
     notification_status = notification_service.get_status()
@@ -917,6 +954,11 @@ async def get_admin_stats(request: Request):
         "total_bets": total_bets,
         "pending_withdrawals": pending_withdrawals,
         "today_bets": today_bets,
+        "today_deposit_amount": today_deposit_amount,
+        "today_withdrawal_amount": today_withdrawal_amount,
+        "pending_withdrawal_amount": pending_withdrawal_amount,
+        "total_deposit_amount": total_deposit_amount,
+        "total_withdrawal_amount": total_withdrawal_amount,
         "notifications": {
             **notification_status,
             "total_subscribers": total_subscribers
