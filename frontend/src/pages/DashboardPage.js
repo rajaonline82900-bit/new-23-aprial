@@ -16,7 +16,8 @@ import {
   Sparkles,
   User,
   Shield,
-  Bell
+  Bell,
+  Calendar
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -137,7 +138,7 @@ const DashboardPage = () => {
         </Card>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
           <Link to="/wallet" data-testid="wallet-link">
             <Card className="bg-[#141418] border-white/10 hover:border-[#D4AF37]/50 transition-all cursor-pointer group">
               <CardContent className="p-4 flex flex-col items-center gap-2">
@@ -145,6 +146,17 @@ const DashboardPage = () => {
                   <Wallet className="w-6 h-6 text-[#D4AF37]" />
                 </div>
                 <span className="text-white font-medium">वॉलेट</span>
+              </CardContent>
+            </Card>
+          </Link>
+          
+          <Link to="/jantri" data-testid="jantri-link">
+            <Card className="bg-[#141418] border-white/10 hover:border-orange-500/50 transition-all cursor-pointer group">
+              <CardContent className="p-4 flex flex-col items-center gap-2">
+                <div className="w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center group-hover:bg-orange-500/20 transition-all">
+                  <Calendar className="w-6 h-6 text-orange-400" />
+                </div>
+                <span className="text-white font-medium">जंत्री</span>
               </CardContent>
             </Card>
           </Link>
@@ -167,17 +179,6 @@ const DashboardPage = () => {
                   <Trophy className="w-6 h-6 text-purple-400" />
                 </div>
                 <span className="text-white font-medium">रिजल्ट</span>
-              </CardContent>
-            </Card>
-          </Link>
-          
-          <Link to="/profile" data-testid="profile-link">
-            <Card className="bg-[#141418] border-white/10 hover:border-blue-500/50 transition-all cursor-pointer group">
-              <CardContent className="p-4 flex flex-col items-center gap-2">
-                <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-all">
-                  <User className="w-6 h-6 text-blue-400" />
-                </div>
-                <span className="text-white font-medium">प्रोफाइल</span>
               </CardContent>
             </Card>
           </Link>

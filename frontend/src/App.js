@@ -15,6 +15,7 @@ import ResultsPage from "./pages/ResultsPage";
 import ProfilePage from "./pages/ProfilePage";
 import AdminPage from "./pages/AdminPage";
 import NotificationsPage from "./pages/NotificationsPage";
+import JantriPage from "./pages/JantriPage";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -137,6 +138,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <NotificationsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/jantri"
+        element={
+          <ProtectedRoute>
+            <JantriPage />
           </ProtectedRoute>
         }
       />
