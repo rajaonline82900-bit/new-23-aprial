@@ -13,7 +13,7 @@ import {
   Coins,
   Trophy,
   Wallet,
-  Check
+  Send
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -26,9 +26,13 @@ const GamePage = () => {
   const [game, setGame] = useState(null);
   const [loading, setLoading] = useState(true);
   const [betType, setBetType] = useState('single');
-  const [selectedNumber, setSelectedNumber] = useState(null);
+  const [selectedNumber, setSelectedNumber] = useState('');
   const [amount, setAmount] = useState('');
   const [placing, setPlacing] = useState(false);
+
+  // Direct input state
+  const [directNumber, setDirectNumber] = useState('');
+  const [directAmount, setDirectAmount] = useState('');
 
   useEffect(() => {
     fetchGame();
@@ -46,18 +50,31 @@ const GamePage = () => {
     }
   };
 
-  const handlePlaceBet = async () => {
-    if (!selectedNumber) {
-      toast.error('कृपया एक नंबर चुनें');
+  const handlePlaceBet = async (number, betAmount, type) => {
+    if (!number) {
+      toast.error('कृपया नंबर दर्ज करें');
       return;
     }
     
-    if (!amount || parseFloat(amount) < 10) {
+    // Validate number based on type
+    if (type === 'single') {
+      if (!/^[0-9]$/.test(number)) {
+        toast.error('एकल नंबर 0-9 होना चाहिए');
+        return;
+      }
+    } else {
+      if (!/^[0-9]{2}$/.test(number)) {
+        toast.error('जोड़ी नंबर 00-99 होना चाहिए');
+        return;
+      }
+    }
+    
+    if (!betAmount || parseFloat(betAmount) < 10) {
       toast.error('न्यूनतम बेट ₹10 है');
       return;
     }
     
-    if (parseFloat(amount) > (user?.balance || 0)) {
+    if (parseFloat(betAmount) > (user?.balance || 0)) {
       toast.error('अपर्याप्त बैलेंस');
       return;
     }
@@ -67,14 +84,16 @@ const GamePage = () => {
     try {
       const { data } = await axios.post(`${API_URL}/api/bets`, {
         game_id: gameId,
-        bet_type: betType,
-        number: selectedNumber,
-        amount: parseFloat(amount)
+        bet_type: type,
+        number: type === 'jodi' ? number.padStart(2, '0') : number,
+        amount: parseFloat(betAmount)
       }, { withCredentials: true });
       
       toast.success(`बेट लगाई गई! संभावित जीत: ₹${data.potential_win}`);
-      setSelectedNumber(null);
+      setSelectedNumber('');
       setAmount('');
+      setDirectNumber('');
+      setDirectAmount('');
       await refreshUser();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'बेट नहीं लग पाई');
@@ -83,11 +102,11 @@ const GamePage = () => {
     }
   };
 
-  const getMultiplier = () => betType === 'single' ? 9 : 90;
+  const getMultiplier = (type) => type === 'single' ? 9 : 90;
 
-  const getPotentialWin = () => {
-    if (!amount) return 0;
-    return parseFloat(amount) * getMultiplier();
+  const getPotentialWin = (amt, type) => {
+    if (!amt) return 0;
+    return parseFloat(amt) * getMultiplier(type);
   };
 
   if (loading) {
@@ -152,10 +171,115 @@ const GamePage = () => {
           </Card>
         )}
 
-        {/* Betting Section */}
+        {/* Quick Bet - Direct Input */}
+        <Card className="bg-gradient-to-br from-[#10B981]/10 to-[#141418] border-[#10B981]/30 mb-6">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-white font-['Unbounded'] text-lg flex items-center gap-2">
+              <Send className="w-5 h-5 text-[#10B981]" />
+              Quick Bet - सीधे नंबर डालें
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Single Quick Bet */}
+              <div className="p-4 bg-[#0A0A0C] rounded-xl border border-white/10">
+                <p className="text-[#D4AF37] font-semibold mb-3">एकल (0-9) - 9x</p>
+                <div className="flex gap-2">
+                  <Input
+                    type="text"
+                    maxLength={1}
+                    placeholder="0-9"
+                    value={directNumber}
+                    onChange={(e) => setDirectNumber(e.target.value.replace(/[^0-9]/g, ''))}
+                    data-testid="direct-single-number"
+                    className="bg-[#141418] border-white/10 text-white text-center text-2xl h-14 w-20"
+                  />
+                  <Input
+                    type="number"
+                    placeholder="राशि ₹"
+                    value={directAmount}
+                    onChange={(e) => setDirectAmount(e.target.value)}
+                    data-testid="direct-single-amount"
+                    className="bg-[#141418] border-white/10 text-white h-14 flex-1"
+                  />
+                  <Button
+                    onClick={() => handlePlaceBet(directNumber, directAmount, 'single')}
+                    disabled={placing || !directNumber || !directAmount}
+                    data-testid="direct-single-bet-button"
+                    className="h-14 px-6 bg-[#D4AF37] hover:bg-[#FDE047] text-black font-bold"
+                  >
+                    {placing ? '...' : 'बेट'}
+                  </Button>
+                </div>
+                {directAmount && directNumber && (
+                  <p className="text-emerald-400 text-sm mt-2">
+                    जीत: ₹{getPotentialWin(directAmount, 'single')}
+                  </p>
+                )}
+              </div>
+
+              {/* Jodi Quick Bet */}
+              <div className="p-4 bg-[#0A0A0C] rounded-xl border border-white/10">
+                <p className="text-[#10B981] font-semibold mb-3">जोड़ी (00-99) - 90x</p>
+                <div className="flex gap-2">
+                  <Input
+                    type="text"
+                    maxLength={2}
+                    placeholder="00-99"
+                    value={selectedNumber}
+                    onChange={(e) => setSelectedNumber(e.target.value.replace(/[^0-9]/g, ''))}
+                    data-testid="direct-jodi-number"
+                    className="bg-[#141418] border-white/10 text-white text-center text-2xl h-14 w-24"
+                  />
+                  <Input
+                    type="number"
+                    placeholder="राशि ₹"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    data-testid="direct-jodi-amount"
+                    className="bg-[#141418] border-white/10 text-white h-14 flex-1"
+                  />
+                  <Button
+                    onClick={() => handlePlaceBet(selectedNumber, amount, 'jodi')}
+                    disabled={placing || !selectedNumber || !amount}
+                    data-testid="direct-jodi-bet-button"
+                    className="h-14 px-6 bg-[#10B981] hover:bg-[#059669] text-white font-bold"
+                  >
+                    {placing ? '...' : 'बेट'}
+                  </Button>
+                </div>
+                {amount && selectedNumber && (
+                  <p className="text-emerald-400 text-sm mt-2">
+                    जीत: ₹{getPotentialWin(amount, 'jodi')}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Quick Amount Buttons */}
+            <div className="flex flex-wrap gap-2 mt-4 justify-center">
+              {[10, 50, 100, 200, 500, 1000].map((amt) => (
+                <Button
+                  key={amt}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setDirectAmount(String(amt));
+                    setAmount(String(amt));
+                  }}
+                  className="border-white/10 text-gray-300 hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/50"
+                >
+                  ₹{amt}
+                </Button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Number Grid Selection */}
         <Card className="bg-[#141418] border-white/10 mb-6">
           <CardHeader>
-            <CardTitle className="text-white font-['Unbounded']">बेट लगाएं</CardTitle>
+            <CardTitle className="text-white font-['Unbounded']">नंबर चुनें</CardTitle>
           </CardHeader>
           <CardContent>
             <Tabs value={betType} onValueChange={setBetType} className="w-full">
@@ -165,7 +289,7 @@ const GamePage = () => {
                   data-testid="single-bet-tab"
                   className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black"
                 >
-                  एकल अंक (0-9)
+                  एकल (0-9)
                 </TabsTrigger>
                 <TabsTrigger 
                   value="jodi"
@@ -177,15 +301,15 @@ const GamePage = () => {
               </TabsList>
               
               <TabsContent value="single" className="mt-0">
-                <div className="grid grid-cols-5 gap-3 mb-6">
+                <div className="grid grid-cols-5 gap-3">
                   {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                     <button
                       key={num}
-                      onClick={() => setSelectedNumber(String(num))}
+                      onClick={() => setDirectNumber(String(num))}
                       data-testid={`single-number-${num}`}
                       className={`
                         w-full aspect-square rounded-xl text-2xl font-bold transition-all
-                        ${selectedNumber === String(num) 
+                        ${directNumber === String(num) 
                           ? 'bg-gradient-to-br from-[#D4AF37] to-[#FDE047] text-black gold-glow' 
                           : 'bg-[#0A0A0C] text-white border border-white/10 hover:border-[#D4AF37]/50'
                         }
@@ -198,7 +322,7 @@ const GamePage = () => {
               </TabsContent>
               
               <TabsContent value="jodi" className="mt-0">
-                <div className="grid grid-cols-5 sm:grid-cols-10 gap-2 mb-6 max-h-[400px] overflow-y-auto">
+                <div className="grid grid-cols-5 sm:grid-cols-10 gap-2 max-h-[400px] overflow-y-auto">
                   {Array.from({ length: 100 }, (_, i) => String(i).padStart(2, '0')).map((num) => (
                     <button
                       key={num}
@@ -218,69 +342,6 @@ const GamePage = () => {
                 </div>
               </TabsContent>
             </Tabs>
-
-            {/* Amount Input */}
-            <div className="space-y-4">
-              <div>
-                <label className="text-gray-400 text-sm mb-2 block">बेट राशि (₹)</label>
-                <Input
-                  type="number"
-                  placeholder="न्यूनतम ₹10"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  data-testid="bet-amount-input"
-                  className="bg-[#0A0A0C] border-white/10 text-white text-lg h-12"
-                />
-              </div>
-              
-              {/* Quick Amount Buttons */}
-              <div className="flex flex-wrap gap-2">
-                {[10, 50, 100, 500, 1000].map((amt) => (
-                  <Button
-                    key={amt}
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setAmount(String(amt))}
-                    className="border-white/10 text-gray-300 hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/50"
-                  >
-                    ₹{amt}
-                  </Button>
-                ))}
-              </div>
-
-              {/* Potential Win */}
-              {amount && selectedNumber && (
-                <div className="bg-[#10B981]/10 rounded-lg p-4 border border-[#10B981]/30">
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-300">संभावित जीत</span>
-                    <span className="text-2xl font-bold text-[#10B981]">₹{getPotentialWin().toFixed(2)}</span>
-                  </div>
-                  <p className="text-gray-400 text-sm mt-1">
-                    गुणक: {getMultiplier()}x ({betType === 'single' ? 'एकल' : 'जोड़ी'})
-                  </p>
-                </div>
-              )}
-
-              {/* Place Bet Button */}
-              <Button
-                onClick={handlePlaceBet}
-                disabled={placing || !selectedNumber || !amount}
-                data-testid="place-bet-button"
-                className="w-full h-14 bg-[#D4AF37] hover:bg-[#FDE047] text-black font-bold text-lg disabled:opacity-50"
-              >
-                {placing ? (
-                  <span className="flex items-center gap-2">
-                    <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                    बेट लग रही है...
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-2">
-                    <Coins className="w-5 h-5" />
-                    बेट लगाएं
-                  </span>
-                )}
-              </Button>
-            </div>
           </CardContent>
         </Card>
 
