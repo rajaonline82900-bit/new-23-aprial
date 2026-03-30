@@ -767,6 +767,135 @@ async def reject_withdrawal(withdrawal_id: str, request: Request):
     
     return {"message": "Withdrawal rejected and amount refunded"}
 
+# Admin User Detail APIs
+@api_router.get("/admin/users/{user_id}")
+async def get_user_details(user_id: str, request: Request):
+    await get_admin_user(request)
+    
+    try:
+        user = await db.users.find_one({"_id": ObjectId(user_id)}, {"password_hash": 0})
+    except:
+        raise HTTPException(status_code=400, detail="Invalid user ID")
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user["_id"] = str(user["_id"])
+    return {"user": user}
+
+@api_router.get("/admin/users/{user_id}/deposits")
+async def get_user_deposits(user_id: str, request: Request):
+    await get_admin_user(request)
+    
+    deposits = await db.transactions.find(
+        {"user_id": user_id, "type": "deposit"},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    
+    total_deposited = sum(d["amount"] for d in deposits if d.get("status") == "completed")
+    
+    return {"deposits": deposits, "total_deposited": total_deposited}
+
+@api_router.get("/admin/users/{user_id}/withdrawals")
+async def get_user_withdrawals(user_id: str, request: Request):
+    await get_admin_user(request)
+    
+    withdrawals = await db.transactions.find(
+        {"user_id": user_id, "type": "withdrawal"},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    
+    total_withdrawn = sum(w["amount"] for w in withdrawals if w.get("status") in ["completed", "approved"])
+    pending_amount = sum(w["amount"] for w in withdrawals if w.get("status") == "pending")
+    
+    return {"withdrawals": withdrawals, "total_withdrawn": total_withdrawn, "pending_amount": pending_amount}
+
+@api_router.get("/admin/users/{user_id}/bets")
+async def get_user_bets(user_id: str, request: Request):
+    await get_admin_user(request)
+    
+    bets = await db.bets.find(
+        {"user_id": user_id},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(200)
+    
+    stats = {
+        "total_bets": len(bets),
+        "total_wagered": sum(b["amount"] for b in bets),
+        "won": len([b for b in bets if b.get("status") == "won"]),
+        "lost": len([b for b in bets if b.get("status") == "lost"]),
+        "pending": len([b for b in bets if b.get("status") == "pending"])
+    }
+    
+    return {"bets": bets, "stats": stats}
+
+@api_router.get("/admin/users/{user_id}/winnings")
+async def get_user_winnings(user_id: str, request: Request):
+    await get_admin_user(request)
+    
+    winning_bets = await db.bets.find(
+        {"user_id": user_id, "status": "won"},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    
+    total_winnings = sum(b.get("won_amount", 0) for b in winning_bets)
+    
+    return {"winnings": winning_bets, "total_winnings": total_winnings}
+
+class WalletAdjustment(BaseModel):
+    amount: float
+    type: str  # "add" or "deduct"
+    reason: str
+
+@api_router.post("/admin/users/{user_id}/wallet")
+async def adjust_user_wallet(user_id: str, adjustment: WalletAdjustment, request: Request):
+    admin = await get_admin_user(request)
+    
+    try:
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
+    except:
+        raise HTTPException(status_code=400, detail="Invalid user ID")
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if adjustment.amount <= 0:
+        raise HTTPException(status_code=400, detail="Amount must be positive")
+    
+    if adjustment.type == "deduct":
+        if adjustment.amount > user.get("balance", 0):
+            raise HTTPException(status_code=400, detail="Cannot deduct more than current balance")
+        change = -adjustment.amount
+    else:
+        change = adjustment.amount
+    
+    # Update user balance
+    await db.users.update_one(
+        {"_id": ObjectId(user_id)},
+        {"$inc": {"balance": change}}
+    )
+    
+    # Create transaction record
+    transaction_doc = {
+        "id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "type": f"admin_{adjustment.type}",
+        "amount": adjustment.amount,
+        "reason": adjustment.reason,
+        "admin_email": admin["email"],
+        "status": "completed",
+        "created_at": datetime.now(timezone.utc)
+    }
+    await db.transactions.insert_one(transaction_doc)
+    
+    # Get new balance
+    updated_user = await db.users.find_one({"_id": ObjectId(user_id)})
+    
+    return {
+        "message": f"Balance {'added' if adjustment.type == 'add' else 'deducted'} successfully",
+        "new_balance": updated_user.get("balance", 0)
+    }
+
 @api_router.get("/admin/stats")
 async def get_admin_stats(request: Request):
     await get_admin_user(request)

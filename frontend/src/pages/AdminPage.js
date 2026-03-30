@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -21,6 +21,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '../components/ui/popover';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '../components/ui/dialog';
 import { 
   ArrowLeft, 
   Shield,
@@ -32,7 +39,14 @@ import {
   XCircle,
   CalendarIcon,
   Loader2,
-  BarChart3
+  BarChart3,
+  Eye,
+  Plus,
+  Minus,
+  ArrowDownLeft,
+  ArrowUpRight,
+  Coins,
+  History
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -62,6 +76,26 @@ const AdminPage = () => {
   const [resultDate, setResultDate] = useState(new Date());
   const [jodiResult, setJodiResult] = useState('');
   const [declaring, setDeclaring] = useState(false);
+
+  // User detail modal state
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [userModalOpen, setUserModalOpen] = useState(false);
+  const [userDetailTab, setUserDetailTab] = useState('deposits');
+  const [userDetails, setUserDetails] = useState({
+    deposits: [],
+    withdrawals: [],
+    bets: [],
+    winnings: [],
+    stats: {}
+  });
+  const [loadingUserDetails, setLoadingUserDetails] = useState(false);
+
+  // Wallet adjustment state
+  const [walletModalOpen, setWalletModalOpen] = useState(false);
+  const [walletAmount, setWalletAmount] = useState('');
+  const [walletType, setWalletType] = useState('add');
+  const [walletReason, setWalletReason] = useState('');
+  const [adjustingWallet, setAdjustingWallet] = useState(false);
 
   useEffect(() => {
     if (user?.role !== 'admin') {
@@ -112,7 +146,6 @@ const AdminPage = () => {
 
       toast.success(`रिजल्ट घोषित! ${data.winners.single} एकल और ${data.winners.jodi} जोड़ी विजेता`);
       
-      // Reset form
       setSelectedGame('');
       setJodiResult('');
     } catch (error) {
@@ -129,6 +162,82 @@ const AdminPage = () => {
       fetchData();
     } catch (error) {
       toast.error('कार्रवाई विफल');
+    }
+  };
+
+  const openUserDetails = async (u) => {
+    setSelectedUser(u);
+    setUserModalOpen(true);
+    setLoadingUserDetails(true);
+    setUserDetailTab('deposits');
+
+    try {
+      const [depositsRes, withdrawalsRes, betsRes, winningsRes] = await Promise.all([
+        axios.get(`${API_URL}/api/admin/users/${u._id}/deposits`, { withCredentials: true }),
+        axios.get(`${API_URL}/api/admin/users/${u._id}/withdrawals`, { withCredentials: true }),
+        axios.get(`${API_URL}/api/admin/users/${u._id}/bets`, { withCredentials: true }),
+        axios.get(`${API_URL}/api/admin/users/${u._id}/winnings`, { withCredentials: true })
+      ]);
+
+      setUserDetails({
+        deposits: depositsRes.data.deposits,
+        totalDeposited: depositsRes.data.total_deposited,
+        withdrawals: withdrawalsRes.data.withdrawals,
+        totalWithdrawn: withdrawalsRes.data.total_withdrawn,
+        pendingWithdrawal: withdrawalsRes.data.pending_amount,
+        bets: betsRes.data.bets,
+        betStats: betsRes.data.stats,
+        winnings: winningsRes.data.winnings,
+        totalWinnings: winningsRes.data.total_winnings
+      });
+    } catch (error) {
+      toast.error('User details load नहीं हो पाए');
+    } finally {
+      setLoadingUserDetails(false);
+    }
+  };
+
+  const handleWalletAdjustment = async () => {
+    if (!walletAmount || parseFloat(walletAmount) <= 0) {
+      toast.error('Valid amount दर्ज करें');
+      return;
+    }
+
+    if (!walletReason) {
+      toast.error('Reason दर्ज करें');
+      return;
+    }
+
+    setAdjustingWallet(true);
+
+    try {
+      const { data } = await axios.post(`${API_URL}/api/admin/users/${selectedUser._id}/wallet`, {
+        amount: parseFloat(walletAmount),
+        type: walletType,
+        reason: walletReason
+      }, { withCredentials: true });
+
+      toast.success(data.message);
+      setWalletModalOpen(false);
+      setWalletAmount('');
+      setWalletReason('');
+      
+      // Update user in list
+      setUsers(prev => prev.map(u => 
+        u._id === selectedUser._id 
+          ? { ...u, balance: data.new_balance }
+          : u
+      ));
+      
+      // Update selected user
+      setSelectedUser(prev => ({ ...prev, balance: data.new_balance }));
+      
+      // Refresh user details
+      openUserDetails({ ...selectedUser, balance: data.new_balance });
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Wallet adjustment failed');
+    } finally {
+      setAdjustingWallet(false);
     }
   };
 
@@ -397,13 +506,17 @@ const AdminPage = () => {
             <Card className="bg-[#141418] border-white/10">
               <CardHeader>
                 <CardTitle className="text-white font-['Unbounded']">सभी यूजर्स</CardTitle>
+                <CardDescription className="text-gray-400">
+                  यूजर पर क्लिक करें details देखने के लिए
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   {users.map((u, index) => (
                     <div
                       key={index}
-                      className="flex items-center justify-between p-4 bg-[#0A0A0C] rounded-lg border border-white/5"
+                      onClick={() => openUserDetails(u)}
+                      className="flex items-center justify-between p-4 bg-[#0A0A0C] rounded-lg border border-white/5 cursor-pointer hover:border-[#D4AF37]/50 transition-all"
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-[#D4AF37]/20 flex items-center justify-center">
@@ -414,11 +527,14 @@ const AdminPage = () => {
                           <p className="text-gray-400 text-sm">{u.email}</p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <Badge className={u.role === 'admin' ? 'bg-[#D4AF37]/20 text-[#D4AF37]' : 'bg-gray-500/20 text-gray-400'}>
-                          {u.role}
-                        </Badge>
-                        <p className="text-white font-semibold mt-1">₹{u.balance?.toFixed(2) || '0.00'}</p>
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <Badge className={u.role === 'admin' ? 'bg-[#D4AF37]/20 text-[#D4AF37]' : 'bg-gray-500/20 text-gray-400'}>
+                            {u.role}
+                          </Badge>
+                          <p className="text-white font-semibold mt-1">₹{u.balance?.toFixed(2) || '0.00'}</p>
+                        </div>
+                        <Eye className="w-5 h-5 text-gray-500" />
                       </div>
                     </div>
                   ))}
@@ -428,6 +544,279 @@ const AdminPage = () => {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* User Details Modal */}
+      <Dialog open={userModalOpen} onOpenChange={setUserModalOpen}>
+        <DialogContent className="bg-[#141418] border-white/10 text-white max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-['Unbounded'] flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-[#D4AF37]/20 flex items-center justify-center">
+                <span className="text-[#D4AF37] font-bold text-xl">
+                  {selectedUser?.name?.charAt(0).toUpperCase()}
+                </span>
+              </div>
+              <div>
+                <p>{selectedUser?.name}</p>
+                <p className="text-sm text-gray-400 font-normal">{selectedUser?.email}</p>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+
+          {loadingUserDetails ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-[#D4AF37]" />
+            </div>
+          ) : (
+            <>
+              {/* User Stats */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                <div className="p-3 bg-[#0A0A0C] rounded-lg text-center">
+                  <p className="text-gray-400 text-xs">बैलेंस</p>
+                  <p className="text-lg font-bold text-white">₹{selectedUser?.balance?.toFixed(2) || '0'}</p>
+                </div>
+                <div className="p-3 bg-[#0A0A0C] rounded-lg text-center">
+                  <p className="text-gray-400 text-xs">कुल जमा</p>
+                  <p className="text-lg font-bold text-emerald-400">₹{userDetails.totalDeposited || 0}</p>
+                </div>
+                <div className="p-3 bg-[#0A0A0C] rounded-lg text-center">
+                  <p className="text-gray-400 text-xs">कुल निकासी</p>
+                  <p className="text-lg font-bold text-red-400">₹{userDetails.totalWithdrawn || 0}</p>
+                </div>
+                <div className="p-3 bg-[#0A0A0C] rounded-lg text-center">
+                  <p className="text-gray-400 text-xs">कुल जीत</p>
+                  <p className="text-lg font-bold text-[#D4AF37]">₹{userDetails.totalWinnings || 0}</p>
+                </div>
+              </div>
+
+              {/* Wallet Management Button */}
+              <Button
+                onClick={() => setWalletModalOpen(true)}
+                className="w-full mb-4 bg-[#D4AF37] hover:bg-[#FDE047] text-black font-bold"
+              >
+                <Wallet className="w-4 h-4 mr-2" />
+                Wallet Management
+              </Button>
+
+              {/* Detail Tabs */}
+              <Tabs value={userDetailTab} onValueChange={setUserDetailTab}>
+                <TabsList className="bg-[#0A0A0C] border border-white/10 w-full grid grid-cols-4">
+                  <TabsTrigger value="deposits" className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black text-xs">
+                    जमा
+                  </TabsTrigger>
+                  <TabsTrigger value="withdrawals" className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black text-xs">
+                    निकासी
+                  </TabsTrigger>
+                  <TabsTrigger value="bets" className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black text-xs">
+                    बेट्स
+                  </TabsTrigger>
+                  <TabsTrigger value="winnings" className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black text-xs">
+                    जीत
+                  </TabsTrigger>
+                </TabsList>
+
+                {/* Deposits */}
+                <TabsContent value="deposits" className="mt-4">
+                  {userDetails.deposits?.length === 0 ? (
+                    <p className="text-gray-400 text-center py-4">कोई जमा नहीं</p>
+                  ) : (
+                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                      {userDetails.deposits?.map((d, i) => (
+                        <div key={i} className="flex items-center justify-between p-3 bg-[#0A0A0C] rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <ArrowDownLeft className="w-4 h-4 text-emerald-400" />
+                            <span className="text-white">₹{d.amount}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge className={d.status === 'completed' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-yellow-500/20 text-yellow-400'}>
+                              {d.status}
+                            </Badge>
+                            <span className="text-gray-400 text-xs">
+                              {new Date(d.created_at).toLocaleDateString('hi-IN')}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* Withdrawals */}
+                <TabsContent value="withdrawals" className="mt-4">
+                  {userDetails.withdrawals?.length === 0 ? (
+                    <p className="text-gray-400 text-center py-4">कोई निकासी नहीं</p>
+                  ) : (
+                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                      {userDetails.withdrawals?.map((w, i) => (
+                        <div key={i} className="flex items-center justify-between p-3 bg-[#0A0A0C] rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <ArrowUpRight className="w-4 h-4 text-red-400" />
+                            <div>
+                              <span className="text-white">₹{w.amount}</span>
+                              <p className="text-gray-400 text-xs">{w.upi_id}</p>
+                            </div>
+                          </div>
+                          <Badge className={
+                            w.status === 'approved' ? 'bg-emerald-500/20 text-emerald-400' :
+                            w.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
+                            'bg-yellow-500/20 text-yellow-400'
+                          }>
+                            {w.status}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* Bets */}
+                <TabsContent value="bets" className="mt-4">
+                  {userDetails.betStats && (
+                    <div className="grid grid-cols-4 gap-2 mb-4">
+                      <div className="p-2 bg-[#0A0A0C] rounded text-center">
+                        <p className="text-xs text-gray-400">कुल</p>
+                        <p className="text-white font-bold">{userDetails.betStats.total_bets}</p>
+                      </div>
+                      <div className="p-2 bg-[#0A0A0C] rounded text-center">
+                        <p className="text-xs text-gray-400">जीती</p>
+                        <p className="text-emerald-400 font-bold">{userDetails.betStats.won}</p>
+                      </div>
+                      <div className="p-2 bg-[#0A0A0C] rounded text-center">
+                        <p className="text-xs text-gray-400">हारी</p>
+                        <p className="text-red-400 font-bold">{userDetails.betStats.lost}</p>
+                      </div>
+                      <div className="p-2 bg-[#0A0A0C] rounded text-center">
+                        <p className="text-xs text-gray-400">लंबित</p>
+                        <p className="text-yellow-400 font-bold">{userDetails.betStats.pending}</p>
+                      </div>
+                    </div>
+                  )}
+                  {userDetails.bets?.length === 0 ? (
+                    <p className="text-gray-400 text-center py-4">कोई बेट नहीं</p>
+                  ) : (
+                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                      {userDetails.bets?.slice(0, 20).map((b, i) => (
+                        <div key={i} className="flex items-center justify-between p-3 bg-[#0A0A0C] rounded-lg">
+                          <div>
+                            <p className="text-white">{b.game_name} - {b.number}</p>
+                            <p className="text-gray-400 text-xs">{b.bet_type} • ₹{b.amount}</p>
+                          </div>
+                          <Badge className={
+                            b.status === 'won' ? 'bg-emerald-500/20 text-emerald-400' :
+                            b.status === 'lost' ? 'bg-red-500/20 text-red-400' :
+                            'bg-yellow-500/20 text-yellow-400'
+                          }>
+                            {b.status === 'won' ? `जीता ₹${b.won_amount}` : b.status}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* Winnings */}
+                <TabsContent value="winnings" className="mt-4">
+                  {userDetails.winnings?.length === 0 ? (
+                    <p className="text-gray-400 text-center py-4">कोई जीत नहीं</p>
+                  ) : (
+                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                      {userDetails.winnings?.map((w, i) => (
+                        <div key={i} className="flex items-center justify-between p-3 bg-[#0A0A0C] rounded-lg">
+                          <div>
+                            <p className="text-white">{w.game_name} - {w.number}</p>
+                            <p className="text-gray-400 text-xs">{w.bet_type} • बेट: ₹{w.amount}</p>
+                          </div>
+                          <span className="text-emerald-400 font-bold">+₹{w.won_amount}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Wallet Adjustment Modal */}
+      <Dialog open={walletModalOpen} onOpenChange={setWalletModalOpen}>
+        <DialogContent className="bg-[#141418] border-white/10 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-['Unbounded']">Wallet Management</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              {selectedUser?.name} के wallet में पैसे जोड़ें या काटें
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="p-4 bg-[#0A0A0C] rounded-lg text-center">
+              <p className="text-gray-400 text-sm">वर्तमान बैलेंस</p>
+              <p className="text-3xl font-bold text-white">₹{selectedUser?.balance?.toFixed(2) || '0'}</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant={walletType === 'add' ? 'default' : 'outline'}
+                onClick={() => setWalletType('add')}
+                className={walletType === 'add' 
+                  ? 'bg-emerald-500 hover:bg-emerald-600' 
+                  : 'border-white/10 text-gray-300'
+                }
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                जोड़ें
+              </Button>
+              <Button
+                variant={walletType === 'deduct' ? 'default' : 'outline'}
+                onClick={() => setWalletType('deduct')}
+                className={walletType === 'deduct' 
+                  ? 'bg-red-500 hover:bg-red-600' 
+                  : 'border-white/10 text-gray-300'
+                }
+              >
+                <Minus className="w-4 h-4 mr-2" />
+                काटें
+              </Button>
+            </div>
+
+            <div>
+              <Label className="text-gray-300 mb-2 block">राशि (₹)</Label>
+              <Input
+                type="number"
+                placeholder="Amount"
+                value={walletAmount}
+                onChange={(e) => setWalletAmount(e.target.value)}
+                className="bg-[#0A0A0C] border-white/10 text-white"
+              />
+            </div>
+
+            <div>
+              <Label className="text-gray-300 mb-2 block">कारण</Label>
+              <Input
+                type="text"
+                placeholder="Reason for adjustment"
+                value={walletReason}
+                onChange={(e) => setWalletReason(e.target.value)}
+                className="bg-[#0A0A0C] border-white/10 text-white"
+              />
+            </div>
+
+            <Button
+              onClick={handleWalletAdjustment}
+              disabled={adjustingWallet}
+              className={`w-full ${walletType === 'add' ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-red-500 hover:bg-red-600'}`}
+            >
+              {adjustingWallet ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  {walletType === 'add' ? <Plus className="w-4 h-4 mr-2" /> : <Minus className="w-4 h-4 mr-2" />}
+                  {walletType === 'add' ? 'पैसे जोड़ें' : 'पैसे काटें'}
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
