@@ -767,6 +767,82 @@ async def reject_withdrawal(withdrawal_id: str, request: Request):
     
     return {"message": "Withdrawal rejected and amount refunded"}
 
+# Bet Distribution API - Shows which jodi has how much bet
+@api_router.get("/admin/bet-distribution")
+async def get_bet_distribution(request: Request, game_id: Optional[str] = None, date: Optional[str] = None):
+    await get_admin_user(request)
+    
+    # Default to today
+    if not date:
+        date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    
+    # Build query
+    query = {"date": date, "status": "pending"}
+    if game_id and game_id != "all":
+        query["game_id"] = game_id
+    
+    # Get all pending bets
+    bets = await db.bets.find(query, {"_id": 0}).to_list(10000)
+    
+    # Group by game and number
+    distribution = {}
+    total_bet_amount = 0
+    total_potential_payout = 0
+    
+    for bet in bets:
+        game = bet["game_id"]
+        bet_type = bet["bet_type"]
+        number = bet["number"]
+        amount = bet["amount"]
+        potential_win = bet.get("potential_win", 0)
+        
+        if game not in distribution:
+            distribution[game] = {
+                "game_name": GAMES[game]["name_hi"] if game in GAMES else game,
+                "single": {},
+                "jodi": {},
+                "total_amount": 0,
+                "total_potential": 0
+            }
+        
+        if number not in distribution[game][bet_type]:
+            distribution[game][bet_type][number] = {
+                "count": 0,
+                "amount": 0,
+                "potential_payout": 0
+            }
+        
+        distribution[game][bet_type][number]["count"] += 1
+        distribution[game][bet_type][number]["amount"] += amount
+        distribution[game][bet_type][number]["potential_payout"] += potential_win
+        distribution[game]["total_amount"] += amount
+        distribution[game]["total_potential"] += potential_win
+        total_bet_amount += amount
+        total_potential_payout += potential_win
+    
+    # Sort jodi by amount (descending)
+    for game in distribution:
+        distribution[game]["jodi"] = dict(
+            sorted(distribution[game]["jodi"].items(), 
+                   key=lambda x: x[1]["amount"], 
+                   reverse=True)
+        )
+        distribution[game]["single"] = dict(
+            sorted(distribution[game]["single"].items(), 
+                   key=lambda x: x[1]["amount"], 
+                   reverse=True)
+        )
+    
+    return {
+        "date": date,
+        "distribution": distribution,
+        "summary": {
+            "total_bet_amount": total_bet_amount,
+            "total_potential_payout": total_potential_payout,
+            "total_bets": len(bets)
+        }
+    }
+
 # Jantri Report API
 @api_router.get("/admin/jantri")
 async def get_jantri_report(request: Request, game_id: Optional[str] = None, days: int = 30):
