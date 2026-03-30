@@ -767,6 +767,85 @@ async def reject_withdrawal(withdrawal_id: str, request: Request):
     
     return {"message": "Withdrawal rejected and amount refunded"}
 
+# Jantri Report API
+@api_router.get("/admin/jantri")
+async def get_jantri_report(request: Request, game_id: Optional[str] = None, days: int = 30):
+    await get_admin_user(request)
+    
+    # Calculate date range
+    end_date = datetime.now(timezone.utc)
+    start_date = end_date - timedelta(days=days)
+    start_date_str = start_date.strftime("%Y-%m-%d")
+    
+    # Build query
+    query = {"date": {"$gte": start_date_str}}
+    if game_id and game_id != "all":
+        query["game_id"] = game_id
+    
+    # Get results
+    results = await db.results.find(
+        query,
+        {"_id": 0}
+    ).sort("date", -1).to_list(1000)
+    
+    # Group by date
+    jantri_data = {}
+    for result in results:
+        date = result["date"]
+        if date not in jantri_data:
+            jantri_data[date] = {}
+        jantri_data[date][result["game_id"]] = {
+            "single": result["single_result"],
+            "jodi": result["jodi_result"]
+        }
+    
+    # Convert to list format
+    jantri_list = []
+    for date in sorted(jantri_data.keys(), reverse=True):
+        row = {"date": date, "results": jantri_data[date]}
+        jantri_list.append(row)
+    
+    return {
+        "jantri": jantri_list,
+        "games": list(GAMES.keys()),
+        "game_names": {k: v["name_hi"] for k, v in GAMES.items()}
+    }
+
+@api_router.get("/admin/jantri/export")
+async def export_jantri(request: Request, game_id: Optional[str] = None, days: int = 30):
+    await get_admin_user(request)
+    
+    # Calculate date range
+    end_date = datetime.now(timezone.utc)
+    start_date = end_date - timedelta(days=days)
+    start_date_str = start_date.strftime("%Y-%m-%d")
+    
+    # Build query
+    query = {"date": {"$gte": start_date_str}}
+    if game_id and game_id != "all":
+        query["game_id"] = game_id
+    
+    # Get results
+    results = await db.results.find(
+        query,
+        {"_id": 0}
+    ).sort([("date", -1), ("game_id", 1)]).to_list(1000)
+    
+    # Format for export
+    export_data = []
+    for result in results:
+        game_info = GAMES.get(result["game_id"], {})
+        export_data.append({
+            "date": result["date"],
+            "game": game_info.get("name_hi", result["game_id"]),
+            "game_english": game_info.get("name", result["game_id"]),
+            "time": game_info.get("display_time", ""),
+            "single": result["single_result"],
+            "jodi": result["jodi_result"]
+        })
+    
+    return {"export_data": export_data}
+
 # Admin User Detail APIs
 @api_router.get("/admin/users/{user_id}")
 async def get_user_details(user_id: str, request: Request):

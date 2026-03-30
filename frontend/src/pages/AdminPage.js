@@ -97,6 +97,13 @@ const AdminPage = () => {
   const [walletReason, setWalletReason] = useState('');
   const [adjustingWallet, setAdjustingWallet] = useState(false);
 
+  // Jantri Report state
+  const [jantriData, setJantriData] = useState([]);
+  const [jantriGameFilter, setJantriGameFilter] = useState('all');
+  const [jantriDays, setJantriDays] = useState(30);
+  const [loadingJantri, setLoadingJantri] = useState(false);
+  const [gameNames, setGameNames] = useState({});
+
   useEffect(() => {
     if (user?.role !== 'admin') {
       toast.error('Admin access required');
@@ -105,6 +112,12 @@ const AdminPage = () => {
     }
     fetchData();
   }, [user, navigate]);
+
+  useEffect(() => {
+    if (activeTab === 'jantri') {
+      fetchJantri();
+    }
+  }, [activeTab, jantriGameFilter, jantriDays]);
 
   const fetchData = async () => {
     try {
@@ -121,6 +134,22 @@ const AdminPage = () => {
       toast.error('डेटा लोड नहीं हो पाया');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchJantri = async () => {
+    setLoadingJantri(true);
+    try {
+      const { data } = await axios.get(`${API_URL}/api/admin/jantri`, {
+        params: { game_id: jantriGameFilter, days: jantriDays },
+        withCredentials: true
+      });
+      setJantriData(data.jantri);
+      setGameNames(data.game_names);
+    } catch (error) {
+      toast.error('Jantri data load नहीं हो पाया');
+    } finally {
+      setLoadingJantri(false);
     }
   };
 
@@ -400,6 +429,13 @@ const AdminPage = () => {
               रिजल्ट घोषणा
             </TabsTrigger>
             <TabsTrigger 
+              value="jantri"
+              data-testid="admin-jantri-tab"
+              className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black"
+            >
+              जंत्री रिपोर्ट
+            </TabsTrigger>
+            <TabsTrigger 
               value="withdrawals"
               data-testid="admin-withdrawals-tab"
               className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black"
@@ -501,6 +537,94 @@ const AdminPage = () => {
                     </span>
                   )}
                 </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Jantri Report Tab */}
+          <TabsContent value="jantri">
+            <Card className="bg-[#141418] border-white/10">
+              <CardHeader>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <CardTitle className="text-white font-['Unbounded']">जंत्री रिपोर्ट</CardTitle>
+                  <div className="flex gap-2">
+                    <Select value={jantriGameFilter} onValueChange={setJantriGameFilter}>
+                      <SelectTrigger className="w-40 bg-[#0A0A0C] border-white/10 text-white">
+                        <SelectValue placeholder="सभी गेम्स" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#141418] border-white/10">
+                        <SelectItem value="all" className="text-white hover:bg-white/10">सभी गेम्स</SelectItem>
+                        {GAMES.map((game) => (
+                          <SelectItem key={game.id} value={game.id} className="text-white hover:bg-white/10">
+                            {game.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={String(jantriDays)} onValueChange={(v) => setJantriDays(Number(v))}>
+                      <SelectTrigger className="w-32 bg-[#0A0A0C] border-white/10 text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#141418] border-white/10">
+                        <SelectItem value="7" className="text-white hover:bg-white/10">7 दिन</SelectItem>
+                        <SelectItem value="15" className="text-white hover:bg-white/10">15 दिन</SelectItem>
+                        <SelectItem value="30" className="text-white hover:bg-white/10">30 दिन</SelectItem>
+                        <SelectItem value="60" className="text-white hover:bg-white/10">60 दिन</SelectItem>
+                        <SelectItem value="90" className="text-white hover:bg-white/10">90 दिन</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {loadingJantri ? (
+                  <div className="flex justify-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-[#D4AF37]" />
+                  </div>
+                ) : jantriData.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Trophy className="w-12 h-12 text-gray-500 mx-auto mb-4" />
+                    <p className="text-gray-400">कोई रिजल्ट नहीं मिला</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-white/10">
+                          <th className="text-left p-3 text-gray-400 font-medium">तारीख</th>
+                          {(jantriGameFilter === 'all' ? GAMES : GAMES.filter(g => g.id === jantriGameFilter)).map((game) => (
+                            <th key={game.id} className="text-center p-3 text-gray-400 font-medium min-w-[80px]">
+                              {game.name}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {jantriData.map((row, index) => (
+                          <tr key={index} className="border-b border-white/5 hover:bg-white/5">
+                            <td className="p-3 text-white font-medium">{row.date}</td>
+                            {(jantriGameFilter === 'all' ? GAMES : GAMES.filter(g => g.id === jantriGameFilter)).map((game) => (
+                              <td key={game.id} className="text-center p-3">
+                                {row.results[game.id] ? (
+                                  <div className="flex flex-col items-center gap-1">
+                                    <span className="text-2xl font-bold text-[#D4AF37]">
+                                      {row.results[game.id].jodi}
+                                    </span>
+                                    <span className="text-xs text-gray-400">
+                                      ({row.results[game.id].single})
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-500">--</span>
+                                )}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
