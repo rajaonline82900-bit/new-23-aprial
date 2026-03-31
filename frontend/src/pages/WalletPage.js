@@ -343,7 +343,7 @@ const WalletPage = () => {
                           )}
                         </p>
                         <p className="text-gray-400 text-sm">
-                          {new Date(tx.created_at).toLocaleDateString('hi-IN')} • {new Date(tx.created_at).toLocaleTimeString('hi-IN', { hour: '2-digit', minute: '2-digit' })}
+                          {new Date(tx.created_at).toLocaleDateString('hi-IN', { timeZone: 'Asia/Kolkata' })} • {new Date(tx.created_at).toLocaleTimeString('hi-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' })}
                         </p>
                       </div>
                     </div>

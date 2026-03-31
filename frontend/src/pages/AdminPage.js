@@ -1333,7 +1333,7 @@ const AdminPage = () => {
                             <div>
                               <span className="text-white">₹{d.amount}</span>
                               <p className="text-gray-500 text-[10px]">
-                                {new Date(d.created_at).toLocaleDateString('hi-IN')} • {new Date(d.created_at).toLocaleTimeString('hi-IN', { hour: '2-digit', minute: '2-digit' })}
+                                {new Date(d.created_at).toLocaleDateString('hi-IN', { timeZone: 'Asia/Kolkata' })} • {new Date(d.created_at).toLocaleTimeString('hi-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' })}
                               </p>
                             </div>
                           </div>
@@ -1360,7 +1360,7 @@ const AdminPage = () => {
                               <span className="text-white">₹{w.amount}</span>
                               <p className="text-gray-500 text-[10px]">{w.upi_id}</p>
                               <p className="text-gray-500 text-[10px]">
-                                {new Date(w.created_at).toLocaleDateString('hi-IN')} • {new Date(w.created_at).toLocaleTimeString('hi-IN', { hour: '2-digit', minute: '2-digit' })}
+                                {new Date(w.created_at).toLocaleDateString('hi-IN', { timeZone: 'Asia/Kolkata' })} • {new Date(w.created_at).toLocaleTimeString('hi-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' })}
                               </p>
                             </div>
                           </div>
@@ -1409,7 +1409,7 @@ const AdminPage = () => {
                             <p className="text-white">{b.game_name} - {b.number}</p>
                             <p className="text-gray-400 text-xs">{b.bet_type} • ₹{b.amount}</p>
                             <p className="text-gray-500 text-[10px]">
-                              {new Date(b.created_at).toLocaleDateString('hi-IN')} • {new Date(b.created_at).toLocaleTimeString('hi-IN', { hour: '2-digit', minute: '2-digit' })}
+                              {new Date(b.created_at).toLocaleDateString('hi-IN', { timeZone: 'Asia/Kolkata' })} • {new Date(b.created_at).toLocaleTimeString('hi-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' })}
                             </p>
                           </div>
                           <Badge className={
@@ -1437,7 +1437,7 @@ const AdminPage = () => {
                             <p className="text-white">{w.game_name} - {w.number}</p>
                             <p className="text-gray-400 text-xs">{w.bet_type} • बेट: ₹{w.amount}</p>
                             <p className="text-gray-500 text-[10px]">
-                              {new Date(w.created_at).toLocaleDateString('hi-IN')} • {new Date(w.created_at).toLocaleTimeString('hi-IN', { hour: '2-digit', minute: '2-digit' })}
+                              {new Date(w.created_at).toLocaleDateString('hi-IN', { timeZone: 'Asia/Kolkata' })} • {new Date(w.created_at).toLocaleTimeString('hi-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' })}
                             </p>
                           </div>
                           <span className="text-emerald-400 font-bold">+₹{w.won_amount}</span>
