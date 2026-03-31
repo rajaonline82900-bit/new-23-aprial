@@ -12,7 +12,6 @@ Build a Satta Matka betting application supporting games like Delhi Bazaar, Shri
 ## Completed Features
 - [x] JWT Authentication (login, register, logout)
 - [x] User Wallet (Stripe deposits, UPI withdrawals)
-- [x] Quick Bet UI (single 0-9, jodi 00-99)
 - [x] Result declaration (jodi only, single auto-calculated)
 - [x] Admin Panel: User management, wallet management
 - [x] Admin Panel: Daily deposit/withdrawal stats
@@ -21,12 +20,14 @@ Build a Satta Matka betting application supporting games like Delhi Bazaar, Shri
 - [x] Jantri Page (result matrix)
 - [x] Telegram/WhatsApp notification integration (stub)
 - [x] Dynamic Games API
-- [x] Game betting time lock (start_time/end_time based)
-- [x] Backend time validation for bet placement (IST)
+- [x] Game betting time lock (start_time/end_time based, IST)
+- [x] Backend time validation for bet placement
+- [x] **Jantri Betting Grid** - 00-99 jodi grid with individual amounts, quick amount buttons, batch bet API
+- [x] **Batch Bet API** - POST /api/bets/batch for multiple jodi bets at once
 
 ## Upcoming Tasks (P1)
-- [ ] Multiple bets at once (multi-bet placement)
 - [ ] Bet history filter options
+- [ ] Single number betting option (if user wants it back)
 
 ## Future Tasks (P2)
 - [ ] Transaction history export
@@ -34,6 +35,7 @@ Build a Satta Matka betting application supporting games like Delhi Bazaar, Shri
 - [ ] Email notifications for transactions
 - [ ] JWT token expiry/refresh handling improvement
 - [ ] Refactor server.py and AdminPage.js (monolithic)
+- [ ] Frontend timezone: use IST consistently instead of browser local time
 
 ## Key DB Schema
 - users: {_id, name, email, password_hash, role, balance, created_at}
@@ -41,6 +43,11 @@ Build a Satta Matka betting application supporting games like Delhi Bazaar, Shri
 - bets: {_id, user_id, game_id, number, type, amount, status, win_amount, created_at}
 - transactions: {_id, user_id, amount, type, status, reference_id, created_at}
 - results: {_id, game_id, date, jodi_result, single_result, created_at}
+
+## Key API Endpoints
+- POST /api/bets/batch - Batch bet placement (Jantri)
+- POST /api/bets - Single bet placement
+- GET/POST /api/admin/games - Game CRUD with start_time/end_time
 
 ## Admin Credentials
 - Email: admin@sattamatka.com
