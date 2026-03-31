@@ -632,15 +632,9 @@ const GamePage = () => {
                   ))}
                 </div>
                 {crossBetAmount >= 10 && (
-                  <div className="flex items-center gap-6 text-sm">
-                    <div>
-                      <span className="text-gray-400">कुल राशि: </span>
-                      <span className="text-[#D4AF37] font-bold">₹{crossTotal}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-400">संभावित जीत: </span>
-                      <span className="text-emerald-400 font-bold">₹{crossPotentialWin}</span>
-                    </div>
+                  <div className="text-sm">
+                    <span className="text-gray-400">कुल राशि: </span>
+                    <span className="text-[#D4AF37] font-bold">₹{crossTotal}</span>
                   </div>
                 )}
               </div>

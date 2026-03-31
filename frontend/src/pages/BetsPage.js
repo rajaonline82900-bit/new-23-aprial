@@ -230,16 +230,12 @@ const BetsPage = () => {
                       <p className="text-gray-400 text-xs">बेट राशि</p>
                       <p className="text-white font-semibold">₹{bet.amount}</p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-gray-400 text-xs">
-                        {bet.status === 'won' ? 'जीत' : 'संभावित जीत'}
-                      </p>
-                      <p className={`font-bold ${
-                        bet.status === 'won' ? 'text-emerald-400' : 'text-[#D4AF37]'
-                      }`}>
-                        ₹{bet.status === 'won' ? bet.won_amount : bet.potential_win}
-                      </p>
-                    </div>
+                    {bet.status === 'won' && (
+                      <div className="text-right">
+                        <p className="text-gray-400 text-xs">जीत</p>
+                        <p className="font-bold text-emerald-400">₹{bet.won_amount}</p>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
