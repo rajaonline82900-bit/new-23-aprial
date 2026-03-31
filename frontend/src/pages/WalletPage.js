@@ -45,6 +45,7 @@ const WalletPage = () => {
   const [upiId, setUpiId] = useState('');
   const [processing, setProcessing] = useState(false);
   const [checkingPayment, setCheckingPayment] = useState(false);
+  const [paymentLink, setPaymentLink] = useState(null);
 
   const fetchWallet = useCallback(async () => {
     try {
@@ -60,13 +61,13 @@ const WalletPage = () => {
   const checkPaymentStatus = useCallback(async (orderId) => {
     setCheckingPayment(true);
     let attempts = 0;
-    const maxAttempts = 5;
-    const pollInterval = 2000;
+    const maxAttempts = 30;
+    const pollInterval = 3000;
 
     const poll = async () => {
       if (attempts >= maxAttempts) {
         setCheckingPayment(false);
-        toast.info('भुगतान स्थिति की जांच जारी है...');
+        toast.info('भुगतान की पुष्टि में समय लग रहा है। कुछ देर बाद पेज रीफ्रेश करें।');
         return;
       }
 
@@ -137,8 +138,20 @@ const WalletPage = () => {
         origin_url: window.location.origin
       }, { withCredentials: true });
 
-      // Redirect to IMB payment page
-      window.location.href = data.url;
+      // Try to open in new tab
+      const paymentWindow = window.open(data.url, '_blank');
+      
+      if (!paymentWindow || paymentWindow.closed || typeof paymentWindow.closed === 'undefined') {
+        // Popup blocked — show payment link in dialog
+        setPaymentLink(data.url);
+      } else {
+        setDepositOpen(false);
+        setDepositAmount('');
+        toast.success('भुगतान पेज नई टैब में खुल गया है।');
+      }
+      
+      // Start polling for payment status
+      checkPaymentStatus(data.order_id);
     } catch (error) {
       toast.error(error.response?.data?.detail || 'जमा अनुरोध विफल');
     } finally {
@@ -246,7 +259,7 @@ const WalletPage = () => {
             
             <div className="grid grid-cols-2 gap-4 mt-6">
               <Button
-                onClick={() => setDepositOpen(true)}
+                onClick={() => { setDepositOpen(true); setPaymentLink(null); }}
                 data-testid="deposit-button"
                 className="h-12 bg-[#10B981] hover:bg-[#059669] text-white font-bold"
               >
@@ -386,6 +399,22 @@ const WalletPage = () => {
               </span>
             )}
           </Button>
+
+          {/* Payment Link - shown when popup is blocked */}
+          {paymentLink && (
+            <div className="mt-3 p-3 bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-lg">
+              <p className="text-sm text-gray-300 mb-2">भुगतान पेज खोलने के लिए नीचे क्लिक करें:</p>
+              <a
+                href={paymentLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="payment-link-btn"
+                className="block w-full text-center py-3 bg-[#D4AF37] hover:bg-[#FDE047] text-black font-bold rounded-lg transition-all"
+              >
+                भुगतान पेज खोलें
+              </a>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
