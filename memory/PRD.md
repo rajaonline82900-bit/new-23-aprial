@@ -1,121 +1,47 @@
-# Satta Matka App - PRD (Product Requirements Document)
+# Satta Matka Betting Application - PRD
 
 ## Original Problem Statement
-एक सट्टा मटका ऐप बनाएं जो दिल्ली बाजार, श्री गणेश, फरीदाबाद, गाजियाबाद, गली और दिसावर जैसे गेम खेल सके। इसमें जमा और निकासी के विकल्प होने चाहिए। इसमें परिणाम इतिहास, शर्त इतिहास और जोड़ियों और एकल संख्याओं पर शर्त लगाने का विकल्प होना चाहिए।
+Build a Satta Matka betting application supporting games like Delhi Bazaar, Shri Ganesh, Faridabad, Ghaziabad, Gali, and Disawar. Features include deposit/withdrawal, result history, bet history, betting on single numbers (0-9) and jodis (00-99), and a comprehensive Admin Panel.
 
-## User Choices
-- JWT-based custom authentication
-- Stripe for deposits/withdrawals
-- Fixed time slots for games
-- Admin panel required
-- Dark luxury theme
+## Tech Stack
+- Frontend: React, Tailwind CSS, Shadcn UI, React Router
+- Backend: FastAPI, Motor (Async MongoDB), PyJWT, Stripe
+- Database: MongoDB
+- Notifications: Telegram (aiohttp), WhatsApp (Twilio)
 
-## User Personas
-1. **Regular Users**: Place bets on numbers, deposit/withdraw funds, view results
-2. **Admin**: Declare results, manage withdrawals, view all users
+## Completed Features
+- [x] JWT Authentication (login, register, logout)
+- [x] User Wallet (Stripe deposits, UPI withdrawals)
+- [x] Quick Bet UI (single 0-9, jodi 00-99)
+- [x] Result declaration (jodi only, single auto-calculated)
+- [x] Admin Panel: User management, wallet management
+- [x] Admin Panel: Daily deposit/withdrawal stats
+- [x] Admin Panel: Bet distribution report
+- [x] Admin Panel: Game management (CRUD) with start_time/end_time
+- [x] Jantri Page (result matrix)
+- [x] Telegram/WhatsApp notification integration (stub)
+- [x] Dynamic Games API
+- [x] Game betting time lock (start_time/end_time based)
+- [x] Backend time validation for bet placement (IST)
 
-## Core Requirements
-- 6 Games: Delhi Bazaar (3:00 PM), Shri Ganesh (6:00 PM), Faridabad (6:15 PM), Ghaziabad (8:30 PM), Gali (11:30 PM), Disawar (5:00 AM)
-- Bet Types: Single (0-9) with 9x multiplier, Jodi (00-99) with 90x multiplier
-- Wallet: Stripe deposit, UPI withdrawal
-- Authentication: JWT with httpOnly cookies
+## Upcoming Tasks (P1)
+- [ ] Multiple bets at once (multi-bet placement)
+- [ ] Bet history filter options
 
-## Architecture
-- **Backend**: FastAPI + MongoDB
-- **Frontend**: React with Shadcn UI
-- **Payment**: Stripe integration
-- **Auth**: JWT tokens in httpOnly cookies
+## Future Tasks (P2)
+- [ ] Transaction history export
+- [ ] Profile page settings update
+- [ ] Email notifications for transactions
+- [ ] JWT token expiry/refresh handling improvement
+- [ ] Refactor server.py and AdminPage.js (monolithic)
 
-## What's Been Implemented (2026-03-30)
-- [x] User authentication (login/register/logout)
-- [x] Dashboard with 6 games
-- [x] Game page with single (0-9) and jodi (00-99) betting
-- [x] Wallet with Stripe deposit integration
-- [x] Withdrawal requests with UPI
-- [x] Results history page
-- [x] Bet history page
-- [x] Admin panel - result declaration
-- [x] Admin panel - withdrawal management
-- [x] Admin panel - user management
-- [x] Automatic winner calculation when result declared
-- [x] Dark luxury theme with gold/emerald accents
-- [x] Telegram notification integration
-- [x] WhatsApp notification integration (Twilio)
-- [x] Notification subscription page
+## Key DB Schema
+- users: {_id, name, email, password_hash, role, balance, created_at}
+- games: {_id, game_id, name, name_hi, start_time, end_time, display_time, is_active}
+- bets: {_id, user_id, game_id, number, type, amount, status, win_amount, created_at}
+- transactions: {_id, user_id, amount, type, status, reference_id, created_at}
+- results: {_id, game_id, date, jodi_result, single_result, created_at}
 
-## Deposit Packages
-- ₹100, ₹500 (popular), ₹1000, ₹2000, ₹5000
-
-## API Endpoints
-### Auth
-- POST /api/auth/register
-- POST /api/auth/login
-- POST /api/auth/logout
-- GET /api/auth/me
-
-### Games & Betting
-- GET /api/games
-- GET /api/games/{game_id}
-- POST /api/bets
-- GET /api/bets
-
-### Wallet
-- GET /api/wallet
-- POST /api/wallet/deposit
-- GET /api/wallet/deposit/status/{session_id}
-- POST /api/wallet/withdraw
-
-### Results
-- GET /api/results
-- GET /api/results/{game_id}
-
-### Admin
-- GET /api/admin/stats
-- GET /api/admin/users
-- GET /api/admin/withdrawals
-- POST /api/admin/results
-- POST /api/admin/withdrawals/{id}/approve
-- POST /api/admin/withdrawals/{id}/reject
-
-## Prioritized Backlog
-
-### P0 (Critical) - Done
-- User auth ✅
-- Place bets ✅
-- View results ✅
-- Admin result declaration ✅
-
-### P1 (High)
-- Real-time game status (live/closed based on time)
-
-### P2 (Medium)
-- Mobile responsive improvements
-- Bet history export
-- Dashboard statistics charts
-
-### P3 (Low)
-- Social sharing of wins
-- Referral system
-- Email notifications
-
-## Notification Setup
-
-### Telegram
-1. Create bot via @BotFather on Telegram
-2. Get Bot Token
-3. Add to .env: `TELEGRAM_BOT_TOKEN="your_token"`
-4. Users subscribe with their Chat ID
-
-### WhatsApp (Twilio)
-1. Create Twilio account
-2. Get Account SID, Auth Token, WhatsApp Sandbox Number
-3. Add to .env:
-   - `TWILIO_ACCOUNT_SID="your_sid"`
-   - `TWILIO_AUTH_TOKEN="your_token"`
-   - `TWILIO_WHATSAPP_NUMBER="+14155238886"`
-
-## Next Tasks
-1. Implement time-based game locking (can't bet after game closes)
-2. Add bet confirmation dialog
-3. Improve mobile responsiveness
-4. Add transaction history export
+## Admin Credentials
+- Email: admin@sattamatka.com
+- Password: Admin@123
