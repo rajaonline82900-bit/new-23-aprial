@@ -247,21 +247,17 @@ const DashboardPage = () => {
                           
                           <div className="flex items-center gap-3">
                             {/* Yesterday Result Box */}
-                            <div className="text-center px-3 py-1.5 rounded-lg bg-[#0A0A0C] border border-white/10 min-w-[60px]">
-                              <p className="text-gray-500 text-[9px] uppercase tracking-wide">Yesterday</p>
-                              <p className="text-white font-bold text-lg leading-tight">
+                            <div className="text-center px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/30 min-w-[60px]">
+                              <p className="text-red-400 text-[9px] uppercase tracking-wide font-medium">Yesterday</p>
+                              <p className="text-red-500 font-bold text-lg leading-tight">
                                 {game.yesterday_result?.jodi || '--'}
                               </p>
                             </div>
 
                             {/* Today Result Box */}
-                            <div className={`text-center px-3 py-1.5 rounded-lg min-w-[60px] border ${
-                              game.today_result 
-                                ? 'bg-[#D4AF37]/10 border-[#D4AF37]/40' 
-                                : 'bg-[#0A0A0C] border-white/10'
-                            }`}>
-                              <p className={`text-[9px] uppercase tracking-wide ${game.today_result ? 'text-[#D4AF37]' : 'text-gray-500'}`}>Today</p>
-                              <p className={`font-bold text-lg leading-tight ${game.today_result ? 'text-[#D4AF37]' : 'text-gray-500'}`}>
+                            <div className="text-center px-3 py-1.5 rounded-lg bg-green-500/10 border border-green-500/30 min-w-[60px]">
+                              <p className="text-green-400 text-[9px] uppercase tracking-wide font-medium">Today</p>
+                              <p className="text-green-500 font-bold text-lg leading-tight">
                                 {game.today_result?.jodi || '--'}
                               </p>
                             </div>

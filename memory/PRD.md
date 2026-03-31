@@ -21,6 +21,10 @@ Build a Satta Matka betting application with Jantri, Haruf Andar/Bahar, Cross Be
 - [x] Admin Panel (users, games, results, stats, bet distribution)
 - [x] FooterNav on all pages (Home, Fund, Bid History, Result Chart, Refer & Earn)
 - [x] Constant bet summary bar with Play/Delete buttons
+- [x] Result Reverse & Bet Reverse in Admin Panel
+- [x] Daily Result Tracking (duplicate protection + status tracker)
+- [x] Dynamic Admin Settings (Telegram/WhatsApp links)
+- [x] Today/Yesterday dual result boxes on Dashboard game cards (Red=Yesterday, Green=Today) [31-Mar-2026]
 
 ## Payment Integration
 - Provider: IMB UPI Payment Gateway
