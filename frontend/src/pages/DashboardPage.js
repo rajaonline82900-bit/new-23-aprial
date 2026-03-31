@@ -215,17 +215,28 @@ const DashboardPage = () => {
         </Card>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-3 sm:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-4 gap-3 mb-6">
           <Link to="/wallet" data-testid="wallet-link">
             <Card className="bg-[#141418] border-white/10 hover:border-[#D4AF37]/50 transition-all cursor-pointer group">
               <CardContent className="p-4 flex flex-col items-center gap-2">
                 <div className="w-12 h-12 rounded-full bg-[#D4AF37]/10 flex items-center justify-center group-hover:bg-[#D4AF37]/20 transition-all">
                   <Wallet className="w-6 h-6 text-[#D4AF37]" />
                 </div>
-                <span className="text-white font-medium">वॉलेट</span>
+                <span className="text-white font-medium text-xs sm:text-sm">वॉलेट</span>
               </CardContent>
             </Card>
           </Link>
+
+          <a href={telegramLink || '#'} target="_blank" rel="noopener noreferrer" data-testid="telegram-quick-link" onClick={(e) => { if (!telegramLink) e.preventDefault(); }}>
+            <Card className="bg-[#141418] border-white/10 hover:border-[#0088cc]/50 transition-all cursor-pointer group">
+              <CardContent className="p-4 flex flex-col items-center gap-2">
+                <div className="w-12 h-12 rounded-full bg-[#0088cc]/10 flex items-center justify-center group-hover:bg-[#0088cc]/20 transition-all">
+                  <Send className="w-6 h-6 text-[#0088cc]" />
+                </div>
+                <span className="text-white font-medium text-xs sm:text-sm">टेलीग्राम</span>
+              </CardContent>
+            </Card>
+          </a>
           
           <Link to="/bets" data-testid="bets-link">
             <Card className="bg-[#141418] border-white/10 hover:border-[#10B981]/50 transition-all cursor-pointer group">
@@ -233,7 +244,7 @@ const DashboardPage = () => {
                 <div className="w-12 h-12 rounded-full bg-[#10B981]/10 flex items-center justify-center group-hover:bg-[#10B981]/20 transition-all">
                   <History className="w-6 h-6 text-[#10B981]" />
                 </div>
-                <span className="text-white font-medium">मेरी बेट</span>
+                <span className="text-white font-medium text-xs sm:text-sm">मेरी बेट</span>
               </CardContent>
             </Card>
           </Link>
@@ -244,7 +255,7 @@ const DashboardPage = () => {
                 <div className="w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center group-hover:bg-purple-500/20 transition-all">
                   <Trophy className="w-6 h-6 text-purple-400" />
                 </div>
-                <span className="text-white font-medium">रिजल्ट</span>
+                <span className="text-white font-medium text-xs sm:text-sm">रिजल्ट</span>
               </CardContent>
             </Card>
           </Link>
