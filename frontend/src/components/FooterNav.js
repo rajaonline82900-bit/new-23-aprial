@@ -15,35 +15,38 @@ const FooterNav = () => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#141418] border-t border-white/10" data-testid="footer-nav">
-      <div className="container mx-auto max-w-screen-xl">
-        <div className="grid grid-cols-5">
-          {items.map(({ to, icon: Icon, label, match }) => (
-            <Link
-              key={to}
-              to={to}
-              className={`flex flex-col items-center py-3 transition-all ${
-                path === match || path.startsWith(match + '/')
-                  ? 'text-[#D4AF37]'
-                  : 'text-gray-400 hover:text-[#D4AF37]'
-              }`}
-              data-testid={`footer-${label.toLowerCase().replace(/\s/g, '-')}`}
-            >
-              <Icon className="w-5 h-5 mb-1" />
-              <span className="text-[10px]">{label}</span>
-            </Link>
-          ))}
-          <button
-            className="flex flex-col items-center py-3 text-gray-400 hover:text-[#D4AF37] transition-all"
-            data-testid="footer-refer"
-            onClick={() => toast.info('Refer & Earn जल्द आ रहा है!')}
-          >
-            <Gift className="w-5 h-5 mb-1" />
-            <span className="text-[10px]">Refer & Earn</span>
-          </button>
+    <>
+      {/* Floating Refer Button - Bottom Right */}
+      <button
+        onClick={() => toast.info('Refer & Earn जल्द आ रहा है!')}
+        data-testid="floating-refer-btn"
+        className="fixed bottom-20 right-4 z-50 w-14 h-14 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#FDE047] shadow-lg shadow-[#D4AF37]/30 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
+      >
+        <Gift className="w-6 h-6 text-black" />
+      </button>
+
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#141418] border-t border-white/10" data-testid="footer-nav">
+        <div className="container mx-auto max-w-screen-xl">
+          <div className="grid grid-cols-4">
+            {items.map(({ to, icon: Icon, label, match }) => (
+              <Link
+                key={to}
+                to={to}
+                className={`flex flex-col items-center py-3 transition-all ${
+                  path === match || path.startsWith(match + '/')
+                    ? 'text-[#D4AF37]'
+                    : 'text-gray-400 hover:text-[#D4AF37]'
+                }`}
+                data-testid={`footer-${label.toLowerCase().replace(/\s/g, '-')}`}
+              >
+                <Icon className="w-5 h-5 mb-1" />
+                <span className="text-[10px]">{label}</span>
+              </Link>
+            ))}
+          </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+    </>
   );
 };
 
