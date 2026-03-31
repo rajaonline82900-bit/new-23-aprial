@@ -680,35 +680,6 @@ const GamePage = () => {
             </div>
           </div>
         )}
-
-        {/* Past Results */}
-        {game?.results?.length > 0 && (
-          <Card className={`bg-[#141418] border-white/10 ${totalBetCount > 0 ? 'mb-24' : ''}`}>
-            <CardHeader>
-              <CardTitle className="text-white font-['Unbounded']">पिछले रिजल्ट</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {game.results.slice(0, 5).map((result, index) => (
-                  <div 
-                    key={index}
-                    className="flex items-center justify-between p-3 bg-[#0A0A0C] rounded-lg border border-white/5"
-                  >
-                    <span className="text-gray-400">{result.date}</span>
-                    <div className="flex items-center gap-4">
-                      <Badge variant="outline" className="border-[#D4AF37]/50 text-[#D4AF37]">
-                        एकल: {result.single_result}
-                      </Badge>
-                      <Badge variant="outline" className="border-[#10B981]/50 text-[#10B981]">
-                        जोड़ी: {result.jodi_result}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </main>
     </div>
   );
