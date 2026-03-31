@@ -51,6 +51,11 @@ const GamePage = () => {
   const [jantriAmounts, setJantriAmounts] = useState({});
   const [quickAmount, setQuickAmount] = useState('');
 
+  // Haruf Andar/Bahar state
+  const [andarAmounts, setAndarAmounts] = useState({});
+  const [baharAmounts, setBaharAmounts] = useState({});
+  const [harufQuickAmount, setHarufQuickAmount] = useState('');
+
   useEffect(() => {
     fetchGame();
   }, [gameId]);
@@ -100,10 +105,44 @@ const GamePage = () => {
     setJantriAmounts({});
   };
 
-  // Calculate totals
+  const handleHarufAmountChange = (panel, num, value) => {
+    const numVal = value.replace(/[^0-9]/g, '');
+    const setter = panel === 'andar' ? setAndarAmounts : setBaharAmounts;
+    setter(prev => {
+      if (!numVal || numVal === '0') {
+        const next = { ...prev };
+        delete next[num];
+        return next;
+      }
+      return { ...prev, [num]: numVal };
+    });
+  };
+
+  const handleSetHarufQuickAmount = (panel, num) => {
+    if (harufQuickAmount && parseInt(harufQuickAmount) >= 10) {
+      const setter = panel === 'andar' ? setAndarAmounts : setBaharAmounts;
+      setter(prev => ({ ...prev, [num]: harufQuickAmount }));
+    }
+  };
+
+  const clearHarufAmounts = () => {
+    setAndarAmounts({});
+    setBaharAmounts({});
+  };
+
+  // Calculate totals - Jantri
   const activeBets = Object.entries(jantriAmounts).filter(([_, amt]) => amt && parseInt(amt) >= 10);
-  const totalAmount = activeBets.reduce((sum, [_, amt]) => sum + parseInt(amt), 0);
-  const totalPotentialWin = totalAmount * 90;
+  const jantriTotal = activeBets.reduce((sum, [_, amt]) => sum + parseInt(amt), 0);
+
+  // Calculate totals - Haruf
+  const activeAndar = Object.entries(andarAmounts).filter(([_, amt]) => amt && parseInt(amt) >= 10);
+  const activeBahar = Object.entries(baharAmounts).filter(([_, amt]) => amt && parseInt(amt) >= 10);
+  const harufTotal = [...activeAndar, ...activeBahar].reduce((sum, [_, amt]) => sum + parseInt(amt), 0);
+
+  // Grand total
+  const totalAmount = jantriTotal + harufTotal;
+  const totalPotentialWin = (jantriTotal * 90) + (harufTotal * 9);
+  const totalBetCount = activeBets.length + activeAndar.length + activeBahar.length;
 
   const handlePlaceBatchBets = async () => {
     if (!bettingOpen) {
@@ -111,8 +150,8 @@ const GamePage = () => {
       return;
     }
 
-    if (activeBets.length === 0) {
-      toast.error('कम से कम एक जोड़ी पर राशि डालें');
+    if (totalBetCount === 0) {
+      toast.error('कम से कम एक नंबर पर राशि डालें');
       return;
     }
 
@@ -124,17 +163,47 @@ const GamePage = () => {
     setPlacing(true);
 
     try {
-      const { data } = await axios.post(`${API_URL}/api/bets/batch`, {
-        game_id: gameId,
-        bet_type: 'jodi',
-        bets: activeBets.map(([number, amount]) => ({
-          number,
-          amount: parseInt(amount)
-        }))
-      }, { withCredentials: true });
+      const requests = [];
 
-      toast.success(`${data.total_bets} बेट्स लगाई गईं! कुल: ₹${data.total_amount}`);
+      // Jantri (jodi) bets
+      if (activeBets.length > 0) {
+        requests.push(
+          axios.post(`${API_URL}/api/bets/batch`, {
+            game_id: gameId,
+            bet_type: 'jodi',
+            bets: activeBets.map(([number, amount]) => ({ number, amount: parseInt(amount) }))
+          }, { withCredentials: true })
+        );
+      }
+
+      // Haruf Andar bets
+      if (activeAndar.length > 0) {
+        requests.push(
+          axios.post(`${API_URL}/api/bets/batch`, {
+            game_id: gameId,
+            bet_type: 'haruf_andar',
+            bets: activeAndar.map(([number, amount]) => ({ number, amount: parseInt(amount) }))
+          }, { withCredentials: true })
+        );
+      }
+
+      // Haruf Bahar bets
+      if (activeBahar.length > 0) {
+        requests.push(
+          axios.post(`${API_URL}/api/bets/batch`, {
+            game_id: gameId,
+            bet_type: 'haruf_bahar',
+            bets: activeBahar.map(([number, amount]) => ({ number, amount: parseInt(amount) }))
+          }, { withCredentials: true })
+        );
+      }
+
+      await Promise.all(requests);
+
+      toast.success(`${totalBetCount} बेट्स लगाई गईं! कुल: ₹${totalAmount}`);
       setJantriAmounts({});
+      setAndarAmounts({});
+      setBaharAmounts({});
       await refreshUser();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'बेट नहीं लग पाई');
@@ -320,15 +389,156 @@ const GamePage = () => {
           </CardContent>
         </Card>
 
+        {/* Haruf Andar Bahar Section */}
+        <Card className="bg-[#141418] border-white/10 mb-6">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-white font-['Unbounded'] text-lg">
+                हरूफ अंदर / बाहर (0-9)
+              </CardTitle>
+              {(activeAndar.length > 0 || activeBahar.length > 0) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={clearHarufAmounts}
+                  data-testid="clear-haruf-bets"
+                  className="border-red-500/50 text-red-400 hover:bg-red-500/10"
+                >
+                  <Trash2 className="w-4 h-4 mr-1" />
+                  हटाओ
+                </Button>
+              )}
+            </div>
+            {/* Haruf Quick Amount */}
+            <div className="flex items-center gap-2 mt-3 flex-wrap">
+              <span className="text-gray-400 text-sm">Quick राशि:</span>
+              {[10, 50, 100, 200, 500].map((amt) => (
+                <button
+                  key={amt}
+                  onClick={() => setHarufQuickAmount(String(amt))}
+                  data-testid={`haruf-quick-amt-${amt}`}
+                  className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${
+                    harufQuickAmount === String(amt)
+                      ? 'bg-[#D4AF37] text-black'
+                      : 'bg-[#0A0A0C] text-gray-400 border border-white/10 hover:border-[#D4AF37]/50'
+                  }`}
+                >
+                  ₹{amt}
+                </button>
+              ))}
+              <Input
+                type="number"
+                placeholder="अन्य"
+                value={harufQuickAmount}
+                onChange={(e) => setHarufQuickAmount(e.target.value)}
+                data-testid="haruf-custom-quick-amount"
+                className="bg-[#0A0A0C] border-white/10 text-white h-8 w-20 text-sm text-center"
+              />
+            </div>
+            <p className="text-gray-500 text-xs mt-2">
+              जीत: 9x | अंदर = जोड़ी का पहला अंक, बाहर = जोड़ी का दूसरा अंक
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {/* Andar Panel */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                  <h3 className="text-blue-400 font-bold text-base">अंदर (पहला अंक)</h3>
+                </div>
+                <div className="grid grid-cols-5 gap-2">
+                  {[0,1,2,3,4,5,6,7,8,9].map((num) => {
+                    const numStr = String(num);
+                    const hasAmount = andarAmounts[numStr] && parseInt(andarAmounts[numStr]) >= 10;
+                    return (
+                      <div
+                        key={`andar-${num}`}
+                        className={`rounded-lg border transition-all ${
+                          hasAmount
+                            ? 'border-blue-500/70 bg-blue-500/10'
+                            : 'border-white/10 bg-[#0A0A0C]'
+                        }`}
+                      >
+                        <button
+                          onClick={() => handleSetHarufQuickAmount('andar', numStr)}
+                          data-testid={`haruf-andar-${num}`}
+                          className={`w-full pt-2 pb-1 text-center font-bold text-xl transition-all ${
+                            hasAmount ? 'text-blue-400' : 'text-white hover:text-blue-400'
+                          }`}
+                        >
+                          {num}
+                        </button>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="₹"
+                          value={andarAmounts[numStr] || ''}
+                          onChange={(e) => handleHarufAmountChange('andar', numStr, e.target.value)}
+                          data-testid={`haruf-andar-amount-${num}`}
+                          className="w-full bg-transparent border-t border-white/5 text-center text-xs py-1 text-emerald-400 placeholder-gray-600 outline-none focus:border-blue-500/50"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Bahar Panel */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                  <h3 className="text-orange-400 font-bold text-base">बाहर (दूसरा अंक)</h3>
+                </div>
+                <div className="grid grid-cols-5 gap-2">
+                  {[0,1,2,3,4,5,6,7,8,9].map((num) => {
+                    const numStr = String(num);
+                    const hasAmount = baharAmounts[numStr] && parseInt(baharAmounts[numStr]) >= 10;
+                    return (
+                      <div
+                        key={`bahar-${num}`}
+                        className={`rounded-lg border transition-all ${
+                          hasAmount
+                            ? 'border-orange-500/70 bg-orange-500/10'
+                            : 'border-white/10 bg-[#0A0A0C]'
+                        }`}
+                      >
+                        <button
+                          onClick={() => handleSetHarufQuickAmount('bahar', numStr)}
+                          data-testid={`haruf-bahar-${num}`}
+                          className={`w-full pt-2 pb-1 text-center font-bold text-xl transition-all ${
+                            hasAmount ? 'text-orange-400' : 'text-white hover:text-orange-400'
+                          }`}
+                        >
+                          {num}
+                        </button>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="₹"
+                          value={baharAmounts[numStr] || ''}
+                          onChange={(e) => handleHarufAmountChange('bahar', numStr, e.target.value)}
+                          data-testid={`haruf-bahar-amount-${num}`}
+                          className="w-full bg-transparent border-t border-white/5 text-center text-xs py-1 text-emerald-400 placeholder-gray-600 outline-none focus:border-orange-500/50"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Sticky Bottom Bar - Bet Summary */}
-        {activeBets.length > 0 && (
+        {totalBetCount > 0 && (
           <div className="fixed bottom-0 left-0 right-0 z-50 glass border-t border-white/10 p-4" data-testid="bet-summary-bar">
             <div className="container mx-auto max-w-screen-xl">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                   <div>
-                    <p className="text-gray-400 text-xs">जोड़ियां</p>
-                    <p className="text-white font-bold text-lg" data-testid="total-jodis">{activeBets.length}</p>
+                    <p className="text-gray-400 text-xs">बेट्स</p>
+                    <p className="text-white font-bold text-lg" data-testid="total-jodis">{totalBetCount}</p>
                   </div>
                   <div>
                     <p className="text-gray-400 text-xs">कुल राशि</p>
@@ -360,7 +570,7 @@ const GamePage = () => {
 
         {/* Past Results */}
         {game?.results?.length > 0 && (
-          <Card className={`bg-[#141418] border-white/10 ${activeBets.length > 0 ? 'mb-24' : ''}`}>
+          <Card className={`bg-[#141418] border-white/10 ${totalBetCount > 0 ? 'mb-24' : ''}`}>
             <CardHeader>
               <CardTitle className="text-white font-['Unbounded']">पिछले रिजल्ट</CardTitle>
             </CardHeader>

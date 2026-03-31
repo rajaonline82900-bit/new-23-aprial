@@ -143,7 +143,9 @@ async def get_games_dict():
 # Bet Types
 BET_TYPES = {
     "single": {"name": "Single", "name_hi": "एकल अंक", "multiplier": 9},  # 0-9
-    "jodi": {"name": "Jodi", "name_hi": "जोड़ी", "multiplier": 90}  # 00-99
+    "jodi": {"name": "Jodi", "name_hi": "जोड़ी", "multiplier": 90},  # 00-99
+    "haruf_andar": {"name": "Haruf Andar", "name_hi": "हरूफ अंदर", "multiplier": 9},  # 0-9 left digit
+    "haruf_bahar": {"name": "Haruf Bahar", "name_hi": "हरूफ बाहर", "multiplier": 9}  # 0-9 right digit
 }
 
 # Deposit packages (fixed amounts for security)
@@ -388,9 +390,9 @@ async def place_bet(bet: BetCreate, request: Request):
         raise HTTPException(status_code=400, detail="Invalid bet type")
     
     # Validate number
-    if bet.bet_type == "single":
+    if bet.bet_type in ("single", "haruf_andar", "haruf_bahar"):
         if not bet.number.isdigit() or len(bet.number) != 1:
-            raise HTTPException(status_code=400, detail="Single bet must be 0-9")
+            raise HTTPException(status_code=400, detail="Single/Haruf bet must be 0-9")
     else:  # jodi
         if not bet.number.isdigit() or len(bet.number) != 2:
             raise HTTPException(status_code=400, detail="Jodi bet must be 00-99")
@@ -471,7 +473,7 @@ async def place_batch_bets(batch: BatchBetCreate, request: Request):
     # Validate all bets
     total_amount = 0
     for b in batch.bets:
-        if batch.bet_type == "single":
+        if batch.bet_type in ("single", "haruf_andar", "haruf_bahar"):
             if not b.number.isdigit() or len(b.number) != 1:
                 raise HTTPException(status_code=400, detail=f"Invalid single number: {b.number}")
         else:
@@ -825,18 +827,29 @@ async def declare_result(result: ResultDeclare, request: Request):
         "status": "pending"
     }).to_list(1000)
     
-    # Credit winnings
-    for bet in winning_single_bets:
-        await db.users.update_one(
-            {"_id": ObjectId(bet["user_id"])},
-            {"$inc": {"balance": bet["potential_win"]}}
-        )
-        await db.bets.update_one(
-            {"id": bet["id"]},
-            {"$set": {"status": "won", "won_amount": bet["potential_win"]}}
-        )
+    # Haruf Andar = left/first digit of jodi
+    andar_digit = result.jodi_result[0]
+    winning_andar_bets = await db.bets.find({
+        "game_id": result.game_id,
+        "date": result.date,
+        "bet_type": "haruf_andar",
+        "number": andar_digit,
+        "status": "pending"
+    }).to_list(1000)
     
-    for bet in winning_jodi_bets:
+    # Haruf Bahar = right/last digit of jodi
+    bahar_digit = result.jodi_result[1]
+    winning_bahar_bets = await db.bets.find({
+        "game_id": result.game_id,
+        "date": result.date,
+        "bet_type": "haruf_bahar",
+        "number": bahar_digit,
+        "status": "pending"
+    }).to_list(1000)
+    
+    # Credit winnings for all bet types
+    all_winners = winning_single_bets + winning_jodi_bets + winning_andar_bets + winning_bahar_bets
+    for bet in all_winners:
         await db.users.update_one(
             {"_id": ObjectId(bet["user_id"])},
             {"$inc": {"balance": bet["potential_win"]}}
@@ -874,7 +887,9 @@ async def declare_result(result: ResultDeclare, request: Request):
         "message": "Result declared successfully",
         "winners": {
             "single": len(winning_single_bets),
-            "jodi": len(winning_jodi_bets)
+            "jodi": len(winning_jodi_bets),
+            "haruf_andar": len(winning_andar_bets),
+            "haruf_bahar": len(winning_bahar_bets)
         }
     }
 

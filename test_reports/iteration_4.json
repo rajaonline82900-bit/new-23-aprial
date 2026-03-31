@@ -1,0 +1,85 @@
+{
+  "summary": "Comprehensive testing of Haruf Andar/Bahar betting feature completed. All backend APIs and frontend UI features are working correctly.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "passed_tests": [
+    "Backend: POST /api/bets/batch accepts bet_type 'haruf_andar' with single digit (0-9)",
+    "Backend: POST /api/bets/batch accepts bet_type 'haruf_bahar' with single digit (0-9)",
+    "Backend: haruf_andar and haruf_bahar reject two-digit numbers",
+    "Backend: haruf_andar and haruf_bahar have 9x multiplier (verified: 100 * 9 = 900)",
+    "Backend: All digits 0-9 are valid for haruf bets",
+    "Backend: Minimum ₹10 validation works for haruf bets",
+    "Backend: Result declaration includes haruf_andar and haruf_bahar winner counts",
+    "Frontend: Haruf Andar/Bahar section visible below Jantri grid",
+    "Frontend: Andar panel shows 0-9 with blue highlighting when amount set",
+    "Frontend: Bahar panel shows 0-9 with orange highlighting when amount set",
+    "Frontend: Haruf quick amount buttons (₹10, ₹50, ₹100, ₹200, ₹500) work independently",
+    "Frontend: Clicking number sets quick amount correctly",
+    "Frontend: Custom amount can be typed directly in input",
+    "Frontend: Clear haruf button removes all andar/bahar amounts",
+    "Frontend: Summary bar shows combined totals (jantri + haruf)",
+    "Frontend: Combined bet count correct (jodi + haruf_andar + haruf_bahar)",
+    "Frontend: Combined total amount correct (₹250 = 50 + 100 + 100)",
+    "Frontend: Combined potential win correct (₹6300 = 50*90 + 100*9 + 100*9)",
+    "Frontend: Place bet button disabled when betting is closed (time-based lock)"
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_haruf_andar_bahar.py",
+    "/app/test_reports/pytest/haruf_test_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Backend BET_TYPES correctly includes haruf_andar and haruf_bahar with 9x multiplier",
+    "Backend batch bet validation correctly handles single digit for haruf types",
+    "Backend result declaration correctly identifies haruf winners (andar=first digit, bahar=second digit)",
+    "Frontend correctly calculates combined totals for jodi (90x) and haruf (9x) bets",
+    "All data-testid attributes present for Haruf UI elements",
+    "Blue/orange color highlighting correctly applied based on bet type"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_haruf_andar_bahar.py"
+  ],
+  "success_rate": {
+    "backend": "100% (9/9 tests passed)",
+    "frontend": "100% (All UI features working)"
+  },
+  "test_credentials": {
+    "admin": "admin@sattamatka.com / Admin@123",
+    "test_user": "jantri@test.com / Test@123 (balance: ₹4275)"
+  },
+  "seed_data_creation": "Used existing jantri@test.com user from previous testing",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Haruf Andar/Bahar feature fully tested. Backend POST /api/bets/batch accepts bet_type 'haruf_andar' and 'haruf_bahar' with single digit numbers (0-9). Multiplier is 9x. Result declaration: if jodi=57, andar winners are bets on '5', bahar winners on '7'. Frontend GamePage.js has Haruf section with data-testid='haruf-andar-{0-9}' and data-testid='haruf-bahar-{0-9}' for number buttons, data-testid='haruf-andar-amount-{0-9}' and data-testid='haruf-bahar-amount-{0-9}' for inputs. Haruf quick amounts use data-testid='haruf-quick-amt-{10|50|100|200|500}'. Clear button uses data-testid='clear-haruf-bets'. Blue highlighting for andar, orange for bahar.",
+  "features_verified": {
+    "backend_haruf_api": {
+      "accepts_haruf_andar": true,
+      "accepts_haruf_bahar": true,
+      "validates_single_digit": true,
+      "rejects_two_digit": true,
+      "9x_multiplier": true,
+      "minimum_10_rupees": true,
+      "result_declaration_haruf_winners": true
+    },
+    "frontend_haruf_ui": {
+      "haruf_section_visible": true,
+      "andar_panel_0_to_9": true,
+      "bahar_panel_0_to_9": true,
+      "blue_highlighting_andar": true,
+      "orange_highlighting_bahar": true,
+      "haruf_quick_amount_buttons": true,
+      "click_number_sets_amount": true,
+      "custom_amount_input": true,
+      "clear_haruf_button": true,
+      "combined_totals_in_summary": true,
+      "combined_potential_win_calculation": true
+    }
+  }
+}
