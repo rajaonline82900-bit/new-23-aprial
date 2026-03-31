@@ -66,23 +66,23 @@ const DashboardPage = () => {
   };
 
   const getGameStatus = (game) => {
+    // Get current IST time
     const now = new Date();
-    const [hours, minutes] = game.time.split(':');
-    const gameTime = new Date();
-    gameTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-    
-    // If game time is in past for today
-    if (now > gameTime) {
-      return { status: 'closed', label: 'बंद', color: 'bg-red-500/20 text-red-400' };
+    const istOffset = 5.5 * 60 * 60 * 1000;
+    const istNow = new Date(now.getTime() + (istOffset + now.getTimezoneOffset() * 60 * 1000));
+    const currentMinutes = istNow.getHours() * 60 + istNow.getMinutes();
+
+    const [startH, startM] = (game.start_time || '00:00').split(':').map(Number);
+    const [endH, endM] = (game.end_time || game.time || '23:59').split(':').map(Number);
+    const startMinutes = startH * 60 + startM;
+    const endMinutes = endH * 60 + endM;
+
+    // Between start_time and end_time → Play (open)
+    if (currentMinutes >= startMinutes && currentMinutes <= endMinutes) {
+      return { status: 'open', label: 'Play', labelHi: 'खेलें' };
     }
     
-    // If within 30 minutes
-    const diff = (gameTime - now) / (1000 * 60);
-    if (diff <= 30) {
-      return { status: 'live', label: 'लाइव', color: 'bg-emerald-500/20 text-emerald-400' };
-    }
-    
-    return { status: 'open', label: 'खुला', color: 'bg-[#D4AF37]/20 text-[#D4AF37]' };
+    return { status: 'closed', label: 'Time Out', labelHi: 'टाइम आउट' };
   };
 
   return (
@@ -245,7 +245,7 @@ const DashboardPage = () => {
                             </div>
                           </div>
                           
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
                             {/* Yesterday Result Box */}
                             <div className="text-center px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/30 min-w-[60px]">
                               <p className="text-red-400 text-[9px] uppercase tracking-wide font-medium">Yesterday</p>
@@ -262,7 +262,16 @@ const DashboardPage = () => {
                               </p>
                             </div>
 
-                            <ChevronRight className="w-5 h-5 text-gray-500" />
+                            {/* Play / Time Out Button */}
+                            {gameStatus.status === 'open' ? (
+                              <div className="px-4 py-2 rounded-lg bg-green-500 text-white font-bold text-sm min-w-[80px] text-center" data-testid={`play-btn-${game.id}`}>
+                                Play
+                              </div>
+                            ) : (
+                              <div className="px-4 py-2 rounded-lg bg-red-500/20 border border-red-500/40 text-red-400 font-bold text-sm min-w-[80px] text-center" data-testid={`timeout-btn-${game.id}`}>
+                                Time Out
+                              </div>
+                            )}
                           </div>
                         </div>
                       </CardContent>
