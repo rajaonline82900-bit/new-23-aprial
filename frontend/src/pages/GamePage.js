@@ -322,30 +322,6 @@ const GamePage = () => {
           </Badge>
         </div>
 
-        {/* Latest Result */}
-        {game?.results?.length > 0 && (
-          <Card className="bg-gradient-to-br from-[#D4AF37]/10 to-[#141418] border-[#D4AF37]/30 mb-6">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-400 text-sm">आखिरी रिजल्ट ({game.results[0].date})</p>
-                  <div className="flex items-center gap-4 mt-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-400">एकल:</span>
-                      <span className="text-2xl font-bold text-[#D4AF37]">{game.results[0].single_result}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-400">जोड़ी:</span>
-                      <span className="text-2xl font-bold text-[#10B981]">{game.results[0].jodi_result}</span>
-                    </div>
-                  </div>
-                </div>
-                <Trophy className="w-10 h-10 text-[#D4AF37]" />
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Tab Toggle - Jantri / Haruf / Cross */}
         <div className="grid grid-cols-3 gap-3 mb-6" data-testid="bet-type-tabs">
           <button
