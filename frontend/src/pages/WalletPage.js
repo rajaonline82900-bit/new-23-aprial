@@ -33,14 +33,6 @@ import { toast } from 'sonner';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
-const DEPOSIT_PACKAGES = [
-  { id: '100', amount: 100, label: '₹100' },
-  { id: '500', amount: 500, label: '₹500', popular: true },
-  { id: '1000', amount: 1000, label: '₹1,000' },
-  { id: '2000', amount: 2000, label: '₹2,000' },
-  { id: '5000', amount: 5000, label: '₹5,000' }
-];
-
 const WalletPage = () => {
   const { user, refreshUser } = useAuth();
   const [searchParams] = useSearchParams();
@@ -48,7 +40,7 @@ const WalletPage = () => {
   const [loading, setLoading] = useState(true);
   const [depositOpen, setDepositOpen] = useState(false);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
-  const [selectedPackage, setSelectedPackage] = useState(null);
+  const [depositAmount, setDepositAmount] = useState('');
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [upiId, setUpiId] = useState('');
   const [processing, setProcessing] = useState(false);
@@ -65,7 +57,7 @@ const WalletPage = () => {
     }
   }, []);
 
-  const checkPaymentStatus = useCallback(async (sessionId) => {
+  const checkPaymentStatus = useCallback(async (orderId) => {
     setCheckingPayment(true);
     let attempts = 0;
     const maxAttempts = 5;
@@ -80,22 +72,21 @@ const WalletPage = () => {
 
       try {
         const { data } = await axios.get(
-          `${API_URL}/api/wallet/deposit/status/${sessionId}`,
+          `${API_URL}/api/wallet/deposit/status/${orderId}`,
           { withCredentials: true }
         );
 
-        if (data.payment_status === 'paid') {
+        if (data.status === 'completed') {
           toast.success(`₹${data.amount} सफलतापूर्वक जमा हो गए!`);
           await refreshUser();
           await fetchWallet();
           setCheckingPayment(false);
-          // Clear session_id from URL
           window.history.replaceState({}, '', '/wallet');
           return;
         }
 
-        if (data.status === 'expired') {
-          toast.error('भुगतान सत्र समाप्त हो गया');
+        if (data.status === 'failed') {
+          toast.error('भुगतान विफल हो गया');
           setCheckingPayment(false);
           window.history.replaceState({}, '', '/wallet');
           return;
@@ -116,16 +107,25 @@ const WalletPage = () => {
     fetchWallet();
     refreshUser();
     
-    // Check if returning from Stripe
-    const sessionId = searchParams.get('session_id');
-    if (sessionId) {
-      checkPaymentStatus(sessionId);
+    // Check if returning from IMB payment
+    const payment = searchParams.get('payment');
+    const orderId = searchParams.get('order_id');
+    if (payment === 'success' && orderId) {
+      checkPaymentStatus(orderId);
+    } else if (payment === 'failed') {
+      toast.error('भुगतान विफल हो गया');
+      window.history.replaceState({}, '', '/wallet');
     }
   }, [fetchWallet, refreshUser, searchParams, checkPaymentStatus]);
 
   const handleDeposit = async () => {
-    if (!selectedPackage) {
-      toast.error('कृपया एक पैकेज चुनें');
+    const amount = parseFloat(depositAmount);
+    if (!amount || amount < 100) {
+      toast.error('न्यूनतम जमा ₹100 है');
+      return;
+    }
+    if (amount > 50000) {
+      toast.error('अधिकतम जमा ₹50,000 है');
       return;
     }
 
@@ -133,11 +133,11 @@ const WalletPage = () => {
 
     try {
       const { data } = await axios.post(`${API_URL}/api/wallet/deposit`, {
-        package_id: selectedPackage,
+        amount: amount,
         origin_url: window.location.origin
       }, { withCredentials: true });
 
-      // Redirect to Stripe
+      // Redirect to IMB payment page
       window.location.href = data.url;
     } catch (error) {
       toast.error(error.response?.data?.detail || 'जमा अनुरोध विफल');
@@ -329,37 +329,45 @@ const WalletPage = () => {
           <DialogHeader>
             <DialogTitle className="font-['Unbounded']">पैसे जमा करें</DialogTitle>
             <DialogDescription className="text-gray-400">
-              राशि चुनें और Stripe के माध्यम से भुगतान करें
+              राशि दर्ज करें और UPI से भुगतान करें
             </DialogDescription>
           </DialogHeader>
           
-          <div className="grid grid-cols-2 gap-3 mt-4">
-            {DEPOSIT_PACKAGES.map((pkg) => (
-              <button
-                key={pkg.id}
-                onClick={() => setSelectedPackage(pkg.id)}
-                data-testid={`deposit-package-${pkg.id}`}
-                className={`
-                  relative p-4 rounded-xl text-center transition-all
-                  ${selectedPackage === pkg.id
-                    ? 'bg-[#D4AF37] text-black'
-                    : 'bg-[#0A0A0C] text-white border border-white/10 hover:border-[#D4AF37]/50'
-                  }
-                `}
-              >
-                {pkg.popular && (
-                  <span className="absolute -top-2 -right-2 bg-[#10B981] text-white text-xs px-2 py-0.5 rounded-full">
-                    लोकप्रिय
-                  </span>
-                )}
-                <p className="text-lg font-bold">{pkg.label}</p>
-              </button>
-            ))}
+          <div className="space-y-4 mt-4">
+            <div>
+              <Label className="text-gray-300">राशि (₹)</Label>
+              <Input
+                type="number"
+                placeholder="राशि दर्ज करें (न्यूनतम ₹100)"
+                value={depositAmount}
+                onChange={(e) => setDepositAmount(e.target.value)}
+                data-testid="deposit-amount-input"
+                className="bg-[#0A0A0C] border-white/10 text-white mt-2 text-lg h-12"
+              />
+            </div>
+
+            {/* Quick Amount Buttons */}
+            <div className="grid grid-cols-4 gap-2">
+              {[100, 500, 1000, 2000, 5000, 10000].map((amt) => (
+                <button
+                  key={amt}
+                  onClick={() => setDepositAmount(String(amt))}
+                  data-testid={`deposit-quick-${amt}`}
+                  className={`py-2 rounded-lg text-sm font-bold transition-all ${
+                    depositAmount === String(amt)
+                      ? 'bg-[#D4AF37] text-black'
+                      : 'bg-[#0A0A0C] text-gray-300 border border-white/10 hover:border-[#D4AF37]/50'
+                  }`}
+                >
+                  ₹{amt >= 1000 ? `${amt/1000}K` : amt}
+                </button>
+              ))}
+            </div>
           </div>
 
           <Button
             onClick={handleDeposit}
-            disabled={!selectedPackage || processing}
+            disabled={!depositAmount || parseFloat(depositAmount) < 100 || processing}
             data-testid="confirm-deposit-button"
             className="w-full mt-4 h-12 bg-[#10B981] hover:bg-[#059669] text-white font-bold"
           >
@@ -371,7 +379,10 @@ const WalletPage = () => {
             ) : (
               <span className="flex items-center gap-2">
                 <CreditCard className="w-5 h-5" />
-                भुगतान करें
+                {depositAmount && parseFloat(depositAmount) >= 100
+                  ? `₹${depositAmount} जमा करें`
+                  : 'भुगतान करें'
+                }
               </span>
             )}
           </Button>

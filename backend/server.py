@@ -17,7 +17,13 @@ from bson import ObjectId
 from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionResponse, CheckoutStatusResponse, CheckoutSessionRequest
 from notifications import notification_service
 
+import aiohttp
+
 ROOT_DIR = Path(__file__).parent
+
+# IMB Payment Gateway config
+IMB_API_TOKEN = os.environ.get("IMB_API_TOKEN", "")
+IMB_API_URL = os.environ.get("IMB_API_URL", "https://secure-stage.imb.org.in")
 
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
@@ -179,8 +185,9 @@ class WithdrawRequest(BaseModel):
     ifsc_code: Optional[str] = None
 
 class DepositRequest(BaseModel):
-    package_id: str
+    amount: float
     origin_url: str
+    customer_mobile: Optional[str] = None
 
 class ResultDeclare(BaseModel):
     game_id: str
@@ -554,71 +561,133 @@ async def get_wallet(request: Request):
 async def create_deposit(deposit: DepositRequest, request: Request):
     user = await get_current_user(request)
     
-    if deposit.package_id not in DEPOSIT_PACKAGES:
-        raise HTTPException(status_code=400, detail="Invalid deposit package")
+    if deposit.amount < 100:
+        raise HTTPException(status_code=400, detail="Minimum deposit ₹100")
+    if deposit.amount > 50000:
+        raise HTTPException(status_code=400, detail="Maximum deposit ₹50000")
     
-    amount = DEPOSIT_PACKAGES[deposit.package_id]
-    
-    # Create Stripe checkout session
-    api_key = os.environ.get("STRIPE_API_KEY")
+    order_id = f"DEP-{str(uuid.uuid4())[:8].upper()}"
     host_url = str(request.base_url).rstrip("/")
-    webhook_url = f"{host_url}/api/webhook/stripe"
+    redirect_url = f"{host_url}/api/wallet/imb-callback"
     
-    stripe_checkout = StripeCheckout(api_key=api_key, webhook_url=webhook_url)
+    # Create IMB order
+    async with aiohttp.ClientSession() as session:
+        form_data = aiohttp.FormData()
+        form_data.add_field("customer_mobile", deposit.customer_mobile or "9999999999")
+        form_data.add_field("user_token", IMB_API_TOKEN)
+        form_data.add_field("amount", str(int(deposit.amount)))
+        form_data.add_field("order_id", order_id)
+        form_data.add_field("redirect_url", redirect_url)
+        form_data.add_field("remark1", user["_id"])
+        form_data.add_field("remark2", user["email"])
+        
+        async with session.post(f"{IMB_API_URL}/api/create-order", data=form_data) as resp:
+            resp_data = await resp.json()
+            logging.info(f"IMB create-order response: {resp_data}")
+            
+            if not resp_data.get("status") or not resp_data.get("result", {}).get("payment_url"):
+                raise HTTPException(status_code=500, detail=resp_data.get("message", "Payment creation failed"))
     
-    success_url = f"{deposit.origin_url}/wallet?session_id={{CHECKOUT_SESSION_ID}}"
-    cancel_url = f"{deposit.origin_url}/wallet"
-    
-    checkout_request = CheckoutSessionRequest(
-        amount=float(amount),
-        currency="inr",
-        success_url=success_url,
-        cancel_url=cancel_url,
-        metadata={
-            "user_id": user["_id"],
-            "package_id": deposit.package_id,
-            "type": "deposit"
-        }
-    )
-    
-    session = await stripe_checkout.create_checkout_session(checkout_request)
+    payment_url = resp_data["result"]["payment_url"]
     
     # Create pending transaction
     transaction_doc = {
         "id": str(uuid.uuid4()),
         "user_id": user["_id"],
         "type": "deposit",
-        "amount": amount,
+        "amount": deposit.amount,
         "status": "pending",
-        "session_id": session.session_id,
+        "order_id": order_id,
+        "payment_url": payment_url,
         "created_at": datetime.now(timezone.utc)
     }
     await db.transactions.insert_one(transaction_doc)
     
-    # Also add to payment_transactions collection
-    payment_doc = {
-        "id": str(uuid.uuid4()),
-        "user_id": user["_id"],
-        "email": user["email"],
-        "amount": amount,
-        "currency": "inr",
-        "session_id": session.session_id,
-        "payment_status": "pending",
-        "status": "initiated",
-        "metadata": {"package_id": deposit.package_id, "type": "deposit"},
-        "created_at": datetime.now(timezone.utc)
-    }
-    await db.payment_transactions.insert_one(payment_doc)
-    
-    return {"url": session.url, "session_id": session.session_id}
+    return {"url": payment_url, "order_id": order_id}
 
-@api_router.get("/wallet/deposit/status/{session_id}")
-async def check_deposit_status(session_id: str, request: Request):
+@api_router.get("/wallet/imb-callback")
+async def imb_callback(request: Request):
+    params = dict(request.query_params)
+    logging.info(f"IMB callback params: {params}")
+    
+    order_id = params.get("order_id", "")
+    status = params.get("status", "")
+    
+    frontend_url = os.environ.get("FRONTEND_URL", "")
+    if not frontend_url:
+        host = str(request.base_url).rstrip("/")
+        frontend_url = host.replace("/api", "")
+    
+    if status == "SUCCESS" and order_id:
+        # Verify with IMB
+        async with aiohttp.ClientSession() as session:
+            form_data = aiohttp.FormData()
+            form_data.add_field("user_token", IMB_API_TOKEN)
+            form_data.add_field("order_id", order_id)
+            
+            async with session.post(f"{IMB_API_URL}/api/check-order-status", data=form_data) as resp:
+                verify_data = await resp.json()
+                logging.info(f"IMB verify response: {verify_data}")
+        
+        if verify_data.get("status") and verify_data.get("result", {}).get("order_status") == "SUCCESS":
+            # Find and complete transaction
+            transaction = await db.transactions.find_one({"order_id": order_id})
+            if transaction and transaction["status"] == "pending":
+                await db.users.update_one(
+                    {"_id": ObjectId(transaction["user_id"])},
+                    {"$inc": {"balance": transaction["amount"]}}
+                )
+                await db.transactions.update_one(
+                    {"order_id": order_id},
+                    {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc)}}
+                )
+    else:
+        # Mark failed
+        await db.transactions.update_one(
+            {"order_id": order_id},
+            {"$set": {"status": "failed"}}
+        )
+    
+    from starlette.responses import RedirectResponse
+    return RedirectResponse(url=f"{frontend_url}/wallet?payment={status.lower()}&order_id={order_id}")
+
+@api_router.post("/wallet/imb-webhook")
+async def imb_webhook(request: Request):
+    try:
+        body = await request.json()
+    except Exception:
+        body = dict(await request.form())
+    
+    logging.info(f"IMB webhook body: {body}")
+    
+    order_id = body.get("order_id", "")
+    status = body.get("status", "")
+    
+    if status == "SUCCESS" and order_id:
+        transaction = await db.transactions.find_one({"order_id": order_id})
+        if transaction and transaction["status"] == "pending":
+            await db.users.update_one(
+                {"_id": ObjectId(transaction["user_id"])},
+                {"$inc": {"balance": transaction["amount"]}}
+            )
+            await db.transactions.update_one(
+                {"order_id": order_id},
+                {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc)}}
+            )
+    elif order_id:
+        await db.transactions.update_one(
+            {"order_id": order_id},
+            {"$set": {"status": "failed"}}
+        )
+    
+    return {"status": "ok"}
+
+@api_router.get("/wallet/deposit/status/{order_id}")
+async def check_deposit_status(order_id: str, request: Request):
     user = await get_current_user(request)
     
-    # Get transaction
     transaction = await db.transactions.find_one({
-        "session_id": session_id,
+        "order_id": order_id,
         "user_id": user["_id"]
     })
     
@@ -626,43 +695,35 @@ async def check_deposit_status(session_id: str, request: Request):
         raise HTTPException(status_code=404, detail="Transaction not found")
     
     if transaction["status"] == "completed":
-        return {"status": "completed", "payment_status": "paid", "amount": transaction["amount"]}
+        return {"status": "completed", "amount": transaction["amount"]}
     
-    # Check with Stripe
-    api_key = os.environ.get("STRIPE_API_KEY")
-    host_url = str(request.base_url).rstrip("/")
-    webhook_url = f"{host_url}/api/webhook/stripe"
-    
-    stripe_checkout = StripeCheckout(api_key=api_key, webhook_url=webhook_url)
-    
+    # Check with IMB
     try:
-        status = await stripe_checkout.get_checkout_status(session_id)
+        async with aiohttp.ClientSession() as session:
+            form_data = aiohttp.FormData()
+            form_data.add_field("user_token", IMB_API_TOKEN)
+            form_data.add_field("order_id", order_id)
+            
+            async with session.post(f"{IMB_API_URL}/api/check-order-status", data=form_data) as resp:
+                verify_data = await resp.json()
         
-        if status.payment_status == "paid" and transaction["status"] != "completed":
-            # Update user balance
-            await db.users.update_one(
-                {"_id": ObjectId(user["_id"])},
-                {"$inc": {"balance": transaction["amount"]}}
-            )
-            
-            # Update transaction
-            await db.transactions.update_one(
-                {"session_id": session_id},
-                {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc)}}
-            )
-            
-            # Update payment_transactions
-            await db.payment_transactions.update_one(
-                {"session_id": session_id},
-                {"$set": {"payment_status": "paid", "status": "completed"}}
-            )
-            
-            return {"status": "completed", "payment_status": "paid", "amount": transaction["amount"]}
+        if verify_data.get("status") and verify_data.get("result", {}).get("order_status") == "SUCCESS":
+            if transaction["status"] != "completed":
+                await db.users.update_one(
+                    {"_id": ObjectId(user["_id"])},
+                    {"$inc": {"balance": transaction["amount"]}}
+                )
+                await db.transactions.update_one(
+                    {"order_id": order_id},
+                    {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc)}}
+                )
+            return {"status": "completed", "amount": transaction["amount"]}
         
-        return {"status": status.status, "payment_status": status.payment_status, "amount": transaction["amount"]}
+        imb_status = verify_data.get("result", {}).get("order_status", "PENDING")
+        return {"status": imb_status.lower(), "amount": transaction["amount"]}
     except Exception as e:
-        logging.error(f"Stripe status check error: {e}")
-        return {"status": transaction["status"], "payment_status": "unknown", "amount": transaction["amount"]}
+        logging.error(f"IMB status check error: {e}")
+        return {"status": transaction["status"], "amount": transaction["amount"]}
 
 @api_router.post("/wallet/withdraw")
 async def request_withdrawal(withdraw: WithdrawRequest, request: Request):
