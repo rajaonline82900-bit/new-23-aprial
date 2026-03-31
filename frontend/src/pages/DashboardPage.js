@@ -223,14 +223,18 @@ const DashboardPage = () => {
             <div className="grid gap-4">
               {games.map((game, index) => {
                 const gameStatus = getGameStatus(game);
+                const CardWrapper = game.is_holiday ? 'div' : Link;
+                const cardProps = game.is_holiday 
+                  ? { key: game.id, 'data-testid': `game-card-${game.id}` }
+                  : { key: game.id, to: `/game/${game.id}`, 'data-testid': `game-card-${game.id}` };
                 return (
-                  <Link 
-                    key={game.id} 
-                    to={`/game/${game.id}`}
-                    data-testid={`game-card-${game.id}`}
-                  >
+                  <CardWrapper {...cardProps}>
                     <Card 
-                      className="bg-[#141418] border-white/10 hover:border-[#D4AF37]/50 transition-all cursor-pointer stagger-item"
+                      className={`border-white/10 transition-all stagger-item ${
+                        game.is_holiday 
+                          ? 'bg-[#141418]/60 opacity-70 cursor-not-allowed' 
+                          : 'bg-[#141418] hover:border-[#D4AF37]/50 cursor-pointer'
+                      }`}
                       style={{ animationDelay: `${index * 0.1}s` }}
                     >
                       <CardContent className="p-4">
@@ -262,8 +266,12 @@ const DashboardPage = () => {
                               </p>
                             </div>
 
-                            {/* Play / Time Out Button */}
-                            {gameStatus.status === 'open' ? (
+                            {/* Play / Time Out / Holiday Button */}
+                            {game.is_holiday ? (
+                              <div className="px-4 py-2 rounded-lg bg-orange-500/20 border border-orange-500/40 text-orange-400 font-bold text-sm min-w-[80px] text-center" data-testid={`holiday-btn-${game.id}`}>
+                                Holiday
+                              </div>
+                            ) : gameStatus.status === 'open' ? (
                               <div className="px-4 py-2 rounded-lg bg-green-500 text-white font-bold text-sm min-w-[80px] text-center" data-testid={`play-btn-${game.id}`}>
                                 Play
                               </div>
@@ -276,7 +284,7 @@ const DashboardPage = () => {
                         </div>
                       </CardContent>
                     </Card>
-                  </Link>
+                  </CardWrapper>
                 );
               })}
             </div>

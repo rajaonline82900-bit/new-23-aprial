@@ -301,6 +301,8 @@ async def logout():
     resp.delete_cookie("refresh_token", path="/")
     return resp
 
+import calendar
+
 # Games Routes
 @api_router.get("/games")
 async def get_games():
@@ -308,6 +310,10 @@ async def get_games():
     ist_now = datetime.now(timezone(timedelta(hours=5, minutes=30)))
     today = ist_now.strftime("%Y-%m-%d")
     yesterday = (ist_now - timedelta(days=1)).strftime("%Y-%m-%d")
+    
+    # Check if today is the last date of the month → Holiday
+    last_day = calendar.monthrange(ist_now.year, ist_now.month)[1]
+    is_holiday = ist_now.day == last_day
     
     games_dict = await get_games_dict()
     
@@ -335,6 +341,7 @@ async def get_games():
             "end_time": game.get("end_time", game.get("time", "")),
             "time": game.get("end_time", game.get("time", "")),
             "display_time": game["display_time"],
+            "is_holiday": is_holiday,
             "today_result": {
                 "jodi": today_result["jodi_result"],
                 "single": today_result["single_result"]
@@ -345,7 +352,7 @@ async def get_games():
             } if yesterday_result else None
         })
     
-    return {"games": games_list}
+    return {"games": games_list, "is_holiday": is_holiday}
 
 @api_router.get("/games/{game_id}")
 async def get_game(game_id: str):
@@ -382,6 +389,12 @@ async def place_bet(bet: BetCreate, request: Request):
         raise HTTPException(status_code=400, detail="Invalid game")
     
     game = games_dict[bet.game_id]
+    
+    # Holiday check - last date of month
+    ist_now = datetime.now(timezone(timedelta(hours=5, minutes=30)))
+    last_day = calendar.monthrange(ist_now.year, ist_now.month)[1]
+    if ist_now.day == last_day:
+        raise HTTPException(status_code=400, detail="आज छुट्टी है! महीने की आखिरी तारीख पर बेटिंग बंद रहती है।")
     
     # Time-based betting lock
     start_time_str = game.get("start_time", "")
@@ -461,6 +474,12 @@ async def place_batch_bets(batch: BatchBetCreate, request: Request):
         raise HTTPException(status_code=400, detail="Invalid game")
     
     game = games_dict[batch.game_id]
+    
+    # Holiday check - last date of month
+    ist_now_batch = datetime.now(timezone(timedelta(hours=5, minutes=30)))
+    last_day_batch = calendar.monthrange(ist_now_batch.year, ist_now_batch.month)[1]
+    if ist_now_batch.day == last_day_batch:
+        raise HTTPException(status_code=400, detail="आज छुट्टी है! महीने की आखिरी तारीख पर बेटिंग बंद रहती है।")
     
     # Time-based betting lock
     start_time_str = game.get("start_time", "")

@@ -29,8 +29,14 @@ const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const isBettingOpen = (startTime, endTime) => {
   if (!startTime || !endTime) return true;
+  // Check holiday - last date of month (IST)
   const now = new Date();
-  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const istOffset = 5.5 * 60 * 60 * 1000;
+  const istNow = new Date(now.getTime() + (istOffset + now.getTimezoneOffset() * 60 * 1000));
+  const lastDay = new Date(istNow.getFullYear(), istNow.getMonth() + 1, 0).getDate();
+  if (istNow.getDate() === lastDay) return false;
+  
+  const currentMinutes = istNow.getHours() * 60 + istNow.getMinutes();
   const [startH, startM] = startTime.split(':').map(Number);
   const [endH, endM] = endTime.split(':').map(Number);
   const startMinutes = startH * 60 + startM;
