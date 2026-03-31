@@ -23,7 +23,8 @@ import {
   BarChart3,
   Gift,
   Send,
-  Menu
+  Menu,
+  Download
 } from 'lucide-react';
 import { toast } from 'sonner';
 import FooterNav from '../components/FooterNav';
@@ -109,13 +110,12 @@ const DashboardPage = () => {
             </div>
             
             <div className="flex items-center gap-4">
-              {telegramLink && (
-                <a href={telegramLink} target="_blank" rel="noopener noreferrer" data-testid="telegram-button">
-                  <Button variant="outline" size="sm" className="border-[#229ED9]/50 text-[#229ED9] hover:bg-[#229ED9]/10">
-                    <Send className="w-4 h-4" />
-                  </Button>
-                </a>
-              )}
+              <a href={window.location.origin} target="_blank" rel="noopener noreferrer" data-testid="download-apk-button">
+                <Button variant="outline" size="sm" className="border-green-500/50 text-green-400 hover:bg-green-500/10">
+                  <Download className="w-4 h-4 mr-1" />
+                  <span className="hidden sm:inline">Download</span>
+                </Button>
+              </a>
               <div className="hidden sm:flex items-center gap-2 bg-[#141418] px-4 py-2 rounded-lg border border-white/10">
                 <Wallet className="w-4 h-4 text-[#D4AF37]" />
                 <span className="text-white font-semibold">₹{user?.balance?.toFixed(2) || '0.00'}</span>
@@ -161,13 +161,11 @@ const DashboardPage = () => {
                 <p className="text-2xl font-bold text-white">₹{user?.balance?.toFixed(2) || '0.00'}</p>
               </div>
               <div className="flex items-center gap-2">
-                {telegramLink && (
-                  <a href={telegramLink} target="_blank" rel="noopener noreferrer" data-testid="telegram-button">
-                    <Button variant="outline" className="border-[#229ED9]/50 text-[#229ED9] hover:bg-[#229ED9]/10">
-                      <Send className="w-4 h-4" />
-                    </Button>
-                  </a>
-                )}
+                <a href={window.location.origin} target="_blank" rel="noopener noreferrer" data-testid="download-apk-mobile">
+                  <Button variant="outline" className="border-green-500/50 text-green-400 hover:bg-green-500/10">
+                    <Download className="w-4 h-4" />
+                  </Button>
+                </a>
                 <Link to="/wallet">
                   <Button className="bg-[#D4AF37] hover:bg-[#FDE047] text-black font-bold">
                     जमा करें
