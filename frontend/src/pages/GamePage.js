@@ -648,9 +648,8 @@ const GamePage = () => {
         </Card>
         )}
 
-        {/* Sticky Bottom Bar - Bet Summary */}
-        {totalBetCount > 0 && (
-          <div className="fixed bottom-0 left-0 right-0 z-50 glass border-t border-white/10 p-4" data-testid="bet-summary-bar">
+        {/* Sticky Bottom Bar - Bet Summary (Always Visible) */}
+          <div className="fixed bottom-[52px] left-0 right-0 z-50 glass border-t border-white/10 p-4" data-testid="bet-summary-bar">
             <div className="container mx-auto max-w-screen-xl">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
@@ -669,7 +668,7 @@ const GamePage = () => {
                 </div>
                 <Button
                   onClick={handlePlaceBatchBets}
-                  disabled={placing || !bettingOpen}
+                  disabled={placing || !bettingOpen || totalBetCount === 0}
                   data-testid="place-batch-bet-button"
                   className="h-12 px-8 bg-[#D4AF37] hover:bg-[#FDE047] text-black font-bold text-base disabled:opacity-50"
                 >
@@ -678,13 +677,12 @@ const GamePage = () => {
                   ) : placing ? (
                     <span className="flex items-center gap-2"><Coins className="w-5 h-5 animate-spin" /> लग रही है...</span>
                   ) : (
-                    <span className="flex items-center gap-2"><Send className="w-5 h-5" /> बेट लगाओ</span>
+                    <span className="flex items-center gap-2"><Send className="w-5 h-5" /> Play</span>
                   )}
                 </Button>
               </div>
             </div>
           </div>
-        )}
       </main>
 
       {/* Footer Navigation */}
