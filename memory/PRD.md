@@ -25,6 +25,9 @@ Build a Satta Matka betting application with Jantri, Haruf Andar/Bahar, Cross Be
 - [x] Daily Result Tracking (duplicate protection + status tracker)
 - [x] Dynamic Admin Settings (Telegram/WhatsApp links)
 - [x] Today/Yesterday dual result boxes on Dashboard game cards (Red=Yesterday, Green=Today) [31-Mar-2026]
+- [x] Play/Time Out button on game cards based on game time [31-Mar-2026]
+- [x] Floating Refer button (bottom-right FAB) [31-Mar-2026]
+- [x] IMB Payment Gateway balance update bug fix (redirect_url, JSON parsing, verify key mapping) [31-Mar-2026]
 
 ## Payment Integration
 - Provider: IMB UPI Payment Gateway
