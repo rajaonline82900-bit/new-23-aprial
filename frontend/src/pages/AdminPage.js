@@ -1317,7 +1317,8 @@ const AdminPage = () => {
                         </div>
                         <div>
                           <p className="text-white font-medium">{u.name}</p>
-                          <p className="text-gray-400 text-sm">{u.email}</p>
+                          <p className="text-gray-400 text-sm">{u.phone || u.email}</p>
+                          <p className="text-gray-500 text-xs">{u.created_at ? new Date(u.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : ''}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
@@ -1409,7 +1410,8 @@ const AdminPage = () => {
               </div>
               <div>
                 <p>{selectedUser?.name}</p>
-                <p className="text-sm text-gray-400 font-normal">{selectedUser?.email}</p>
+                <p className="text-sm text-gray-400 font-normal">{selectedUser?.phone || selectedUser?.email}</p>
+                <p className="text-xs text-gray-500 font-normal">अकाउंट बना: {selectedUser?.created_at ? new Date(selectedUser.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : 'N/A'}</p>
               </div>
             </DialogTitle>
           </DialogHeader>
