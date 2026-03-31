@@ -613,36 +613,41 @@ async def imb_callback(request: Request):
     order_id = params.get("order_id", "")
     status = params.get("status", "")
     
+    # Get frontend URL from Referer or construct from request
     frontend_url = os.environ.get("FRONTEND_URL", "")
     if not frontend_url:
-        host = str(request.base_url).rstrip("/")
-        frontend_url = host.replace("/api", "")
+        # Use the host from the request (works behind Kubernetes ingress)
+        scheme = request.headers.get("x-forwarded-proto", "https")
+        host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
+        frontend_url = f"{scheme}://{host}"
     
     if status == "SUCCESS" and order_id:
         # Verify with IMB
-        async with aiohttp.ClientSession() as session:
-            form_data = aiohttp.FormData()
-            form_data.add_field("user_token", IMB_API_TOKEN)
-            form_data.add_field("order_id", order_id)
+        try:
+            async with aiohttp.ClientSession() as session:
+                form_data = aiohttp.FormData()
+                form_data.add_field("user_token", IMB_API_TOKEN)
+                form_data.add_field("order_id", order_id)
+                
+                async with session.post(f"{IMB_API_URL}/api/check-order-status", data=form_data) as resp:
+                    verify_data = await resp.json()
+                    logging.info(f"IMB verify response: {verify_data}")
             
-            async with session.post(f"{IMB_API_URL}/api/check-order-status", data=form_data) as resp:
-                verify_data = await resp.json()
-                logging.info(f"IMB verify response: {verify_data}")
-        
-        if verify_data.get("status") and verify_data.get("result", {}).get("order_status") == "SUCCESS":
-            # Find and complete transaction
-            transaction = await db.transactions.find_one({"order_id": order_id})
-            if transaction and transaction["status"] == "pending":
-                await db.users.update_one(
-                    {"_id": ObjectId(transaction["user_id"])},
-                    {"$inc": {"balance": transaction["amount"]}}
-                )
-                await db.transactions.update_one(
-                    {"order_id": order_id},
-                    {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc)}}
-                )
+            if verify_data.get("status") and verify_data.get("result", {}).get("order_status") == "SUCCESS":
+                transaction = await db.transactions.find_one({"order_id": order_id})
+                if transaction and transaction["status"] == "pending":
+                    await db.users.update_one(
+                        {"_id": ObjectId(transaction["user_id"])},
+                        {"$inc": {"balance": transaction["amount"]}}
+                    )
+                    await db.transactions.update_one(
+                        {"order_id": order_id},
+                        {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc)}}
+                    )
+                    logging.info(f"Deposit completed: order={order_id}, amount={transaction['amount']}")
+        except Exception as e:
+            logging.error(f"IMB verify error: {e}")
     else:
-        # Mark failed
         await db.transactions.update_one(
             {"order_id": order_id},
             {"$set": {"status": "failed"}}
