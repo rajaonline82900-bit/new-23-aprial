@@ -46,6 +46,9 @@ Build a Satta Matka betting application with Jantri, Haruf Andar/Bahar, Cross Be
 - [x] Signup rewritten: Name → Phone → OTP → Password (no confirm password) [31-Mar-2026]
 - [x] Login rewritten: Phone + Password (admin can use email) [31-Mar-2026]
 - [x] Password Reset via OTP: Phone → OTP → New Password [31-Mar-2026]
+- [x] Admin Panel: Deposit user list tab added [31-Mar-2026]
+- [x] Admin Panel: Single button removed from bet reverse filter [31-Mar-2026]
+- [x] Admin Panel: Withdrawal approved & rejected history with sub-tabs [31-Mar-2026]
 
 ## Payment Integration
 - Provider: IMB UPI Payment Gateway

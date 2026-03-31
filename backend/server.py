@@ -1056,8 +1056,9 @@ async def request_withdrawal(withdraw: WithdrawRequest, request: Request):
     withdrawal_doc = {
         "id": str(uuid.uuid4()),
         "user_id": user["_id"],
-        "user_email": user["email"],
+        "user_email": user.get("email", ""),
         "user_name": user["name"],
+        "user_phone": user.get("phone", ""),
         "type": "withdrawal",
         "amount": withdraw.amount,
         "upi_id": withdraw.upi_id,
@@ -1589,7 +1590,35 @@ async def get_withdrawals(request: Request, status: str = "pending"):
         {"_id": 0}
     ).sort("created_at", -1).to_list(100)
     
+    # Enrich with user phone if missing
+    for w in withdrawals:
+        if not w.get("user_phone"):
+            user = await db.users.find_one({"_id": ObjectId(w["user_id"])}, {"phone": 1})
+            w["user_phone"] = user.get("phone", "") if user else ""
+    
     return {"withdrawals": withdrawals}
+
+@api_router.get("/admin/deposits")
+async def get_admin_deposits(request: Request, skip: int = 0, limit: int = 50):
+    await get_admin_user(request)
+    
+    deposits = await db.transactions.find(
+        {"type": "deposit", "status": "completed"},
+        {"_id": 0}
+    ).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    
+    # Enrich with user info
+    for d in deposits:
+        user = await db.users.find_one({"_id": ObjectId(d["user_id"])}, {"name": 1, "phone": 1, "email": 1})
+        if user:
+            d["user_name"] = user.get("name", "")
+            d["user_phone"] = user.get("phone", "")
+            d["user_email"] = user.get("email", "")
+    
+    total = await db.transactions.count_documents({"type": "deposit", "status": "completed"})
+    total_amount = sum(d.get("amount", 0) for d in deposits)
+    
+    return {"deposits": deposits, "total": total, "total_amount": total_amount}
 
 @api_router.post("/admin/withdrawals/{withdrawal_id}/approve")
 async def approve_withdrawal(withdrawal_id: str, request: Request):

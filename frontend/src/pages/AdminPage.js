@@ -67,6 +67,10 @@ const AdminPage = () => {
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
   const [withdrawals, setWithdrawals] = useState([]);
+  const [approvedWithdrawals, setApprovedWithdrawals] = useState([]);
+  const [rejectedWithdrawals, setRejectedWithdrawals] = useState([]);
+  const [withdrawalSubTab, setWithdrawalSubTab] = useState('pending');
+  const [deposits, setDeposits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [games, setGames] = useState([]);
   
@@ -151,6 +155,12 @@ const AdminPage = () => {
     if (activeTab === 'results') {
       fetchTodayResults();
     }
+    if (activeTab === 'withdrawals') {
+      fetchWithdrawalHistory();
+    }
+    if (activeTab === 'deposits') {
+      fetchDeposits();
+    }
   }, [activeTab, betDistDate, betDistGame]);
 
   const fetchData = async () => {
@@ -186,6 +196,24 @@ const AdminPage = () => {
     try {
       const { data } = await axios.get(`${API_URL}/api/admin/results/status`, { withCredentials: true });
       setTodayResults(data);
+    } catch (error) {}
+  };
+
+  const fetchWithdrawalHistory = async () => {
+    try {
+      const [approvedRes, rejectedRes] = await Promise.all([
+        axios.get(`${API_URL}/api/admin/withdrawals?status=approved`, { withCredentials: true }),
+        axios.get(`${API_URL}/api/admin/withdrawals?status=rejected`, { withCredentials: true })
+      ]);
+      setApprovedWithdrawals(approvedRes.data.withdrawals);
+      setRejectedWithdrawals(rejectedRes.data.withdrawals);
+    } catch (error) {}
+  };
+
+  const fetchDeposits = async () => {
+    try {
+      const { data } = await axios.get(`${API_URL}/api/admin/deposits`, { withCredentials: true });
+      setDeposits(data.deposits);
     } catch (error) {}
   };
 
@@ -351,6 +379,7 @@ const AdminPage = () => {
       await axios.post(`${API_URL}/api/admin/withdrawals/${id}/${action}`, {}, { withCredentials: true });
       toast.success(action === 'approve' ? 'निकासी स्वीकृत' : 'निकासी अस्वीकृत और राशि वापस');
       fetchData();
+      fetchWithdrawalHistory();
     } catch (error) {
       toast.error('कार्रवाई विफल');
     }
@@ -662,6 +691,13 @@ const AdminPage = () => {
               निकासी
             </TabsTrigger>
             <TabsTrigger 
+              value="deposits"
+              data-testid="admin-deposits-tab"
+              className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black"
+            >
+              जमा सूची
+            </TabsTrigger>
+            <TabsTrigger 
               value="users"
               data-testid="admin-users-tab"
               className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black"
@@ -856,8 +892,7 @@ const AdminPage = () => {
                         { value: 'all', label: 'सभी' },
                         { value: 'jodi', label: 'जोड़ी' },
                         { value: 'haruf_andar', label: 'हरूफ अंदर' },
-                        { value: 'haruf_bahar', label: 'हरूफ बाहर' },
-                        { value: 'single', label: 'एकल' }
+                        { value: 'haruf_bahar', label: 'हरूफ बाहर' }
                       ].map((opt) => (
                         <button
                           key={opt.value}
@@ -1097,48 +1132,159 @@ const AdminPage = () => {
           <TabsContent value="withdrawals">
             <Card className="bg-[#141418] border-white/10">
               <CardHeader>
-                <CardTitle className="text-white font-['Unbounded']">लंबित निकासी अनुरोध</CardTitle>
+                <CardTitle className="text-white font-['Unbounded']">निकासी प्रबंधन</CardTitle>
               </CardHeader>
               <CardContent>
-                {withdrawals.length === 0 ? (
+                {/* Sub-tabs */}
+                <div className="flex gap-2 mb-4">
+                  {[
+                    { value: 'pending', label: 'लंबित', count: withdrawals.length },
+                    { value: 'approved', label: 'स्वीकृत', count: approvedWithdrawals.length },
+                    { value: 'rejected', label: 'अस्वीकृत', count: rejectedWithdrawals.length }
+                  ].map((tab) => (
+                    <button
+                      key={tab.value}
+                      onClick={() => setWithdrawalSubTab(tab.value)}
+                      data-testid={`withdrawal-subtab-${tab.value}`}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                        withdrawalSubTab === tab.value
+                          ? tab.value === 'pending' ? 'bg-yellow-500/20 border border-yellow-500/50 text-yellow-400'
+                          : tab.value === 'approved' ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-400'
+                          : 'bg-red-500/20 border border-red-500/50 text-red-400'
+                          : 'bg-[#0A0A0C] text-gray-400 border border-white/10 hover:border-white/30'
+                      }`}
+                    >
+                      {tab.label} ({tab.count})
+                    </button>
+                  ))}
+                </div>
+
+                {/* Pending Withdrawals */}
+                {withdrawalSubTab === 'pending' && (
+                  withdrawals.length === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-gray-400">कोई लंबित निकासी नहीं</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {withdrawals.map((w, index) => (
+                        <div key={index} className="flex items-center justify-between p-4 bg-[#0A0A0C] rounded-lg border border-white/5">
+                          <div>
+                            <p className="text-white font-medium">{w.user_name}</p>
+                            <p className="text-gray-400 text-sm">{w.user_phone || w.user_email}</p>
+                            <p className="text-gray-400 text-sm">UPI: {w.upi_id}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xl font-bold text-white">₹{w.amount}</p>
+                            <div className="flex gap-2 mt-2">
+                              <Button
+                                size="sm"
+                                onClick={() => handleWithdrawalAction(w.id, 'approve')}
+                                data-testid={`approve-withdrawal-${w.id}`}
+                                className="bg-emerald-500 hover:bg-emerald-600 text-white"
+                              >
+                                <CheckCircle className="w-4 h-4 mr-1" />
+                                स्वीकृत
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleWithdrawalAction(w.id, 'reject')}
+                                data-testid={`reject-withdrawal-${w.id}`}
+                                className="border-red-500 text-red-500 hover:bg-red-500/10"
+                              >
+                                <XCircle className="w-4 h-4 mr-1" />
+                                अस्वीकृत
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                )}
+
+                {/* Approved Withdrawals */}
+                {withdrawalSubTab === 'approved' && (
+                  approvedWithdrawals.length === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-gray-400">कोई स्वीकृत निकासी नहीं</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {approvedWithdrawals.map((w, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-[#0A0A0C] rounded-lg border border-emerald-500/10">
+                          <div>
+                            <p className="text-white font-medium text-sm">{w.user_name}</p>
+                            <p className="text-gray-400 text-xs">{w.user_phone || w.user_email} | UPI: {w.upi_id}</p>
+                            <p className="text-gray-500 text-xs">{w.approved_at ? new Date(w.approved_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : w.created_at ? new Date(w.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : ''}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-bold text-emerald-400">₹{w.amount}</p>
+                            <Badge className="bg-emerald-500/20 text-emerald-400 border-0 text-xs">स्वीकृत</Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                )}
+
+                {/* Rejected Withdrawals */}
+                {withdrawalSubTab === 'rejected' && (
+                  rejectedWithdrawals.length === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-gray-400">कोई अस्वीकृत निकासी नहीं</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {rejectedWithdrawals.map((w, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-[#0A0A0C] rounded-lg border border-red-500/10">
+                          <div>
+                            <p className="text-white font-medium text-sm">{w.user_name}</p>
+                            <p className="text-gray-400 text-xs">{w.user_phone || w.user_email} | UPI: {w.upi_id}</p>
+                            <p className="text-gray-500 text-xs">{w.rejected_at ? new Date(w.rejected_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : w.created_at ? new Date(w.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : ''}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-bold text-red-400">₹{w.amount}</p>
+                            <Badge className="bg-red-500/20 text-red-400 border-0 text-xs">अस्वीकृत</Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Deposits Tab */}
+          <TabsContent value="deposits">
+            <Card className="bg-[#141418] border-white/10">
+              <CardHeader>
+                <CardTitle className="text-white font-['Unbounded']">जमा सूची</CardTitle>
+                <CardDescription className="text-gray-400">
+                  सभी सफल जमा की सूची
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {deposits.length === 0 ? (
                   <div className="text-center py-8">
-                    <p className="text-gray-400">कोई लंबित निकासी नहीं</p>
+                    <p className="text-gray-400">कोई जमा नहीं मिला</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {withdrawals.map((w, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between p-4 bg-[#0A0A0C] rounded-lg border border-white/5"
-                      >
+                  <div className="space-y-3">
+                    {deposits.map((d, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-[#0A0A0C] rounded-lg border border-white/5">
                         <div>
-                          <p className="text-white font-medium">{w.user_name}</p>
-                          <p className="text-gray-400 text-sm">{w.user_email}</p>
-                          <p className="text-gray-400 text-sm">UPI: {w.upi_id}</p>
+                          <p className="text-white font-medium text-sm">{d.user_name || 'User'}</p>
+                          <p className="text-gray-400 text-xs">{d.user_phone || d.user_email || ''}</p>
+                          <p className="text-gray-500 text-xs">
+                            {d.created_at ? new Date(d.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : ''}
+                          </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-xl font-bold text-white">₹{w.amount}</p>
-                          <div className="flex gap-2 mt-2">
-                            <Button
-                              size="sm"
-                              onClick={() => handleWithdrawalAction(w.id, 'approve')}
-                              data-testid={`approve-withdrawal-${w.id}`}
-                              className="bg-emerald-500 hover:bg-emerald-600 text-white"
-                            >
-                              <CheckCircle className="w-4 h-4 mr-1" />
-                              स्वीकृत
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleWithdrawalAction(w.id, 'reject')}
-                              data-testid={`reject-withdrawal-${w.id}`}
-                              className="border-red-500 text-red-500 hover:bg-red-500/10"
-                            >
-                              <XCircle className="w-4 h-4 mr-1" />
-                              अस्वीकृत
-                            </Button>
-                          </div>
+                          <p className="text-lg font-bold text-emerald-400">₹{d.amount}</p>
+                          <Badge className="bg-emerald-500/20 text-emerald-400 border-0 text-xs">सफल</Badge>
                         </div>
                       </div>
                     ))}
