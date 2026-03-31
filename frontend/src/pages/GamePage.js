@@ -13,11 +13,33 @@ import {
   Coins,
   Trophy,
   Wallet,
-  Send
+  Send,
+  Lock,
+  Unlock
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
+
+// Check if betting is currently open based on start_time and end_time (HH:MM format)
+const isBettingOpen = (startTime, endTime) => {
+  if (!startTime || !endTime) return true; // If no times set, allow betting
+  
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  
+  const [startH, startM] = startTime.split(':').map(Number);
+  const [endH, endM] = endTime.split(':').map(Number);
+  const startMinutes = startH * 60 + startM;
+  const endMinutes = endH * 60 + endM;
+  
+  // Handle overnight games (e.g., start 23:00, end 05:00)
+  if (startMinutes > endMinutes) {
+    return currentMinutes >= startMinutes || currentMinutes <= endMinutes;
+  }
+  
+  return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+};
 
 const GamePage = () => {
   const { gameId } = useParams();
@@ -33,10 +55,23 @@ const GamePage = () => {
   // Direct input state
   const [directNumber, setDirectNumber] = useState('');
   const [directAmount, setDirectAmount] = useState('');
+  const [bettingOpen, setBettingOpen] = useState(true);
 
   useEffect(() => {
     fetchGame();
   }, [gameId]);
+
+  // Check betting status every 30 seconds
+  useEffect(() => {
+    if (game) {
+      const checkBetting = () => {
+        setBettingOpen(isBettingOpen(game.start_time, game.end_time));
+      };
+      checkBetting();
+      const interval = setInterval(checkBetting, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [game]);
 
   const fetchGame = async () => {
     try {
@@ -51,6 +86,11 @@ const GamePage = () => {
   };
 
   const handlePlaceBet = async (number, betAmount, type) => {
+    if (!bettingOpen) {
+      toast.error('बेटिंग बंद है! समय: ' + (game?.start_time || '') + ' - ' + (game?.end_time || ''));
+      return;
+    }
+
     if (!number) {
       toast.error('कृपया नंबर दर्ज करें');
       return;
@@ -133,7 +173,7 @@ const GamePage = () => {
                 <h1 className="text-xl font-bold text-white font-['Unbounded']">{game?.name_hi}</h1>
                 <div className="flex items-center gap-2 text-gray-400 text-sm">
                   <Clock className="w-4 h-4" />
-                  <span>{game?.display_time}</span>
+                  <span>{game?.start_time || '--:--'} - {game?.end_time || '--:--'}</span>
                 </div>
               </div>
             </div>
@@ -147,6 +187,32 @@ const GamePage = () => {
       </header>
 
       <main className="container mx-auto px-4 py-6">
+        {/* Betting Status Banner */}
+        <div className={`mb-4 p-3 rounded-xl border flex items-center justify-between ${
+          bettingOpen 
+            ? 'bg-emerald-500/10 border-emerald-500/30' 
+            : 'bg-red-500/10 border-red-500/30'
+        }`} data-testid="betting-status-banner">
+          <div className="flex items-center gap-3">
+            {bettingOpen ? (
+              <Unlock className="w-5 h-5 text-emerald-400" />
+            ) : (
+              <Lock className="w-5 h-5 text-red-400" />
+            )}
+            <div>
+              <p className={`font-semibold ${bettingOpen ? 'text-emerald-400' : 'text-red-400'}`}>
+                {bettingOpen ? 'बेटिंग खुली है' : 'बेटिंग बंद है'}
+              </p>
+              <p className="text-gray-400 text-xs">
+                समय: {game?.start_time || '--:--'} से {game?.end_time || '--:--'} तक
+              </p>
+            </div>
+          </div>
+          <Badge className={bettingOpen ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}>
+            {bettingOpen ? 'OPEN' : 'CLOSED'}
+          </Badge>
+        </div>
+
         {/* Latest Result */}
         {game?.results?.length > 0 && (
           <Card className="bg-gradient-to-br from-[#D4AF37]/10 to-[#141418] border-[#D4AF37]/30 mb-6">
@@ -204,11 +270,11 @@ const GamePage = () => {
                   />
                   <Button
                     onClick={() => handlePlaceBet(directNumber, directAmount, 'single')}
-                    disabled={placing || !directNumber || !directAmount}
+                    disabled={placing || !directNumber || !directAmount || !bettingOpen}
                     data-testid="direct-single-bet-button"
-                    className="h-14 px-6 bg-[#D4AF37] hover:bg-[#FDE047] text-black font-bold"
+                    className="h-14 px-6 bg-[#D4AF37] hover:bg-[#FDE047] text-black font-bold disabled:opacity-50"
                   >
-                    {placing ? '...' : 'बेट'}
+                    {!bettingOpen ? <Lock className="w-4 h-4" /> : placing ? '...' : 'बेट'}
                   </Button>
                 </div>
                 {directAmount && directNumber && (
@@ -241,11 +307,11 @@ const GamePage = () => {
                   />
                   <Button
                     onClick={() => handlePlaceBet(selectedNumber, amount, 'jodi')}
-                    disabled={placing || !selectedNumber || !amount}
+                    disabled={placing || !selectedNumber || !amount || !bettingOpen}
                     data-testid="direct-jodi-bet-button"
-                    className="h-14 px-6 bg-[#10B981] hover:bg-[#059669] text-white font-bold"
+                    className="h-14 px-6 bg-[#10B981] hover:bg-[#059669] text-white font-bold disabled:opacity-50"
                   >
-                    {placing ? '...' : 'बेट'}
+                    {!bettingOpen ? <Lock className="w-4 h-4" /> : placing ? '...' : 'बेट'}
                   </Button>
                 </div>
                 {amount && selectedNumber && (

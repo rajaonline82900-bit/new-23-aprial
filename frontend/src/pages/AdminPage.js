@@ -81,7 +81,8 @@ const AdminPage = () => {
     game_id: '',
     name: '',
     name_hi: '',
-    time: '',
+    start_time: '',
+    end_time: '',
     display_time: '',
     is_active: true
   });
@@ -167,7 +168,8 @@ const AdminPage = () => {
         game_id: game.game_id,
         name: game.name,
         name_hi: game.name_hi,
-        time: game.time,
+        start_time: game.start_time || '',
+        end_time: game.end_time || game.time || '',
         display_time: game.display_time,
         is_active: game.is_active !== false
       });
@@ -177,7 +179,8 @@ const AdminPage = () => {
         game_id: '',
         name: '',
         name_hi: '',
-        time: '',
+        start_time: '',
+        end_time: '',
         display_time: '',
         is_active: true
       });
@@ -186,7 +189,7 @@ const AdminPage = () => {
   };
 
   const handleSaveGame = async () => {
-    if (!gameForm.name || !gameForm.name_hi || !gameForm.time) {
+    if (!gameForm.name || !gameForm.name_hi || !gameForm.start_time || !gameForm.end_time) {
       toast.error('सभी required fields भरें');
       return;
     }
@@ -198,13 +201,22 @@ const AdminPage = () => {
         await axios.put(`${API_URL}/api/admin/games/${editingGame}`, {
           name: gameForm.name,
           name_hi: gameForm.name_hi,
-          time: gameForm.time,
+          start_time: gameForm.start_time,
+          end_time: gameForm.end_time,
           display_time: gameForm.display_time,
           is_active: gameForm.is_active
         }, { withCredentials: true });
         toast.success('Game updated successfully');
       } else {
-        await axios.post(`${API_URL}/api/admin/games`, gameForm, { withCredentials: true });
+        await axios.post(`${API_URL}/api/admin/games`, {
+          game_id: gameForm.game_id,
+          name: gameForm.name,
+          name_hi: gameForm.name_hi,
+          start_time: gameForm.start_time,
+          end_time: gameForm.end_time,
+          display_time: gameForm.display_time,
+          is_active: gameForm.is_active
+        }, { withCredentials: true });
         toast.success('Game created successfully');
       }
       
@@ -823,7 +835,9 @@ const AdminPage = () => {
                       <div className="flex items-center gap-4">
                         <div className="text-right">
                           <p className="text-[#D4AF37] font-bold text-lg">{game.display_time}</p>
-                          <p className="text-gray-400 text-sm">({game.time})</p>
+                          <p className="text-gray-400 text-sm">
+                            {game.start_time || '--:--'} - {game.end_time || game.time || '--:--'}
+                          </p>
                         </div>
                         <div className="flex gap-2">
                           <Button
@@ -1270,25 +1284,39 @@ const AdminPage = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label className="text-gray-300 mb-2 block">Time (24hr)</Label>
+                <Label className="text-gray-300 mb-2 block">Start Time (24hr)</Label>
                 <Input
-                  type="text"
-                  placeholder="21:30"
-                  value={gameForm.time}
-                  onChange={(e) => setGameForm({...gameForm, time: e.target.value})}
+                  type="time"
+                  placeholder="14:00"
+                  value={gameForm.start_time}
+                  onChange={(e) => setGameForm({...gameForm, start_time: e.target.value})}
+                  data-testid="game-start-time-input"
                   className="bg-[#0A0A0C] border-white/10 text-white"
                 />
               </div>
               <div>
-                <Label className="text-gray-300 mb-2 block">Display Time</Label>
+                <Label className="text-gray-300 mb-2 block">End Time (24hr)</Label>
                 <Input
-                  type="text"
-                  placeholder="9:30 PM"
-                  value={gameForm.display_time}
-                  onChange={(e) => setGameForm({...gameForm, display_time: e.target.value})}
+                  type="time"
+                  placeholder="15:00"
+                  value={gameForm.end_time}
+                  onChange={(e) => setGameForm({...gameForm, end_time: e.target.value})}
+                  data-testid="game-end-time-input"
                   className="bg-[#0A0A0C] border-white/10 text-white"
                 />
               </div>
+            </div>
+
+            <div>
+              <Label className="text-gray-300 mb-2 block">Display Time</Label>
+              <Input
+                type="text"
+                placeholder="3:00 PM"
+                value={gameForm.display_time}
+                onChange={(e) => setGameForm({...gameForm, display_time: e.target.value})}
+                data-testid="game-display-time-input"
+                className="bg-[#0A0A0C] border-white/10 text-white"
+              />
             </div>
 
             <div className="flex items-center gap-3 p-3 bg-[#0A0A0C] rounded-lg">

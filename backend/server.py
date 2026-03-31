@@ -106,12 +106,12 @@ class UserResponse(BaseModel):
 
 # Game Configuration - Default Games (will be loaded from DB)
 DEFAULT_GAMES = {
-    "delhi_bazaar": {"name": "Delhi Bazaar", "name_hi": "दिल्ली बाजार", "time": "15:00", "display_time": "3:00 PM", "is_active": True},
-    "shri_ganesh": {"name": "Shri Ganesh", "name_hi": "श्री गणेश", "time": "18:00", "display_time": "6:00 PM", "is_active": True},
-    "faridabad": {"name": "Faridabad", "name_hi": "फरीदाबाद", "time": "18:15", "display_time": "6:15 PM", "is_active": True},
-    "ghaziabad": {"name": "Ghaziabad", "name_hi": "गाजियाबाद", "time": "20:30", "display_time": "8:30 PM", "is_active": True},
-    "gali": {"name": "Gali", "name_hi": "गली", "time": "23:30", "display_time": "11:30 PM", "is_active": True},
-    "disawar": {"name": "Disawar", "name_hi": "दिसावर", "time": "05:00", "display_time": "5:00 AM", "is_active": True}
+    "delhi_bazaar": {"name": "Delhi Bazaar", "name_hi": "दिल्ली बाजार", "start_time": "14:00", "end_time": "15:00", "display_time": "3:00 PM", "is_active": True},
+    "shri_ganesh": {"name": "Shri Ganesh", "name_hi": "श्री गणेश", "start_time": "17:00", "end_time": "18:00", "display_time": "6:00 PM", "is_active": True},
+    "faridabad": {"name": "Faridabad", "name_hi": "फरीदाबाद", "start_time": "17:15", "end_time": "18:15", "display_time": "6:15 PM", "is_active": True},
+    "ghaziabad": {"name": "Ghaziabad", "name_hi": "गाजियाबाद", "start_time": "19:30", "end_time": "20:30", "display_time": "8:30 PM", "is_active": True},
+    "gali": {"name": "Gali", "name_hi": "गली", "start_time": "22:30", "end_time": "23:30", "display_time": "11:30 PM", "is_active": True},
+    "disawar": {"name": "Disawar", "name_hi": "दिसावर", "start_time": "04:00", "end_time": "05:00", "display_time": "5:00 AM", "is_active": True}
 }
 
 # This will be populated from DB
@@ -125,7 +125,9 @@ async def load_games():
         GAMES = {g["game_id"]: {
             "name": g["name"],
             "name_hi": g["name_hi"],
-            "time": g["time"],
+            "start_time": g.get("start_time", g.get("time", "00:00")),
+            "end_time": g.get("end_time", g.get("time", "00:00")),
+            "time": g.get("end_time", g.get("time", "00:00")),  # For backward compatibility
             "display_time": g["display_time"],
             "is_active": g.get("is_active", True)
         } for g in games_from_db}
@@ -182,14 +184,16 @@ class GameCreate(BaseModel):
     game_id: str
     name: str
     name_hi: str
-    time: str  # HH:MM format
+    start_time: str  # HH:MM format - betting starts
+    end_time: str  # HH:MM format - betting ends/result time
     display_time: str  # Display format like "3:00 PM"
     is_active: bool = True
 
 class GameUpdate(BaseModel):
     name: Optional[str] = None
     name_hi: Optional[str] = None
-    time: Optional[str] = None
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
     display_time: Optional[str] = None
     is_active: Optional[bool] = None
 
@@ -301,7 +305,9 @@ async def get_games():
             "id": game_id,
             "name": game["name"],
             "name_hi": game["name_hi"],
-            "time": game["time"],
+            "start_time": game.get("start_time", game.get("time", "")),
+            "end_time": game.get("end_time", game.get("time", "")),
+            "time": game.get("end_time", game.get("time", "")),
             "display_time": game["display_time"],
             "latest_result": {
                 "single": latest_result["single_result"] if latest_result else "-",
@@ -330,7 +336,9 @@ async def get_game(game_id: str):
         "id": game_id,
         "name": game["name"],
         "name_hi": game["name_hi"],
-        "time": game["time"],
+        "start_time": game.get("start_time", game.get("time", "")),
+        "end_time": game.get("end_time", game.get("time", "")),
+        "time": game.get("end_time", game.get("time", "")),
         "display_time": game["display_time"],
         "results": results
     }
@@ -343,6 +351,29 @@ async def place_bet(bet: BetCreate, request: Request):
     games_dict = await get_games_dict()
     if bet.game_id not in games_dict:
         raise HTTPException(status_code=400, detail="Invalid game")
+    
+    game = games_dict[bet.game_id]
+    
+    # Time-based betting lock
+    start_time_str = game.get("start_time", "")
+    end_time_str = game.get("end_time", "")
+    if start_time_str and end_time_str:
+        now = datetime.now(timezone(timedelta(hours=5, minutes=30)))  # IST
+        current_minutes = now.hour * 60 + now.minute
+        try:
+            sh, sm = map(int, start_time_str.split(":"))
+            eh, em = map(int, end_time_str.split(":"))
+            start_min = sh * 60 + sm
+            end_min = eh * 60 + em
+            if start_min > end_min:
+                # Overnight game
+                betting_open = current_minutes >= start_min or current_minutes <= end_min
+            else:
+                betting_open = start_min <= current_minutes <= end_min
+            if not betting_open:
+                raise HTTPException(status_code=400, detail=f"बेटिंग बंद है! समय: {start_time_str} - {end_time_str}")
+        except ValueError:
+            pass  # If time format is wrong, allow betting
     
     if bet.bet_type not in BET_TYPES:
         raise HTTPException(status_code=400, detail="Invalid bet type")
@@ -1263,7 +1294,9 @@ async def create_game(game: GameCreate, request: Request):
         "game_id": game.game_id,
         "name": game.name,
         "name_hi": game.name_hi,
-        "time": game.time,
+        "start_time": game.start_time,
+        "end_time": game.end_time,
+        "time": game.end_time,  # backward compatibility
         "display_time": game.display_time,
         "is_active": game.is_active,
         "created_at": datetime.now(timezone.utc)
@@ -1301,8 +1334,11 @@ async def update_game(game_id: str, game: GameUpdate, request: Request):
         update_data["name"] = game.name
     if game.name_hi is not None:
         update_data["name_hi"] = game.name_hi
-    if game.time is not None:
-        update_data["time"] = game.time
+    if game.start_time is not None:
+        update_data["start_time"] = game.start_time
+    if game.end_time is not None:
+        update_data["end_time"] = game.end_time
+        update_data["time"] = game.end_time  # backward compatibility
     if game.display_time is not None:
         update_data["display_time"] = game.display_time
     if game.is_active is not None:
@@ -1372,6 +1408,13 @@ async def startup_event():
                 "created_at": datetime.now(timezone.utc)
             })
         logger.info("Default games seeded")
+    else:
+        # Update existing games with start_time/end_time if missing
+        for game_id, game_data in DEFAULT_GAMES.items():
+            await db.games.update_one(
+                {"game_id": game_id, "start_time": {"$exists": False}},
+                {"$set": {"start_time": game_data["start_time"], "end_time": game_data["end_time"]}}
+            )
     
     # Load games into memory
     await load_games()
