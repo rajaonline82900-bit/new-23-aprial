@@ -661,10 +661,6 @@ const GamePage = () => {
                     <p className="text-gray-400 text-xs">कुल राशि</p>
                     <p className="text-[#D4AF37] font-bold text-lg" data-testid="total-amount">₹{totalAmount}</p>
                   </div>
-                  <div>
-                    <p className="text-gray-400 text-xs">संभावित जीत</p>
-                    <p className="text-emerald-400 font-bold text-lg" data-testid="total-potential">₹{totalPotentialWin}</p>
-                  </div>
                 </div>
                 <Button
                   onClick={handlePlaceBatchBets}
