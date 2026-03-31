@@ -1330,16 +1330,16 @@ const AdminPage = () => {
                         <div key={i} className="flex items-center justify-between p-3 bg-[#0A0A0C] rounded-lg">
                           <div className="flex items-center gap-2">
                             <ArrowDownLeft className="w-4 h-4 text-emerald-400" />
-                            <span className="text-white">₹{d.amount}</span>
+                            <div>
+                              <span className="text-white">₹{d.amount}</span>
+                              <p className="text-gray-500 text-[10px]">
+                                {new Date(d.created_at).toLocaleDateString('hi-IN')} • {new Date(d.created_at).toLocaleTimeString('hi-IN', { hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Badge className={d.status === 'completed' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-yellow-500/20 text-yellow-400'}>
-                              {d.status}
-                            </Badge>
-                            <span className="text-gray-400 text-xs">
-                              {new Date(d.created_at).toLocaleDateString('hi-IN')}
-                            </span>
-                          </div>
+                          <Badge className={d.status === 'completed' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-yellow-500/20 text-yellow-400'}>
+                            {d.status}
+                          </Badge>
                         </div>
                       ))}
                     </div>
@@ -1358,7 +1358,10 @@ const AdminPage = () => {
                             <ArrowUpRight className="w-4 h-4 text-red-400" />
                             <div>
                               <span className="text-white">₹{w.amount}</span>
-                              <p className="text-gray-400 text-xs">{w.upi_id}</p>
+                              <p className="text-gray-500 text-[10px]">{w.upi_id}</p>
+                              <p className="text-gray-500 text-[10px]">
+                                {new Date(w.created_at).toLocaleDateString('hi-IN')} • {new Date(w.created_at).toLocaleTimeString('hi-IN', { hour: '2-digit', minute: '2-digit' })}
+                              </p>
                             </div>
                           </div>
                           <Badge className={
@@ -1405,6 +1408,9 @@ const AdminPage = () => {
                           <div>
                             <p className="text-white">{b.game_name} - {b.number}</p>
                             <p className="text-gray-400 text-xs">{b.bet_type} • ₹{b.amount}</p>
+                            <p className="text-gray-500 text-[10px]">
+                              {new Date(b.created_at).toLocaleDateString('hi-IN')} • {new Date(b.created_at).toLocaleTimeString('hi-IN', { hour: '2-digit', minute: '2-digit' })}
+                            </p>
                           </div>
                           <Badge className={
                             b.status === 'won' ? 'bg-emerald-500/20 text-emerald-400' :
@@ -1430,6 +1436,9 @@ const AdminPage = () => {
                           <div>
                             <p className="text-white">{w.game_name} - {w.number}</p>
                             <p className="text-gray-400 text-xs">{w.bet_type} • बेट: ₹{w.amount}</p>
+                            <p className="text-gray-500 text-[10px]">
+                              {new Date(w.created_at).toLocaleDateString('hi-IN')} • {new Date(w.created_at).toLocaleTimeString('hi-IN', { hour: '2-digit', minute: '2-digit' })}
+                            </p>
                           </div>
                           <span className="text-emerald-400 font-bold">+₹{w.won_amount}</span>
                         </div>
