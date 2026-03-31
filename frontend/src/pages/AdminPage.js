@@ -1258,7 +1258,7 @@ const AdminPage = () => {
                           <div>
                             <p className="text-white font-medium text-sm">{w.user_name}</p>
                             <p className="text-gray-400 text-xs">{w.user_phone || w.user_email} | UPI: {w.upi_id}</p>
-                            <p className="text-gray-500 text-xs">{w.approved_at ? new Date(w.approved_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true, hour: '2-digit', minute: '2-digit' }) : w.created_at ? new Date(w.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true, hour: '2-digit', minute: '2-digit' }) : ''}</p>
+                            <p className="text-gray-500 text-xs">{w.approved_at ? new Date(w.approved_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true, hour: '2-digit', minute: '2-digit' }) + ' (GMT+5:30)' : w.created_at ? new Date(w.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true, hour: '2-digit', minute: '2-digit' }) + ' (GMT+5:30)' : ''}</p>
                           </div>
                           <div className="text-right">
                             <p className="text-lg font-bold text-emerald-400">₹{w.amount}</p>
@@ -1283,7 +1283,7 @@ const AdminPage = () => {
                           <div>
                             <p className="text-white font-medium text-sm">{w.user_name}</p>
                             <p className="text-gray-400 text-xs">{w.user_phone || w.user_email} | UPI: {w.upi_id}</p>
-                            <p className="text-gray-500 text-xs">{w.rejected_at ? new Date(w.rejected_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true, hour: '2-digit', minute: '2-digit' }) : w.created_at ? new Date(w.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true, hour: '2-digit', minute: '2-digit' }) : ''}</p>
+                            <p className="text-gray-500 text-xs">{w.rejected_at ? new Date(w.rejected_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true, hour: '2-digit', minute: '2-digit' }) + ' (GMT+5:30)' : w.created_at ? new Date(w.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true, hour: '2-digit', minute: '2-digit' }) + ' (GMT+5:30)' : ''}</p>
                           </div>
                           <div className="text-right">
                             <p className="text-lg font-bold text-red-400">₹{w.amount}</p>
@@ -1320,7 +1320,7 @@ const AdminPage = () => {
                           <p className="text-white font-medium text-sm">{d.user_name || 'User'}</p>
                           <p className="text-gray-400 text-xs">{d.user_phone || d.user_email || ''}</p>
                           <p className="text-gray-500 text-xs">
-                            {d.created_at ? new Date(d.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true, hour: '2-digit', minute: '2-digit' }) : ''}
+                            {d.created_at ? new Date(d.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true, hour: '2-digit', minute: '2-digit' }) + ' (GMT+5:30)' : ''}
                           </p>
                         </div>
                         <div className="text-right">
@@ -1359,7 +1359,7 @@ const AdminPage = () => {
                         <div>
                           <p className="text-white font-medium">{u.name}</p>
                           <p className="text-gray-400 text-sm">{u.phone || u.email}</p>
-                          <p className="text-gray-500 text-xs">{u.created_at ? new Date(u.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true, hour: '2-digit', minute: '2-digit' }) : ''}</p>
+                          <p className="text-gray-500 text-xs">{u.created_at ? new Date(u.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true, hour: '2-digit', minute: '2-digit' }) + ' (GMT+5:30)' : ''}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
@@ -1452,7 +1452,7 @@ const AdminPage = () => {
               <div>
                 <p>{selectedUser?.name}</p>
                 <p className="text-sm text-gray-400 font-normal">{selectedUser?.phone || selectedUser?.email}</p>
-                <p className="text-xs text-gray-500 font-normal">अकाउंट बना: {selectedUser?.created_at ? new Date(selectedUser.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true, hour: '2-digit', minute: '2-digit' }) : 'N/A'}</p>
+                <p className="text-xs text-gray-500 font-normal">अकाउंट बना: {selectedUser?.created_at ? new Date(selectedUser.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true, hour: '2-digit', minute: '2-digit' }) + ' (GMT+5:30)' : 'N/A'}</p>
               </div>
             </DialogTitle>
           </DialogHeader>
@@ -1522,7 +1522,7 @@ const AdminPage = () => {
                             <div>
                               <span className="text-white">₹{d.amount}</span>
                               <p className="text-gray-500 text-[10px]">
-                                {new Date(d.created_at).toLocaleDateString('hi-IN', { timeZone: 'Asia/Kolkata' })} • {new Date(d.created_at).toLocaleTimeString('hi-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true })}
+                                {new Date(d.created_at).toLocaleDateString('hi-IN', { timeZone: 'Asia/Kolkata' })} • {new Date(d.created_at).toLocaleTimeString('hi-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true })} (GMT+5:30)
                               </p>
                             </div>
                           </div>
@@ -1549,7 +1549,7 @@ const AdminPage = () => {
                               <span className="text-white">₹{w.amount}</span>
                               <p className="text-gray-500 text-[10px]">{w.upi_id}</p>
                               <p className="text-gray-500 text-[10px]">
-                                {new Date(w.created_at).toLocaleDateString('hi-IN', { timeZone: 'Asia/Kolkata' })} • {new Date(w.created_at).toLocaleTimeString('hi-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true })}
+                                {new Date(w.created_at).toLocaleDateString('hi-IN', { timeZone: 'Asia/Kolkata' })} • {new Date(w.created_at).toLocaleTimeString('hi-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true })} (GMT+5:30)
                               </p>
                             </div>
                           </div>
@@ -1598,7 +1598,7 @@ const AdminPage = () => {
                             <p className="text-white">{b.game_name} - {b.number}</p>
                             <p className="text-gray-400 text-xs">{b.bet_type} • ₹{b.amount}</p>
                             <p className="text-gray-500 text-[10px]">
-                              {new Date(b.created_at).toLocaleDateString('hi-IN', { timeZone: 'Asia/Kolkata' })} • {new Date(b.created_at).toLocaleTimeString('hi-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true })}
+                              {new Date(b.created_at).toLocaleDateString('hi-IN', { timeZone: 'Asia/Kolkata' })} • {new Date(b.created_at).toLocaleTimeString('hi-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true })} (GMT+5:30)
                             </p>
                           </div>
                           <Badge className={
@@ -1626,7 +1626,7 @@ const AdminPage = () => {
                             <p className="text-white">{w.game_name} - {w.number}</p>
                             <p className="text-gray-400 text-xs">{w.bet_type} • बेट: ₹{w.amount}</p>
                             <p className="text-gray-500 text-[10px]">
-                              {new Date(w.created_at).toLocaleDateString('hi-IN', { timeZone: 'Asia/Kolkata' })} • {new Date(w.created_at).toLocaleTimeString('hi-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true })}
+                              {new Date(w.created_at).toLocaleDateString('hi-IN', { timeZone: 'Asia/Kolkata' })} • {new Date(w.created_at).toLocaleTimeString('hi-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true })} (GMT+5:30)
                             </p>
                           </div>
                           <span className="text-emerald-400 font-bold">+₹{w.won_amount}</span>
