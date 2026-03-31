@@ -21,7 +21,8 @@ import {
   Home,
   IndianRupee,
   BarChart3,
-  Gift
+  Gift,
+  Send
 } from 'lucide-react';
 import { toast } from 'sonner';
 import FooterNav from '../components/FooterNav';
@@ -33,11 +34,20 @@ const DashboardPage = () => {
   const navigate = useNavigate();
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [telegramLink, setTelegramLink] = useState('');
 
   useEffect(() => {
     fetchGames();
+    fetchSettings();
     refreshUser();
   }, [refreshUser]);
+
+  const fetchSettings = async () => {
+    try {
+      const { data } = await axios.get(`${API_URL}/api/settings`, { withCredentials: true });
+      setTelegramLink(data.telegram_link || '');
+    } catch (error) {}
+  };
 
   const fetchGames = async () => {
     try {
@@ -89,6 +99,13 @@ const DashboardPage = () => {
             </div>
             
             <div className="flex items-center gap-4">
+              {telegramLink && (
+                <a href={telegramLink} target="_blank" rel="noopener noreferrer" data-testid="telegram-button">
+                  <Button variant="outline" size="sm" className="border-[#229ED9]/50 text-[#229ED9] hover:bg-[#229ED9]/10">
+                    <Send className="w-4 h-4" />
+                  </Button>
+                </a>
+              )}
               <div className="hidden sm:flex items-center gap-2 bg-[#141418] px-4 py-2 rounded-lg border border-white/10">
                 <Wallet className="w-4 h-4 text-[#D4AF37]" />
                 <span className="text-white font-semibold">₹{user?.balance?.toFixed(2) || '0.00'}</span>
@@ -133,11 +150,20 @@ const DashboardPage = () => {
                 <p className="text-gray-400 text-sm">आपका बैलेंस</p>
                 <p className="text-2xl font-bold text-white">₹{user?.balance?.toFixed(2) || '0.00'}</p>
               </div>
-              <Link to="/wallet">
-                <Button className="bg-[#D4AF37] hover:bg-[#FDE047] text-black font-bold">
-                  जमा करें
-                </Button>
-              </Link>
+              <div className="flex items-center gap-2">
+                {telegramLink && (
+                  <a href={telegramLink} target="_blank" rel="noopener noreferrer" data-testid="telegram-button">
+                    <Button variant="outline" className="border-[#229ED9]/50 text-[#229ED9] hover:bg-[#229ED9]/10">
+                      <Send className="w-4 h-4" />
+                    </Button>
+                  </a>
+                )}
+                <Link to="/wallet">
+                  <Button className="bg-[#D4AF37] hover:bg-[#FDE047] text-black font-bold">
+                    जमा करें
+                  </Button>
+                </Link>
+              </div>
             </div>
           </CardContent>
         </Card>

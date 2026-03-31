@@ -99,6 +99,11 @@ const AdminPage = () => {
     winnings: [],
     stats: {}
   });
+
+  // Settings state
+  const [telegramLink, setTelegramLink] = useState('');
+  const [whatsappLink, setWhatsappLink] = useState('');
+  const [savingSettings, setSavingSettings] = useState(false);
   const [loadingUserDetails, setLoadingUserDetails] = useState(false);
 
   // Wallet adjustment state
@@ -130,6 +135,9 @@ const AdminPage = () => {
     if (activeTab === 'games') {
       fetchGames();
     }
+    if (activeTab === 'settings') {
+      fetchSettings();
+    }
   }, [activeTab, betDistDate, betDistGame]);
 
   const fetchData = async () => {
@@ -158,6 +166,29 @@ const AdminPage = () => {
       setGames(data.games);
     } catch (error) {
       toast.error('Games load नहीं हो पाए');
+    }
+  };
+
+  const fetchSettings = async () => {
+    try {
+      const { data } = await axios.get(`${API_URL}/api/admin/settings`, { withCredentials: true });
+      setTelegramLink(data.telegram_link || '');
+      setWhatsappLink(data.whatsapp_link || '');
+    } catch (error) {}
+  };
+
+  const handleSaveSettings = async () => {
+    setSavingSettings(true);
+    try {
+      await axios.put(`${API_URL}/api/admin/settings`, {
+        telegram_link: telegramLink,
+        whatsapp_link: whatsappLink
+      }, { withCredentials: true });
+      toast.success('Settings saved!');
+    } catch (error) {
+      toast.error('Settings save नहीं हो पाई');
+    } finally {
+      setSavingSettings(false);
     }
   };
 
@@ -564,6 +595,13 @@ const AdminPage = () => {
             >
               यूजर्स
             </TabsTrigger>
+            <TabsTrigger 
+              value="settings"
+              data-testid="admin-settings-tab"
+              className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black"
+            >
+              सेटिंग्स
+            </TabsTrigger>
           </TabsList>
 
           {/* Results Tab */}
@@ -958,6 +996,54 @@ const AdminPage = () => {
                     </div>
                   ))}
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Settings Tab */}
+          <TabsContent value="settings">
+            <Card className="bg-[#141418] border-white/10">
+              <CardHeader>
+                <CardTitle className="text-white font-['Unbounded']">ऐप सेटिंग्स</CardTitle>
+                <CardDescription className="text-gray-400">
+                  Telegram और WhatsApp लिंक सेट करें
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div>
+                  <Label className="text-gray-300 mb-2 block">Telegram Channel/Group Link</Label>
+                  <Input
+                    type="url"
+                    placeholder="https://t.me/yourchannel"
+                    value={telegramLink}
+                    onChange={(e) => setTelegramLink(e.target.value)}
+                    data-testid="settings-telegram-link"
+                    className="bg-[#0A0A0C] border-white/10 text-white"
+                  />
+                </div>
+                <div>
+                  <Label className="text-gray-300 mb-2 block">WhatsApp Group Link</Label>
+                  <Input
+                    type="url"
+                    placeholder="https://chat.whatsapp.com/..."
+                    value={whatsappLink}
+                    onChange={(e) => setWhatsappLink(e.target.value)}
+                    data-testid="settings-whatsapp-link"
+                    className="bg-[#0A0A0C] border-white/10 text-white"
+                  />
+                </div>
+                <Button
+                  onClick={handleSaveSettings}
+                  disabled={savingSettings}
+                  data-testid="save-settings-button"
+                  className="bg-[#D4AF37] hover:bg-[#FDE047] text-black font-bold"
+                >
+                  {savingSettings ? (
+                    <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> सेव हो रहा है...</span>
+                  ) : (
+                    <span className="flex items-center gap-2"><Save className="w-4 h-4" /> सेव करें</span>
+                  )}
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>

@@ -1550,6 +1550,42 @@ async def delete_game(game_id: str, request: Request):
     return {"message": "Game deleted successfully"}
 
 # Include the router in the main app
+# Settings API (public - for telegram link etc.)
+@api_router.get("/settings")
+async def get_settings():
+    settings = await db.settings.find_one({"key": "app_settings"}, {"_id": 0})
+    if not settings:
+        return {"telegram_link": "", "whatsapp_link": ""}
+    return {"telegram_link": settings.get("telegram_link", ""), "whatsapp_link": settings.get("whatsapp_link", "")}
+
+@api_router.get("/admin/settings")
+async def get_admin_settings(request: Request):
+    user = await get_current_user(request)
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+    settings = await db.settings.find_one({"key": "app_settings"}, {"_id": 0})
+    if not settings:
+        return {"telegram_link": "", "whatsapp_link": ""}
+    return {"telegram_link": settings.get("telegram_link", ""), "whatsapp_link": settings.get("whatsapp_link", "")}
+
+@api_router.put("/admin/settings")
+async def update_settings(request: Request):
+    user = await get_current_user(request)
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+    body = await request.json()
+    await db.settings.update_one(
+        {"key": "app_settings"},
+        {"$set": {
+            "key": "app_settings",
+            "telegram_link": body.get("telegram_link", ""),
+            "whatsapp_link": body.get("whatsapp_link", ""),
+            "updated_at": datetime.now(timezone.utc)
+        }},
+        upsert=True
+    )
+    return {"message": "Settings updated successfully"}
+
 app.include_router(api_router)
 
 app.add_middleware(
