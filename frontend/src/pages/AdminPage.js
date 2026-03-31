@@ -977,7 +977,7 @@ const AdminPage = () => {
                 ) : (
                   <>
                     {/* Summary */}
-                    <div className="grid grid-cols-3 gap-4 mb-6">
+                    <div className="grid grid-cols-2 gap-4 mb-6">
                       <div className="p-4 bg-[#0A0A0C] rounded-lg text-center">
                         <p className="text-gray-400 text-sm">कुल बेट्स</p>
                         <p className="text-2xl font-bold text-white">{betDistribution.summary.total_bets}</p>
@@ -985,10 +985,6 @@ const AdminPage = () => {
                       <div className="p-4 bg-emerald-500/10 rounded-lg text-center border border-emerald-500/30">
                         <p className="text-gray-400 text-sm">कुल राशि</p>
                         <p className="text-2xl font-bold text-emerald-400">₹{betDistribution.summary.total_bet_amount}</p>
-                      </div>
-                      <div className="p-4 bg-red-500/10 rounded-lg text-center border border-red-500/30">
-                        <p className="text-gray-400 text-sm">संभावित पेआउट</p>
-                        <p className="text-2xl font-bold text-red-400">₹{betDistribution.summary.total_potential_payout}</p>
                       </div>
                     </div>
 
@@ -999,7 +995,6 @@ const AdminPage = () => {
                           <h3 className="text-lg font-bold text-white">{gameData.game_name}</h3>
                           <div className="flex gap-4 text-sm">
                             <span className="text-emerald-400">राशि: ₹{gameData.total_amount}</span>
-                            <span className="text-red-400">पेआउट: ₹{gameData.total_potential}</span>
                           </div>
                         </div>
 
@@ -1018,7 +1013,6 @@ const AdminPage = () => {
                                     <div className="mt-1">
                                       <p className="text-white font-semibold">₹{data.amount}</p>
                                       <p className="text-gray-400 text-xs">{data.count} बेट</p>
-                                      <p className="text-red-400 text-xs">पेआउट: ₹{data.potential_payout}</p>
                                     </div>
                                   </div>
                                 </div>
@@ -1059,7 +1053,6 @@ const AdminPage = () => {
                                   <span className="text-xl font-bold text-blue-400">{number}</span>
                                   <p className="text-white text-sm">₹{data.amount}</p>
                                   <p className="text-gray-400 text-xs">{data.count} बेट</p>
-                                  <p className="text-red-400 text-xs">₹{data.potential_payout}</p>
                                 </div>
                               ))}
                             </div>
@@ -1079,7 +1072,6 @@ const AdminPage = () => {
                                   <span className="text-xl font-bold text-orange-400">{number}</span>
                                   <p className="text-white text-sm">₹{data.amount}</p>
                                   <p className="text-gray-400 text-xs">{data.count} बेट</p>
-                                  <p className="text-red-400 text-xs">₹{data.potential_payout}</p>
                                 </div>
                               ))}
                             </div>
