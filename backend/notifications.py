@@ -96,7 +96,7 @@ class NotificationService:
 🎯 <b>जोड़ी रिजल्ट:</b> {jodi_result}
 
 अगले गेम में भाग लें!
-🔗 https://matka-numbers-bet.preview.emergentagent.com
+🔗 {os.environ.get('FRONTEND_URL', 'https://matka-numbers-bet.preview.emergentagent.com')}
 """
         
         message_whatsapp = f"""
