@@ -190,14 +190,14 @@ const DashboardPage = () => {
                 <p className="text-2xl font-bold text-white">₹{user?.balance?.toFixed(2) || '0.00'}</p>
               </div>
               <div className="flex items-center gap-2">
-                <Link to="/wallet?tab=withdraw">
-                  <Button variant="outline" className="border-red-500/50 text-red-400 hover:bg-red-500/10 font-bold">
-                    निकासी
-                  </Button>
-                </Link>
                 <Link to="/wallet">
                   <Button className="bg-[#D4AF37] hover:bg-[#FDE047] text-black font-bold">
                     जमा करें
+                  </Button>
+                </Link>
+                <Link to="/wallet?tab=withdraw">
+                  <Button variant="outline" className="border-red-500/50 text-red-400 hover:bg-red-500/10 font-bold">
+                    निकासी
                   </Button>
                 </Link>
               </div>
