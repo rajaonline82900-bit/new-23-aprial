@@ -16,6 +16,9 @@ import ProfilePage from "./pages/ProfilePage";
 import AdminPage from "./pages/AdminPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import JantriPage from "./pages/JantriPage";
+import HowToPlayPage from "./pages/HowToPlayPage";
+import ReferPage from "./pages/ReferPage";
+import RateListPage from "./pages/RateListPage";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -146,6 +149,30 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <JantriPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/how-to-play"
+        element={
+          <ProtectedRoute>
+            <HowToPlayPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/refer"
+        element={
+          <ProtectedRoute>
+            <ReferPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/rate-list"
+        element={
+          <ProtectedRoute>
+            <RateListPage />
           </ProtectedRoute>
         }
       />

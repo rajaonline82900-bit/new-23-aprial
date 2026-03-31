@@ -1767,8 +1767,12 @@ async def delete_game(game_id: str, request: Request):
 async def get_settings():
     settings = await db.settings.find_one({"key": "app_settings"}, {"_id": 0})
     if not settings:
-        return {"telegram_link": "", "whatsapp_link": ""}
-    return {"telegram_link": settings.get("telegram_link", ""), "whatsapp_link": settings.get("whatsapp_link", "")}
+        return {"telegram_link": "", "whatsapp_link": "", "withdrawal_proof_telegram": ""}
+    return {
+        "telegram_link": settings.get("telegram_link", ""),
+        "whatsapp_link": settings.get("whatsapp_link", ""),
+        "withdrawal_proof_telegram": settings.get("withdrawal_proof_telegram", "")
+    }
 
 @api_router.get("/admin/settings")
 async def get_admin_settings(request: Request):
@@ -1777,8 +1781,12 @@ async def get_admin_settings(request: Request):
         raise HTTPException(status_code=403, detail="Admin only")
     settings = await db.settings.find_one({"key": "app_settings"}, {"_id": 0})
     if not settings:
-        return {"telegram_link": "", "whatsapp_link": ""}
-    return {"telegram_link": settings.get("telegram_link", ""), "whatsapp_link": settings.get("whatsapp_link", "")}
+        return {"telegram_link": "", "whatsapp_link": "", "withdrawal_proof_telegram": ""}
+    return {
+        "telegram_link": settings.get("telegram_link", ""),
+        "whatsapp_link": settings.get("whatsapp_link", ""),
+        "withdrawal_proof_telegram": settings.get("withdrawal_proof_telegram", "")
+    }
 
 @api_router.put("/admin/settings")
 async def update_settings(request: Request):
@@ -1792,6 +1800,7 @@ async def update_settings(request: Request):
             "key": "app_settings",
             "telegram_link": body.get("telegram_link", ""),
             "whatsapp_link": body.get("whatsapp_link", ""),
+            "withdrawal_proof_telegram": body.get("withdrawal_proof_telegram", ""),
             "updated_at": datetime.now(timezone.utc)
         }},
         upsert=True

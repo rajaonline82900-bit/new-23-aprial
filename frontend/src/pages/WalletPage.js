@@ -316,7 +316,7 @@ const WalletPage = () => {
                           {tx.type === 'deposit' ? 'जमा' : 'निकासी'}
                         </p>
                         <p className="text-gray-400 text-sm">
-                          {new Date(tx.created_at).toLocaleDateString('hi-IN')}
+                          {new Date(tx.created_at).toLocaleDateString('hi-IN')} • {new Date(tx.created_at).toLocaleTimeString('hi-IN', { hour: '2-digit', minute: '2-digit' })}
                         </p>
                       </div>
                     </div>

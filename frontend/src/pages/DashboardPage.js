@@ -22,10 +22,12 @@ import {
   IndianRupee,
   BarChart3,
   Gift,
-  Send
+  Send,
+  Menu
 } from 'lucide-react';
 import { toast } from 'sonner';
 import FooterNav from '../components/FooterNav';
+import SidebarMenu from '../components/SidebarMenu';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -35,6 +37,7 @@ const DashboardPage = () => {
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [telegramLink, setTelegramLink] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     fetchGames();
@@ -92,6 +95,13 @@ const DashboardPage = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
+              <button
+                onClick={() => setSidebarOpen(true)}
+                data-testid="sidebar-toggle"
+                className="p-2 rounded-lg bg-[#141418] border border-white/10 text-gray-400 hover:text-white transition-all"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#FDE047] flex items-center justify-center">
                 <Coins className="w-5 h-5 text-black" />
               </div>
@@ -291,6 +301,7 @@ const DashboardPage = () => {
           )}
         </div>
       </main>
+      <SidebarMenu open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <FooterNav />
     </div>
   );

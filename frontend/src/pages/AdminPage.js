@@ -106,6 +106,7 @@ const AdminPage = () => {
   // Settings state
   const [telegramLink, setTelegramLink] = useState('');
   const [whatsappLink, setWhatsappLink] = useState('');
+  const [withdrawalProofTelegram, setWithdrawalProofTelegram] = useState('');
   const [savingSettings, setSavingSettings] = useState(false);
 
   // Reverse state
@@ -193,6 +194,7 @@ const AdminPage = () => {
       const { data } = await axios.get(`${API_URL}/api/admin/settings`, { withCredentials: true });
       setTelegramLink(data.telegram_link || '');
       setWhatsappLink(data.whatsapp_link || '');
+      setWithdrawalProofTelegram(data.withdrawal_proof_telegram || '');
     } catch (error) {}
   };
 
@@ -201,7 +203,8 @@ const AdminPage = () => {
     try {
       await axios.put(`${API_URL}/api/admin/settings`, {
         telegram_link: telegramLink,
-        whatsapp_link: whatsappLink
+        whatsapp_link: whatsappLink,
+        withdrawal_proof_telegram: withdrawalProofTelegram
       }, { withCredentials: true });
       toast.success('Settings saved!');
     } catch (error) {
@@ -1216,6 +1219,17 @@ const AdminPage = () => {
                     value={whatsappLink}
                     onChange={(e) => setWhatsappLink(e.target.value)}
                     data-testid="settings-whatsapp-link"
+                    className="bg-[#0A0A0C] border-white/10 text-white"
+                  />
+                </div>
+                <div>
+                  <Label className="text-gray-300 mb-2 block">Withdrawal Proof Telegram Link</Label>
+                  <Input
+                    type="url"
+                    placeholder="https://t.me/withdrawal_proofs"
+                    value={withdrawalProofTelegram}
+                    onChange={(e) => setWithdrawalProofTelegram(e.target.value)}
+                    data-testid="settings-withdrawal-proof"
                     className="bg-[#0A0A0C] border-white/10 text-white"
                   />
                 </div>
