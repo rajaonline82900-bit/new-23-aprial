@@ -354,35 +354,6 @@ const GamePage = () => {
                 </Button>
               )}
             </div>
-            {/* Quick Amount Setter */}
-            <div className="flex items-center gap-2 mt-3 flex-wrap">
-              <span className="text-gray-400 text-sm">Quick राशि:</span>
-              {[10, 50, 100, 200, 500].map((amt) => (
-                <button
-                  key={amt}
-                  onClick={() => setQuickAmount(String(amt))}
-                  data-testid={`quick-amt-${amt}`}
-                  className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${
-                    quickAmount === String(amt)
-                      ? 'bg-[#D4AF37] text-black'
-                      : 'bg-[#0A0A0C] text-gray-400 border border-white/10 hover:border-[#D4AF37]/50'
-                  }`}
-                >
-                  ₹{amt}
-                </button>
-              ))}
-              <Input
-                type="number"
-                placeholder="अन्य"
-                value={quickAmount}
-                onChange={(e) => setQuickAmount(e.target.value)}
-                data-testid="custom-quick-amount"
-                className="bg-[#0A0A0C] border-white/10 text-white h-8 w-20 text-sm text-center"
-              />
-            </div>
-            <p className="text-gray-500 text-xs mt-2">
-              जोड़ी पर क्लिक करें quick राशि लगाने के लिए, या सीधे amount टाइप करें
-            </p>
           </CardHeader>
           <CardContent>
             {/* Jantri Grid - 10x10 */}
@@ -445,35 +416,6 @@ const GamePage = () => {
                 </Button>
               )}
             </div>
-            {/* Haruf Quick Amount */}
-            <div className="flex items-center gap-2 mt-3 flex-wrap">
-              <span className="text-gray-400 text-sm">Quick राशि:</span>
-              {[10, 50, 100, 200, 500].map((amt) => (
-                <button
-                  key={amt}
-                  onClick={() => setHarufQuickAmount(String(amt))}
-                  data-testid={`haruf-quick-amt-${amt}`}
-                  className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${
-                    harufQuickAmount === String(amt)
-                      ? 'bg-[#D4AF37] text-black'
-                      : 'bg-[#0A0A0C] text-gray-400 border border-white/10 hover:border-[#D4AF37]/50'
-                  }`}
-                >
-                  ₹{amt}
-                </button>
-              ))}
-              <Input
-                type="number"
-                placeholder="अन्य"
-                value={harufQuickAmount}
-                onChange={(e) => setHarufQuickAmount(e.target.value)}
-                data-testid="haruf-custom-quick-amount"
-                className="bg-[#0A0A0C] border-white/10 text-white h-8 w-20 text-sm text-center"
-              />
-            </div>
-            <p className="text-gray-500 text-xs mt-2">
-              जीत: 9x | अंदर = जोड़ी का पहला अंक, बाहर = जोड़ी का दूसरा अंक
-            </p>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
