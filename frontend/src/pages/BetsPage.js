@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import FooterNav from '../components/FooterNav';
+
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const BetsPage = () => {
@@ -197,6 +199,7 @@ const BetsPage = () => {
           </div>
         )}
       </main>
+      <FooterNav />
     </div>
   );
 };

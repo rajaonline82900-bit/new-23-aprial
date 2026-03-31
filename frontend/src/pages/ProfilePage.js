@@ -11,6 +11,7 @@ import {
   Shield,
   Calendar
 } from 'lucide-react';
+import FooterNav from '../components/FooterNav';
 
 const ProfilePage = () => {
   const { user } = useAuth();
@@ -103,6 +104,7 @@ const ProfilePage = () => {
           </CardContent>
         </Card>
       </main>
+      <FooterNav />
     </div>
   );
 };

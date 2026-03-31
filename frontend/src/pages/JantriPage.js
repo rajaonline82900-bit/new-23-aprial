@@ -18,6 +18,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import FooterNav from '../components/FooterNav';
+
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const GAMES = [
@@ -259,6 +261,7 @@ const JantriPage = () => {
           </CardContent>
         </Card>
       </main>
+      <FooterNav />
     </div>
   );
 };

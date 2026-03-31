@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
+import FooterNav from '../components/FooterNav';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -433,6 +434,7 @@ const WalletPage = () => {
           </Button>
         </DialogContent>
       </Dialog>
+      <FooterNav />
     </div>
   );
 };
