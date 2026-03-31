@@ -12,6 +12,8 @@ from typing import List, Optional, Dict, Any
 import uuid
 from datetime import datetime, timezone, timedelta
 import bcrypt
+
+IST = timezone(timedelta(hours=5, minutes=30))
 import jwt
 from bson import ObjectId
 from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionResponse, CheckoutStatusResponse, CheckoutSessionRequest
@@ -171,10 +173,10 @@ async def get_games_dict():
 
 # Bet Types
 BET_TYPES = {
-    "single": {"name": "Single", "name_hi": "एकल अंक", "multiplier": 9},  # 0-9
-    "jodi": {"name": "Jodi", "name_hi": "जोड़ी", "multiplier": 90},  # 00-99
-    "haruf_andar": {"name": "Haruf Andar", "name_hi": "हरूफ अंदर", "multiplier": 9},  # 0-9 left digit
-    "haruf_bahar": {"name": "Haruf Bahar", "name_hi": "हरूफ बाहर", "multiplier": 9}  # 0-9 right digit
+    "single": {"name": "Single", "name_hi": "एकल अंक", "multiplier": 10},  # 0-9
+    "jodi": {"name": "Jodi", "name_hi": "जोड़ी", "multiplier": 100},  # 00-99
+    "haruf_andar": {"name": "Haruf Andar", "name_hi": "हरूफ अंदर", "multiplier": 10},  # 0-9 left digit
+    "haruf_bahar": {"name": "Haruf Bahar", "name_hi": "हरूफ बाहर", "multiplier": 10}  # 0-9 right digit
 }
 
 # Deposit packages (fixed amounts for security)
@@ -256,7 +258,7 @@ async def register(user_data: UserRegister, response: Request):
         "password_hash": hashed,
         "role": "user",
         "balance": 0.0,
-        "created_at": datetime.now(timezone.utc)
+        "created_at": datetime.now(IST)
     }
     
     result = await db.users.insert_one(user_doc)
@@ -398,7 +400,7 @@ async def complete_signup(data: OTPCompleteSignup):
         "role": "user",
         "balance": 0.0,
         "auth_type": "otp",
-        "created_at": datetime.now(timezone.utc)
+        "created_at": datetime.now(IST)
     }
     if data.email and data.email.strip():
         user_doc["email"] = data.email.strip().lower()
@@ -508,7 +510,7 @@ async def google_session(request: Request):
             "balance": 0.0,
             "auth_type": "google",
             "picture": google_data.get("picture"),
-            "created_at": datetime.now(timezone.utc)
+            "created_at": datetime.now(IST)
         }
         result = await db.users.insert_one(user_doc)
         user_id = str(result.inserted_id)
@@ -680,7 +682,7 @@ async def place_bet(bet: BetCreate, request: Request):
         {"$inc": {"balance": -bet.amount}}
     )
     
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    today = datetime.now(IST).strftime("%Y-%m-%d")
     
     games_dict = await get_games_dict()
     bet_doc = {
@@ -694,7 +696,7 @@ async def place_bet(bet: BetCreate, request: Request):
         "potential_win": bet.amount * BET_TYPES[bet.bet_type]["multiplier"],
         "date": today,
         "status": "pending",
-        "created_at": datetime.now(timezone.utc)
+        "created_at": datetime.now(IST)
     }
     
     await db.bets.insert_one(bet_doc)
@@ -769,7 +771,7 @@ async def place_batch_bets(batch: BatchBetCreate, request: Request):
         {"$inc": {"balance": -total_amount}}
     )
     
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    today = datetime.now(IST).strftime("%Y-%m-%d")
     multiplier = BET_TYPES[batch.bet_type]["multiplier"]
     
     bet_docs = []
@@ -786,7 +788,7 @@ async def place_batch_bets(batch: BatchBetCreate, request: Request):
             "potential_win": b.amount * multiplier,
             "date": today,
             "status": "pending",
-            "created_at": datetime.now(timezone.utc)
+            "created_at": datetime.now(IST)
         }
         bet_docs.append(bet_doc)
         total_potential += bet_doc["potential_win"]
@@ -882,7 +884,7 @@ async def create_deposit(deposit: DepositRequest, request: Request):
         "status": "pending",
         "order_id": order_id,
         "payment_url": payment_url,
-        "created_at": datetime.now(timezone.utc)
+        "created_at": datetime.now(IST)
     }
     await db.transactions.insert_one(transaction_doc)
     
@@ -939,7 +941,7 @@ async def imb_callback(request: Request):
                 )
                 await db.transactions.update_one(
                     {"order_id": order_id},
-                    {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc)}}
+                    {"$set": {"status": "completed", "completed_at": datetime.now(IST)}}
                 )
                 logging.info(f"Deposit completed: order={order_id}, amount={transaction['amount']}")
     else:
@@ -972,7 +974,7 @@ async def imb_webhook(request: Request):
             )
             await db.transactions.update_one(
                 {"order_id": order_id},
-                {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc)}}
+                {"$set": {"status": "completed", "completed_at": datetime.now(IST)}}
             )
     elif order_id:
         await db.transactions.update_one(
@@ -1024,7 +1026,7 @@ async def check_deposit_status(order_id: str, request: Request):
                 )
                 await db.transactions.update_one(
                     {"order_id": order_id},
-                    {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc)}}
+                    {"$set": {"status": "completed", "completed_at": datetime.now(IST)}}
                 )
             return {"status": "completed", "amount": transaction["amount"]}
         
@@ -1065,7 +1067,7 @@ async def request_withdrawal(withdraw: WithdrawRequest, request: Request):
         "bank_account": withdraw.bank_account,
         "ifsc_code": withdraw.ifsc_code,
         "status": "pending",
-        "created_at": datetime.now(timezone.utc)
+        "created_at": datetime.now(IST)
     }
     await db.transactions.insert_one(withdrawal_doc)
     
@@ -1086,7 +1088,7 @@ async def get_referral_info(request: Request):
             "code": code,
             "referred_users": [],
             "total_earned": 0.0,
-            "created_at": datetime.now(timezone.utc)
+            "created_at": datetime.now(IST)
         }
         await db.referrals.insert_one(ref_data)
         ref_data.pop("_id", None)
@@ -1137,7 +1139,7 @@ async def apply_referral(request: Request):
         await db.transactions.insert_one({
             "user_id": uid, "amount": bonus_amount, "type": "bonus",
             "status": "completed", "description": desc,
-            "created_at": datetime.now(timezone.utc)
+            "created_at": datetime.now(IST)
         })
     
     return {"message": f"₹{int(bonus_amount)} बोनस आपके वॉलेट में जोड़ दिया गया!", "bonus": bonus_amount}
@@ -1185,7 +1187,7 @@ async def push_subscribe(request: Request):
     
     await db.push_subscriptions.update_one(
         {"user_id": user["_id"]},
-        {"$set": {"user_id": user["_id"], "subscription": subscription, "updated_at": datetime.now(timezone.utc)}},
+        {"$set": {"user_id": user["_id"], "subscription": subscription, "updated_at": datetime.now(IST)}},
         upsert=True
     )
     return {"message": "subscribed"}
@@ -1269,7 +1271,7 @@ async def stripe_webhook(request: Request):
                 # Update transaction
                 await db.transactions.update_one(
                     {"session_id": session_id},
-                    {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc)}}
+                    {"$set": {"status": "completed", "completed_at": datetime.now(IST)}}
                 )
                 
                 # Update payment_transactions
@@ -1319,7 +1321,7 @@ async def declare_result(result: ResultDeclare, request: Request):
         "date": result_date,
         "single_result": single_result,
         "jodi_result": result.jodi_result,
-        "declared_at": datetime.now(timezone.utc)
+        "declared_at": datetime.now(IST)
     }
     await db.results.insert_one(result_doc)
     
@@ -1626,7 +1628,7 @@ async def approve_withdrawal(withdrawal_id: str, request: Request):
     
     result = await db.transactions.update_one(
         {"id": withdrawal_id, "type": "withdrawal", "status": "pending"},
-        {"$set": {"status": "approved", "approved_at": datetime.now(timezone.utc)}}
+        {"$set": {"status": "approved", "approved_at": datetime.now(IST)}}
     )
     
     if result.modified_count == 0:
@@ -1653,7 +1655,7 @@ async def reject_withdrawal(withdrawal_id: str, request: Request):
     # Update status
     await db.transactions.update_one(
         {"id": withdrawal_id},
-        {"$set": {"status": "rejected", "rejected_at": datetime.now(timezone.utc)}}
+        {"$set": {"status": "rejected", "rejected_at": datetime.now(IST)}}
     )
     
     return {"message": "Withdrawal rejected and amount refunded"}
@@ -1665,7 +1667,7 @@ async def get_bet_distribution(request: Request, game_id: Optional[str] = None, 
     
     # Default to today
     if not date:
-        date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        date = datetime.now(IST).strftime("%Y-%m-%d")
     
     # Build query
     query = {"date": date, "status": "pending"}
@@ -1742,7 +1744,7 @@ async def get_jantri_report(request: Request, game_id: Optional[str] = None, day
     await get_admin_user(request)
     
     # Calculate date range
-    end_date = datetime.now(timezone.utc)
+    end_date = datetime.now(IST)
     start_date = end_date - timedelta(days=days)
     start_date_str = start_date.strftime("%Y-%m-%d")
     
@@ -1785,7 +1787,7 @@ async def export_jantri(request: Request, game_id: Optional[str] = None, days: i
     await get_admin_user(request)
     
     # Calculate date range
-    end_date = datetime.now(timezone.utc)
+    end_date = datetime.now(IST)
     start_date = end_date - timedelta(days=days)
     start_date_str = start_date.strftime("%Y-%m-%d")
     
@@ -1932,7 +1934,7 @@ async def adjust_user_wallet(user_id: str, adjustment: WalletAdjustment, request
         "reason": adjustment.reason,
         "admin_email": admin["email"],
         "status": "completed",
-        "created_at": datetime.now(timezone.utc)
+        "created_at": datetime.now(IST)
     }
     await db.transactions.insert_one(transaction_doc)
     
@@ -1953,8 +1955,8 @@ async def get_admin_stats(request: Request):
     pending_withdrawals = await db.transactions.count_documents({"type": "withdrawal", "status": "pending"})
     
     # Today's stats
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    today = datetime.now(IST).strftime("%Y-%m-%d")
+    today_start = datetime.now(IST).replace(hour=0, minute=0, second=0, microsecond=0)
     today_bets = await db.bets.count_documents({"date": today})
     
     # Today's deposits
@@ -2029,7 +2031,7 @@ async def subscribe_notifications(data: NotificationSubscribe, request: Request)
         "email": user["email"],
         "telegram_chat_id": data.telegram_chat_id,
         "whatsapp_number": data.whatsapp_number,
-        "subscribed_at": datetime.now(timezone.utc)
+        "subscribed_at": datetime.now(IST)
     }
     
     if existing:
@@ -2114,7 +2116,7 @@ async def create_game(game: GameCreate, request: Request):
         "time": game.end_time,  # backward compatibility
         "display_time": game.display_time,
         "is_active": game.is_active,
-        "created_at": datetime.now(timezone.utc)
+        "created_at": datetime.now(IST)
     }
     
     await db.games.insert_one(game_doc)
@@ -2138,7 +2140,7 @@ async def update_game(game_id: str, game: GameUpdate, request: Request):
             await db.games.insert_one({
                 "game_id": game_id,
                 **default_game,
-                "created_at": datetime.now(timezone.utc)
+                "created_at": datetime.now(IST)
             })
         else:
             raise HTTPException(status_code=404, detail="Game not found")
@@ -2160,7 +2162,7 @@ async def update_game(game_id: str, game: GameUpdate, request: Request):
         update_data["is_active"] = game.is_active
     
     if update_data:
-        update_data["updated_at"] = datetime.now(timezone.utc)
+        update_data["updated_at"] = datetime.now(IST)
         await db.games.update_one(
             {"game_id": game_id},
             {"$set": update_data}
@@ -2225,7 +2227,7 @@ async def update_settings(request: Request):
             "telegram_link": body.get("telegram_link", ""),
             "whatsapp_link": body.get("whatsapp_link", ""),
             "withdrawal_proof_telegram": body.get("withdrawal_proof_telegram", ""),
-            "updated_at": datetime.now(timezone.utc)
+            "updated_at": datetime.now(IST)
         }},
         upsert=True
     )
@@ -2269,7 +2271,7 @@ async def startup_event():
             await db.games.insert_one({
                 "game_id": game_id,
                 **game_data,
-                "created_at": datetime.now(timezone.utc)
+                "created_at": datetime.now(IST)
             })
         logger.info("Default games seeded")
     else:
@@ -2296,7 +2298,7 @@ async def startup_event():
             "name": "Admin",
             "role": "admin",
             "balance": 0.0,
-            "created_at": datetime.now(timezone.utc)
+            "created_at": datetime.now(IST)
         })
         logger.info(f"Admin user created: {admin_email}")
     elif not verify_password(admin_password, existing["password_hash"]):
