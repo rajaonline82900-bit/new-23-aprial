@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
@@ -13,31 +13,30 @@ import {
   Trophy,
   Wallet,
   Lock,
-  Unlock
+  Unlock,
+  Trash2,
+  Send
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
-// Check if betting is currently open based on start_time and end_time (HH:MM format)
 const isBettingOpen = (startTime, endTime) => {
-  if (!startTime || !endTime) return true; // If no times set, allow betting
-  
+  if (!startTime || !endTime) return true;
   const now = new Date();
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
-  
   const [startH, startM] = startTime.split(':').map(Number);
   const [endH, endM] = endTime.split(':').map(Number);
   const startMinutes = startH * 60 + startM;
   const endMinutes = endH * 60 + endM;
-  
-  // Handle overnight games (e.g., start 23:00, end 05:00)
   if (startMinutes > endMinutes) {
     return currentMinutes >= startMinutes || currentMinutes <= endMinutes;
   }
-  
   return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
 };
+
+// Generate all jodis 00-99
+const ALL_JODIS = Array.from({ length: 100 }, (_, i) => String(i).padStart(2, '0'));
 
 const GamePage = () => {
   const { gameId } = useParams();
@@ -45,17 +44,17 @@ const GamePage = () => {
   const navigate = useNavigate();
   const [game, setGame] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [betType, setBetType] = useState('single');
-  const [selectedNumber, setSelectedNumber] = useState('');
-  const [amount, setAmount] = useState('');
   const [placing, setPlacing] = useState(false);
   const [bettingOpen, setBettingOpen] = useState(true);
+
+  // Jantri state - amounts for each jodi
+  const [jantriAmounts, setJantriAmounts] = useState({});
+  const [quickAmount, setQuickAmount] = useState('');
 
   useEffect(() => {
     fetchGame();
   }, [gameId]);
 
-  // Check betting status every 30 seconds
   useEffect(() => {
     if (game) {
       const checkBetting = () => {
@@ -79,66 +78,69 @@ const GamePage = () => {
     }
   };
 
-  const handlePlaceBet = async (number, betAmount, type) => {
+  const handleJantriAmountChange = useCallback((jodi, value) => {
+    const numVal = value.replace(/[^0-9]/g, '');
+    setJantriAmounts(prev => {
+      if (!numVal || numVal === '0') {
+        const next = { ...prev };
+        delete next[jodi];
+        return next;
+      }
+      return { ...prev, [jodi]: numVal };
+    });
+  }, []);
+
+  const handleSetQuickAmount = (jodi) => {
+    if (quickAmount && parseInt(quickAmount) >= 10) {
+      setJantriAmounts(prev => ({ ...prev, [jodi]: quickAmount }));
+    }
+  };
+
+  const clearAllAmounts = () => {
+    setJantriAmounts({});
+  };
+
+  // Calculate totals
+  const activeBets = Object.entries(jantriAmounts).filter(([_, amt]) => amt && parseInt(amt) >= 10);
+  const totalAmount = activeBets.reduce((sum, [_, amt]) => sum + parseInt(amt), 0);
+  const totalPotentialWin = totalAmount * 90;
+
+  const handlePlaceBatchBets = async () => {
     if (!bettingOpen) {
-      toast.error('बेटिंग बंद है! समय: ' + (game?.start_time || '') + ' - ' + (game?.end_time || ''));
+      toast.error('बेटिंग बंद है!');
       return;
     }
 
-    if (!number) {
-      toast.error('कृपया नंबर दर्ज करें');
+    if (activeBets.length === 0) {
+      toast.error('कम से कम एक जोड़ी पर राशि डालें');
       return;
     }
-    
-    // Validate number based on type
-    if (type === 'single') {
-      if (!/^[0-9]$/.test(number)) {
-        toast.error('एकल नंबर 0-9 होना चाहिए');
-        return;
-      }
-    } else {
-      if (!/^[0-9]{2}$/.test(number)) {
-        toast.error('जोड़ी नंबर 00-99 होना चाहिए');
-        return;
-      }
-    }
-    
-    if (!betAmount || parseFloat(betAmount) < 10) {
-      toast.error('न्यूनतम बेट ₹10 है');
+
+    if (totalAmount > (user?.balance || 0)) {
+      toast.error(`अपर्याप्त बैलेंस! कुल बेट: ₹${totalAmount}, बैलेंस: ₹${user?.balance?.toFixed(2)}`);
       return;
     }
-    
-    if (parseFloat(betAmount) > (user?.balance || 0)) {
-      toast.error('अपर्याप्त बैलेंस');
-      return;
-    }
-    
+
     setPlacing(true);
-    
+
     try {
-      const { data } = await axios.post(`${API_URL}/api/bets`, {
+      const { data } = await axios.post(`${API_URL}/api/bets/batch`, {
         game_id: gameId,
-        bet_type: type,
-        number: type === 'jodi' ? number.padStart(2, '0') : number,
-        amount: parseFloat(betAmount)
+        bet_type: 'jodi',
+        bets: activeBets.map(([number, amount]) => ({
+          number,
+          amount: parseInt(amount)
+        }))
       }, { withCredentials: true });
-      
-      toast.success(`बेट लगाई गई! संभावित जीत: ₹${data.potential_win}`);
-      setSelectedNumber('');
-      setAmount('');
+
+      toast.success(`${data.total_bets} बेट्स लगाई गईं! कुल: ₹${data.total_amount}`);
+      setJantriAmounts({});
       await refreshUser();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'बेट नहीं लग पाई');
     } finally {
       setPlacing(false);
     }
-  };
-
-  const getMultiplier = (type) => type === 'single' ? 9 : 90;
-
-  const getPotentialWin = (amt, type) => {
-    if (!amt) return 0;
-    return parseFloat(amt) * getMultiplier(type);
   };
 
   if (loading) {
@@ -157,7 +159,7 @@ const GamePage = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Link to="/dashboard">
-                <button className="p-2 rounded-lg bg-[#141418] border border-white/10 text-gray-400 hover:text-white transition-all">
+                <button className="p-2 rounded-lg bg-[#141418] border border-white/10 text-gray-400 hover:text-white transition-all" data-testid="back-button">
                   <ArrowLeft className="w-5 h-5" />
                 </button>
               </Link>
@@ -172,7 +174,7 @@ const GamePage = () => {
             
             <div className="flex items-center gap-2 bg-[#141418] px-4 py-2 rounded-lg border border-white/10">
               <Wallet className="w-4 h-4 text-[#D4AF37]" />
-              <span className="text-white font-semibold">₹{user?.balance?.toFixed(2) || '0.00'}</span>
+              <span className="text-white font-semibold" data-testid="user-balance">₹{user?.balance?.toFixed(2) || '0.00'}</span>
             </div>
           </div>
         </div>
@@ -229,9 +231,136 @@ const GamePage = () => {
           </Card>
         )}
 
+        {/* Jantri Betting Grid */}
+        <Card className="bg-[#141418] border-white/10 mb-6">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-white font-['Unbounded'] text-lg">
+                जंतरी - जोड़ी बेट (00-99)
+              </CardTitle>
+              {activeBets.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={clearAllAmounts}
+                  data-testid="clear-all-bets"
+                  className="border-red-500/50 text-red-400 hover:bg-red-500/10"
+                >
+                  <Trash2 className="w-4 h-4 mr-1" />
+                  सब हटाओ
+                </Button>
+              )}
+            </div>
+            {/* Quick Amount Setter */}
+            <div className="flex items-center gap-2 mt-3 flex-wrap">
+              <span className="text-gray-400 text-sm">Quick राशि:</span>
+              {[10, 50, 100, 200, 500].map((amt) => (
+                <button
+                  key={amt}
+                  onClick={() => setQuickAmount(String(amt))}
+                  data-testid={`quick-amt-${amt}`}
+                  className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${
+                    quickAmount === String(amt)
+                      ? 'bg-[#D4AF37] text-black'
+                      : 'bg-[#0A0A0C] text-gray-400 border border-white/10 hover:border-[#D4AF37]/50'
+                  }`}
+                >
+                  ₹{amt}
+                </button>
+              ))}
+              <Input
+                type="number"
+                placeholder="अन्य"
+                value={quickAmount}
+                onChange={(e) => setQuickAmount(e.target.value)}
+                data-testid="custom-quick-amount"
+                className="bg-[#0A0A0C] border-white/10 text-white h-8 w-20 text-sm text-center"
+              />
+            </div>
+            <p className="text-gray-500 text-xs mt-2">
+              जोड़ी पर क्लिक करें quick राशि लगाने के लिए, या सीधे amount टाइप करें
+            </p>
+          </CardHeader>
+          <CardContent>
+            {/* Jantri Grid - 10x10 */}
+            <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
+              {ALL_JODIS.map((jodi) => {
+                const hasAmount = jantriAmounts[jodi] && parseInt(jantriAmounts[jodi]) >= 10;
+                return (
+                  <div
+                    key={jodi}
+                    className={`rounded-lg border transition-all ${
+                      hasAmount
+                        ? 'border-[#D4AF37]/70 bg-[#D4AF37]/10'
+                        : 'border-white/10 bg-[#0A0A0C]'
+                    }`}
+                  >
+                    <button
+                      onClick={() => handleSetQuickAmount(jodi)}
+                      data-testid={`jantri-jodi-${jodi}`}
+                      className={`w-full pt-2 pb-1 text-center font-bold text-lg transition-all ${
+                        hasAmount ? 'text-[#D4AF37]' : 'text-white hover:text-[#D4AF37]'
+                      }`}
+                    >
+                      {jodi}
+                    </button>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="₹"
+                      value={jantriAmounts[jodi] || ''}
+                      onChange={(e) => handleJantriAmountChange(jodi, e.target.value)}
+                      data-testid={`jantri-amount-${jodi}`}
+                      className="w-full bg-transparent border-t border-white/5 text-center text-xs py-1 text-emerald-400 placeholder-gray-600 outline-none focus:border-[#D4AF37]/50"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Sticky Bottom Bar - Bet Summary */}
+        {activeBets.length > 0 && (
+          <div className="fixed bottom-0 left-0 right-0 z-50 glass border-t border-white/10 p-4" data-testid="bet-summary-bar">
+            <div className="container mx-auto max-w-screen-xl">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div>
+                    <p className="text-gray-400 text-xs">जोड़ियां</p>
+                    <p className="text-white font-bold text-lg" data-testid="total-jodis">{activeBets.length}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-xs">कुल राशि</p>
+                    <p className="text-[#D4AF37] font-bold text-lg" data-testid="total-amount">₹{totalAmount}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-xs">संभावित जीत</p>
+                    <p className="text-emerald-400 font-bold text-lg" data-testid="total-potential">₹{totalPotentialWin}</p>
+                  </div>
+                </div>
+                <Button
+                  onClick={handlePlaceBatchBets}
+                  disabled={placing || !bettingOpen}
+                  data-testid="place-batch-bet-button"
+                  className="h-12 px-8 bg-[#D4AF37] hover:bg-[#FDE047] text-black font-bold text-base disabled:opacity-50"
+                >
+                  {!bettingOpen ? (
+                    <span className="flex items-center gap-2"><Lock className="w-5 h-5" /> बंद</span>
+                  ) : placing ? (
+                    <span className="flex items-center gap-2"><Coins className="w-5 h-5 animate-spin" /> लग रही है...</span>
+                  ) : (
+                    <span className="flex items-center gap-2"><Send className="w-5 h-5" /> बेट लगाओ</span>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Past Results */}
         {game?.results?.length > 0 && (
-          <Card className="bg-[#141418] border-white/10">
+          <Card className={`bg-[#141418] border-white/10 ${activeBets.length > 0 ? 'mb-24' : ''}`}>
             <CardHeader>
               <CardTitle className="text-white font-['Unbounded']">पिछले रिजल्ट</CardTitle>
             </CardHeader>

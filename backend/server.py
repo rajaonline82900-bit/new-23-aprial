@@ -161,6 +161,15 @@ class BetCreate(BaseModel):
     number: str  # "0-9" for single, "00-99" for jodi
     amount: float
 
+class BatchBetItem(BaseModel):
+    number: str
+    amount: float
+
+class BatchBetCreate(BaseModel):
+    game_id: str
+    bet_type: str  # single or jodi
+    bets: List[BatchBetItem]
+
 class WithdrawRequest(BaseModel):
     amount: float
     upi_id: Optional[str] = None
@@ -421,6 +430,95 @@ async def place_bet(bet: BetCreate, request: Request):
         "message": "Bet placed successfully",
         "bet_id": bet_doc["id"],
         "potential_win": bet_doc["potential_win"]
+    }
+
+@api_router.post("/bets/batch")
+async def place_batch_bets(batch: BatchBetCreate, request: Request):
+    user = await get_current_user(request)
+    
+    games_dict = await get_games_dict()
+    if batch.game_id not in games_dict:
+        raise HTTPException(status_code=400, detail="Invalid game")
+    
+    game = games_dict[batch.game_id]
+    
+    # Time-based betting lock
+    start_time_str = game.get("start_time", "")
+    end_time_str = game.get("end_time", "")
+    if start_time_str and end_time_str:
+        now = datetime.now(timezone(timedelta(hours=5, minutes=30)))
+        current_minutes = now.hour * 60 + now.minute
+        try:
+            sh, sm = map(int, start_time_str.split(":"))
+            eh, em = map(int, end_time_str.split(":"))
+            start_min = sh * 60 + sm
+            end_min = eh * 60 + em
+            if start_min > end_min:
+                betting_open = current_minutes >= start_min or current_minutes <= end_min
+            else:
+                betting_open = start_min <= current_minutes <= end_min
+            if not betting_open:
+                raise HTTPException(status_code=400, detail=f"बेटिंग बंद है! समय: {start_time_str} - {end_time_str}")
+        except ValueError:
+            pass
+    
+    if batch.bet_type not in BET_TYPES:
+        raise HTTPException(status_code=400, detail="Invalid bet type")
+    
+    if not batch.bets or len(batch.bets) == 0:
+        raise HTTPException(status_code=400, detail="No bets provided")
+    
+    # Validate all bets
+    total_amount = 0
+    for b in batch.bets:
+        if batch.bet_type == "single":
+            if not b.number.isdigit() or len(b.number) != 1:
+                raise HTTPException(status_code=400, detail=f"Invalid single number: {b.number}")
+        else:
+            if not b.number.isdigit() or len(b.number) != 2:
+                raise HTTPException(status_code=400, detail=f"Invalid jodi number: {b.number}")
+        if b.amount < 10:
+            raise HTTPException(status_code=400, detail=f"Minimum bet ₹10 (number {b.number})")
+        total_amount += b.amount
+    
+    if total_amount > user.get("balance", 0):
+        raise HTTPException(status_code=400, detail=f"अपर्याप्त बैलेंस! कुल बेट: ₹{total_amount}, बैलेंस: ₹{user.get('balance', 0)}")
+    
+    # Deduct total balance
+    await db.users.update_one(
+        {"_id": ObjectId(user["_id"])},
+        {"$inc": {"balance": -total_amount}}
+    )
+    
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    multiplier = BET_TYPES[batch.bet_type]["multiplier"]
+    
+    bet_docs = []
+    total_potential = 0
+    for b in batch.bets:
+        bet_doc = {
+            "id": str(uuid.uuid4()),
+            "user_id": user["_id"],
+            "game_id": batch.game_id,
+            "game_name": game["name"],
+            "bet_type": batch.bet_type,
+            "number": b.number,
+            "amount": b.amount,
+            "potential_win": b.amount * multiplier,
+            "date": today,
+            "status": "pending",
+            "created_at": datetime.now(timezone.utc)
+        }
+        bet_docs.append(bet_doc)
+        total_potential += bet_doc["potential_win"]
+    
+    await db.bets.insert_many(bet_docs)
+    
+    return {
+        "message": f"{len(bet_docs)} बेट्स लगाई गईं!",
+        "total_bets": len(bet_docs),
+        "total_amount": total_amount,
+        "total_potential_win": total_potential
     }
 
 @api_router.get("/bets")
