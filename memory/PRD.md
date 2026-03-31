@@ -32,6 +32,7 @@ Build a Satta Matka betting application with Jantri, Haruf Andar/Bahar, Cross Be
 - [x] Game Holiday - last date of month auto holiday, betting blocked [31-Mar-2026]
 - [x] Sidebar Menu with Language, How to Play, Deposit History, Result History, Refer & Earn, Rate List, Customer Support, Withdrawal Proof [31-Mar-2026]
 - [x] Date + Time shown in deposit/withdraw transactions [31-Mar-2026]
+- [x] PWA Support (manifest.json, service worker, app icons, install button) [31-Mar-2026]
 
 ## Payment Integration
 - Provider: IMB UPI Payment Gateway

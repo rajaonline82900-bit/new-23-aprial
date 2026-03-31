@@ -12,7 +12,8 @@ import {
   MessageCircle,
   Send,
   ShieldCheck,
-  ChevronRight
+  ChevronRight,
+  Download
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -29,6 +30,16 @@ const SidebarMenu = ({ open, onClose }) => {
   const [settings, setSettings] = useState({});
   const [langOpen, setLangOpen] = useState(false);
   const [selectedLang, setSelectedLang] = useState('hi');
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+
+  useEffect(() => {
+    const handler = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
 
   useEffect(() => {
     if (open) {
@@ -269,6 +280,36 @@ const SidebarMenu = ({ open, onClose }) => {
             </div>
           </>
         )}
+
+        {/* Install App Button */}
+        <div className="mx-4 border-t border-white/10 my-2" />
+        <div className="p-3">
+          <button
+            onClick={async () => {
+              if (deferredPrompt) {
+                deferredPrompt.prompt();
+                await deferredPrompt.userChoice;
+                setDeferredPrompt(null);
+              } else {
+                alert('ब्राउज़र मेनू में जाकर "Add to Home Screen" या "Install App" पर क्लिक करें।');
+              }
+              onClose();
+            }}
+            data-testid="sidebar-install-app"
+            className="w-full flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-[#D4AF37]/20 to-[#FDE047]/10 border border-[#D4AF37]/30 hover:border-[#D4AF37]/60 transition-all"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-[#D4AF37]/20 flex items-center justify-center">
+                <Download className="w-4 h-4 text-[#D4AF37]" />
+              </div>
+              <div className="text-left">
+                <p className="text-[#D4AF37] text-sm font-bold">App Install करें</p>
+                <p className="text-gray-500 text-[10px]">Home Screen पर ऐड करें</p>
+              </div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-[#D4AF37]" />
+          </button>
+        </div>
       </div>
     </>
   );
