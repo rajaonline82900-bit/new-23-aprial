@@ -46,6 +46,7 @@ const WalletPage = () => {
   const [processing, setProcessing] = useState(false);
   const [checkingPayment, setCheckingPayment] = useState(false);
   const [paymentLink, setPaymentLink] = useState(null);
+  const [txFilter, setTxFilter] = useState('all');
 
   const fetchWallet = useCallback(async () => {
     try {
@@ -283,19 +284,42 @@ const WalletPage = () => {
         <Card className="bg-[#141418] border-white/10">
           <CardHeader>
             <CardTitle className="text-white font-['Unbounded']">लेनदेन</CardTitle>
+            {/* Filter Tabs */}
+            <div className="flex gap-2 mt-3">
+              {[
+                { key: 'all', label: 'सभी' },
+                { key: 'deposit', label: 'जमा' },
+                { key: 'withdrawal', label: 'निकासी' },
+              ].map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => setTxFilter(tab.key)}
+                  data-testid={`tx-filter-${tab.key}`}
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                    txFilter === tab.key
+                      ? 'bg-[#D4AF37] text-black'
+                      : 'bg-[#0A0A0C] text-gray-400 border border-white/10 hover:border-white/30'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
           </CardHeader>
           <CardContent>
             {loading ? (
               <div className="flex justify-center py-8">
                 <div className="w-8 h-8 border-2 border-[#D4AF37] border-t-transparent rounded-full animate-spin" />
               </div>
-            ) : transactions.length === 0 ? (
+            ) : transactions.filter(tx => txFilter === 'all' || tx.type === txFilter).length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-gray-400">कोई लेनदेन नहीं</p>
               </div>
             ) : (
               <div className="space-y-3">
-                {transactions.map((tx, index) => (
+                {transactions
+                  .filter(tx => txFilter === 'all' || tx.type === txFilter)
+                  .map((tx, index) => (
                   <div
                     key={index}
                     className="flex items-center justify-between p-4 bg-[#0A0A0C] rounded-lg border border-white/5"
@@ -314,6 +338,9 @@ const WalletPage = () => {
                       <div>
                         <p className="text-white font-medium">
                           {tx.type === 'deposit' ? 'जमा' : 'निकासी'}
+                          {tx.type === 'withdrawal' && tx.upi_id && (
+                            <span className="text-gray-500 text-xs ml-2">({tx.upi_id})</span>
+                          )}
                         </p>
                         <p className="text-gray-400 text-sm">
                           {new Date(tx.created_at).toLocaleDateString('hi-IN')} • {new Date(tx.created_at).toLocaleTimeString('hi-IN', { hour: '2-digit', minute: '2-digit' })}
