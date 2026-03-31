@@ -662,12 +662,22 @@ const GamePage = () => {
                     <p className="text-[#D4AF37] font-bold text-lg" data-testid="total-amount">₹{totalAmount}</p>
                   </div>
                 </div>
-                <Button
-                  onClick={handlePlaceBatchBets}
-                  disabled={placing || !bettingOpen || totalBetCount === 0}
-                  data-testid="place-batch-bet-button"
-                  className="h-12 px-8 bg-[#D4AF37] hover:bg-[#FDE047] text-black font-bold text-base disabled:opacity-50"
-                >
+                <div className="flex items-center gap-3">
+                  <Button
+                    onClick={() => { setJantriAmounts({}); setAndarAmounts({}); setBaharAmounts({}); setCrossDigits([]); setCrossAmount(''); }}
+                    disabled={totalBetCount === 0}
+                    data-testid="delete-all-bets-button"
+                    variant="outline"
+                    className="h-12 px-4 border-red-500/50 text-red-400 hover:bg-red-500/10 disabled:opacity-30"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </Button>
+                  <Button
+                    onClick={handlePlaceBatchBets}
+                    disabled={placing || !bettingOpen || totalBetCount === 0}
+                    data-testid="place-batch-bet-button"
+                    className="h-12 px-8 bg-[#D4AF37] hover:bg-[#FDE047] text-black font-bold text-base disabled:opacity-50"
+                  >
                   {!bettingOpen ? (
                     <span className="flex items-center gap-2"><Lock className="w-5 h-5" /> बंद</span>
                   ) : placing ? (
@@ -676,6 +686,7 @@ const GamePage = () => {
                     <span className="flex items-center gap-2"><Send className="w-5 h-5" /> Play</span>
                   )}
                 </Button>
+                </div>
               </div>
             </div>
           </div>
