@@ -75,6 +75,7 @@ const AdminPage = () => {
   const [resultDate, setResultDate] = useState(new Date());
   const [jodiResult, setJodiResult] = useState('');
   const [declaring, setDeclaring] = useState(false);
+  const [todayResults, setTodayResults] = useState({ date: '', games: [] });
 
   // Game settings state
   const [editingGame, setEditingGame] = useState(null);
@@ -146,6 +147,9 @@ const AdminPage = () => {
     if (activeTab === 'settings') {
       fetchSettings();
     }
+    if (activeTab === 'results') {
+      fetchTodayResults();
+    }
   }, [activeTab, betDistDate, betDistGame]);
 
   const fetchData = async () => {
@@ -175,6 +179,13 @@ const AdminPage = () => {
     } catch (error) {
       toast.error('Games load नहीं हो पाए');
     }
+  };
+
+  const fetchTodayResults = async () => {
+    try {
+      const { data } = await axios.get(`${API_URL}/api/admin/results/status`, { withCredentials: true });
+      setTodayResults(data);
+    } catch (error) {}
   };
 
   const fetchSettings = async () => {
@@ -324,6 +335,7 @@ const AdminPage = () => {
       
       setSelectedGame('');
       setJodiResult('');
+      fetchTodayResults();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'रिजल्ट घोषित नहीं हो पाया');
     } finally {
@@ -356,6 +368,7 @@ const AdminPage = () => {
         date: format(resultDate, 'yyyy-MM-dd')
       }, { withCredentials: true });
       toast.success(`${data.message} | जीत कटी: ₹${data.winnings_deducted} | ${data.bets_reverted_to_pending} बेट्स pending`);
+      fetchTodayResults();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'रिजल्ट रिवर्स नहीं हो पाया');
     } finally {
@@ -382,6 +395,7 @@ const AdminPage = () => {
       }
       const { data } = await axios.post(`${API_URL}/api/admin/bets/reverse`, payload, { withCredentials: true });
       toast.success(`${data.message} | वापसी: ₹${data.amount_refunded} | जीत कटी: ₹${data.winnings_deducted}`);
+      fetchTodayResults();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'बेट्स रिवर्स नहीं हो पाईं');
     } finally {
@@ -662,6 +676,43 @@ const AdminPage = () => {
 
           {/* Results Tab */}
           <TabsContent value="results">
+            {/* Today's Results Status */}
+            {todayResults.games.length > 0 && (
+              <Card className="bg-[#141418] border-white/10 mb-6">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-white font-['Unbounded'] text-base">
+                    आज के रिजल्ट ({todayResults.date})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {todayResults.games.map((g) => (
+                      <div key={g.game_id} className={`flex items-center justify-between p-3 rounded-lg border ${
+                        g.declared ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-[#0A0A0C] border-white/5'
+                      }`} data-testid={`result-status-${g.game_id}`}>
+                        <div className="flex items-center gap-3">
+                          <div className={`w-2.5 h-2.5 rounded-full ${g.declared ? 'bg-emerald-500' : 'bg-gray-600'}`}></div>
+                          <div>
+                            <p className="text-white font-medium text-sm">{g.name_hi}</p>
+                            <p className="text-gray-500 text-xs">{g.start_time} - {g.end_time} | बेट्स: {g.total_bets}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          {g.declared ? (
+                            <span className="text-emerald-400 font-bold text-lg">{g.jodi_result}</span>
+                          ) : (
+                            <span className="text-gray-500 text-sm">
+                              {g.pending_bets > 0 ? `${g.pending_bets} pending` : 'कोई बेट नहीं'}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <Card className="bg-[#141418] border-white/10">
               <CardHeader>
                 <CardTitle className="text-white font-['Unbounded']">नया रिजल्ट घोषित करें</CardTitle>

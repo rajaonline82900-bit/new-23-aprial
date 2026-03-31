@@ -856,20 +856,24 @@ async def declare_result(result: ResultDeclare, request: Request):
     # Auto-calculate single result from last digit of jodi
     single_result = result.jodi_result[-1]
     
+    # Use IST date if no date provided
+    ist_now = datetime.now(timezone(timedelta(hours=5, minutes=30)))
+    result_date = result.date if result.date else ist_now.strftime("%Y-%m-%d")
+    
     # Check if result already exists
     existing = await db.results.find_one({
         "game_id": result.game_id,
-        "date": result.date
+        "date": result_date
     })
     
     if existing:
-        raise HTTPException(status_code=400, detail="Result already declared for this date")
+        raise HTTPException(status_code=400, detail=f"इस दिनांक ({result_date}) का रिजल्ट पहले से घोषित है। पहले रिवर्स करें।")
     
     # Save result
     result_doc = {
         "id": str(uuid.uuid4()),
         "game_id": result.game_id,
-        "date": result.date,
+        "date": result_date,
         "single_result": single_result,
         "jodi_result": result.jodi_result,
         "declared_at": datetime.now(timezone.utc)
@@ -879,7 +883,7 @@ async def declare_result(result: ResultDeclare, request: Request):
     # Process winning bets
     winning_single_bets = await db.bets.find({
         "game_id": result.game_id,
-        "date": result.date,
+        "date": result_date,
         "bet_type": "single",
         "number": single_result,
         "status": "pending"
@@ -887,7 +891,7 @@ async def declare_result(result: ResultDeclare, request: Request):
     
     winning_jodi_bets = await db.bets.find({
         "game_id": result.game_id,
-        "date": result.date,
+        "date": result_date,
         "bet_type": "jodi",
         "number": result.jodi_result,
         "status": "pending"
@@ -897,7 +901,7 @@ async def declare_result(result: ResultDeclare, request: Request):
     andar_digit = result.jodi_result[0]
     winning_andar_bets = await db.bets.find({
         "game_id": result.game_id,
-        "date": result.date,
+        "date": result_date,
         "bet_type": "haruf_andar",
         "number": andar_digit,
         "status": "pending"
@@ -907,7 +911,7 @@ async def declare_result(result: ResultDeclare, request: Request):
     bahar_digit = result.jodi_result[1]
     winning_bahar_bets = await db.bets.find({
         "game_id": result.game_id,
-        "date": result.date,
+        "date": result_date,
         "bet_type": "haruf_bahar",
         "number": bahar_digit,
         "status": "pending"
@@ -929,7 +933,7 @@ async def declare_result(result: ResultDeclare, request: Request):
     await db.bets.update_many(
         {
             "game_id": result.game_id,
-            "date": result.date,
+            "date": result_date,
             "status": "pending"
         },
         {"$set": {"status": "lost"}}
@@ -942,7 +946,7 @@ async def declare_result(result: ResultDeclare, request: Request):
         notification_result = await notification_service.send_result_notification(
             game_name=game_info["name"],
             game_name_hi=game_info["name_hi"],
-            date=result.date,
+            date=result_date,
             single_result=single_result,
             jodi_result=result.jodi_result,
             subscribers=subscribers
@@ -958,6 +962,40 @@ async def declare_result(result: ResultDeclare, request: Request):
             "haruf_bahar": len(winning_bahar_bets)
         }
     }
+
+# Result Reverse - Undo a declared result
+@api_router.get("/admin/results/status")
+async def get_results_status(request: Request):
+    await get_admin_user(request)
+    
+    ist_now = datetime.now(timezone(timedelta(hours=5, minutes=30)))
+    today = ist_now.strftime("%Y-%m-%d")
+    
+    games_dict = await get_games_dict()
+    game_results = []
+    
+    for game_id, game in games_dict.items():
+        result = await db.results.find_one(
+            {"game_id": game_id, "date": today},
+            {"_id": 0}
+        )
+        pending_bets = await db.bets.count_documents({"game_id": game_id, "date": today, "status": "pending"})
+        total_bets = await db.bets.count_documents({"game_id": game_id, "date": today})
+        
+        game_results.append({
+            "game_id": game_id,
+            "name": game["name"],
+            "name_hi": game["name_hi"],
+            "start_time": game.get("start_time", ""),
+            "end_time": game.get("end_time", ""),
+            "declared": result is not None,
+            "jodi_result": result["jodi_result"] if result else None,
+            "single_result": result["single_result"] if result else None,
+            "pending_bets": pending_bets,
+            "total_bets": total_bets
+        })
+    
+    return {"date": today, "games": game_results}
 
 # Result Reverse - Undo a declared result
 @api_router.post("/admin/results/reverse")
