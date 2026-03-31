@@ -101,6 +101,15 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
+class OTPRequest(BaseModel):
+    phone: str
+    name: str
+
+class OTPVerify(BaseModel):
+    phone: str
+    name: str
+    otp: str
+
 class UserResponse(BaseModel):
     id: str
     name: str
@@ -263,6 +272,9 @@ async def login(user_data: UserLogin):
     if not user:
         raise HTTPException(status_code=401, detail="Invalid email or password")
     
+    if not user.get("password_hash"):
+        raise HTTPException(status_code=401, detail="इस अकाउंट में पासवर्ड नहीं है। OTP या Google से लॉगिन करें।")
+    
     if not verify_password(user_data.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     
@@ -299,6 +311,154 @@ async def logout():
     resp = JSONResponse(content={"message": "Logged out successfully"})
     resp.delete_cookie("access_token", path="/")
     resp.delete_cookie("refresh_token", path="/")
+    return resp
+
+# OTP Auth Routes
+import random
+
+# In-memory OTP store (demo: OTP is always 1234)
+otp_store = {}
+
+@api_router.post("/auth/otp/send")
+async def send_otp(data: OTPRequest):
+    phone = data.phone.strip()
+    if len(phone) < 10:
+        raise HTTPException(status_code=400, detail="कृपया सही मोबाइल नंबर दर्ज करें")
+    
+    # Demo OTP — always 1234
+    otp = "1234"
+    otp_store[phone] = {"otp": otp, "name": data.name, "expires": datetime.now(timezone.utc) + timedelta(minutes=5)}
+    logging.info(f"OTP for {phone}: {otp}")
+    
+    return {"message": "OTP भेज दिया गया है", "demo_otp": "1234"}
+
+@api_router.post("/auth/otp/verify")
+async def verify_otp(data: OTPVerify):
+    from starlette.responses import JSONResponse
+    
+    phone = data.phone.strip()
+    stored = otp_store.get(phone)
+    
+    if not stored:
+        raise HTTPException(status_code=400, detail="पहले OTP भेजें")
+    
+    if stored["otp"] != data.otp:
+        raise HTTPException(status_code=400, detail="गलत OTP")
+    
+    if stored["expires"] < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="OTP expired")
+    
+    # Remove used OTP
+    del otp_store[phone]
+    
+    # Check if user exists by phone
+    user = await db.users.find_one({"phone": phone})
+    
+    if not user:
+        # Create new user (no email/password for OTP users)
+        user_doc = {
+            "name": data.name,
+            "email": None,
+            "phone": phone,
+            "password_hash": None,
+            "role": "user",
+            "balance": 0.0,
+            "auth_type": "otp",
+            "created_at": datetime.now(timezone.utc)
+        }
+        result = await db.users.insert_one(user_doc)
+        user_id = str(result.inserted_id)
+    else:
+        user_id = str(user["_id"])
+    
+    access_token = create_access_token(user_id, phone)
+    refresh_token = create_refresh_token(user_id)
+    
+    user_data = await db.users.find_one({"_id": ObjectId(user_id)})
+    
+    resp = JSONResponse(content={
+        "id": user_id,
+        "name": user_data["name"],
+        "email": user_data.get("email") or "",
+        "phone": phone,
+        "role": user_data.get("role", "user"),
+        "balance": user_data.get("balance", 0.0)
+    })
+    resp.set_cookie(key="access_token", value=access_token, httponly=True, secure=True, samesite="none", max_age=3600, path="/")
+    resp.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=True, samesite="none", max_age=604800, path="/")
+    return resp
+
+# Google Auth Session Exchange
+@api_router.post("/auth/google/session")
+async def google_session(request: Request):
+    from starlette.responses import JSONResponse
+    import aiohttp
+    
+    body = await request.json()
+    session_id = body.get("session_id")
+    if not session_id:
+        raise HTTPException(status_code=400, detail="session_id required")
+    
+    # Exchange session_id for user data from Emergent Auth
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data",
+                headers={"X-Session-ID": session_id}
+            ) as resp:
+                if resp.status != 200:
+                    raise HTTPException(status_code=401, detail="Invalid session")
+                google_data = await resp.json()
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Google auth error: {e}")
+        raise HTTPException(status_code=500, detail="Google auth failed")
+    
+    email = google_data["email"].lower()
+    name = google_data.get("name", email.split("@")[0])
+    
+    # Check if user exists by email
+    user = await db.users.find_one({"email": email})
+    
+    if not user:
+        # Create new user
+        user_doc = {
+            "name": name,
+            "email": email,
+            "phone": None,
+            "password_hash": None,
+            "role": "user",
+            "balance": 0.0,
+            "auth_type": "google",
+            "picture": google_data.get("picture"),
+            "created_at": datetime.now(timezone.utc)
+        }
+        result = await db.users.insert_one(user_doc)
+        user_id = str(result.inserted_id)
+    else:
+        user_id = str(user["_id"])
+        # Update name/picture if changed
+        await db.users.update_one(
+            {"_id": user["_id"]},
+            {"$set": {"name": name, "picture": google_data.get("picture")}}
+        )
+    
+    access_token = create_access_token(user_id, email)
+    refresh_token = create_refresh_token(user_id)
+    
+    user_data = await db.users.find_one({"_id": ObjectId(user_id)})
+    
+    resp = JSONResponse(content={
+        "id": user_id,
+        "name": user_data["name"],
+        "email": email,
+        "phone": user_data.get("phone"),
+        "role": user_data.get("role", "user"),
+        "balance": user_data.get("balance", 0.0)
+    })
+    resp.set_cookie(key="access_token", value=access_token, httponly=True, secure=True, samesite="none", max_age=3600, path="/")
+    resp.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=True, samesite="none", max_age=604800, path="/")
     return resp
 
 import calendar

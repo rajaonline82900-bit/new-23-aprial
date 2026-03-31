@@ -20,6 +20,8 @@ import HowToPlayPage from "./pages/HowToPlayPage";
 import ReferPage from "./pages/ReferPage";
 import RateListPage from "./pages/RateListPage";
 import LandingPage from "./pages/LandingPage";
+import SignupPage from "./pages/SignupPage";
+import AuthCallback from "./pages/AuthCallback";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -75,10 +77,19 @@ function AppRoutes() {
         path="/register"
         element={
           <PublicRoute>
-            <RegisterPage />
+            <SignupPage />
           </PublicRoute>
         }
       />
+      <Route
+        path="/signup"
+        element={
+          <PublicRoute>
+            <SignupPage />
+          </PublicRoute>
+        }
+      />
+      <Route path="/auth/callback" element={<AuthCallback />} />
 
       {/* Protected Routes */}
       <Route

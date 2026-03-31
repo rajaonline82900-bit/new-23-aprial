@@ -121,7 +121,7 @@ const LandingPage = () => {
                 <ChevronRight className="w-5 h-5" />
               </button>
 
-              <Link to="/register" data-testid="landing-register-btn">
+              <Link to="/signup" data-testid="landing-register-btn">
                 <button className="flex items-center gap-2 px-8 py-4 rounded-xl border-2 border-white/20 text-white font-bold text-lg hover:bg-white/5 hover:border-white/40 transition-all">
                   फ्री अकाउंट बनाएं
                 </button>
@@ -266,7 +266,7 @@ const LandingPage = () => {
               <Download className="w-5 h-5 group-hover:animate-bounce" />
               App Install करें
             </button>
-            <Link to="/register">
+            <Link to="/signup">
               <button className="flex items-center gap-2 px-8 py-4 rounded-xl border-2 border-white/20 text-white font-bold text-lg hover:bg-white/5 transition-all">
                 रजिस्टर करें
                 <ChevronRight className="w-5 h-5" />
