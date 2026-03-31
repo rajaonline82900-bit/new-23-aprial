@@ -460,6 +460,10 @@ async def google_session(request: Request):
     return resp
 
 import calendar
+from pywebpush import webpush, WebPushException
+
+VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "")
+VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "").replace("\\n", "\n")
 
 # Games Routes
 @api_router.get("/games")
@@ -1087,6 +1091,46 @@ async def export_transactions(request: Request):
         headers={"Content-Disposition": "attachment; filename=transactions.csv"}
     )
 
+# Push Notification Routes
+@api_router.get("/push/vapid-key")
+async def get_vapid_key():
+    return {"key": VAPID_PUBLIC_KEY}
+
+@api_router.post("/push/subscribe")
+async def push_subscribe(request: Request):
+    user = await get_current_user(request)
+    body = await request.json()
+    subscription = body.get("subscription")
+    if not subscription:
+        raise HTTPException(status_code=400, detail="subscription required")
+    
+    await db.push_subscriptions.update_one(
+        {"user_id": user["_id"]},
+        {"$set": {"user_id": user["_id"], "subscription": subscription, "updated_at": datetime.now(timezone.utc)}},
+        upsert=True
+    )
+    return {"message": "subscribed"}
+
+async def send_push_to_all(title: str, body: str, url: str = "/dashboard"):
+    import json as _json
+    subs = await db.push_subscriptions.find({}).to_list(5000)
+    sent = 0
+    for sub in subs:
+        try:
+            webpush(
+                subscription_info=sub["subscription"],
+                data=_json.dumps({"title": title, "body": body, "url": url}),
+                vapid_private_key=VAPID_PRIVATE_KEY,
+                vapid_claims={"sub": "mailto:admin@sattamatka.com"}
+            )
+            sent += 1
+        except WebPushException:
+            await db.push_subscriptions.delete_one({"_id": sub["_id"]})
+        except Exception as e:
+            logging.error(f"Push error: {e}")
+    logging.info(f"Push notifications sent: {sent}/{len(subs)}")
+    return sent
+
 # Results Routes
 @api_router.get("/results")
 async def get_all_results(limit: int = 50):
@@ -1272,6 +1316,12 @@ async def declare_result(result: ResultDeclare, request: Request):
             subscribers=subscribers
         )
         logger.info(f"Notifications sent: {notification_result}")
+    
+    # Send push notifications to all users
+    game_info = games_dict[result.game_id]
+    push_title = f"{game_info['name_hi']} - रिजल्ट आ गया!"
+    push_body = f"जोड़ी: {result.jodi_result} | सिंगल: {single_result}"
+    await send_push_to_all(push_title, push_body, "/dashboard")
     
     return {
         "message": "Result declared successfully",

@@ -23,8 +23,6 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
-  
-  // Network-first for API calls
   if (event.request.url.includes('/api/')) return;
 
   event.respondWith(
@@ -35,5 +33,31 @@ self.addEventListener('fetch', (event) => {
         return response;
       })
       .catch(() => caches.match(event.request))
+  );
+});
+
+// Push Notification
+self.addEventListener('push', (event) => {
+  let data = { title: 'सट्टा मटका', body: 'नया रिजल्ट आ गया!' };
+  try {
+    data = event.data.json();
+  } catch (e) {}
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      vibrate: [200, 100, 200],
+      data: { url: data.url || '/' }
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || '/';
+  event.waitUntil(
+    clients.openWindow(url)
   );
 });

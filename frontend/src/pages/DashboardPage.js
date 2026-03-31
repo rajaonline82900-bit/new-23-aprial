@@ -64,6 +64,25 @@ const DashboardPage = () => {
     }
   };
 
+  // Request notification permission on dashboard load
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().then((perm) => {
+        if (perm === 'granted' && 'serviceWorker' in navigator) {
+          navigator.serviceWorker.ready.then((reg) => {
+            if (window.subscribePush) window.subscribePush(reg);
+          });
+        }
+      });
+    } else if ('Notification' in window && Notification.permission === 'granted') {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then((reg) => {
+          if (window.subscribePush) window.subscribePush(reg);
+        });
+      }
+    }
+  }, []);
+
   const handleLogout = async () => {
     await logout();
     navigate('/login');
