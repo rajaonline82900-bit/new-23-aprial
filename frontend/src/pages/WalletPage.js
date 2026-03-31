@@ -27,7 +27,8 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  Loader2
+  Loader2,
+  Download
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -283,7 +284,17 @@ const WalletPage = () => {
         {/* Transactions */}
         <Card className="bg-[#141418] border-white/10">
           <CardHeader>
-            <CardTitle className="text-white font-['Unbounded']">लेनदेन</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-white font-['Unbounded']">लेनदेन</CardTitle>
+              <a
+                href={`${API_URL}/api/wallet/export`}
+                data-testid="export-transactions"
+                className="px-3 py-1.5 rounded-lg bg-[#0A0A0C] border border-white/10 text-gray-400 hover:text-white text-xs font-medium transition-all flex items-center gap-1"
+              >
+                <Download className="w-3 h-3" />
+                Export CSV
+              </a>
+            </div>
             {/* Filter Tabs */}
             <div className="flex gap-2 mt-3">
               {[

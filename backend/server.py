@@ -299,7 +299,7 @@ async def get_me(request: Request):
     return {
         "id": user["_id"],
         "name": user["name"],
-        "email": user["email"],
+        "email": user.get("email", ""),
         "phone": user.get("phone"),
         "role": user.get("role", "user"),
         "balance": user.get("balance", 0.0)
@@ -358,7 +358,6 @@ async def verify_otp(data: OTPVerify):
         # Create new user (no email/password for OTP users)
         user_doc = {
             "name": data.name,
-            "email": None,
             "phone": phone,
             "password_hash": None,
             "role": "user",
@@ -426,7 +425,6 @@ async def google_session(request: Request):
         user_doc = {
             "name": name,
             "email": email,
-            "phone": None,
             "password_hash": None,
             "role": "user",
             "balance": 0.0,
@@ -721,11 +719,19 @@ async def place_batch_bets(batch: BatchBetCreate, request: Request):
     }
 
 @api_router.get("/bets")
-async def get_user_bets(request: Request, limit: int = 50):
+async def get_user_bets(request: Request, limit: int = 100, game_id: str = None, status: str = None, date: str = None):
     user = await get_current_user(request)
     
+    query = {"user_id": user["_id"]}
+    if game_id:
+        query["game_id"] = game_id
+    if status and status != "all":
+        query["status"] = status
+    if date:
+        query["date"] = date
+    
     bets = await db.bets.find(
-        {"user_id": user["_id"]},
+        query,
         {"_id": 0}
     ).sort("created_at", -1).limit(limit).to_list(limit)
     
@@ -981,6 +987,105 @@ async def request_withdrawal(withdraw: WithdrawRequest, request: Request):
     await db.transactions.insert_one(withdrawal_doc)
     
     return {"message": "Withdrawal request submitted", "id": withdrawal_doc["id"]}
+
+# Results Routes
+# Refer & Earn Routes
+@api_router.get("/referral/info")
+async def get_referral_info(request: Request):
+    user = await get_current_user(request)
+    user_id = user["_id"]
+    
+    ref_data = await db.referrals.find_one({"user_id": user_id}, {"_id": 0})
+    if not ref_data:
+        code = f"SM{user_id[-6:].upper()}"
+        ref_data = {
+            "user_id": user_id,
+            "code": code,
+            "referred_users": [],
+            "total_earned": 0.0,
+            "created_at": datetime.now(timezone.utc)
+        }
+        await db.referrals.insert_one(ref_data)
+        ref_data.pop("_id", None)
+    
+    referred_count = len(ref_data.get("referred_users", []))
+    return {
+        "code": ref_data["code"],
+        "referred_count": referred_count,
+        "total_earned": ref_data.get("total_earned", 0.0)
+    }
+
+@api_router.post("/referral/apply")
+async def apply_referral(request: Request):
+    user = await get_current_user(request)
+    body = await request.json()
+    code = body.get("code", "").strip().upper()
+    
+    if not code:
+        raise HTTPException(status_code=400, detail="रेफरल कोड दर्ज करें")
+    
+    existing = await db.users.find_one({"_id": ObjectId(user["_id"])})
+    if existing.get("referred_by"):
+        raise HTTPException(status_code=400, detail="आपने पहले ही एक रेफरल कोड इस्तेमाल किया है")
+    
+    ref = await db.referrals.find_one({"code": code})
+    if not ref:
+        raise HTTPException(status_code=404, detail="गलत रेफरल कोड")
+    
+    if ref["user_id"] == user["_id"]:
+        raise HTTPException(status_code=400, detail="आप अपना खुद का कोड इस्तेमाल नहीं कर सकते")
+    
+    bonus_amount = 50.0
+    
+    await db.users.update_one(
+        {"_id": ObjectId(ref["user_id"])},
+        {"$inc": {"balance": bonus_amount}}
+    )
+    await db.referrals.update_one(
+        {"code": code},
+        {"$push": {"referred_users": user["_id"]}, "$inc": {"total_earned": bonus_amount}}
+    )
+    await db.users.update_one(
+        {"_id": ObjectId(user["_id"])},
+        {"$inc": {"balance": bonus_amount}, "$set": {"referred_by": code}}
+    )
+    
+    for uid, desc in [(ref["user_id"], "रेफरल बोनस (दोस्त ने ज्वाइन किया)"), (user["_id"], "रेफरल बोनस (कोड लगाया)")]:
+        await db.transactions.insert_one({
+            "user_id": uid, "amount": bonus_amount, "type": "bonus",
+            "status": "completed", "description": desc,
+            "created_at": datetime.now(timezone.utc)
+        })
+    
+    return {"message": f"₹{int(bonus_amount)} बोनस आपके वॉलेट में जोड़ दिया गया!", "bonus": bonus_amount}
+
+# Transaction Export
+@api_router.get("/wallet/export")
+async def export_transactions(request: Request):
+    from starlette.responses import Response
+    user = await get_current_user(request)
+    
+    transactions = await db.transactions.find(
+        {"user_id": user["_id"]}, {"_id": 0}
+    ).sort("created_at", -1).to_list(500)
+    
+    csv_lines = ["Date,Time,Type,Amount,Status"]
+    for tx in transactions:
+        dt = tx.get("created_at")
+        if dt:
+            ist = dt + timedelta(hours=5, minutes=30)
+            date_str = ist.strftime("%d/%m/%Y")
+            time_str = ist.strftime("%I:%M %p")
+        else:
+            date_str = time_str = ""
+        tx_type = "Deposit" if tx["type"] == "deposit" else "Withdrawal" if tx["type"] == "withdrawal" else "Bonus"
+        csv_lines.append(f"{date_str},{time_str},{tx_type},{tx['amount']},{tx['status']}")
+    
+    csv_content = "\n".join(csv_lines)
+    return Response(
+        content=csv_content, media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=transactions.csv"}
+    )
 
 # Results Routes
 @api_router.get("/results")
@@ -1987,8 +2092,12 @@ logger = logging.getLogger(__name__)
 # Seed admin on startup
 @app.on_event("startup")
 async def startup_event():
-    # Create indexes
-    await db.users.create_index("email", unique=True)
+    # Create indexes (drop conflicting ones first)
+    try:
+        await db.users.drop_index("email_1")
+    except Exception:
+        pass
+    await db.users.create_index("email", unique=True, sparse=True)
     await db.bets.create_index([("user_id", 1), ("created_at", -1)])
     await db.results.create_index([("game_id", 1), ("date", -1)])
     await db.transactions.create_index([("user_id", 1), ("created_at", -1)])

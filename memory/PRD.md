@@ -35,6 +35,11 @@ Build a Satta Matka betting application with Jantri, Haruf Andar/Bahar, Cross Be
 - [x] PWA Support (manifest.json, service worker, app icons, install button) [31-Mar-2026]
 - [x] Landing Page with hero, games, features, how-to-play, rate list, CTA sections [31-Mar-2026]
 - [x] Signup with OTP (mobile + name, demo OTP 1234) + Continue with Gmail (Emergent Google Auth) [31-Mar-2026]
+- [x] Withdrawal history with IST timezone date+time [31-Mar-2026]
+- [x] Admin user details date+time in all 4 tabs (IST) [31-Mar-2026]
+- [x] Bet History filters (status, game, date) with stats bar [31-Mar-2026]
+- [x] Refer & Earn full logic (referral code, share, apply, ₹50 bonus) [31-Mar-2026]
+- [x] Transaction history CSV export [31-Mar-2026]
 
 ## Payment Integration
 - Provider: IMB UPI Payment Gateway
