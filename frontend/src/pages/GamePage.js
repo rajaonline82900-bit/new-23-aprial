@@ -46,6 +46,7 @@ const GamePage = () => {
   const [loading, setLoading] = useState(true);
   const [placing, setPlacing] = useState(false);
   const [bettingOpen, setBettingOpen] = useState(true);
+  const [activeTab, setActiveTab] = useState('jantri'); // 'jantri' or 'haruf'
 
   // Jantri state - amounts for each jodi
   const [jantriAmounts, setJantriAmounts] = useState({});
@@ -300,7 +301,40 @@ const GamePage = () => {
           </Card>
         )}
 
+        {/* Tab Toggle - Jantri / Haruf */}
+        <div className="grid grid-cols-2 gap-3 mb-6" data-testid="bet-type-tabs">
+          <button
+            onClick={() => setActiveTab('jantri')}
+            data-testid="tab-jantri"
+            className={`py-4 rounded-xl font-bold text-center text-lg transition-all ${
+              activeTab === 'jantri'
+                ? 'bg-gradient-to-br from-[#D4AF37] to-[#FDE047] text-black shadow-lg shadow-[#D4AF37]/20'
+                : 'bg-[#141418] text-gray-400 border border-white/10 hover:border-[#D4AF37]/50'
+            }`}
+          >
+            जंतरी बेट
+            {activeBets.length > 0 && (
+              <span className="ml-2 text-xs bg-black/30 px-2 py-0.5 rounded-full">{activeBets.length}</span>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('haruf')}
+            data-testid="tab-haruf"
+            className={`py-4 rounded-xl font-bold text-center text-lg transition-all ${
+              activeTab === 'haruf'
+                ? 'bg-gradient-to-br from-[#D4AF37] to-[#FDE047] text-black shadow-lg shadow-[#D4AF37]/20'
+                : 'bg-[#141418] text-gray-400 border border-white/10 hover:border-[#D4AF37]/50'
+            }`}
+          >
+            हरूफ बेट
+            {(activeAndar.length + activeBahar.length) > 0 && (
+              <span className="ml-2 text-xs bg-black/30 px-2 py-0.5 rounded-full">{activeAndar.length + activeBahar.length}</span>
+            )}
+          </button>
+        </div>
+
         {/* Jantri Betting Grid */}
+        {activeTab === 'jantri' && (
         <Card className="bg-[#141418] border-white/10 mb-6">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
@@ -388,8 +422,10 @@ const GamePage = () => {
             </div>
           </CardContent>
         </Card>
+        )}
 
         {/* Haruf Andar Bahar Section */}
+        {activeTab === 'haruf' && (
         <Card className="bg-[#141418] border-white/10 mb-6">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
@@ -529,6 +565,7 @@ const GamePage = () => {
             </div>
           </CardContent>
         </Card>
+        )}
 
         {/* Sticky Bottom Bar - Bet Summary */}
         {totalBetCount > 0 && (
