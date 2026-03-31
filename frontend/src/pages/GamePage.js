@@ -15,7 +15,12 @@ import {
   Lock,
   Unlock,
   Trash2,
-  Send
+  Send,
+  Gift,
+  History,
+  Home,
+  IndianRupee,
+  BarChart3
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -681,6 +686,34 @@ const GamePage = () => {
           </div>
         )}
       </main>
+
+      {/* Footer Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#141418] border-t border-white/10" data-testid="footer-nav">
+        <div className="container mx-auto max-w-screen-xl">
+          <div className="grid grid-cols-5">
+            <Link to="/dashboard" className="flex flex-col items-center py-3 text-gray-400 hover:text-[#D4AF37] transition-all" data-testid="footer-home">
+              <Home className="w-5 h-5 mb-1" />
+              <span className="text-[10px]">Home</span>
+            </Link>
+            <Link to="/wallet" className="flex flex-col items-center py-3 text-gray-400 hover:text-[#D4AF37] transition-all" data-testid="footer-fund">
+              <IndianRupee className="w-5 h-5 mb-1" />
+              <span className="text-[10px]">Fund</span>
+            </Link>
+            <Link to="/bets" className="flex flex-col items-center py-3 text-gray-400 hover:text-[#D4AF37] transition-all" data-testid="footer-bid-history">
+              <History className="w-5 h-5 mb-1" />
+              <span className="text-[10px]">Bid History</span>
+            </Link>
+            <Link to="/jantri" className="flex flex-col items-center py-3 text-gray-400 hover:text-[#D4AF37] transition-all" data-testid="footer-result-chart">
+              <BarChart3 className="w-5 h-5 mb-1" />
+              <span className="text-[10px]">Result Chart</span>
+            </Link>
+            <button className="flex flex-col items-center py-3 text-gray-400 hover:text-[#D4AF37] transition-all" data-testid="footer-refer" onClick={() => toast.info('Refer & Earn जल्द आ रहा है!')}>
+              <Gift className="w-5 h-5 mb-1" />
+              <span className="text-[10px]">Refer & Earn</span>
+            </button>
+          </div>
+        </div>
+      </nav>
     </div>
   );
 };
