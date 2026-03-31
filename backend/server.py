@@ -104,6 +104,7 @@ class UserLogin(BaseModel):
 class OTPRequest(BaseModel):
     phone: str
     name: str
+    email: Optional[str] = None
 
 class OTPVerify(BaseModel):
     phone: str
@@ -112,6 +113,7 @@ class OTPVerify(BaseModel):
 class OTPCompleteSignup(BaseModel):
     phone: str
     name: str
+    email: Optional[str] = None
     password: str
 
 class PasswordResetRequest(BaseModel):
@@ -398,6 +400,8 @@ async def complete_signup(data: OTPCompleteSignup):
         "auth_type": "otp",
         "created_at": datetime.now(timezone.utc)
     }
+    if data.email and data.email.strip():
+        user_doc["email"] = data.email.strip().lower()
     result = await db.users.insert_one(user_doc)
     user_id = str(result.inserted_id)
     

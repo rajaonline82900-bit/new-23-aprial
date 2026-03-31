@@ -15,6 +15,7 @@ const SignupPage = () => {
   const [method, setMethod] = useState(null);
   const [step, setStep] = useState('form'); // 'form', 'otp', 'password'
   const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [password, setPassword] = useState('');
@@ -26,11 +27,12 @@ const SignupPage = () => {
   const handleSendOTP = async (e) => {
     e.preventDefault();
     if (!name.trim()) { toast.error('कृपया नाम दर्ज करें'); return; }
+    if (!email.trim() || !email.includes('@')) { toast.error('कृपया सही ईमेल दर्ज करें'); return; }
     if (phone.length < 10) { toast.error('कृपया सही मोबाइल नंबर दर्ज करें'); return; }
 
     setLoading(true);
     try {
-      await axios.post(`${API_URL}/api/auth/otp/send`, { phone, name }, { withCredentials: true });
+      await axios.post(`${API_URL}/api/auth/otp/send`, { phone, name, email }, { withCredentials: true });
       setStep('otp');
       toast.success('OTP भेज दिया गया है (Demo: 1234)');
     } catch (e) {
@@ -62,7 +64,7 @@ const SignupPage = () => {
 
     setLoading(true);
     try {
-      await axios.post(`${API_URL}/api/auth/otp/complete-signup`, { phone, name, password }, { withCredentials: true });
+      await axios.post(`${API_URL}/api/auth/otp/complete-signup`, { phone, name, email, password }, { withCredentials: true });
       toast.success('अकाउंट बन गया! स्वागत है');
       await refreshUser();
       navigate('/dashboard');
@@ -194,6 +196,19 @@ const SignupPage = () => {
                   onChange={(e) => setName(e.target.value)}
                   required
                   data-testid="otp-name-input"
+                  className="bg-[#0A0A0C] border-white/10 text-white placeholder:text-gray-500 focus:border-[#D4AF37] focus:ring-[#D4AF37]"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-gray-300">ईमेल (Gmail)</Label>
+                <Input
+                  type="email"
+                  placeholder="example@gmail.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  data-testid="otp-email-input"
                   className="bg-[#0A0A0C] border-white/10 text-white placeholder:text-gray-500 focus:border-[#D4AF37] focus:ring-[#D4AF37]"
                 />
               </div>
