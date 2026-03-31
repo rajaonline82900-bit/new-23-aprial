@@ -177,26 +177,6 @@ const DashboardPage = () => {
           </Link>
         </div>
 
-        {/* Notification Banner */}
-        <Link to="/notifications" data-testid="notifications-link">
-          <Card className="bg-gradient-to-r from-blue-500/10 to-[#141418] border-blue-500/30 mb-6 hover:border-blue-500/50 transition-all cursor-pointer">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
-                    <Bell className="w-5 h-5 text-blue-400" />
-                  </div>
-                  <div>
-                    <p className="text-white font-medium">Notifications Setup</p>
-                    <p className="text-gray-400 text-sm">Telegram/WhatsApp पर रिजल्ट पाएं</p>
-                  </div>
-                </div>
-                <ChevronRight className="w-5 h-5 text-gray-500" />
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-
         {/* Games Section */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
