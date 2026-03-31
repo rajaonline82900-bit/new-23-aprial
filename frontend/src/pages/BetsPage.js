@@ -218,7 +218,7 @@ const BetsPage = () => {
                           {bet.bet_type === 'single' ? 'एकल' : bet.bet_type === 'jodi' ? 'जोड़ी' : bet.bet_type}
                         </p>
                         <p className="text-gray-500 text-[10px]">
-                          {new Date(bet.created_at).toLocaleDateString('hi-IN', { timeZone: 'Asia/Kolkata' })} • {new Date(bet.created_at).toLocaleTimeString('hi-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true })}
+                          {new Date(bet.created_at).toLocaleDateString('hi-IN', { timeZone: 'Asia/Kolkata' })} • {new Date(bet.created_at).toLocaleTimeString('hi-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true, timeZoneName: 'short' })}
                         </p>
                       </div>
                     </div>
