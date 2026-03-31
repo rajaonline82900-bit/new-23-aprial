@@ -98,7 +98,7 @@ class UserRegister(BaseModel):
     phone: Optional[str] = None
 
 class UserLogin(BaseModel):
-    email: EmailStr
+    phone: str
     password: str
 
 class OTPRequest(BaseModel):
@@ -107,8 +107,20 @@ class OTPRequest(BaseModel):
 
 class OTPVerify(BaseModel):
     phone: str
-    name: str
     otp: str
+
+class OTPCompleteSignup(BaseModel):
+    phone: str
+    name: str
+    password: str
+
+class PasswordResetRequest(BaseModel):
+    phone: str
+
+class PasswordResetComplete(BaseModel):
+    phone: str
+    otp: str
+    new_password: str
 
 class UserResponse(BaseModel):
     id: str
@@ -266,26 +278,32 @@ async def register(user_data: UserRegister, response: Request):
 async def login(user_data: UserLogin):
     from starlette.responses import JSONResponse
     
-    email = user_data.email.lower()
-    user = await db.users.find_one({"email": email})
+    identifier = user_data.phone.strip()
+    
+    # Check if identifier is email (for admin) or phone number
+    if '@' in identifier:
+        user = await db.users.find_one({"email": identifier.lower()})
+    else:
+        user = await db.users.find_one({"phone": identifier})
     
     if not user:
-        raise HTTPException(status_code=401, detail="Invalid email or password")
+        raise HTTPException(status_code=401, detail="गलत मोबाइल नंबर या पासवर्ड")
     
     if not user.get("password_hash"):
-        raise HTTPException(status_code=401, detail="इस अकाउंट में पासवर्ड नहीं है। OTP या Google से लॉगिन करें।")
+        raise HTTPException(status_code=401, detail="इस अकाउंट में पासवर्ड नहीं है। पासवर्ड रीसेट करें।")
     
     if not verify_password(user_data.password, user["password_hash"]):
-        raise HTTPException(status_code=401, detail="Invalid email or password")
+        raise HTTPException(status_code=401, detail="गलत मोबाइल नंबर या पासवर्ड")
     
     user_id = str(user["_id"])
-    access_token = create_access_token(user_id, email)
+    access_token = create_access_token(user_id, user.get("email") or user.get("phone", ""))
     refresh_token = create_refresh_token(user_id)
     
     resp = JSONResponse(content={
         "id": user_id,
         "name": user["name"],
-        "email": email,
+        "email": user.get("email", ""),
+        "phone": user.get("phone", ""),
         "role": user.get("role", "user"),
         "balance": user.get("balance", 0.0)
     })
@@ -334,8 +352,6 @@ async def send_otp(data: OTPRequest):
 
 @api_router.post("/auth/otp/verify")
 async def verify_otp(data: OTPVerify):
-    from starlette.responses import JSONResponse
-    
     phone = data.phone.strip()
     stored = otp_store.get(phone)
     
@@ -348,44 +364,102 @@ async def verify_otp(data: OTPVerify):
     if stored["expires"] < datetime.now(timezone.utc):
         raise HTTPException(status_code=400, detail="OTP expired")
     
+    # Mark phone as verified but don't create account yet
+    otp_store[phone]["verified"] = True
+    
+    return {"message": "OTP सत्यापित हो गया", "phone_verified": True}
+
+@api_router.post("/auth/otp/complete-signup")
+async def complete_signup(data: OTPCompleteSignup):
+    from starlette.responses import JSONResponse
+    
+    phone = data.phone.strip()
+    stored = otp_store.get(phone)
+    
+    if not stored or not stored.get("verified"):
+        raise HTTPException(status_code=400, detail="पहले OTP सत्यापित करें")
+    
     # Remove used OTP
     del otp_store[phone]
     
-    # Check if user exists by phone
-    user = await db.users.find_one({"phone": phone})
+    # Check if user already exists
+    existing = await db.users.find_one({"phone": phone})
+    if existing:
+        raise HTTPException(status_code=400, detail="यह मोबाइल नंबर पहले से रजिस्टर्ड है। कृपया लॉगिन करें।")
     
-    if not user:
-        # Create new user (no email/password for OTP users)
-        user_doc = {
-            "name": data.name,
-            "phone": phone,
-            "password_hash": None,
-            "role": "user",
-            "balance": 0.0,
-            "auth_type": "otp",
-            "created_at": datetime.now(timezone.utc)
-        }
-        result = await db.users.insert_one(user_doc)
-        user_id = str(result.inserted_id)
-    else:
-        user_id = str(user["_id"])
+    # Create user with password
+    hashed = hash_password(data.password)
+    user_doc = {
+        "name": data.name,
+        "phone": phone,
+        "password_hash": hashed,
+        "role": "user",
+        "balance": 0.0,
+        "auth_type": "otp",
+        "created_at": datetime.now(timezone.utc)
+    }
+    result = await db.users.insert_one(user_doc)
+    user_id = str(result.inserted_id)
     
     access_token = create_access_token(user_id, phone)
     refresh_token = create_refresh_token(user_id)
     
-    user_data = await db.users.find_one({"_id": ObjectId(user_id)})
-    
     resp = JSONResponse(content={
         "id": user_id,
-        "name": user_data["name"],
-        "email": user_data.get("email") or "",
+        "name": data.name,
+        "email": "",
         "phone": phone,
-        "role": user_data.get("role", "user"),
-        "balance": user_data.get("balance", 0.0)
+        "role": "user",
+        "balance": 0.0
     })
     resp.set_cookie(key="access_token", value=access_token, httponly=True, secure=True, samesite="none", max_age=3600, path="/")
     resp.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=True, samesite="none", max_age=604800, path="/")
     return resp
+
+# Password Reset Routes
+@api_router.post("/auth/password/send-otp")
+async def password_reset_send_otp(data: PasswordResetRequest):
+    phone = data.phone.strip()
+    if len(phone) < 10:
+        raise HTTPException(status_code=400, detail="कृपया सही मोबाइल नंबर दर्ज करें")
+    
+    # Check if user exists with this phone
+    user = await db.users.find_one({"phone": phone})
+    if not user:
+        raise HTTPException(status_code=400, detail="यह मोबाइल नंबर रजिस्टर्ड नहीं है")
+    
+    # Demo OTP — always 1234
+    otp = "1234"
+    otp_store[f"reset_{phone}"] = {"otp": otp, "expires": datetime.now(timezone.utc) + timedelta(minutes=5)}
+    logging.info(f"Password Reset OTP for {phone}: {otp}")
+    
+    return {"message": "OTP भेज दिया गया है", "demo_otp": "1234"}
+
+@api_router.post("/auth/password/reset")
+async def password_reset(data: PasswordResetComplete):
+    phone = data.phone.strip()
+    stored = otp_store.get(f"reset_{phone}")
+    
+    if not stored:
+        raise HTTPException(status_code=400, detail="पहले OTP भेजें")
+    
+    if stored["otp"] != data.otp:
+        raise HTTPException(status_code=400, detail="गलत OTP")
+    
+    if stored["expires"] < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="OTP expired")
+    
+    # Remove used OTP
+    del otp_store[f"reset_{phone}"]
+    
+    # Update password
+    hashed = hash_password(data.new_password)
+    result = await db.users.update_one({"phone": phone}, {"$set": {"password_hash": hashed}})
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=400, detail="पासवर्ड अपडेट में समस्या")
+    
+    return {"message": "पासवर्ड सफलतापूर्वक बदल दिया गया"}
 
 # Google Auth Session Exchange
 @api_router.post("/auth/google/session")

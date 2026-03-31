@@ -5,18 +5,20 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Coins, Smartphone, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Coins, Smartphone, ArrowLeft, CheckCircle, Eye, EyeOff, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const SignupPage = () => {
-  const [method, setMethod] = useState(null); // null, 'otp', 'google'
-  const [step, setStep] = useState('form'); // 'form', 'otp'
+  const [method, setMethod] = useState(null);
+  const [step, setStep] = useState('form'); // 'form', 'otp', 'password'
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { refreshUser } = useAuth();
   const navigate = useNavigate();
@@ -44,10 +46,9 @@ const SignupPage = () => {
 
     setLoading(true);
     try {
-      await axios.post(`${API_URL}/api/auth/otp/verify`, { phone, name, otp }, { withCredentials: true });
-      toast.success('OTP सत्यापित! आपका अकाउंट बन गया');
-      await refreshUser();
-      navigate('/dashboard');
+      await axios.post(`${API_URL}/api/auth/otp/verify`, { phone, otp }, { withCredentials: true });
+      setStep('password');
+      toast.success('OTP सत्यापित! अब पासवर्ड बनाएं');
     } catch (e) {
       toast.error(e.response?.data?.detail || 'OTP गलत है');
     } finally {
@@ -55,8 +56,24 @@ const SignupPage = () => {
     }
   };
 
+  const handleCompleteSignup = async (e) => {
+    e.preventDefault();
+    if (password.length < 6) { toast.error('पासवर्ड कम से कम 6 अक्षर का होना चाहिए'); return; }
+
+    setLoading(true);
+    try {
+      await axios.post(`${API_URL}/api/auth/otp/complete-signup`, { phone, name, password }, { withCredentials: true });
+      toast.success('अकाउंट बन गया! स्वागत है');
+      await refreshUser();
+      navigate('/dashboard');
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'अकाउंट बनाने में समस्या');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleGoogleSignup = () => {
-    // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
     const redirectUrl = window.location.origin + '/auth/callback';
     window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
   };
@@ -84,7 +101,6 @@ const SignupPage = () => {
           </CardHeader>
 
           <CardContent className="space-y-4">
-            {/* OTP Signup */}
             <button
               onClick={() => setMethod('otp')}
               data-testid="signup-otp-option"
@@ -99,7 +115,6 @@ const SignupPage = () => {
               </div>
             </button>
 
-            {/* Google Signup */}
             <button
               onClick={handleGoogleSignup}
               data-testid="signup-google-option"
@@ -133,7 +148,7 @@ const SignupPage = () => {
     );
   }
 
-  // OTP Form
+  // OTP Form Steps
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-[#0A0A0C]">
       <div className="absolute inset-0 overflow-hidden">
@@ -145,19 +160,30 @@ const SignupPage = () => {
         <CardHeader className="space-y-4">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => { setMethod(null); setStep('form'); setOtp(''); }}
+              onClick={() => {
+                if (step === 'password') { setStep('otp'); setPassword(''); }
+                else if (step === 'otp') { setStep('form'); setOtp(''); }
+                else { setMethod(null); }
+              }}
               className="p-2 rounded-lg bg-[#0A0A0C] border border-white/10 text-gray-400 hover:text-white transition-all"
+              data-testid="signup-back-button"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
             <CardTitle className="text-xl font-bold text-white font-['Unbounded']">
-              {step === 'otp' ? 'OTP दर्ज करें' : 'OTP से साइनअप'}
+              {step === 'password' ? 'पासवर्ड बनाएं' : step === 'otp' ? 'OTP दर्ज करें' : 'OTP से साइनअप'}
             </CardTitle>
+          </div>
+          {/* Step indicator */}
+          <div className="flex gap-2">
+            <div className={`h-1 flex-1 rounded-full ${step === 'form' || step === 'otp' || step === 'password' ? 'bg-[#D4AF37]' : 'bg-white/10'}`} />
+            <div className={`h-1 flex-1 rounded-full ${step === 'otp' || step === 'password' ? 'bg-[#D4AF37]' : 'bg-white/10'}`} />
+            <div className={`h-1 flex-1 rounded-full ${step === 'password' ? 'bg-[#D4AF37]' : 'bg-white/10'}`} />
           </div>
         </CardHeader>
 
         <CardContent>
-          {step === 'form' ? (
+          {step === 'form' && (
             <form onSubmit={handleSendOTP} className="space-y-4">
               <div className="space-y-2">
                 <Label className="text-gray-300">नाम</Label>
@@ -200,7 +226,9 @@ const SignupPage = () => {
                 {loading ? 'OTP भेज रहे हैं...' : 'OTP भेजें'}
               </Button>
             </form>
-          ) : (
+          )}
+
+          {step === 'otp' && (
             <form onSubmit={handleVerifyOTP} className="space-y-4">
               <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center gap-2">
                 <CheckCircle className="w-4 h-4 text-green-400" />
@@ -237,6 +265,48 @@ const SignupPage = () => {
               >
                 नंबर बदलें या दोबारा OTP भेजें
               </button>
+            </form>
+          )}
+
+          {step === 'password' && (
+            <form onSubmit={handleCompleteSignup} className="space-y-4">
+              <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-green-400" />
+                <p className="text-green-400 text-sm">+91 {phone} सत्यापित हो गया</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-gray-300">पासवर्ड बनाएं</Label>
+                <div className="relative">
+                  <Input
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="कम से कम 6 अक्षर"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={6}
+                    data-testid="signup-password-input"
+                    className="bg-[#0A0A0C] border-white/10 text-white placeholder:text-gray-500 focus:border-[#D4AF37] focus:ring-[#D4AF37] pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <p className="text-gray-500 text-xs">यह पासवर्ड लॉगिन के लिए उपयोग होगा</p>
+              </div>
+
+              <Button
+                type="submit"
+                disabled={loading}
+                data-testid="complete-signup-button"
+                className="w-full bg-[#D4AF37] hover:bg-[#FDE047] text-black font-bold"
+              >
+                {loading ? 'अकाउंट बन रहा है...' : 'अकाउंट बनाएं'}
+              </Button>
             </form>
           )}
         </CardContent>
