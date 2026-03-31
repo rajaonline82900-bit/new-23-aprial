@@ -113,11 +113,15 @@ const WalletPage = () => {
     // Check if returning from IMB payment
     const payment = searchParams.get('payment');
     const orderId = searchParams.get('order_id');
+    const tab = searchParams.get('tab');
     if (payment === 'success' && orderId) {
       checkPaymentStatus(orderId);
     } else if (payment === 'failed') {
       toast.error('भुगतान विफल हो गया');
       window.history.replaceState({}, '', '/wallet');
+    }
+    if (tab === 'withdraw') {
+      setWithdrawOpen(true);
     }
   }, [fetchWallet, refreshUser, searchParams, checkPaymentStatus]);
 

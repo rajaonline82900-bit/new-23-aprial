@@ -190,20 +190,11 @@ const DashboardPage = () => {
                 <p className="text-2xl font-bold text-white">₹{user?.balance?.toFixed(2) || '0.00'}</p>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    if (window.deferredPrompt) {
-                      window.deferredPrompt.prompt();
-                      window.deferredPrompt.userChoice.then(() => { window.deferredPrompt = null; });
-                    } else {
-                      alert('ब्राउज़र मेनू में जाकर "Add to Home Screen" या "Install App" पर क्लिक करें।');
-                    }
-                  }}
-                  data-testid="download-apk-mobile"
-                  className="px-3 py-2 rounded-lg bg-gradient-to-r from-[#D4AF37] to-[#FDE047] text-black font-bold text-sm"
-                >
-                  <Download className="w-4 h-4" />
-                </button>
+                <Link to="/wallet?tab=withdraw">
+                  <Button variant="outline" className="border-red-500/50 text-red-400 hover:bg-red-500/10 font-bold">
+                    निकासी
+                  </Button>
+                </Link>
                 <Link to="/wallet">
                   <Button className="bg-[#D4AF37] hover:bg-[#FDE047] text-black font-bold">
                     जमा करें
