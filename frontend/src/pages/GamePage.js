@@ -46,7 +46,7 @@ const GamePage = () => {
   const [loading, setLoading] = useState(true);
   const [placing, setPlacing] = useState(false);
   const [bettingOpen, setBettingOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState('jantri'); // 'jantri' or 'haruf'
+  const [activeTab, setActiveTab] = useState('jantri'); // 'jantri', 'haruf', or 'cross'
 
   // Jantri state - amounts for each jodi
   const [jantriAmounts, setJantriAmounts] = useState({});
@@ -56,6 +56,10 @@ const GamePage = () => {
   const [andarAmounts, setAndarAmounts] = useState({});
   const [baharAmounts, setBaharAmounts] = useState({});
   const [harufQuickAmount, setHarufQuickAmount] = useState('');
+
+  // Cross Bet state
+  const [crossDigits, setCrossDigits] = useState([]);
+  const [crossAmount, setCrossAmount] = useState('');
 
   useEffect(() => {
     fetchGame();
@@ -131,6 +135,34 @@ const GamePage = () => {
     setBaharAmounts({});
   };
 
+  // Cross Bet - toggle digit selection
+  const toggleCrossDigit = (digit) => {
+    setCrossDigits(prev => 
+      prev.includes(digit) ? prev.filter(d => d !== digit) : [...prev, digit]
+    );
+  };
+
+  // Generate all cross jodi combinations from selected digits
+  const crossJodis = [];
+  if (crossDigits.length >= 2) {
+    for (let i = 0; i < crossDigits.length; i++) {
+      for (let j = 0; j < crossDigits.length; j++) {
+        if (i !== j) {
+          crossJodis.push(String(crossDigits[i]) + String(crossDigits[j]));
+        }
+      }
+    }
+  }
+
+  const crossBetAmount = parseInt(crossAmount) || 0;
+  const crossTotal = crossJodis.length * crossBetAmount;
+  const crossPotentialWin = crossTotal * 90;
+
+  const clearCrossBet = () => {
+    setCrossDigits([]);
+    setCrossAmount('');
+  };
+
   // Calculate totals - Jantri
   const activeBets = Object.entries(jantriAmounts).filter(([_, amt]) => amt && parseInt(amt) >= 10);
   const jantriTotal = activeBets.reduce((sum, [_, amt]) => sum + parseInt(amt), 0);
@@ -141,9 +173,9 @@ const GamePage = () => {
   const harufTotal = [...activeAndar, ...activeBahar].reduce((sum, [_, amt]) => sum + parseInt(amt), 0);
 
   // Grand total
-  const totalAmount = jantriTotal + harufTotal;
-  const totalPotentialWin = (jantriTotal * 90) + (harufTotal * 9);
-  const totalBetCount = activeBets.length + activeAndar.length + activeBahar.length;
+  const totalAmount = jantriTotal + harufTotal + (crossBetAmount >= 10 ? crossTotal : 0);
+  const totalPotentialWin = (jantriTotal * 90) + (harufTotal * 9) + (crossBetAmount >= 10 ? crossPotentialWin : 0);
+  const totalBetCount = activeBets.length + activeAndar.length + activeBahar.length + (crossBetAmount >= 10 ? crossJodis.length : 0);
 
   const handlePlaceBatchBets = async () => {
     if (!bettingOpen) {
@@ -199,12 +231,25 @@ const GamePage = () => {
         );
       }
 
+      // Cross bets (jodi type)
+      if (crossJodis.length > 0 && crossBetAmount >= 10) {
+        requests.push(
+          axios.post(`${API_URL}/api/bets/batch`, {
+            game_id: gameId,
+            bet_type: 'jodi',
+            bets: crossJodis.map(number => ({ number, amount: crossBetAmount }))
+          }, { withCredentials: true })
+        );
+      }
+
       await Promise.all(requests);
 
       toast.success(`${totalBetCount} बेट्स लगाई गईं! कुल: ₹${totalAmount}`);
       setJantriAmounts({});
       setAndarAmounts({});
       setBaharAmounts({});
+      setCrossDigits([]);
+      setCrossAmount('');
       await refreshUser();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'बेट नहीं लग पाई');
@@ -301,34 +346,48 @@ const GamePage = () => {
           </Card>
         )}
 
-        {/* Tab Toggle - Jantri / Haruf */}
-        <div className="grid grid-cols-2 gap-3 mb-6" data-testid="bet-type-tabs">
+        {/* Tab Toggle - Jantri / Haruf / Cross */}
+        <div className="grid grid-cols-3 gap-3 mb-6" data-testid="bet-type-tabs">
           <button
             onClick={() => setActiveTab('jantri')}
             data-testid="tab-jantri"
-            className={`py-4 rounded-xl font-bold text-center text-lg transition-all ${
+            className={`py-3 rounded-xl font-bold text-center transition-all ${
               activeTab === 'jantri'
                 ? 'bg-gradient-to-br from-[#D4AF37] to-[#FDE047] text-black shadow-lg shadow-[#D4AF37]/20'
                 : 'bg-[#141418] text-gray-400 border border-white/10 hover:border-[#D4AF37]/50'
             }`}
           >
-            जंतरी बेट
+            <span className="text-base">जंतरी बेट</span>
             {activeBets.length > 0 && (
-              <span className="ml-2 text-xs bg-black/30 px-2 py-0.5 rounded-full">{activeBets.length}</span>
+              <span className="ml-1 text-xs bg-black/30 px-2 py-0.5 rounded-full">{activeBets.length}</span>
             )}
           </button>
           <button
             onClick={() => setActiveTab('haruf')}
             data-testid="tab-haruf"
-            className={`py-4 rounded-xl font-bold text-center text-lg transition-all ${
+            className={`py-3 rounded-xl font-bold text-center transition-all ${
               activeTab === 'haruf'
                 ? 'bg-gradient-to-br from-[#D4AF37] to-[#FDE047] text-black shadow-lg shadow-[#D4AF37]/20'
                 : 'bg-[#141418] text-gray-400 border border-white/10 hover:border-[#D4AF37]/50'
             }`}
           >
-            हरूफ बेट
+            <span className="text-base">हरूफ बेट</span>
             {(activeAndar.length + activeBahar.length) > 0 && (
-              <span className="ml-2 text-xs bg-black/30 px-2 py-0.5 rounded-full">{activeAndar.length + activeBahar.length}</span>
+              <span className="ml-1 text-xs bg-black/30 px-2 py-0.5 rounded-full">{activeAndar.length + activeBahar.length}</span>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('cross')}
+            data-testid="tab-cross"
+            className={`py-3 rounded-xl font-bold text-center transition-all ${
+              activeTab === 'cross'
+                ? 'bg-gradient-to-br from-[#D4AF37] to-[#FDE047] text-black shadow-lg shadow-[#D4AF37]/20'
+                : 'bg-[#141418] text-gray-400 border border-white/10 hover:border-[#D4AF37]/50'
+            }`}
+          >
+            <span className="text-base">क्रॉस बेट</span>
+            {crossJodis.length > 0 && crossBetAmount >= 10 && (
+              <span className="ml-1 text-xs bg-black/30 px-2 py-0.5 rounded-full">{crossJodis.length}</span>
             )}
           </button>
         </div>
@@ -505,6 +564,105 @@ const GamePage = () => {
                 </div>
               </div>
             </div>
+          </CardContent>
+        </Card>
+        )}
+
+        {/* Cross Bet Section */}
+        {activeTab === 'cross' && (
+        <Card className="bg-[#141418] border-white/10 mb-6">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-white font-['Unbounded'] text-lg">
+                क्रॉस बेट
+              </CardTitle>
+              {crossDigits.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={clearCrossBet}
+                  data-testid="clear-cross-bets"
+                  className="border-red-500/50 text-red-400 hover:bg-red-500/10"
+                >
+                  <Trash2 className="w-4 h-4 mr-1" />
+                  हटाओ
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {/* Digit Selection */}
+            <p className="text-gray-400 text-sm mb-3">नंबर चुनें (कम से कम 2)</p>
+            <div className="grid grid-cols-5 gap-3 mb-6">
+              {[0,1,2,3,4,5,6,7,8,9].map((num) => {
+                const isSelected = crossDigits.includes(num);
+                return (
+                  <button
+                    key={`cross-${num}`}
+                    onClick={() => toggleCrossDigit(num)}
+                    data-testid={`cross-digit-${num}`}
+                    className={`py-4 rounded-xl text-2xl font-bold transition-all ${
+                      isSelected
+                        ? 'bg-gradient-to-br from-[#D4AF37] to-[#FDE047] text-black shadow-lg shadow-[#D4AF37]/20'
+                        : 'bg-[#0A0A0C] text-white border border-white/10 hover:border-[#D4AF37]/50'
+                    }`}
+                  >
+                    {num}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Amount Input */}
+            <div className="mb-4">
+              <p className="text-gray-400 text-sm mb-2">प्रति जोड़ी राशि (₹)</p>
+              <Input
+                type="number"
+                placeholder="हर जोड़ी पर कितना लगाना है"
+                value={crossAmount}
+                onChange={(e) => setCrossAmount(e.target.value)}
+                data-testid="cross-amount-input"
+                className="bg-[#0A0A0C] border-white/10 text-white h-12 text-lg"
+              />
+            </div>
+
+            {/* Generated Jodis Preview */}
+            {crossJodis.length > 0 && (
+              <div className="p-4 bg-[#0A0A0C] rounded-xl border border-white/10">
+                <p className="text-gray-400 text-sm mb-3">
+                  बनी जोड़ियां ({crossJodis.length})
+                </p>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {crossJodis.map((jodi) => (
+                    <span
+                      key={jodi}
+                      data-testid={`cross-jodi-${jodi}`}
+                      className="px-3 py-1.5 bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-lg text-[#D4AF37] font-bold text-sm"
+                    >
+                      {jodi}
+                    </span>
+                  ))}
+                </div>
+                {crossBetAmount >= 10 && (
+                  <div className="flex items-center gap-6 text-sm">
+                    <div>
+                      <span className="text-gray-400">कुल राशि: </span>
+                      <span className="text-[#D4AF37] font-bold">₹{crossTotal}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400">संभावित जीत: </span>
+                      <span className="text-emerald-400 font-bold">₹{crossPotentialWin}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {crossDigits.length < 2 && (
+              <p className="text-gray-500 text-sm text-center mt-2">
+                कम से कम 2 नंबर चुनें - सभी क्रॉस जोड़ियां बनेंगी
+              </p>
+            )}
           </CardContent>
         </Card>
         )}
