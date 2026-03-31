@@ -1692,9 +1692,14 @@ async def get_bet_distribution(request: Request, game_id: Optional[str] = None, 
                 "game_name": GAMES[game]["name_hi"] if game in GAMES else game,
                 "single": {},
                 "jodi": {},
+                "haruf_andar": {},
+                "haruf_bahar": {},
                 "total_amount": 0,
                 "total_potential": 0
             }
+        
+        if bet_type not in distribution[game]:
+            distribution[game][bet_type] = {}
         
         if number not in distribution[game][bet_type]:
             distribution[game][bet_type][number] = {
@@ -1711,18 +1716,15 @@ async def get_bet_distribution(request: Request, game_id: Optional[str] = None, 
         total_bet_amount += amount
         total_potential_payout += potential_win
     
-    # Sort jodi by amount (descending)
+    # Sort by amount (descending)
     for game in distribution:
-        distribution[game]["jodi"] = dict(
-            sorted(distribution[game]["jodi"].items(), 
-                   key=lambda x: x[1]["amount"], 
-                   reverse=True)
-        )
-        distribution[game]["single"] = dict(
-            sorted(distribution[game]["single"].items(), 
-                   key=lambda x: x[1]["amount"], 
-                   reverse=True)
-        )
+        for bet_type in ["jodi", "single", "haruf_andar", "haruf_bahar"]:
+            if bet_type in distribution[game]:
+                distribution[game][bet_type] = dict(
+                    sorted(distribution[game][bet_type].items(), 
+                           key=lambda x: x[1]["amount"], 
+                           reverse=True)
+                )
     
     return {
         "date": date,

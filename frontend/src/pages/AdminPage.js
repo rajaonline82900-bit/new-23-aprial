@@ -1028,7 +1028,7 @@ const AdminPage = () => {
                         )}
 
                         {/* Single Bets */}
-                        {Object.keys(gameData.single).length > 0 && (
+                        {Object.keys(gameData.single || {}).length > 0 && (
                           <div>
                             <p className="text-gray-400 text-sm mb-2">एकल बेट्स:</p>
                             <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
@@ -1040,6 +1040,46 @@ const AdminPage = () => {
                                   <span className="text-xl font-bold text-emerald-400">{number}</span>
                                   <p className="text-white text-sm">₹{data.amount}</p>
                                   <p className="text-gray-400 text-xs">{data.count}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Haruf Andar Bets */}
+                        {Object.keys(gameData.haruf_andar || {}).length > 0 && (
+                          <div className="mt-4">
+                            <p className="text-blue-400 text-sm mb-2 font-semibold">हरूफ अंदर:</p>
+                            <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
+                              {Object.entries(gameData.haruf_andar).map(([number, data]) => (
+                                <div 
+                                  key={number}
+                                  className="p-2 bg-[#0A0A0C] rounded-lg border border-blue-500/20 text-center"
+                                >
+                                  <span className="text-xl font-bold text-blue-400">{number}</span>
+                                  <p className="text-white text-sm">₹{data.amount}</p>
+                                  <p className="text-gray-400 text-xs">{data.count} बेट</p>
+                                  <p className="text-red-400 text-xs">₹{data.potential_payout}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Haruf Bahar Bets */}
+                        {Object.keys(gameData.haruf_bahar || {}).length > 0 && (
+                          <div className="mt-4">
+                            <p className="text-orange-400 text-sm mb-2 font-semibold">हरूफ बाहर:</p>
+                            <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
+                              {Object.entries(gameData.haruf_bahar).map(([number, data]) => (
+                                <div 
+                                  key={number}
+                                  className="p-2 bg-[#0A0A0C] rounded-lg border border-orange-500/20 text-center"
+                                >
+                                  <span className="text-xl font-bold text-orange-400">{number}</span>
+                                  <p className="text-white text-sm">₹{data.amount}</p>
+                                  <p className="text-gray-400 text-xs">{data.count} बेट</p>
+                                  <p className="text-red-400 text-xs">₹{data.potential_payout}</p>
                                 </div>
                               ))}
                             </div>
