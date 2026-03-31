@@ -305,18 +305,26 @@ async def logout():
 @api_router.get("/games")
 async def get_games():
     games_list = []
-    now = datetime.now(timezone.utc)
-    today = now.strftime("%Y-%m-%d")
+    ist_now = datetime.now(timezone(timedelta(hours=5, minutes=30)))
+    today = ist_now.strftime("%Y-%m-%d")
+    yesterday = (ist_now - timedelta(days=1)).strftime("%Y-%m-%d")
     
     games_dict = await get_games_dict()
     
     for game_id, game in games_dict.items():
         if not game.get("is_active", True):
             continue
-        # Get latest result for this game
-        latest_result = await db.results.find_one(
-            {"game_id": game_id},
-            sort=[("date", -1)]
+        
+        # Get today's result
+        today_result = await db.results.find_one(
+            {"game_id": game_id, "date": today},
+            {"_id": 0}
+        )
+        
+        # Get yesterday's result
+        yesterday_result = await db.results.find_one(
+            {"game_id": game_id, "date": yesterday},
+            {"_id": 0}
         )
         
         games_list.append({
@@ -327,11 +335,14 @@ async def get_games():
             "end_time": game.get("end_time", game.get("time", "")),
             "time": game.get("end_time", game.get("time", "")),
             "display_time": game["display_time"],
-            "latest_result": {
-                "single": latest_result["single_result"] if latest_result else "-",
-                "jodi": latest_result["jodi_result"] if latest_result else "--",
-                "date": latest_result["date"] if latest_result else None
-            } if latest_result else None
+            "today_result": {
+                "jodi": today_result["jodi_result"],
+                "single": today_result["single_result"]
+            } if today_result else None,
+            "yesterday_result": {
+                "jodi": yesterday_result["jodi_result"],
+                "single": yesterday_result["single_result"]
+            } if yesterday_result else None
         })
     
     return {"games": games_list}

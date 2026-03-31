@@ -235,25 +235,37 @@ const DashboardPage = () => {
                     >
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#D4AF37]/20 to-[#141418] flex items-center justify-center border border-[#D4AF37]/30">
-                              <span className="text-2xl font-bold text-[#D4AF37] font-['Unbounded']">
-                                {game.latest_result?.jodi || '--'}
-                              </span>
-                            </div>
+                          <div className="flex items-center gap-3">
                             <div>
                               <h4 className="text-lg font-semibold text-white">{game.name_hi}</h4>
                               <div className="flex items-center gap-2 text-gray-400 text-sm">
                                 <Clock className="w-4 h-4" />
-                                <span>{game.display_time}</span>
+                                <span>{game.start_time} - {game.end_time}</span>
                               </div>
                             </div>
                           </div>
                           
                           <div className="flex items-center gap-3">
-                            <Badge className={gameStatus.color}>
-                              {gameStatus.label}
-                            </Badge>
+                            {/* Yesterday Result Box */}
+                            <div className="text-center px-3 py-1.5 rounded-lg bg-[#0A0A0C] border border-white/10 min-w-[60px]">
+                              <p className="text-gray-500 text-[9px] uppercase tracking-wide">Yesterday</p>
+                              <p className="text-white font-bold text-lg leading-tight">
+                                {game.yesterday_result?.jodi || '--'}
+                              </p>
+                            </div>
+
+                            {/* Today Result Box */}
+                            <div className={`text-center px-3 py-1.5 rounded-lg min-w-[60px] border ${
+                              game.today_result 
+                                ? 'bg-[#D4AF37]/10 border-[#D4AF37]/40' 
+                                : 'bg-[#0A0A0C] border-white/10'
+                            }`}>
+                              <p className={`text-[9px] uppercase tracking-wide ${game.today_result ? 'text-[#D4AF37]' : 'text-gray-500'}`}>Today</p>
+                              <p className={`font-bold text-lg leading-tight ${game.today_result ? 'text-[#D4AF37]' : 'text-gray-500'}`}>
+                                {game.today_result?.jodi || '--'}
+                              </p>
+                            </div>
+
                             <ChevronRight className="w-5 h-5 text-gray-500" />
                           </div>
                         </div>
