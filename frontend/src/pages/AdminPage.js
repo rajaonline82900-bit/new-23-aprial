@@ -1452,7 +1452,7 @@ const AdminPage = () => {
               <div>
                 <p>{selectedUser?.name}</p>
                 <p className="text-sm text-gray-400 font-normal">{selectedUser?.phone || selectedUser?.email}</p>
-                <p className="text-xs text-gray-500 font-normal">अकाउंट बना: {selectedUser?.created_at ? new Date(selectedUser.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true, hour: '2-digit', minute: '2-digit' }}) : 'N/A'}</p>
+                <p className="text-xs text-gray-500 font-normal">अकाउंट बना: {selectedUser?.created_at ? new Date(selectedUser.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true, hour: '2-digit', minute: '2-digit' }) : 'N/A'}</p>
               </div>
             </DialogTitle>
           </DialogHeader>
