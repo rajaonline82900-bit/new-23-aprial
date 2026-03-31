@@ -959,6 +959,125 @@ async def declare_result(result: ResultDeclare, request: Request):
         }
     }
 
+# Result Reverse - Undo a declared result
+@api_router.post("/admin/results/reverse")
+async def reverse_result(request: Request):
+    await get_admin_user(request)
+    body = await request.json()
+    game_id = body.get("game_id")
+    date = body.get("date")
+    
+    if not game_id or not date:
+        raise HTTPException(status_code=400, detail="game_id and date required")
+    
+    # Find the result
+    result = await db.results.find_one({"game_id": game_id, "date": date})
+    if not result:
+        raise HTTPException(status_code=404, detail="इस दिनांक का रिजल्ट नहीं मिला")
+    
+    # Find all won bets for this game/date and deduct winnings
+    won_bets = await db.bets.find({
+        "game_id": game_id,
+        "date": date,
+        "status": "won"
+    }).to_list(10000)
+    
+    deducted_count = 0
+    total_deducted = 0
+    for bet in won_bets:
+        win_amount = bet.get("won_amount", bet.get("potential_win", 0))
+        if win_amount > 0:
+            await db.users.update_one(
+                {"_id": ObjectId(bet["user_id"])},
+                {"$inc": {"balance": -win_amount}}
+            )
+            total_deducted += win_amount
+            deducted_count += 1
+    
+    # Revert all bets (won + lost) back to pending
+    await db.bets.update_many(
+        {"game_id": game_id, "date": date, "status": {"$in": ["won", "lost"]}},
+        {"$set": {"status": "pending", "won_amount": 0}}
+    )
+    
+    # Delete the result
+    await db.results.delete_one({"game_id": game_id, "date": date})
+    
+    total_reverted = await db.bets.count_documents({"game_id": game_id, "date": date, "status": "pending"})
+    
+    return {
+        "message": "रिजल्ट रिवर्स हो गया",
+        "winnings_deducted": total_deducted,
+        "winners_reversed": deducted_count,
+        "bets_reverted_to_pending": total_reverted
+    }
+
+# Bet Reverse - Refund specific bets
+@api_router.post("/admin/bets/reverse")
+async def reverse_bets(request: Request):
+    await get_admin_user(request)
+    body = await request.json()
+    game_id = body.get("game_id")
+    date = body.get("date")
+    bet_type = body.get("bet_type")  # optional filter
+    user_id = body.get("user_id")    # optional filter
+    
+    if not game_id or not date:
+        raise HTTPException(status_code=400, detail="game_id and date required")
+    
+    # Build filter
+    bet_filter = {"game_id": game_id, "date": date}
+    if bet_type:
+        bet_filter["bet_type"] = bet_type
+    if user_id:
+        bet_filter["user_id"] = user_id
+    
+    # Find all bets matching filter
+    bets = await db.bets.find(bet_filter).to_list(10000)
+    
+    if not bets:
+        raise HTTPException(status_code=404, detail="कोई बेट नहीं मिली")
+    
+    refunded_count = 0
+    total_refunded = 0
+    won_deducted = 0
+    
+    for bet in bets:
+        if bet["status"] == "reversed":
+            continue
+        
+        # If won, deduct winnings first
+        if bet["status"] == "won":
+            win_amount = bet.get("won_amount", bet.get("potential_win", 0))
+            if win_amount > 0:
+                await db.users.update_one(
+                    {"_id": ObjectId(bet["user_id"])},
+                    {"$inc": {"balance": -win_amount}}
+                )
+                won_deducted += win_amount
+        
+        # Refund the original bet amount
+        await db.users.update_one(
+            {"_id": ObjectId(bet["user_id"])},
+            {"$inc": {"balance": bet["amount"]}}
+        )
+        
+        # Mark bet as reversed
+        await db.bets.update_one(
+            {"id": bet["id"]},
+            {"$set": {"status": "reversed", "won_amount": 0}}
+        )
+        
+        refunded_count += 1
+        total_refunded += bet["amount"]
+    
+    return {
+        "message": f"{refunded_count} बेट्स रिवर्स हो गईं",
+        "bets_reversed": refunded_count,
+        "amount_refunded": total_refunded,
+        "winnings_deducted": won_deducted
+    }
+
 @api_router.get("/admin/users")
 async def get_all_users(request: Request, skip: int = 0, limit: int = 50):
     await get_admin_user(request)

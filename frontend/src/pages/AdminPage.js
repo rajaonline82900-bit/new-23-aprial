@@ -51,7 +51,9 @@ import {
   Settings,
   Edit,
   Trash2,
-  Save
+  Save,
+  RotateCcw,
+  Undo2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -104,6 +106,12 @@ const AdminPage = () => {
   const [telegramLink, setTelegramLink] = useState('');
   const [whatsappLink, setWhatsappLink] = useState('');
   const [savingSettings, setSavingSettings] = useState(false);
+
+  // Reverse state
+  const [reversingResult, setReversingResult] = useState(false);
+  const [reversingBets, setReversingBets] = useState(false);
+  const [reverseBetType, setReverseBetType] = useState('all');
+
   const [loadingUserDetails, setLoadingUserDetails] = useState(false);
 
   // Wallet adjustment state
@@ -330,6 +338,54 @@ const AdminPage = () => {
       fetchData();
     } catch (error) {
       toast.error('कार्रवाई विफल');
+    }
+  };
+
+  const handleReverseResult = async () => {
+    if (!selectedGame) {
+      toast.error('गेम चुनें');
+      return;
+    }
+    if (!window.confirm(`क्या आप ${selectedGame} का ${format(resultDate, 'yyyy-MM-dd')} का रिजल्ट रिवर्स करना चाहते हैं? जीती हुई राशि वापस कट जाएगी।`)) {
+      return;
+    }
+    setReversingResult(true);
+    try {
+      const { data } = await axios.post(`${API_URL}/api/admin/results/reverse`, {
+        game_id: selectedGame,
+        date: format(resultDate, 'yyyy-MM-dd')
+      }, { withCredentials: true });
+      toast.success(`${data.message} | जीत कटी: ₹${data.winnings_deducted} | ${data.bets_reverted_to_pending} बेट्स pending`);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'रिजल्ट रिवर्स नहीं हो पाया');
+    } finally {
+      setReversingResult(false);
+    }
+  };
+
+  const handleReverseBets = async () => {
+    if (!selectedGame) {
+      toast.error('गेम चुनें');
+      return;
+    }
+    if (!window.confirm(`क्या आप ${selectedGame} की ${format(resultDate, 'yyyy-MM-dd')} की बेट्स रिवर्स करना चाहते हैं? बेट राशि वापस हो जाएगी।`)) {
+      return;
+    }
+    setReversingBets(true);
+    try {
+      const payload = {
+        game_id: selectedGame,
+        date: format(resultDate, 'yyyy-MM-dd')
+      };
+      if (reverseBetType !== 'all') {
+        payload.bet_type = reverseBetType;
+      }
+      const { data } = await axios.post(`${API_URL}/api/admin/bets/reverse`, payload, { withCredentials: true });
+      toast.success(`${data.message} | वापसी: ₹${data.amount_refunded} | जीत कटी: ₹${data.winnings_deducted}`);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'बेट्स रिवर्स नहीं हो पाईं');
+    } finally {
+      setReversingBets(false);
     }
   };
 
@@ -690,6 +746,86 @@ const AdminPage = () => {
                     </span>
                   )}
                 </Button>
+
+                {/* Reverse Section */}
+                <div className="border-t border-white/10 pt-4 mt-4">
+                  <p className="text-red-400 font-semibold mb-3">रिवर्स ऑप्शन</p>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    {/* Result Reverse */}
+                    <Button
+                      onClick={handleReverseResult}
+                      disabled={reversingResult || !selectedGame}
+                      data-testid="admin-reverse-result-button"
+                      variant="outline"
+                      className="h-12 border-red-500/50 text-red-400 hover:bg-red-500/10"
+                    >
+                      {reversingResult ? (
+                        <span className="flex items-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          रिवर्स हो रहा है...
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-2">
+                          <RotateCcw className="w-4 h-4" />
+                          रिजल्ट रिवर्स
+                        </span>
+                      )}
+                    </Button>
+
+                    {/* Bet Reverse */}
+                    <Button
+                      onClick={handleReverseBets}
+                      disabled={reversingBets || !selectedGame}
+                      data-testid="admin-reverse-bets-button"
+                      variant="outline"
+                      className="h-12 border-orange-500/50 text-orange-400 hover:bg-orange-500/10"
+                    >
+                      {reversingBets ? (
+                        <span className="flex items-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          रिवर्स हो रहा है...
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-2">
+                          <Undo2 className="w-4 h-4" />
+                          बेट रिवर्स
+                        </span>
+                      )}
+                    </Button>
+                  </div>
+
+                  {/* Bet Type Filter for Bet Reverse */}
+                  <div className="mt-3">
+                    <Label className="text-gray-400 text-sm mb-2 block">बेट रिवर्स फ़िल्टर (बेट टाइप)</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { value: 'all', label: 'सभी' },
+                        { value: 'jodi', label: 'जोड़ी' },
+                        { value: 'haruf_andar', label: 'हरूफ अंदर' },
+                        { value: 'haruf_bahar', label: 'हरूफ बाहर' },
+                        { value: 'single', label: 'एकल' }
+                      ].map((opt) => (
+                        <button
+                          key={opt.value}
+                          onClick={() => setReverseBetType(opt.value)}
+                          data-testid={`reverse-filter-${opt.value}`}
+                          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                            reverseBetType === opt.value
+                              ? 'bg-orange-500/20 border border-orange-500/50 text-orange-400'
+                              : 'bg-[#0A0A0C] text-gray-400 border border-white/10 hover:border-orange-500/30'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <p className="text-gray-500 text-xs mt-3">
+                    रिजल्ट रिवर्स: रिजल्ट हटाएगा, जीती राशि काटेगा, बेट्स pending करेगा।
+                    बेट रिवर्स: बेट राशि user को वापस करेगा।
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
