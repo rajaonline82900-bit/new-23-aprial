@@ -19,6 +19,7 @@ import JantriPage from "./pages/JantriPage";
 import HowToPlayPage from "./pages/HowToPlayPage";
 import ReferPage from "./pages/ReferPage";
 import RateListPage from "./pages/RateListPage";
+import LandingPage from "./pages/LandingPage";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -178,8 +179,8 @@ function AppRoutes() {
       />
 
       {/* Default Route */}
-      <Route path="/" element={<Navigate to="/login" replace />} />
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      <Route path="/" element={<LandingPage />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
