@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, IndianRupee, History, BarChart3, Gift } from 'lucide-react';
-import { toast } from 'sonner';
+import { Home, IndianRupee, History, BarChart3, RefreshCw } from 'lucide-react';
 
 const FooterNav = () => {
   const location = useLocation();
@@ -16,13 +15,13 @@ const FooterNav = () => {
 
   return (
     <>
-      {/* Floating Refer Button - Bottom Right */}
+      {/* Floating Refresh Button - Bottom Right */}
       <button
-        onClick={() => toast.info('Refer & Earn जल्द आ रहा है!')}
-        data-testid="floating-refer-btn"
+        onClick={() => window.location.reload()}
+        data-testid="floating-refresh-btn"
         className="fixed bottom-20 right-4 z-50 w-14 h-14 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#FDE047] shadow-lg shadow-[#D4AF37]/30 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
       >
-        <Gift className="w-6 h-6 text-black" />
+        <RefreshCw className="w-6 h-6 text-black" />
       </button>
 
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#141418] border-t border-white/10" data-testid="footer-nav">
