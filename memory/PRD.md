@@ -43,6 +43,9 @@ Build a Satta Matka betting application with Jantri, Haruf Andar/Bahar, Cross Be
 - [x] Push notifications on result declaration (VAPID web push to all subscribers) [31-Mar-2026]
 - [x] Landing page removed, signup page as front page [31-Mar-2026]
 - [x] Telegram quick action button on Dashboard (between Wallet & My Bet, admin-controlled link) [31-Mar-2026]
+- [x] Signup rewritten: Name → Phone → OTP → Password (no confirm password) [31-Mar-2026]
+- [x] Login rewritten: Phone + Password (admin can use email) [31-Mar-2026]
+- [x] Password Reset via OTP: Phone → OTP → New Password [31-Mar-2026]
 
 ## Payment Integration
 - Provider: IMB UPI Payment Gateway
