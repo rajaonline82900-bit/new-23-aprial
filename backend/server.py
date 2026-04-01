@@ -700,8 +700,19 @@ async def place_bet(bet: BetCreate, request: Request):
         if not bet.number.isdigit() or len(bet.number) != 2:
             raise HTTPException(status_code=400, detail="Jodi bet must be 00-99")
     
-    if bet.amount < 10:
-        raise HTTPException(status_code=400, detail="Minimum bet is ₹10")
+    # Get dynamic min bet from settings
+    settings_doc = await db.settings.find_one({"key": "app_settings"}, {"_id": 0})
+    if settings_doc:
+        if bet.bet_type == "jodi":
+            min_bet = int(settings_doc.get("min_bet_jodi", 10))
+        elif bet.bet_type in ("haruf_andar", "haruf_bahar"):
+            min_bet = int(settings_doc.get("min_bet_haruf", 10))
+        else:
+            min_bet = int(settings_doc.get("min_bet_crossing", 10))
+    else:
+        min_bet = 10
+    if bet.amount < min_bet:
+        raise HTTPException(status_code=400, detail=f"न्यूनतम बेट ₹{min_bet} है")
     
     if bet.amount > user.get("balance", 0):
         raise HTTPException(status_code=400, detail="Insufficient balance")
@@ -871,8 +882,12 @@ async def get_wallet(request: Request):
 async def create_deposit(deposit: DepositRequest, request: Request):
     user = await get_current_user(request)
     
-    if deposit.amount < 100:
-        raise HTTPException(status_code=400, detail="Minimum deposit ₹100")
+    # Get dynamic settings
+    settings = await db.settings.find_one({"key": "app_settings"}, {"_id": 0})
+    min_deposit = int(settings.get("min_deposit", 100)) if settings else 100
+    
+    if deposit.amount < min_deposit:
+        raise HTTPException(status_code=400, detail=f"न्यूनतम जमा ₹{min_deposit} है")
     if deposit.amount > 50000:
         raise HTTPException(status_code=400, detail="Maximum deposit ₹50000")
     
@@ -1069,8 +1084,32 @@ async def check_deposit_status(order_id: str, request: Request):
 async def request_withdrawal(withdraw: WithdrawRequest, request: Request):
     user = await get_current_user(request)
     
-    if withdraw.amount < 100:
-        raise HTTPException(status_code=400, detail="Minimum withdrawal is ₹100")
+    # Get dynamic settings
+    settings = await db.settings.find_one({"key": "app_settings"}, {"_id": 0})
+    min_withdrawal = int(settings.get("min_withdrawal", 100)) if settings else 100
+    w_start = settings.get("withdrawal_start_time", "") if settings else ""
+    w_end = settings.get("withdrawal_end_time", "") if settings else ""
+    
+    # Check withdrawal time
+    if w_start and w_end:
+        ist_now = datetime.now(IST)
+        current_minutes = ist_now.hour * 60 + ist_now.minute
+        try:
+            sh, sm = map(int, w_start.split(":"))
+            eh, em = map(int, w_end.split(":"))
+            start_min = sh * 60 + sm
+            end_min = eh * 60 + em
+            if start_min > end_min:
+                allowed = current_minutes >= start_min or current_minutes <= end_min
+            else:
+                allowed = start_min <= current_minutes <= end_min
+            if not allowed:
+                raise HTTPException(status_code=400, detail=f"निकासी का समय {w_start} से {w_end} तक है")
+        except ValueError:
+            pass
+    
+    if withdraw.amount < min_withdrawal:
+        raise HTTPException(status_code=400, detail=f"न्यूनतम निकासी ₹{min_withdrawal} है")
     
     if withdraw.amount > user.get("balance", 0):
         raise HTTPException(status_code=400, detail="Insufficient balance")
@@ -2219,18 +2258,22 @@ async def delete_game(game_id: str, request: Request):
 
 # Include the router in the main app
 # Settings API (public - for telegram link etc.)
+SETTINGS_DEFAULTS = {
+    "telegram_link": "", "whatsapp_link": "", "withdrawal_proof_telegram": "",
+    "withdrawal_start_time": "", "withdrawal_end_time": "",
+    "min_bet_jodi": 10, "min_bet_haruf": 10, "min_bet_crossing": 10,
+    "min_deposit": 100, "min_withdrawal": 100
+}
+
 @api_router.get("/settings")
 async def get_settings():
     settings = await db.settings.find_one({"key": "app_settings"}, {"_id": 0})
-    if not settings:
-        return {"telegram_link": "", "whatsapp_link": "", "withdrawal_proof_telegram": "", "withdrawal_start_time": "", "withdrawal_end_time": ""}
-    return {
-        "telegram_link": settings.get("telegram_link", ""),
-        "whatsapp_link": settings.get("whatsapp_link", ""),
-        "withdrawal_proof_telegram": settings.get("withdrawal_proof_telegram", ""),
-        "withdrawal_start_time": settings.get("withdrawal_start_time", ""),
-        "withdrawal_end_time": settings.get("withdrawal_end_time", "")
-    }
+    result = {**SETTINGS_DEFAULTS}
+    if settings:
+        for k in SETTINGS_DEFAULTS:
+            if k in settings:
+                result[k] = settings[k]
+    return result
 
 @api_router.get("/admin/settings")
 async def get_admin_settings(request: Request):
@@ -2238,15 +2281,12 @@ async def get_admin_settings(request: Request):
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin only")
     settings = await db.settings.find_one({"key": "app_settings"}, {"_id": 0})
-    if not settings:
-        return {"telegram_link": "", "whatsapp_link": "", "withdrawal_proof_telegram": "", "withdrawal_start_time": "", "withdrawal_end_time": ""}
-    return {
-        "telegram_link": settings.get("telegram_link", ""),
-        "whatsapp_link": settings.get("whatsapp_link", ""),
-        "withdrawal_proof_telegram": settings.get("withdrawal_proof_telegram", ""),
-        "withdrawal_start_time": settings.get("withdrawal_start_time", ""),
-        "withdrawal_end_time": settings.get("withdrawal_end_time", "")
-    }
+    result = {**SETTINGS_DEFAULTS}
+    if settings:
+        for k in SETTINGS_DEFAULTS:
+            if k in settings:
+                result[k] = settings[k]
+    return result
 
 @api_router.put("/admin/settings")
 async def update_settings(request: Request):
@@ -2254,17 +2294,13 @@ async def update_settings(request: Request):
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin only")
     body = await request.json()
+    update_doc = {"key": "app_settings", "updated_at": datetime.now(timezone.utc)}
+    for k in SETTINGS_DEFAULTS:
+        if k in body:
+            update_doc[k] = body[k]
     await db.settings.update_one(
         {"key": "app_settings"},
-        {"$set": {
-            "key": "app_settings",
-            "telegram_link": body.get("telegram_link", ""),
-            "whatsapp_link": body.get("whatsapp_link", ""),
-            "withdrawal_proof_telegram": body.get("withdrawal_proof_telegram", ""),
-            "withdrawal_start_time": body.get("withdrawal_start_time", ""),
-            "withdrawal_end_time": body.get("withdrawal_end_time", ""),
-            "updated_at": datetime.now(timezone.utc)
-        }},
+        {"$set": update_doc},
         upsert=True
     )
     return {"message": "Settings updated successfully"}

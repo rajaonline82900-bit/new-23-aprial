@@ -6,10 +6,10 @@ import FooterNav from '../components/FooterNav';
 
 const RateListPage = () => {
   const rates = [
-    { type: 'जोड़ी (Jodi)', range: '00-99', multiplier: '90x', example: '₹10 लगाओ → ₹900 जीतो' },
-    { type: 'हरूफ अंदर (Haruf Andar)', range: '0-9', multiplier: '9x', example: '₹10 लगाओ → ₹90 जीतो' },
-    { type: 'हरूफ बाहर (Haruf Bahar)', range: '0-9', multiplier: '9x', example: '₹10 लगाओ → ₹90 जीतो' },
-    { type: 'क्रॉस बेट (Cross)', range: 'Auto Jodi', multiplier: '90x per jodi', example: 'सभी जोड़ी combinations' },
+    { type: 'जोड़ी (Jodi)', range: '00-99', multiplier: '100x', example: '₹10 लगाओ → ₹1000 जीतो' },
+    { type: 'हरूफ अंदर (Haruf Andar)', range: '0-9', multiplier: '10x', example: '₹10 लगाओ → ₹100 जीतो' },
+    { type: 'हरूफ बाहर (Haruf Bahar)', range: '0-9', multiplier: '10x', example: '₹10 लगाओ → ₹100 जीतो' },
+    { type: 'क्रॉस बेट (Crossing)', range: 'Auto Jodi', multiplier: '100x per jodi', example: '₹10 लगाओ → ₹1000 प्रति जोड़ी जीतो' },
   ];
 
   return (

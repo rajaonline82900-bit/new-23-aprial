@@ -49,6 +49,7 @@ const WalletPage = () => {
   const [checkingPayment, setCheckingPayment] = useState(false);
   const [paymentLink, setPaymentLink] = useState(null);
   const [txFilter, setTxFilter] = useState('all');
+  const [appSettings, setAppSettings] = useState({});
 
   const fetchWallet = useCallback(async () => {
     try {
@@ -111,6 +112,9 @@ const WalletPage = () => {
     fetchWallet();
     refreshUser();
     
+    // Fetch app settings
+    axios.get(`${API_URL}/api/settings`).then(r => setAppSettings(r.data)).catch(() => {});
+    
     // Check if returning from IMB payment
     const payment = searchParams.get('payment');
     const orderId = searchParams.get('order_id');
@@ -128,8 +132,9 @@ const WalletPage = () => {
 
   const handleDeposit = async () => {
     const amount = parseFloat(depositAmount);
-    if (!amount || amount < 100) {
-      toast.error('न्यूनतम जमा ₹100 है');
+    const minD = appSettings.min_deposit || 100;
+    if (!amount || amount < minD) {
+      toast.error(`न्यूनतम जमा ₹${minD} है`);
       return;
     }
     if (amount > 50000) {
@@ -167,8 +172,9 @@ const WalletPage = () => {
   };
 
   const handleWithdraw = async () => {
-    if (!withdrawAmount || parseFloat(withdrawAmount) < 100) {
-      toast.error('न्यूनतम निकासी ₹100 है');
+    const minW = appSettings.min_withdrawal || 100;
+    if (!withdrawAmount || parseFloat(withdrawAmount) < minW) {
+      toast.error(`न्यूनतम निकासी ₹${minW} है`);
       return;
     }
 
