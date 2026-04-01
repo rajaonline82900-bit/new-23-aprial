@@ -54,6 +54,7 @@ Build a Satta Matka betting application with Jantri, Haruf Andar/Bahar, Cross Be
 - [x] Refer & Earn: 5% of first deposit reward (not instant ₹50 bonus) [01-Apr-2026]
 - [x] Profile page: edit name/email + change password [01-Apr-2026]
 - [x] Refer & Earn: link-based referral (/signup?ref=CODE), auto-apply on signup [01-Apr-2026]
+- [x] Refer & Earn: WhatsApp direct share button added [01-Apr-2026]
 
 ## Payment Integration
 - Provider: IMB UPI Payment Gateway
