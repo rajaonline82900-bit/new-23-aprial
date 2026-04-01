@@ -159,6 +159,12 @@ const DashboardPage = () => {
                 </Link>
               )}
               
+              <Link to="/profile" data-testid="profile-icon-link">
+                <button className="p-2 rounded-lg bg-[#141418] border border-white/10 text-gray-400 hover:text-[#D4AF37] hover:border-[#D4AF37]/30 transition-all">
+                  <User className="w-5 h-5" />
+                </button>
+              </Link>
+              
               <button
                 onClick={handleLogout}
                 data-testid="logout-button"
