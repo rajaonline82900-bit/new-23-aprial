@@ -335,6 +335,61 @@ async def logout():
     resp.delete_cookie("refresh_token", path="/")
     return resp
 
+# Profile Update
+class ProfileUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+
+@api_router.put("/auth/profile")
+async def update_profile(update: ProfileUpdate, request: Request):
+    user = await get_current_user(request)
+    updates = {}
+    
+    if update.name and update.name.strip():
+        updates["name"] = update.name.strip()
+    
+    if update.email and update.email.strip():
+        email_lower = update.email.strip().lower()
+        existing = await db.users.find_one({"email": email_lower, "_id": {"$ne": ObjectId(user["_id"])}})
+        if existing:
+            raise HTTPException(status_code=400, detail="यह ईमेल पहले से उपयोग में है")
+        updates["email"] = email_lower
+    
+    if not updates:
+        raise HTTPException(status_code=400, detail="कोई बदलाव नहीं दिया गया")
+    
+    await db.users.update_one({"_id": ObjectId(user["_id"])}, {"$set": updates})
+    
+    updated = await db.users.find_one({"_id": ObjectId(user["_id"])})
+    return {
+        "message": "प्रोफ़ाइल अपडेट हो गई",
+        "name": updated["name"],
+        "email": updated.get("email", "")
+    }
+
+class PasswordChange(BaseModel):
+    current_password: str
+    new_password: str
+
+@api_router.post("/auth/change-password")
+async def change_password(data: PasswordChange, request: Request):
+    user = await get_current_user(request)
+    
+    full_user = await db.users.find_one({"_id": ObjectId(user["_id"])})
+    if not full_user.get("password_hash"):
+        raise HTTPException(status_code=400, detail="पासवर्ड सेट नहीं है")
+    
+    if not verify_password(data.current_password, full_user["password_hash"]):
+        raise HTTPException(status_code=400, detail="वर्तमान पासवर्ड गलत है")
+    
+    if len(data.new_password) < 6:
+        raise HTTPException(status_code=400, detail="नया पासवर्ड कम से कम 6 अक्षर का होना चाहिए")
+    
+    new_hash = hash_password(data.new_password)
+    await db.users.update_one({"_id": ObjectId(user["_id"])}, {"$set": {"password_hash": new_hash}})
+    
+    return {"message": "पासवर्ड बदल दिया गया"}
+
 # OTP Auth Routes
 import random
 import httpx
