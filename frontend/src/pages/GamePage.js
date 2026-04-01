@@ -8,7 +8,6 @@ import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
 import { 
   ArrowLeft, 
-  Clock, 
   Coins,
   Trophy,
   Wallet,
@@ -303,10 +302,6 @@ const GamePage = () => {
               </Link>
               <div>
                 <h1 className="text-xl font-bold text-white font-['Unbounded']">{game?.name_hi}</h1>
-                <div className="flex items-center gap-2 text-gray-400 text-sm">
-                  <Clock className="w-4 h-4" />
-                  <span>{game?.start_time || '--:--'} - {game?.end_time || '--:--'}</span>
-                </div>
               </div>
             </div>
             
@@ -336,7 +331,7 @@ const GamePage = () => {
                 {bettingOpen ? 'बेटिंग खुली है' : 'बेटिंग बंद है'}
               </p>
               <p className="text-gray-400 text-xs">
-                समय: {game?.start_time || '--:--'} से {game?.end_time || '--:--'} तक
+                {bettingOpen ? 'अभी बेट लगा सकते हैं' : 'अभी बेट नहीं लगा सकते'}
               </p>
             </div>
           </div>
