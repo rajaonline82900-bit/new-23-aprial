@@ -2203,6 +2203,9 @@ async def get_admin_stats(request: Request):
     today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
     today_bets = await db.bets.count_documents({"date": today})
     
+    # Today's new users
+    today_new_users = await db.users.count_documents({"created_at": {"$gte": today_start}})
+    
     # Today's deposits
     today_deposits = await db.transactions.find({
         "type": "deposit",
@@ -2248,6 +2251,7 @@ async def get_admin_stats(request: Request):
         "total_bets": total_bets,
         "pending_withdrawals": pending_withdrawals,
         "today_bets": today_bets,
+        "today_new_users": today_new_users,
         "today_deposit_amount": today_deposit_amount,
         "today_withdrawal_amount": today_withdrawal_amount,
         "pending_withdrawal_amount": pending_withdrawal_amount,

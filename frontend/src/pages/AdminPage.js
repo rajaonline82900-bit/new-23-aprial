@@ -53,7 +53,8 @@ import {
   Trash2,
   Save,
   RotateCcw,
-  Undo2
+  Undo2,
+  UserPlus
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -593,7 +594,7 @@ const AdminPage = () => {
 
       <main className="container mx-auto px-4 py-6">
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-4">
           <Card className="bg-[#141418] border-white/10">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
@@ -631,6 +632,20 @@ const AdminPage = () => {
                 <div>
                   <p className="text-gray-400 text-sm">आज की बेट्स</p>
                   <p className="text-xl font-bold text-white">{stats?.today_bets || 0}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-[#141418] border-cyan-500/30">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center">
+                  <UserPlus className="w-5 h-5 text-cyan-400" />
+                </div>
+                <div>
+                  <p className="text-gray-400 text-sm">आज नए यूजर्स</p>
+                  <p className="text-xl font-bold text-cyan-400">{stats?.today_new_users || 0}</p>
                 </div>
               </div>
             </CardContent>
