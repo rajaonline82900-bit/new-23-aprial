@@ -337,9 +337,27 @@ async def logout():
 
 # OTP Auth Routes
 import random
+import httpx
 
-# In-memory OTP store (demo: OTP is always 1234)
+# In-memory OTP store
 otp_store = {}
+
+DVHOSTING_API_KEY = os.environ.get("DVHOSTING_API_KEY")
+DVHOSTING_API_URL = os.environ.get("DVHOSTING_API_URL")
+
+async def send_sms_otp(phone: str, otp: str):
+    """Send OTP via DVHosting SMS API"""
+    try:
+        async with httpx.AsyncClient(verify=False, timeout=15) as client:
+            resp = await client.get(
+                DVHOSTING_API_URL,
+                params={"api_key": DVHOSTING_API_KEY, "number": phone, "otp": otp}
+            )
+            logging.info(f"DVHosting SMS response for {phone}: {resp.status_code} - {resp.text}")
+            return resp.status_code == 200
+    except Exception as e:
+        logging.error(f"DVHosting SMS error for {phone}: {e}")
+        return False
 
 @api_router.post("/auth/otp/send")
 async def send_otp(data: OTPRequest):
@@ -347,12 +365,18 @@ async def send_otp(data: OTPRequest):
     if len(phone) < 10:
         raise HTTPException(status_code=400, detail="कृपया सही मोबाइल नंबर दर्ज करें")
     
-    # Demo OTP — always 1234
-    otp = "1234"
+    # Generate random 4-digit OTP
+    otp = str(random.randint(1000, 9999))
     otp_store[phone] = {"otp": otp, "name": data.name, "expires": datetime.now(timezone.utc) + timedelta(minutes=5)}
+    
+    # Send OTP via DVHosting
+    sent = await send_sms_otp(phone, otp)
+    if not sent:
+        logging.warning(f"SMS sending failed for {phone}, OTP: {otp}")
+    
     logging.info(f"OTP for {phone}: {otp}")
     
-    return {"message": "OTP भेज दिया गया है", "demo_otp": "1234"}
+    return {"message": "OTP भेज दिया गया है"}
 
 @api_router.post("/auth/otp/verify")
 async def verify_otp(data: OTPVerify):
@@ -434,12 +458,18 @@ async def password_reset_send_otp(data: PasswordResetRequest):
     if not user:
         raise HTTPException(status_code=400, detail="यह मोबाइल नंबर रजिस्टर्ड नहीं है")
     
-    # Demo OTP — always 1234
-    otp = "1234"
+    # Generate random 4-digit OTP
+    otp = str(random.randint(1000, 9999))
     otp_store[f"reset_{phone}"] = {"otp": otp, "expires": datetime.now(timezone.utc) + timedelta(minutes=5)}
+    
+    # Send OTP via DVHosting
+    sent = await send_sms_otp(phone, otp)
+    if not sent:
+        logging.warning(f"Password reset SMS failed for {phone}, OTP: {otp}")
+    
     logging.info(f"Password Reset OTP for {phone}: {otp}")
     
-    return {"message": "OTP भेज दिया गया है", "demo_otp": "1234"}
+    return {"message": "OTP भेज दिया गया है"}
 
 @api_router.post("/auth/password/reset")
 async def password_reset(data: PasswordResetComplete):

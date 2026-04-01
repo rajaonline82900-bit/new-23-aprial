@@ -53,7 +53,7 @@ const LoginPage = () => {
     try {
       await axios.post(`${API_URL}/api/auth/password/send-otp`, { phone: forgotPhone });
       setForgotStep('otp');
-      toast.success('OTP भेज दिया गया है (Demo: 1234)');
+      toast.success('OTP भेज दिया गया है');
     } catch (e) {
       toast.error(e.response?.data?.detail || 'OTP भेजने में समस्या');
     } finally {

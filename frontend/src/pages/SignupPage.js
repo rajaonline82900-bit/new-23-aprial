@@ -33,7 +33,7 @@ const SignupPage = () => {
     try {
       await axios.post(`${API_URL}/api/auth/otp/send`, { phone, name, email }, { withCredentials: true });
       setStep('otp');
-      toast.success('OTP भेज दिया गया है (Demo: 1234)');
+      toast.success('OTP भेज दिया गया है');
     } catch (e) {
       toast.error(e.response?.data?.detail || 'OTP भेजने में समस्या');
     } finally {
