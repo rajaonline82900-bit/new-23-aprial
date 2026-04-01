@@ -4,6 +4,8 @@
 @tailwind components;
 @tailwind utilities;
 
+#emergent-badge, [id*="emergent"], a[href*="emergent.sh"] { display: none !important; }
+
 :root {
   --background: 240 6% 4%;
   --foreground: 0 0% 98%;
