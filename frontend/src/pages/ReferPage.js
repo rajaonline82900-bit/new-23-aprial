@@ -37,9 +37,10 @@ const ReferPage = () => {
   };
 
   const shareCode = () => {
-    const text = `सट्टा मटका पर खेलें और जीतें! मेरा रेफरल कोड: ${referralInfo?.code}\n\nसाइनअप करें और ₹50 बोनस पाएं!\n${window.location.origin}`;
+    const referralLink = `${window.location.origin}/signup?ref=${referralInfo?.code}`;
+    const text = `सट्टा मटका पर खेलें और जीतें!\n\nइस लिंक से साइनअप करें:\n${referralLink}\n\nपहली जमा पर आपको 5% बोनस मिलेगा!`;
     if (navigator.share) {
-      navigator.share({ title: 'सट्टा मटका - Refer & Earn', text });
+      navigator.share({ title: 'सट्टा मटका - Refer & Earn', text, url: referralLink });
     } else {
       navigator.clipboard.writeText(text);
       toast.success('शेयर लिंक कॉपी हो गया!');
@@ -89,10 +90,10 @@ const ReferPage = () => {
             <div className="w-16 h-16 rounded-full bg-[#D4AF37]/20 flex items-center justify-center mx-auto mb-4">
               <Gift className="w-8 h-8 text-[#D4AF37]" />
             </div>
-            <h2 className="text-white text-xl font-bold mb-2">दोस्तों को बुलाएं, ₹50 कमाएं!</h2>
+            <h2 className="text-white text-xl font-bold mb-2">दोस्तों को बुलाएं, कमाई करें!</h2>
             <p className="text-gray-400 text-sm">
-              अपना रेफरल कोड शेयर करें। जब आपका दोस्त कोड लगाएगा, 
-              आप दोनों को <span className="text-[#D4AF37] font-bold">₹50</span> बोनस मिलेगा!
+              अपना रेफरल लिंक शेयर करें। जब आपका दोस्त लिंक से साइनअप करके पहली जमा करेगा, 
+              आपको उसकी पहली जमा का <span className="text-[#D4AF37] font-bold">5% बोनस</span> मिलेगा!
             </p>
           </CardContent>
         </Card>
@@ -122,8 +123,16 @@ const ReferPage = () => {
               className="w-full mt-4 bg-[#D4AF37] hover:bg-[#FDE047] text-black font-bold"
             >
               <Share2 className="w-4 h-4 mr-2" />
-              कोड शेयर करें
+              लिंक शेयर करें
             </Button>
+            
+            {/* Referral Link Display */}
+            <div className="mt-3 p-3 bg-[#0A0A0C] rounded-lg border border-white/5">
+              <p className="text-gray-500 text-xs mb-1">आपका रेफरल लिंक</p>
+              <p className="text-gray-300 text-xs break-all" data-testid="referral-link">
+                {window.location.origin}/signup?ref={referralInfo?.code}
+              </p>
+            </div>
           </CardContent>
         </Card>
 
@@ -175,9 +184,9 @@ const ReferPage = () => {
             <p className="text-white font-bold mb-3">कैसे काम करता है?</p>
             <div className="space-y-3">
               {[
-                { step: '1', text: 'अपना रेफरल कोड दोस्तों को शेयर करें' },
-                { step: '2', text: 'दोस्त साइनअप करके आपका कोड लगाए' },
-                { step: '3', text: 'दोनों को ₹50 बोनस तुरंत मिलेगा!' },
+                { step: '1', text: 'अपना रेफरल लिंक दोस्तों को शेयर करें' },
+                { step: '2', text: 'दोस्त लिंक से साइनअप करे (कोड ऑटो लागू होगा)' },
+                { step: '3', text: 'दोस्त की पहली जमा पर आपको 5% बोनस मिलेगा!' },
               ].map((s, i) => (
                 <div key={i} className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-[#D4AF37]/20 flex items-center justify-center shrink-0">

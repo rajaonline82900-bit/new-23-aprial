@@ -117,6 +117,7 @@ class OTPCompleteSignup(BaseModel):
     name: str
     email: Optional[str] = None
     password: str
+    referral_code: Optional[str] = None
 
 class PasswordResetRequest(BaseModel):
     phone: str
@@ -483,6 +484,14 @@ async def complete_signup(data: OTPCompleteSignup):
     }
     if data.email and data.email.strip():
         user_doc["email"] = data.email.strip().lower()
+    
+    # Auto-apply referral code if provided via link
+    ref_code = (data.referral_code or "").strip().upper()
+    if ref_code:
+        ref = await db.referrals.find_one({"code": ref_code})
+        if ref:
+            user_doc["referred_by"] = ref_code
+    
     result = await db.users.insert_one(user_doc)
     user_id = str(result.inserted_id)
     

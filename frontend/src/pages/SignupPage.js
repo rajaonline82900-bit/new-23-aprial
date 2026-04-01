@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -22,6 +22,8 @@ const SignupPage = () => {
   const [loading, setLoading] = useState(false);
   const { refreshUser } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const refCode = searchParams.get('ref') || '';
 
   const handleSendOTP = async (e) => {
     e.preventDefault();
@@ -63,7 +65,10 @@ const SignupPage = () => {
 
     setLoading(true);
     try {
-      await axios.post(`${API_URL}/api/auth/otp/complete-signup`, { phone, name, email, password }, { withCredentials: true });
+      await axios.post(`${API_URL}/api/auth/otp/complete-signup`, { 
+        phone, name, email, password,
+        referral_code: refCode || undefined
+      }, { withCredentials: true });
       toast.success('अकाउंट बन गया! स्वागत है');
       await refreshUser();
       navigate('/dashboard');
@@ -178,6 +183,14 @@ const SignupPage = () => {
               >
                 {loading ? 'OTP भेज रहे हैं...' : 'OTP भेजें'}
               </Button>
+
+              {refCode && (
+                <div className="p-3 rounded-lg bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-center">
+                  <p className="text-[#D4AF37] text-sm font-medium" data-testid="referral-applied-msg">
+                    रेफरल कोड: <span className="font-bold">{refCode.toUpperCase()}</span> लागू होगा
+                  </p>
+                </div>
+              )}
 
               <div className="pt-2 text-center">
                 <p className="text-gray-400">
