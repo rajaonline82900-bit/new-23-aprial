@@ -400,7 +400,7 @@ const WalletPage = () => {
               <Label className="text-gray-300">राशि (₹)</Label>
               <Input
                 type="number"
-                placeholder="राशि दर्ज करें (न्यूनतम ₹100)"
+                placeholder={`राशि दर्ज करें (न्यूनतम ₹${appSettings.min_deposit || 100})`}
                 value={depositAmount}
                 onChange={(e) => setDepositAmount(e.target.value)}
                 data-testid="deposit-amount-input"
@@ -477,17 +477,46 @@ const WalletPage = () => {
             </DialogDescription>
           </DialogHeader>
           
+          {/* Withdrawal Time Warning */}
+          {appSettings.withdrawal_start_time && appSettings.withdrawal_end_time && (() => {
+            const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+            const curMin = now.getHours() * 60 + now.getMinutes();
+            const [sh, sm] = appSettings.withdrawal_start_time.split(':').map(Number);
+            const [eh, em] = appSettings.withdrawal_end_time.split(':').map(Number);
+            const startMin = sh * 60 + sm;
+            const endMin = eh * 60 + em;
+            const allowed = startMin > endMin ? (curMin >= startMin || curMin <= endMin) : (curMin >= startMin && curMin <= endMin);
+            if (!allowed) {
+              return (
+                <div className="blink-warning bg-red-600/20 border-2 border-red-500 rounded-xl p-4 text-center mt-2" data-testid="withdrawal-time-warning">
+                  <p className="text-red-500 text-xl font-black">निकासी बंद है!</p>
+                  <p className="text-red-400 text-lg font-bold mt-1">निकासी का समय {appSettings.withdrawal_start_time} से {appSettings.withdrawal_end_time} तक है</p>
+                </div>
+              );
+            }
+            return (
+              <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-2 text-center mt-2">
+                <p className="text-green-400 text-sm font-medium">निकासी समय: {appSettings.withdrawal_start_time} - {appSettings.withdrawal_end_time}</p>
+              </div>
+            );
+          })()}
+          
           <div className="space-y-4 mt-4">
             <div>
               <Label className="text-gray-300">राशि (₹)</Label>
               <Input
                 type="number"
-                placeholder="न्यूनतम ₹100"
+                placeholder={`न्यूनतम ₹${appSettings.min_withdrawal || 100}`}
                 value={withdrawAmount}
                 onChange={(e) => setWithdrawAmount(e.target.value)}
                 data-testid="withdraw-amount-input"
                 className="bg-[#0A0A0C] border-white/10 text-white mt-2"
               />
+              {withdrawAmount && parseFloat(withdrawAmount) < (appSettings.min_withdrawal || 100) && (
+                <div className="blink-warning mt-2 p-2 rounded-lg bg-red-600/20 border border-red-500">
+                  <p className="text-red-500 text-lg font-black text-center">न्यूनतम निकासी ₹{appSettings.min_withdrawal || 100} है!</p>
+                </div>
+              )}
               <p className="text-gray-400 text-sm mt-1">
                 उपलब्ध: ₹{user?.balance?.toFixed(2) || '0.00'}
               </p>

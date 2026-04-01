@@ -6,6 +6,14 @@
 
 #emergent-badge, [id*="emergent"], a[href*="emergent.sh"] { display: none !important; }
 
+@keyframes blink-warning {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.blink-warning {
+  animation: blink-warning 1s ease-in-out infinite;
+}
+
 :root {
   --background: 240 6% 4%;
   --foreground: 0 0% 98%;

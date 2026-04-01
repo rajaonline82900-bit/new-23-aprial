@@ -72,9 +72,11 @@ const GamePage = () => {
   // Cross Bet state
   const [crossDigits, setCrossDigits] = useState([]);
   const [crossAmount, setCrossAmount] = useState('');
+  const [appSettings, setAppSettings] = useState({});
 
   useEffect(() => {
     fetchGame();
+    axios.get(`${API_URL}/api/settings`).then(r => setAppSettings(r.data)).catch(() => {});
   }, [gameId]);
 
   useEffect(() => {
@@ -176,18 +178,27 @@ const GamePage = () => {
   };
 
   // Calculate totals - Jantri
-  const activeBets = Object.entries(jantriAmounts).filter(([_, amt]) => amt && parseInt(amt) >= 10);
+  const minJodi = parseInt(appSettings.min_bet_jodi) || 10;
+  const minHaruf = parseInt(appSettings.min_bet_haruf) || 10;
+  const minCrossing = parseInt(appSettings.min_bet_crossing) || 10;
+  const activeBets = Object.entries(jantriAmounts).filter(([_, amt]) => amt && parseInt(amt) >= minJodi);
+  const lowJodiBets = Object.entries(jantriAmounts).filter(([_, amt]) => amt && parseInt(amt) > 0 && parseInt(amt) < minJodi);
   const jantriTotal = activeBets.reduce((sum, [_, amt]) => sum + parseInt(amt), 0);
 
   // Calculate totals - Haruf
-  const activeAndar = Object.entries(andarAmounts).filter(([_, amt]) => amt && parseInt(amt) >= 10);
-  const activeBahar = Object.entries(baharAmounts).filter(([_, amt]) => amt && parseInt(amt) >= 10);
+  const activeAndar = Object.entries(andarAmounts).filter(([_, amt]) => amt && parseInt(amt) >= minHaruf);
+  const activeBahar = Object.entries(baharAmounts).filter(([_, amt]) => amt && parseInt(amt) >= minHaruf);
+  const lowHarufBets = [
+    ...Object.entries(andarAmounts).filter(([_, amt]) => amt && parseInt(amt) > 0 && parseInt(amt) < minHaruf),
+    ...Object.entries(baharAmounts).filter(([_, amt]) => amt && parseInt(amt) > 0 && parseInt(amt) < minHaruf)
+  ];
   const harufTotal = [...activeAndar, ...activeBahar].reduce((sum, [_, amt]) => sum + parseInt(amt), 0);
 
   // Grand total
-  const totalAmount = jantriTotal + harufTotal + (crossBetAmount >= 10 ? crossTotal : 0);
-  const totalPotentialWin = (jantriTotal * 90) + (harufTotal * 9) + (crossBetAmount >= 10 ? crossPotentialWin : 0);
-  const totalBetCount = activeBets.length + activeAndar.length + activeBahar.length + (crossBetAmount >= 10 ? crossJodis.length : 0);
+  const lowCross = crossAmount && parseInt(crossAmount) > 0 && parseInt(crossAmount) < minCrossing;
+  const totalAmount = jantriTotal + harufTotal + (crossBetAmount >= minCrossing ? crossTotal : 0);
+  const totalBetCount = activeBets.length + activeAndar.length + activeBahar.length + (crossBetAmount >= minCrossing ? crossJodis.length : 0);
+  const hasLowBets = lowJodiBets.length > 0 || lowHarufBets.length > 0 || lowCross;
 
   const handlePlaceBatchBets = async () => {
     if (!bettingOpen) {
@@ -650,6 +661,19 @@ const GamePage = () => {
         )}
 
         {/* Sticky Bottom Bar - Bet Summary (Always Visible) */}
+          {hasLowBets && (
+            <div className="fixed bottom-[116px] left-0 right-0 z-50 px-4">
+              <div className="container mx-auto max-w-screen-xl">
+                <div className="blink-warning bg-red-600/20 border-2 border-red-500 rounded-xl p-3 text-center" data-testid="min-bet-warning">
+                  <p className="text-red-500 text-lg font-black">
+                    {lowJodiBets.length > 0 && `जोड़ी न्यूनतम ₹${minJodi} | `}
+                    {lowHarufBets.length > 0 && `हरूफ न्यूनतम ₹${minHaruf} | `}
+                    {lowCross && `क्रॉसिंग न्यूनतम ₹${minCrossing}`}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="fixed bottom-[52px] left-0 right-0 z-50 glass border-t border-white/10 p-4" data-testid="bet-summary-bar">
             <div className="container mx-auto max-w-screen-xl">
               <div className="flex items-center justify-between gap-4">
