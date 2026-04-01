@@ -1189,29 +1189,38 @@ async def apply_referral(request: Request):
     if ref["user_id"] == user["_id"]:
         raise HTTPException(status_code=400, detail="आप अपना खुद का कोड इस्तेमाल नहीं कर सकते")
     
-    bonus_amount = 50.0
-    
-    await db.users.update_one(
-        {"_id": ObjectId(ref["user_id"])},
-        {"$inc": {"balance": bonus_amount}}
-    )
-    await db.referrals.update_one(
-        {"code": code},
-        {"$push": {"referred_users": user["_id"]}, "$inc": {"total_earned": bonus_amount}}
-    )
+    # Just store referral code — bonus will be given on first deposit
     await db.users.update_one(
         {"_id": ObjectId(user["_id"])},
-        {"$inc": {"balance": bonus_amount}, "$set": {"referred_by": code}}
+        {"$set": {"referred_by": code}}
     )
     
-    for uid, desc in [(ref["user_id"], "रेफरल बोनस (दोस्त ने ज्वाइन किया)"), (user["_id"], "रेफरल बोनस (कोड लगाया)")]:
-        await db.transactions.insert_one({
-            "user_id": uid, "amount": bonus_amount, "type": "bonus",
-            "status": "completed", "description": desc,
-            "created_at": datetime.now(timezone.utc)
-        })
+    return {"message": "रेफरल कोड लागू हो गया! पहली जमा पर आपके दोस्त को 5% बोनस मिलेगा"}
+
+@api_router.post("/wallet/withdraw/{withdrawal_id}/cancel")
+async def cancel_withdrawal(withdrawal_id: str, request: Request):
+    user = await get_current_user(request)
     
-    return {"message": f"₹{int(bonus_amount)} बोनस आपके वॉलेट में जोड़ दिया गया!", "bonus": bonus_amount}
+    withdrawal = await db.transactions.find_one({
+        "id": withdrawal_id, "type": "withdrawal", "status": "pending", "user_id": user["_id"]
+    })
+    
+    if not withdrawal:
+        raise HTTPException(status_code=404, detail="निकासी अनुरोध नहीं मिला")
+    
+    # Refund amount back to user
+    await db.users.update_one(
+        {"_id": ObjectId(user["_id"])},
+        {"$inc": {"balance": withdrawal["amount"]}}
+    )
+    
+    # Update withdrawal status
+    await db.transactions.update_one(
+        {"id": withdrawal_id},
+        {"$set": {"status": "cancelled", "cancelled_at": datetime.now(timezone.utc)}}
+    )
+    
+    return {"message": "निकासी रद्द कर दी गई, राशि वापस आ गई"}
 
 # Transaction Export
 @api_router.get("/wallet/export")
