@@ -372,7 +372,7 @@ const AdminPage = () => {
         jodi_result: jodiResult
       }, { withCredentials: true });
 
-      toast.success(`रिजल्ट घोषित! ${data.winners.single} एकल और ${data.winners.jodi} जोड़ी विजेता`);
+      toast.success(`रिजल्ट घोषित! ${data.winners.jodi} जोड़ी विजेता`);
       
       setSelectedGame('');
       setJodiResult('');
@@ -824,7 +824,7 @@ const AdminPage = () => {
                     className="bg-[#0A0A0C] border-white/10 text-white text-center text-4xl h-20 font-bold"
                   />
                   <p className="text-gray-400 text-sm mt-2">
-                    एकल रिजल्ट जोड़ी के आखिरी अंक से auto-calculate होगा
+                    रिजल्ट जोड़ी नंबर (00-99) दर्ज करें
                   </p>
                 </div>
 
@@ -1025,25 +1025,6 @@ const AdminPage = () => {
                                       <p className="text-gray-400 text-xs">{data.count} बेट</p>
                                     </div>
                                   </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Single Bets */}
-                        {Object.keys(gameData.single || {}).length > 0 && (
-                          <div>
-                            <p className="text-gray-400 text-sm mb-2">एकल बेट्स:</p>
-                            <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
-                              {Object.entries(gameData.single).map(([number, data]) => (
-                                <div 
-                                  key={number}
-                                  className="p-2 bg-[#0A0A0C] rounded-lg border border-white/10 text-center"
-                                >
-                                  <span className="text-xl font-bold text-emerald-400">{number}</span>
-                                  <p className="text-white text-sm">₹{data.amount}</p>
-                                  <p className="text-gray-400 text-xs">{data.count}</p>
                                 </div>
                               ))}
                             </div>

@@ -216,7 +216,7 @@ const BetsPage = () => {
                       <div>
                         <h4 className="text-white font-semibold">{bet.game_name}</h4>
                         <p className="text-gray-400 text-sm">
-                          {bet.bet_type === 'single' ? 'एकल' : bet.bet_type === 'jodi' ? 'जोड़ी' : bet.bet_type}
+                          {bet.bet_type === 'jodi' ? 'जोड़ी' : bet.bet_type === 'haruf_andar' ? 'हरूफ अंदर' : bet.bet_type === 'haruf_bahar' ? 'हरूफ बाहर' : bet.bet_type}
                         </p>
                         <p className="text-gray-500 text-[10px]">
                           {utcDate(bet.created_at).toLocaleDateString('hi-IN', { timeZone: 'Asia/Kolkata' })} • {utcDate(bet.created_at).toLocaleTimeString('hi-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true, timeZoneName: 'short' })}

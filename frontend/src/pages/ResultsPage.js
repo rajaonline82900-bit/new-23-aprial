@@ -104,12 +104,6 @@ const ResultsPage = () => {
                           
                           <div className="flex items-center gap-4">
                             <div className="text-center">
-                              <p className="text-gray-400 text-xs mb-1">एकल</p>
-                              <Badge className="bg-[#D4AF37]/20 text-[#D4AF37] text-xl px-3 py-1">
-                                {result.single_result}
-                              </Badge>
-                            </div>
-                            <div className="text-center">
                               <p className="text-gray-400 text-xs mb-1">जोड़ी</p>
                               <Badge className="bg-[#10B981]/20 text-[#10B981] text-xl px-3 py-1">
                                 {result.jodi_result}

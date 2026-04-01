@@ -192,9 +192,6 @@ const JantriPage = () => {
                                 <span className="text-3xl font-bold text-[#D4AF37] font-['Unbounded']">
                                   {row.games[game.id].jodi}
                                 </span>
-                                <Badge variant="outline" className="border-white/20 text-gray-400 text-xs">
-                                  एकल: {row.games[game.id].single}
-                                </Badge>
                               </div>
                             ) : (
                               <span className="text-gray-600 text-2xl">--</span>
