@@ -49,6 +49,11 @@ Build a Satta Matka betting application with Jantri, Haruf Andar/Bahar, Cross Be
 - [x] Admin Panel: Deposit user list tab added [31-Mar-2026]
 - [x] Admin Panel: Single button removed from bet reverse filter [31-Mar-2026]
 - [x] Admin Panel: Withdrawal approved & rejected history with sub-tabs [31-Mar-2026]
+- [x] Withdrawal dialog cross/close button fixed [01-Apr-2026]
+- [x] Withdrawal cancel button for pending withdrawals [01-Apr-2026]
+- [x] Refer & Earn: 5% of first deposit reward (not instant ₹50 bonus) [01-Apr-2026]
+- [x] Profile page: edit name/email + change password [01-Apr-2026]
+- [x] Refer & Earn: link-based referral (/signup?ref=CODE), auto-apply on signup [01-Apr-2026]
 
 ## Payment Integration
 - Provider: IMB UPI Payment Gateway
