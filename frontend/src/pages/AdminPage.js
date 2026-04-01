@@ -128,6 +128,7 @@ const AdminPage = () => {
 
   const [loadingUserDetails, setLoadingUserDetails] = useState(false);
   const [deletingUser, setDeletingUser] = useState(false);
+  const [userSearch, setUserSearch] = useState('');
 
   // Wallet adjustment state
   const [walletModalOpen, setWalletModalOpen] = useState(false);
@@ -1363,12 +1364,30 @@ const AdminPage = () => {
               <CardHeader>
                 <CardTitle className="text-white font-['Unbounded']">सभी यूजर्स</CardTitle>
                 <CardDescription className="text-gray-400">
-                  यूजर पर क्लिक करें details देखने के लिए
+                  मोबाइल नंबर या नाम से सर्च करें
                 </CardDescription>
+                <div className="mt-3">
+                  <Input
+                    type="text"
+                    placeholder="मोबाइल नंबर या नाम से सर्च करें..."
+                    value={userSearch}
+                    onChange={(e) => setUserSearch(e.target.value)}
+                    data-testid="user-search-input"
+                    className="bg-[#0A0A0C] border-white/10 text-white placeholder:text-gray-500 focus:border-[#D4AF37] focus:ring-[#D4AF37]"
+                  />
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {users.map((u, index) => (
+                  {users
+                    .filter(u => {
+                      if (!userSearch.trim()) return true;
+                      const q = userSearch.trim().toLowerCase();
+                      return (u.phone && u.phone.includes(q)) || 
+                             (u.name && u.name.toLowerCase().includes(q)) ||
+                             (u.email && u.email.toLowerCase().includes(q));
+                    })
+                    .map((u, index) => (
                     <div
                       key={index}
                       onClick={() => openUserDetails(u)}
