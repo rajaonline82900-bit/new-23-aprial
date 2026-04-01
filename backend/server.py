@@ -473,17 +473,17 @@ async def complete_signup(data: OTPCompleteSignup):
     
     # Create user with password
     hashed = hash_password(data.password)
+    virtual_email = f"user_{phone}@sattamatka.com"
     user_doc = {
         "name": data.name,
         "phone": phone,
+        "email": virtual_email,
         "password_hash": hashed,
         "role": "user",
         "balance": 0.0,
         "auth_type": "otp",
         "created_at": datetime.now(timezone.utc)
     }
-    if data.email and data.email.strip():
-        user_doc["email"] = data.email.strip().lower()
     
     # Auto-apply referral code if provided via link
     ref_code = (data.referral_code or "").strip().upper()
@@ -501,7 +501,7 @@ async def complete_signup(data: OTPCompleteSignup):
     resp = JSONResponse(content={
         "id": user_id,
         "name": data.name,
-        "email": "",
+        "email": virtual_email,
         "phone": phone,
         "role": "user",
         "balance": 0.0

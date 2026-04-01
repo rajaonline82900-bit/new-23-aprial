@@ -30,7 +30,6 @@ const ProfilePage = () => {
   const { user, refreshUser } = useAuth();
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState('');
-  const [editEmail, setEditEmail] = useState('');
   const [saving, setSaving] = useState(false);
 
   // Password change
@@ -43,14 +42,12 @@ const ProfilePage = () => {
 
   const startEditing = () => {
     setEditName(user?.name || '');
-    setEditEmail(user?.email || '');
     setEditing(true);
   };
 
   const cancelEditing = () => {
     setEditing(false);
     setEditName('');
-    setEditEmail('');
   };
 
   const handleSaveProfile = async () => {
@@ -62,7 +59,6 @@ const ProfilePage = () => {
     try {
       const updates = {};
       if (editName.trim() !== user?.name) updates.name = editName.trim();
-      if (editEmail.trim() !== user?.email) updates.email = editEmail.trim();
 
       if (Object.keys(updates).length === 0) {
         toast.info('कोई बदलाव नहीं');
@@ -188,25 +184,14 @@ const ProfilePage = () => {
               </div>
             </div>
             
-            {/* Email */}
+            {/* Email (Virtual - Read Only) */}
             <div className="flex items-center gap-4 p-4 bg-[#0A0A0C] rounded-lg border border-white/5">
               <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
                 <Mail className="w-5 h-5 text-emerald-400" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-gray-400 text-sm">ईमेल</p>
-                {editing ? (
-                  <Input
-                    type="email"
-                    value={editEmail}
-                    onChange={(e) => setEditEmail(e.target.value)}
-                    data-testid="profile-edit-email"
-                    className="bg-[#141418] border-white/10 text-white mt-1 h-9"
-                    placeholder="example@gmail.com"
-                  />
-                ) : (
-                  <p className="text-white font-medium" data-testid="profile-email">{user?.email || '-'}</p>
-                )}
+                <p className="text-gray-400 text-sm">वर्चुअल ईमेल ID</p>
+                <p className="text-white font-medium" data-testid="profile-email">{user?.email || '-'}</p>
               </div>
             </div>
             
