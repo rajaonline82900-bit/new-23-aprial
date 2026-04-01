@@ -989,6 +989,8 @@ async def imb_callback(request: Request):
                     {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc)}}
                 )
                 logging.info(f"Deposit completed: order={order_id}, amount={transaction['amount']}")
+                # Process referral reward on first deposit
+                await process_referral_reward(transaction["user_id"], transaction["amount"])
     else:
         await db.transactions.update_one(
             {"order_id": order_id},
@@ -1021,6 +1023,8 @@ async def imb_webhook(request: Request):
                 {"order_id": order_id},
                 {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc)}}
             )
+            # Process referral reward on first deposit
+            await process_referral_reward(transaction["user_id"], transaction["amount"])
     elif order_id:
         await db.transactions.update_one(
             {"order_id": order_id},
@@ -1073,6 +1077,8 @@ async def check_deposit_status(order_id: str, request: Request):
                     {"order_id": order_id},
                     {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc)}}
                 )
+                # Process referral reward on first deposit
+                await process_referral_reward(user["_id"], transaction["amount"])
             return {"status": "completed", "amount": transaction["amount"]}
         
         return {"status": imb_order_status.lower() or "pending", "amount": transaction["amount"]}
@@ -1143,6 +1149,78 @@ async def request_withdrawal(withdraw: WithdrawRequest, request: Request):
     return {"message": "Withdrawal request submitted", "id": withdrawal_doc["id"]}
 
 # Results Routes
+# Referral reward helper — gives referrer 5% of first deposit
+async def process_referral_reward(user_id: str, deposit_amount: float):
+    """Check if user was referred and this is their first completed deposit. If yes, give 5% to referrer."""
+    try:
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
+        if not user or not user.get("referred_by"):
+            return
+        
+        referral_code = user["referred_by"]
+        
+        # Check if referral bonus already given (flag on user)
+        if user.get("referral_bonus_given"):
+            return
+        
+        # Check this is the first completed deposit
+        first_deposit_count = await db.transactions.count_documents({
+            "user_id": user_id,
+            "type": "deposit",
+            "status": "completed"
+        })
+        # This function is called AFTER the deposit is marked completed, so count should be 1
+        if first_deposit_count > 1:
+            return
+        
+        # Find referrer
+        ref_doc = await db.referrals.find_one({"code": referral_code})
+        if not ref_doc:
+            return
+        
+        referrer_id = ref_doc["user_id"]
+        bonus = round(deposit_amount * 0.05, 2)
+        
+        if bonus <= 0:
+            return
+        
+        # Add bonus to referrer's balance
+        await db.users.update_one(
+            {"_id": ObjectId(referrer_id)},
+            {"$inc": {"balance": bonus}}
+        )
+        
+        # Update referral record
+        await db.referrals.update_one(
+            {"code": referral_code},
+            {
+                "$inc": {"total_earned": bonus},
+                "$addToSet": {"referred_users": user_id}
+            }
+        )
+        
+        # Mark user so bonus isn't given again
+        await db.users.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": {"referral_bonus_given": True}}
+        )
+        
+        # Create a transaction record for the referrer
+        await db.transactions.insert_one({
+            "id": str(uuid.uuid4()),
+            "user_id": referrer_id,
+            "type": "deposit",
+            "amount": bonus,
+            "status": "completed",
+            "reference_id": f"REFERRAL-{user_id[-6:]}",
+            "note": f"रेफरल बोनस (5% of ₹{deposit_amount})",
+            "created_at": datetime.now(timezone.utc)
+        })
+        
+        logging.info(f"Referral bonus: ₹{bonus} given to referrer {referrer_id} from user {user_id}'s first deposit of ₹{deposit_amount}")
+    except Exception as e:
+        logging.error(f"Referral reward error: {e}")
+
 # Refer & Earn Routes
 @api_router.get("/referral/info")
 async def get_referral_info(request: Request):

@@ -50,6 +50,7 @@ const WalletPage = () => {
   const [paymentLink, setPaymentLink] = useState(null);
   const [txFilter, setTxFilter] = useState('all');
   const [appSettings, setAppSettings] = useState({});
+  const [cancellingId, setCancellingId] = useState(null);
 
   const fetchWallet = useCallback(async () => {
     try {
@@ -209,6 +210,20 @@ const WalletPage = () => {
     }
   };
 
+  const handleCancelWithdrawal = async (txId) => {
+    setCancellingId(txId);
+    try {
+      await axios.post(`${API_URL}/api/wallet/withdraw/${txId}/cancel`, {}, { withCredentials: true });
+      toast.success('निकासी रद्द कर दी गई, राशि वापस आ गई');
+      await refreshUser();
+      await fetchWallet();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'निकासी रद्द करने में विफल');
+    } finally {
+      setCancellingId(null);
+    }
+  };
+
   const getStatusBadge = (status) => {
     switch (status) {
       case 'completed':
@@ -218,6 +233,8 @@ const WalletPage = () => {
         return <Badge className="bg-yellow-500/20 text-yellow-400"><Clock className="w-3 h-3 mr-1" /> लंबित</Badge>;
       case 'rejected':
         return <Badge className="bg-red-500/20 text-red-400"><XCircle className="w-3 h-3 mr-1" /> अस्वीकृत</Badge>;
+      case 'cancelled':
+        return <Badge className="bg-orange-500/20 text-orange-400"><XCircle className="w-3 h-3 mr-1" /> रद्द</Badge>;
       default:
         return <Badge className="bg-gray-500/20 text-gray-400">{status}</Badge>;
     }
@@ -369,13 +386,23 @@ const WalletPage = () => {
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right flex flex-col items-end gap-1">
                       <p className={`font-bold ${
                         tx.type === 'deposit' ? 'text-emerald-400' : 'text-red-400'
                       }`}>
                         {tx.type === 'deposit' ? '+' : '-'}₹{tx.amount}
                       </p>
                       {getStatusBadge(tx.status)}
+                      {tx.type === 'withdrawal' && tx.status === 'pending' && (
+                        <button
+                          onClick={() => handleCancelWithdrawal(tx.id)}
+                          disabled={cancellingId === tx.id}
+                          data-testid={`cancel-withdrawal-${tx.id}`}
+                          className="mt-1 px-3 py-1 text-xs font-bold rounded-lg bg-red-600/20 border border-red-500/50 text-red-400 hover:bg-red-600/40 hover:text-red-300 transition-all disabled:opacity-50"
+                        >
+                          {cancellingId === tx.id ? 'रद्द हो रहा...' : 'रद्द करें'}
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
