@@ -2167,6 +2167,29 @@ async def adjust_user_wallet(user_id: str, adjustment: WalletAdjustment, request
         "new_balance": updated_user.get("balance", 0)
     }
 
+@api_router.delete("/admin/users/{user_id}")
+async def delete_user(user_id: str, request: Request):
+    admin = await get_admin_user(request)
+    
+    try:
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
+    except:
+        raise HTTPException(status_code=400, detail="Invalid user ID")
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if user.get("role") == "admin":
+        raise HTTPException(status_code=400, detail="एडमिन अकाउंट डिलीट नहीं किया जा सकता")
+    
+    await db.bets.delete_many({"user_id": user_id})
+    await db.transactions.delete_many({"user_id": user_id})
+    await db.referrals.delete_many({"user_id": user_id})
+    await db.push_subscriptions.delete_many({"user_id": user_id})
+    await db.users.delete_one({"_id": ObjectId(user_id)})
+    
+    return {"message": f"यूजर '{user.get('name', '')}' का अकाउंट डिलीट कर दिया गया"}
+
 @api_router.get("/admin/stats")
 async def get_admin_stats(request: Request):
     await get_admin_user(request)

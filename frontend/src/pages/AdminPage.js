@@ -127,6 +127,7 @@ const AdminPage = () => {
   const [reverseBetType, setReverseBetType] = useState('all');
 
   const [loadingUserDetails, setLoadingUserDetails] = useState(false);
+  const [deletingUser, setDeletingUser] = useState(false);
 
   // Wallet adjustment state
   const [walletModalOpen, setWalletModalOpen] = useState(false);
@@ -539,6 +540,24 @@ const AdminPage = () => {
       toast.error(error.response?.data?.detail || 'Wallet adjustment failed');
     } finally {
       setAdjustingWallet(false);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!selectedUser) return;
+    if (!window.confirm(`क्या आप वाकई "${selectedUser.name}" का अकाउंट डिलीट करना चाहते हैं? यह एक्शन वापस नहीं होगा!`)) return;
+    
+    setDeletingUser(true);
+    try {
+      const { data } = await axios.delete(`${API_URL}/api/admin/users/${selectedUser._id}`, { withCredentials: true });
+      toast.success(data.message);
+      setUserModalOpen(false);
+      setSelectedUser(null);
+      setUsers(users.filter(u => u._id !== selectedUser._id));
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'डिलीट करने में विफल');
+    } finally {
+      setDeletingUser(false);
     }
   };
 
@@ -1580,13 +1599,27 @@ const AdminPage = () => {
               </div>
 
               {/* Wallet Management Button */}
-              <Button
-                onClick={() => setWalletModalOpen(true)}
-                className="w-full mb-4 bg-[#D4AF37] hover:bg-[#FDE047] text-black font-bold"
-              >
-                <Wallet className="w-4 h-4 mr-2" />
-                Wallet Management
-              </Button>
+              <div className="flex gap-2 mb-4">
+                <Button
+                  onClick={() => setWalletModalOpen(true)}
+                  className="flex-1 bg-[#D4AF37] hover:bg-[#FDE047] text-black font-bold"
+                >
+                  <Wallet className="w-4 h-4 mr-2" />
+                  Wallet Management
+                </Button>
+                {selectedUser?.role !== 'admin' && (
+                  <Button
+                    onClick={handleDeleteUser}
+                    disabled={deletingUser}
+                    data-testid="delete-user-btn"
+                    variant="destructive"
+                    className="bg-red-600 hover:bg-red-700 text-white font-bold"
+                  >
+                    {deletingUser ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Trash2 className="w-4 h-4 mr-2" />}
+                    {deletingUser ? 'डिलीट...' : 'अकाउंट डिलीट'}
+                  </Button>
+                )}
+              </div>
 
               {/* Detail Tabs */}
               <Tabs value={userDetailTab} onValueChange={setUserDetailTab}>
