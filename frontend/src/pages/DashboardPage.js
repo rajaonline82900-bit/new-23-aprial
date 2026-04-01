@@ -10,6 +10,7 @@ import {
   Wallet, 
   History, 
   Trophy, 
+  Clock, 
   LogOut,
   ChevronRight,
   Sparkles,
@@ -289,6 +290,10 @@ const DashboardPage = () => {
                           <div className="flex items-center gap-3">
                             <div>
                               <h4 className="text-lg font-semibold text-white">{game.name_hi}</h4>
+                              <div className="flex items-center gap-2 text-gray-400 text-sm">
+                                <Clock className="w-4 h-4" />
+                                <span>{game.start_time} - {game.end_time}</span>
+                              </div>
                             </div>
                           </div>
                           
