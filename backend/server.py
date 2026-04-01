@@ -325,7 +325,8 @@ async def get_me(request: Request):
         "email": user.get("email", ""),
         "phone": user.get("phone"),
         "role": user.get("role", "user"),
-        "balance": user.get("balance", 0.0)
+        "balance": user.get("balance", 0.0),
+        "created_at": user.get("created_at", "").isoformat() if user.get("created_at") else None
     }
 
 @api_router.post("/auth/logout")

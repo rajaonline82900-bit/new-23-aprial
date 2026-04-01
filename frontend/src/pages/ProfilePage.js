@@ -19,7 +19,8 @@ import {
   Lock,
   Eye,
   EyeOff,
-  Loader2
+  Loader2,
+  Calendar
 } from 'lucide-react';
 import FooterNav from '../components/FooterNav';
 import { toast } from 'sonner';
@@ -219,6 +220,26 @@ const ProfilePage = () => {
                 <p className="text-white font-medium">{user?.role === 'admin' ? 'एडमिन' : 'यूजर'}</p>
               </div>
             </div>
+
+            {/* Account Created Date */}
+            {user?.created_at && (
+              <div className="flex items-center gap-4 p-4 bg-[#0A0A0C] rounded-lg border border-white/5">
+                <div className="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center shrink-0">
+                  <Calendar className="w-5 h-5 text-cyan-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-gray-400 text-sm">अकाउंट बनाया</p>
+                  <p className="text-white font-medium" data-testid="profile-created-at">
+                    {(() => {
+                      const d = new Date(user.created_at.endsWith('Z') ? user.created_at : user.created_at + 'Z');
+                      return d.toLocaleDateString('hi-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'long', year: 'numeric' }) 
+                        + ' • ' 
+                        + d.toLocaleTimeString('hi-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true });
+                    })()}
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Save / Cancel Buttons */}
             {editing && (
