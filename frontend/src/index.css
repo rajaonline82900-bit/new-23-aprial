@@ -199,3 +199,12 @@ code {
 .animate-slide-in {
   animation: slideIn 0.25s ease-out;
 }
+
+/* Live blink animation for Today result */
+@keyframes livePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.live-blink {
+  animation: livePulse 1.2s ease-in-out infinite;
+}
