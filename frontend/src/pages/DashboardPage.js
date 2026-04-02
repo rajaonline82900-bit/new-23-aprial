@@ -116,8 +116,8 @@ const DashboardPage = () => {
 
   return (
     <div className="min-h-screen bg-[#0A0A0C] app-shell">
-      {/* Header */}
-      <header className="sticky top-0 z-50 glass border-b border-white/10">
+      {/* Header - Fixed */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-[#0A0A0C] border-b border-white/10" style={{maxWidth: '480px', margin: '0 auto'}}>
         <div className="px-3 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -174,7 +174,7 @@ const DashboardPage = () => {
       </header>
 
       {/* Main Content */}
-      <main className="px-3 py-4 pb-24">
+      <main className="px-3 pt-20 pb-24">
         {/* Welcome Section */}
         <div className="mb-6">
           <h2 className="text-xl font-bold text-white mb-1 font-['Unbounded']">
