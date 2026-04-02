@@ -47,6 +47,7 @@ Build a Satta Matka betting application with Jantri, Haruf Andar/Bahar, Cross Be
 - [x] Warning voice removed (was stuttering on blink) [02-Apr-2026]
 - [x] MATKA 11 logo branding (golden gradient MatkaLogo component) [02-Apr-2026]
 - [x] Responsive app-shell layout (max-width 480px, fits all phone sizes) [02-Apr-2026]
+- [x] PWA icon & manifest MATKA 11 branding (icon-192, icon-512, favicon, title) [02-Apr-2026]
 
 ## Payment Integration
 - Provider: IMB UPI Payment Gateway
@@ -58,8 +59,8 @@ Build a Satta Matka betting application with Jantri, Haruf Andar/Bahar, Cross Be
 
 ## Architecture
 - MatkaLogo component: /app/frontend/src/components/MatkaLogo.js
+- PWA icons: /app/frontend/public/icon-192.png, icon-512.png, favicon.ico
 - app-shell CSS: /app/frontend/src/index.css (max-width: 480px)
-- All pages use app-shell class for consistent mobile layout
 
 ## Upcoming Tasks
 - P1: Refactor server.py (2800+ lines) and AdminPage.js (2000+ lines) into modular files
