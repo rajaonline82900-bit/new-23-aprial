@@ -288,48 +288,45 @@ const DashboardPage = () => {
                       style={{ animationDelay: `${index * 0.1}s` }}
                     >
                       <CardContent className="p-3">
-                        {/* Row 1: Game Name + Time */}
+                        {/* Row 1: Time left | Game Name (centered over Today) | Play/TimeOut */}
                         <div className="flex items-center justify-between mb-2">
-                          <h4 className="text-sm font-semibold text-white truncate">{game.name_hi}</h4>
                           <div className="flex items-center gap-1 text-gray-400 text-xs flex-shrink-0">
                             <Clock className="w-3 h-3" />
                             <span>{game.start_time} - {game.end_time}</span>
                           </div>
-                        </div>
-                        
-                        {/* Row 2: Yesterday | Today | Play/TimeOut */}
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 flex-1">
-                            {/* Yesterday */}
-                            <div className="text-center flex-1 py-1.5 rounded-lg bg-red-500/10 border border-red-500/30">
-                              <p className="text-red-400 text-[8px] uppercase tracking-wide font-medium leading-tight">Yesterday</p>
-                              <p className="text-red-500 font-bold text-base leading-tight">
-                                {game.yesterday_result?.jodi || '--'}
-                              </p>
-                            </div>
-                            {/* Today */}
-                            <div className="text-center flex-1 py-1.5 rounded-lg bg-green-500/10 border border-green-500/30">
-                              <p className="text-green-400 text-[8px] uppercase tracking-wide font-medium leading-tight">Today</p>
-                              <p className="text-green-500 font-bold text-base leading-tight">
-                                {game.today_result?.jodi || '--'}
-                              </p>
-                            </div>
-                          </div>
-                          
+                          <h4 className="text-sm font-bold text-[#D4AF37] truncate">{game.name_hi}</h4>
                           {/* Play / Time Out / Holiday */}
                           {game.is_holiday ? (
-                            <div className="px-3 py-2.5 rounded-lg bg-orange-500/20 border border-orange-500/40 text-orange-400 font-bold text-[11px] text-center whitespace-nowrap" data-testid={`holiday-btn-${game.id}`}>
+                            <div className="px-3 py-1.5 rounded-lg bg-orange-500/20 border border-orange-500/40 text-orange-400 font-bold text-[11px] text-center whitespace-nowrap" data-testid={`holiday-btn-${game.id}`}>
                               Holiday
                             </div>
                           ) : gameStatus.status === 'open' ? (
-                            <div className="px-4 py-2.5 rounded-lg bg-green-500 text-white font-bold text-[11px] text-center cursor-pointer whitespace-nowrap" data-testid={`play-btn-${game.id}`} onClick={() => speak('प्ले')}>
+                            <div className="px-4 py-1.5 rounded-lg bg-green-500 text-white font-bold text-[11px] text-center cursor-pointer whitespace-nowrap" data-testid={`play-btn-${game.id}`} onClick={() => speak('प्ले')}>
                               Play
                             </div>
                           ) : (
-                            <div className="px-2.5 py-2.5 rounded-lg bg-red-500/20 border border-red-500/40 text-red-400 font-bold text-[11px] text-center whitespace-nowrap" data-testid={`timeout-btn-${game.id}`} onClick={() => speak('टाइम आउट')}>
+                            <div className="px-2.5 py-1.5 rounded-lg bg-red-500/20 border border-red-500/40 text-red-400 font-bold text-[11px] text-center whitespace-nowrap" data-testid={`timeout-btn-${game.id}`} onClick={() => speak('टाइम आउट')}>
                               Time Out
                             </div>
                           )}
+                        </div>
+                        
+                        {/* Row 2: Yesterday | Today */}
+                        <div className="flex items-center gap-2">
+                          {/* Yesterday */}
+                          <div className="text-center flex-1 py-1.5 rounded-lg bg-red-500/10 border border-red-500/30">
+                            <p className="text-red-400 text-[8px] uppercase tracking-wide font-medium leading-tight">Yesterday</p>
+                            <p className="text-red-500 font-bold text-base leading-tight">
+                              {game.yesterday_result?.jodi || '--'}
+                            </p>
+                          </div>
+                          {/* Today */}
+                          <div className="text-center flex-1 py-1.5 rounded-lg bg-green-500/10 border border-green-500/30">
+                            <p className="text-green-400 text-[8px] uppercase tracking-wide font-medium leading-tight">Today</p>
+                            <p className="text-green-500 font-bold text-base leading-tight">
+                              {game.today_result?.jodi || '--'}
+                            </p>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
