@@ -24,10 +24,13 @@ import {
   Gift,
   Send,
   Menu,
-  Download
+  Download,
+  ArrowDownLeft,
+  ArrowUpRight
 } from 'lucide-react';
 import { toast } from 'sonner';
 import FooterNav from '../components/FooterNav';
+import { speak } from '../utils/voice';
 import SidebarMenu from '../components/SidebarMenu';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -125,7 +128,7 @@ const DashboardPage = () => {
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#FDE047] flex items-center justify-center">
                 <Coins className="w-5 h-5 text-black" />
               </div>
-              <h1 className="text-xl font-bold text-white font-['Unbounded']">सट्टा मटका</h1>
+              <h1 className="text-xl font-bold text-white font-['Unbounded']">MATKA 11</h1>
             </div>
             
             <div className="flex items-center gap-4">
@@ -197,12 +200,14 @@ const DashboardPage = () => {
               </div>
               <div className="flex items-center gap-2">
                 <Link to="/wallet">
-                  <Button className="bg-[#D4AF37] hover:bg-[#FDE047] text-black font-bold">
+                  <Button onClick={() => speak('जमा करें')} className="bg-[#10B981] hover:bg-[#059669] text-white font-bold flex items-center gap-1.5">
+                    <ArrowDownLeft className="w-4 h-4" />
                     जमा करें
                   </Button>
                 </Link>
                 <Link to="/wallet?tab=withdraw">
-                  <Button variant="outline" className="border-red-500/50 text-red-400 hover:bg-red-500/10 font-bold">
+                  <Button onClick={() => speak('निकासी')} className="bg-red-600 hover:bg-red-700 text-white font-bold flex items-center gap-1.5">
+                    <ArrowUpRight className="w-4 h-4" />
                     निकासी
                   </Button>
                 </Link>
@@ -326,11 +331,11 @@ const DashboardPage = () => {
                                 Holiday
                               </div>
                             ) : gameStatus.status === 'open' ? (
-                              <div className="px-4 py-2 rounded-lg bg-green-500 text-white font-bold text-sm min-w-[80px] text-center" data-testid={`play-btn-${game.id}`}>
+                              <div className="px-4 py-2 rounded-lg bg-green-500 text-white font-bold text-sm min-w-[80px] text-center cursor-pointer" data-testid={`play-btn-${game.id}`} onClick={() => speak('प्ले')}>
                                 Play
                               </div>
                             ) : (
-                              <div className="px-4 py-2 rounded-lg bg-red-500/20 border border-red-500/40 text-red-400 font-bold text-sm min-w-[80px] text-center" data-testid={`timeout-btn-${game.id}`}>
+                              <div className="px-4 py-2 rounded-lg bg-red-500/20 border border-red-500/40 text-red-400 font-bold text-sm min-w-[80px] text-center" data-testid={`timeout-btn-${game.id}`} onClick={() => speak('टाइम आउट')}>
                                 Time Out
                               </div>
                             )}

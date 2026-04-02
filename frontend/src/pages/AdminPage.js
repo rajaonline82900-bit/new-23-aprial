@@ -1478,13 +1478,34 @@ const AdminPage = () => {
                       className="flex items-center justify-between p-4 bg-[#0A0A0C] rounded-lg border border-white/5 cursor-pointer hover:border-[#D4AF37]/50 transition-all"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-[#D4AF37]/20 flex items-center justify-center">
-                          <span className="text-[#D4AF37] font-bold">{u.name?.charAt(0).toUpperCase()}</span>
+                        <div className="relative">
+                          <div className="w-10 h-10 rounded-full bg-[#D4AF37]/20 flex items-center justify-center">
+                            <span className="text-[#D4AF37] font-bold">{u.name?.charAt(0).toUpperCase()}</span>
+                          </div>
+                          {u.last_seen && (Date.now() - new Date(u.last_seen.endsWith('Z') ? u.last_seen : u.last_seen + 'Z').getTime()) < 300000 && (
+                            <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-[#0A0A0C]" title="ऑनलाइन"></div>
+                          )}
                         </div>
                         <div>
                           <p className="text-white font-medium">{u.name}</p>
                           <p className="text-gray-400 text-sm">{u.phone || u.email}</p>
-                          <p className="text-gray-500 text-xs">{u.created_at ? utcDate(u.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true, hour: '2-digit', minute: '2-digit', timeZoneName: 'short' }) : ''}</p>
+                          <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                            <p className="text-gray-500 text-xs">
+                              {u.created_at ? '📅 ' + new Date(u.created_at.endsWith?.('Z') ? u.created_at : u.created_at + 'Z').toLocaleDateString('hi-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', year: 'numeric' }) + ' ' + new Date(u.created_at.endsWith?.('Z') ? u.created_at : u.created_at + 'Z').toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true }) : ''}
+                            </p>
+                            <span className={`text-xs ${u.last_seen && (Date.now() - new Date(u.last_seen.endsWith?.('Z') ? u.last_seen : u.last_seen + 'Z').getTime()) < 300000 ? 'text-green-400' : 'text-gray-500'}`}>
+                              {u.last_seen ? (
+                                (Date.now() - new Date(u.last_seen.endsWith?.('Z') ? u.last_seen : u.last_seen + 'Z').getTime()) < 300000
+                                  ? '● ऑनलाइन'
+                                  : '○ ' + (() => {
+                                      const diff = Math.floor((Date.now() - new Date(u.last_seen.endsWith?.('Z') ? u.last_seen : u.last_seen + 'Z').getTime()) / 60000);
+                                      if (diff < 60) return `${diff} मिनट पहले`;
+                                      if (diff < 1440) return `${Math.floor(diff/60)} घंटे पहले`;
+                                      return `${Math.floor(diff/1440)} दिन पहले`;
+                                    })()
+                              ) : ''}
+                            </span>
+                          </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-4">

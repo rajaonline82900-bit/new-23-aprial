@@ -23,6 +23,7 @@ import {
   BarChart3
 } from 'lucide-react';
 import FooterNav from '../components/FooterNav';
+import { speak } from '../utils/voice';
 import { toast } from 'sonner';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -698,7 +699,7 @@ const GamePage = () => {
                     <Trash2 className="w-5 h-5" />
                   </Button>
                   <Button
-                    onClick={handlePlaceBatchBets}
+                    onClick={() => { speak('प्ले'); handlePlaceBatchBets(); }}
                     disabled={placing || !bettingOpen || totalBetCount === 0}
                     data-testid="place-batch-bet-button"
                     className="h-12 px-8 bg-[#D4AF37] hover:bg-[#FDE047] text-black font-bold text-base disabled:opacity-50"

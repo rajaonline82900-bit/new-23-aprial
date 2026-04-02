@@ -79,6 +79,8 @@ async def get_current_user(request: Request) -> dict:
         user = await db.users.find_one({"_id": ObjectId(payload["sub"])})
         if not user:
             raise HTTPException(status_code=401, detail="User not found")
+        # Update last_seen
+        await db.users.update_one({"_id": user["_id"]}, {"$set": {"last_seen": datetime.now(timezone.utc)}})
         user["_id"] = str(user["_id"])
         user.pop("password_hash", None)
         return user
