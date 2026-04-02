@@ -1585,6 +1585,7 @@ async def fetch_matka_results(date_str=None):
     
     try:
         async with httpx.AsyncClient(timeout=15) as client:
+            # Fetch from blank query (gets all today/recent results)
             resp = await client.post(
                 f"{MATKA_API_BASE}/market-data-delhi",
                 data={
@@ -1597,7 +1598,6 @@ async def fetch_matka_results(date_str=None):
             data = resp.json()
         
         if not data.get("status"):
-            # Token expired, refresh and retry
             if await refresh_matka_token():
                 async with httpx.AsyncClient(timeout=15) as client:
                     resp = await client.post(
@@ -1613,12 +1613,38 @@ async def fetch_matka_results(date_str=None):
             if not data.get("status"):
                 return {"error": "API fetch failed"}
         
-        results_applied = []
-        all_results = data.get("today_result", []) + data.get("old_result", [])
+        # Also fetch DISAWER specifically (returns more historical data)
+        all_api_results = data.get("today_result", []) + data.get("old_result", [])
+        try:
+            async with httpx.AsyncClient(timeout=15) as client:
+                resp2 = await client.post(
+                    f"{MATKA_API_BASE}/market-data-delhi",
+                    data={
+                        "username": MATKA_API_USERNAME,
+                        "API_token": matka_api_token["token"],
+                        "markte_name": "DISAWER",
+                        "date": date_str
+                    }
+                )
+                data2 = resp2.json()
+                if data2.get("status"):
+                    all_api_results += data2.get("today_result", []) + data2.get("old_result", [])
+        except:
+            pass
         
         games_dict = await get_games_dict()
         
-        for r in all_results:
+        # Deduplicate results
+        seen_keys = set()
+        unique_results = []
+        for r in all_api_results:
+            key = f"{r.get('market_name','').upper().strip()}|{r.get('aankdo_date','')}"
+            if key not in seen_keys:
+                seen_keys.add(key)
+                unique_results.append(r)
+        
+        results_applied = []
+        for r in unique_results:
             market_name = r.get("market_name", "").upper().strip()
             jodi = r.get("jodi", "").strip()
             result_date = r.get("aankdo_date", "").strip()
