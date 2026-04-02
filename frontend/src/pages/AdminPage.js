@@ -54,7 +54,8 @@ import {
   Save,
   RotateCcw,
   Undo2,
-  UserPlus
+  UserPlus,
+  Download
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -1247,50 +1248,70 @@ const AdminPage = () => {
                   ) : (
                     <div className="space-y-4">
                       {withdrawals.map((w, index) => (
-                        <div key={index} className="flex items-center justify-between p-4 bg-[#0A0A0C] rounded-lg border border-white/5">
-                          <div>
-                            <p className="text-white font-medium">{w.user_name}</p>
-                            <p className="text-gray-400 text-sm">{w.user_phone || w.user_email}</p>
-                            <p className="text-gray-400 text-sm">
-                              {w.withdrawal_method === 'bank' && (
-                                <span>बैंक: {w.account_holder} | A/C: {w.bank_account} | IFSC: {w.ifsc_code}</span>
-                              )}
-                              {w.withdrawal_method === 'scanner' && (
-                                <span>स्कैनर अपलोड किया</span>
-                              )}
-                              {(!w.withdrawal_method || w.withdrawal_method === 'upi') && (
-                                <span>UPI: {w.upi_id}</span>
-                              )}
-                            </p>
+                        <div key={index} className="p-4 bg-[#0A0A0C] rounded-lg border border-white/5">
+                          <div className="flex items-center justify-between mb-3">
+                            <div>
+                              <p className="text-white font-medium">{w.user_name}</p>
+                              <p className="text-gray-400 text-sm">{w.user_phone || w.user_email}</p>
+                            </div>
+                            <p className="text-xl font-bold text-white">₹{w.amount}</p>
+                          </div>
+                          
+                          {/* Payment Details with Copy */}
+                          <div className="bg-[#141418] rounded-lg p-3 mb-3 space-y-2">
+                            {(!w.withdrawal_method || w.withdrawal_method === 'upi') && w.upi_id && (
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-400 text-sm">UPI: <span className="text-white">{w.upi_id}</span></span>
+                                <button onClick={() => { navigator.clipboard.writeText(w.upi_id); toast.success('UPI ID कॉपी हो गई'); }} className="px-2 py-1 rounded bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white text-xs transition-all" data-testid={`copy-upi-${w.id}`}>कॉपी</button>
+                              </div>
+                            )}
+                            {w.withdrawal_method === 'bank' && (
+                              <>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-gray-400 text-sm">नाम: <span className="text-white">{w.account_holder}</span></span>
+                                  <button onClick={() => { navigator.clipboard.writeText(w.account_holder || ''); toast.success('कॉपी हो गया'); }} className="px-2 py-1 rounded bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white text-xs transition-all">कॉपी</button>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-gray-400 text-sm">A/C: <span className="text-white">{w.bank_account}</span></span>
+                                  <button onClick={() => { navigator.clipboard.writeText(w.bank_account || ''); toast.success('कॉपी हो गया'); }} className="px-2 py-1 rounded bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white text-xs transition-all">कॉपी</button>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-gray-400 text-sm">IFSC: <span className="text-white">{w.ifsc_code}</span></span>
+                                  <button onClick={() => { navigator.clipboard.writeText(w.ifsc_code || ''); toast.success('कॉपी हो गया'); }} className="px-2 py-1 rounded bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white text-xs transition-all">कॉपी</button>
+                                </div>
+                              </>
+                            )}
                             {w.withdrawal_method === 'scanner' && w.scanner_image && (
-                              <a href={`${API_URL}${w.scanner_image}`} target="_blank" rel="noopener noreferrer" className="inline-block mt-2">
-                                <img src={`${API_URL}${w.scanner_image}`} alt="Scanner" className="w-24 h-24 object-contain rounded-lg border border-white/10 hover:border-[#D4AF37]/50 transition-all" />
-                              </a>
+                              <div>
+                                <p className="text-gray-400 text-sm mb-2">स्कैनर:</p>
+                                <img src={`${API_URL}${w.scanner_image}`} alt="Scanner" className="w-32 h-32 object-contain rounded-lg border border-white/10 mb-2" />
+                                <a href={`${API_URL}${w.scanner_image}`} download target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#D4AF37] text-xs font-medium hover:bg-[#D4AF37]/20 transition-all" data-testid={`download-scanner-${w.id}`}>
+                                  <Download className="w-3 h-3" /> डाउनलोड
+                                </a>
+                              </div>
                             )}
                           </div>
-                          <div className="text-right">
-                            <p className="text-xl font-bold text-white">₹{w.amount}</p>
-                            <div className="flex gap-2 mt-2">
-                              <Button
-                                size="sm"
-                                onClick={() => handleWithdrawalAction(w.id, 'approve')}
-                                data-testid={`approve-withdrawal-${w.id}`}
-                                className="bg-emerald-500 hover:bg-emerald-600 text-white"
-                              >
-                                <CheckCircle className="w-4 h-4 mr-1" />
-                                स्वीकृत
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleWithdrawalAction(w.id, 'reject')}
-                                data-testid={`reject-withdrawal-${w.id}`}
-                                className="border-red-500 text-red-500 hover:bg-red-500/10"
-                              >
-                                <XCircle className="w-4 h-4 mr-1" />
-                                अस्वीकृत
-                              </Button>
-                            </div>
+
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() => handleWithdrawalAction(w.id, 'approve')}
+                              data-testid={`approve-withdrawal-${w.id}`}
+                              className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white"
+                            >
+                              <CheckCircle className="w-4 h-4 mr-1" />
+                              स्वीकृत
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleWithdrawalAction(w.id, 'reject')}
+                              data-testid={`reject-withdrawal-${w.id}`}
+                              className="flex-1 border-red-500 text-red-500 hover:bg-red-500/10"
+                            >
+                              <XCircle className="w-4 h-4 mr-1" />
+                              अस्वीकृत
+                            </Button>
                           </div>
                         </div>
                       ))}
