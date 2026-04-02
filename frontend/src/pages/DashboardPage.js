@@ -296,9 +296,16 @@ const DashboardPage = () => {
                       <CardContent className="p-3">
                         {/* Row 1: Last Time | Game Name | Play/TimeOut */}
                         <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-1 text-gray-400 text-xs flex-shrink-0">
-                            <Clock className="w-3 h-3" />
-                            <span>{game.end_time}</span>
+                          <div className="flex-shrink-0">
+                            <p className="text-gray-500 text-[8px] uppercase tracking-wide font-medium">Last Time</p>
+                            <p className="text-white font-bold text-sm leading-tight">
+                              {(() => {
+                                const [h, m] = (game.end_time || '00:00').split(':').map(Number);
+                                const ampm = h >= 12 ? 'PM' : 'AM';
+                                const h12 = h % 12 || 12;
+                                return `${h12}:${m.toString().padStart(2, '0')} ${ampm}`;
+                              })()}
+                            </p>
                           </div>
                           <h4 className="text-base font-bold text-[#D4AF37] truncate px-2">{game.name_hi}</h4>
                           {/* Play / Time Out / Holiday */}
