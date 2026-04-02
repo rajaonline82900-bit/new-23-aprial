@@ -7,6 +7,7 @@ import "./index.css";
 // Pages
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
+import AdminLoginPage from "./pages/AdminLoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import GamePage from "./pages/GamePage";
 import WalletPage from "./pages/WalletPage";
@@ -90,6 +91,14 @@ function AppRoutes() {
         }
       />
       <Route path="/auth/callback" element={<AuthCallback />} />
+      <Route
+        path="/admin-login"
+        element={
+          <PublicRoute>
+            <AdminLoginPage />
+          </PublicRoute>
+        }
+      />
 
       {/* Protected Routes */}
       <Route

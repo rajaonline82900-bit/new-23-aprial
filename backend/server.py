@@ -106,6 +106,10 @@ class UserLogin(BaseModel):
     phone: str
     password: str
 
+class AdminLogin(BaseModel):
+    email: str
+    password: str
+
 class OTPRequest(BaseModel):
     phone: str
     name: str
@@ -119,8 +123,10 @@ class OTPCompleteSignup(BaseModel):
     phone: str
     name: str
     email: Optional[str] = None
-    password: str
     referral_code: Optional[str] = None
+
+class OTPLoginRequest(BaseModel):
+    phone: str
 
 class PasswordResetRequest(BaseModel):
     phone: str
@@ -478,14 +484,12 @@ async def complete_signup(data: OTPCompleteSignup):
     if existing:
         raise HTTPException(status_code=400, detail="यह मोबाइल नंबर पहले से रजिस्टर्ड है। कृपया लॉगिन करें।")
     
-    # Create user with password
-    hashed = hash_password(data.password)
+    # Create user without password (OTP-only auth)
     virtual_email = f"user_{phone}@sattamatka.com"
     user_doc = {
         "name": data.name,
         "phone": phone,
         "email": virtual_email,
-        "password_hash": hashed,
         "role": "user",
         "balance": 0.0,
         "auth_type": "otp",
@@ -512,6 +516,101 @@ async def complete_signup(data: OTPCompleteSignup):
         "phone": phone,
         "role": "user",
         "balance": 0.0
+    })
+    resp.set_cookie(key="access_token", value=access_token, httponly=True, secure=True, samesite="none", max_age=31536000, path="/")
+    resp.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=True, samesite="none", max_age=31536000, path="/")
+    return resp
+
+# Login via OTP (for regular users)
+@api_router.post("/auth/login-otp/send")
+async def login_otp_send(data: OTPLoginRequest):
+    phone = data.phone.strip()
+    if len(phone) < 10:
+        raise HTTPException(status_code=400, detail="कृपया सही मोबाइल नंबर दर्ज करें")
+    
+    user = await db.users.find_one({"phone": phone})
+    if not user:
+        raise HTTPException(status_code=400, detail="यह मोबाइल नंबर रजिस्टर्ड नहीं है। पहले साइनअप करें।")
+    
+    otp = str(random.randint(1000, 9999))
+    otp_store[f"login_{phone}"] = {"otp": otp, "expires": datetime.now(timezone.utc) + timedelta(minutes=5)}
+    
+    sent = await send_sms_otp(phone, otp)
+    if not sent:
+        logging.warning(f"Login OTP SMS failed for {phone}, OTP: {otp}")
+    
+    logging.info(f"Login OTP for {phone}: {otp}")
+    return {"message": "OTP भेज दिया गया है"}
+
+@api_router.post("/auth/login-otp/verify")
+async def login_otp_verify(data: OTPVerify):
+    from starlette.responses import JSONResponse
+    
+    phone = data.phone.strip()
+    stored = otp_store.get(f"login_{phone}")
+    
+    if not stored:
+        raise HTTPException(status_code=400, detail="पहले OTP भेजें")
+    
+    if stored["otp"] != data.otp:
+        raise HTTPException(status_code=400, detail="गलत OTP")
+    
+    if stored["expires"] < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="OTP expired। दोबारा भेजें")
+    
+    del otp_store[f"login_{phone}"]
+    
+    user = await db.users.find_one({"phone": phone})
+    if not user:
+        raise HTTPException(status_code=400, detail="यह मोबाइल नंबर रजिस्टर्ड नहीं है")
+    
+    user_id = str(user["_id"])
+    access_token = create_access_token(user_id, user.get("email") or phone)
+    refresh_token = create_refresh_token(user_id)
+    
+    resp = JSONResponse(content={
+        "id": user_id,
+        "name": user["name"],
+        "email": user.get("email", ""),
+        "phone": user.get("phone", ""),
+        "role": user.get("role", "user"),
+        "balance": user.get("balance", 0.0)
+    })
+    resp.set_cookie(key="access_token", value=access_token, httponly=True, secure=True, samesite="none", max_age=31536000, path="/")
+    resp.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=True, samesite="none", max_age=31536000, path="/")
+    return resp
+
+# Admin Login (email + password)
+@api_router.post("/auth/admin/login")
+async def admin_login(data: AdminLogin):
+    from starlette.responses import JSONResponse
+    
+    email = data.email.strip().lower()
+    user = await db.users.find_one({"email": email})
+    
+    if not user:
+        raise HTTPException(status_code=401, detail="गलत ईमेल या पासवर्ड")
+    
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=401, detail="सिर्फ एडमिन लॉगिन कर सकता है")
+    
+    if not user.get("password_hash"):
+        raise HTTPException(status_code=401, detail="पासवर्ड सेट नहीं है")
+    
+    if not verify_password(data.password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="गलत ईमेल या पासवर्ड")
+    
+    user_id = str(user["_id"])
+    access_token = create_access_token(user_id, email)
+    refresh_token = create_refresh_token(user_id)
+    
+    resp = JSONResponse(content={
+        "id": user_id,
+        "name": user["name"],
+        "email": user.get("email", ""),
+        "phone": user.get("phone", ""),
+        "role": user.get("role", "admin"),
+        "balance": user.get("balance", 0.0)
     })
     resp.set_cookie(key="access_token", value=access_token, httponly=True, secure=True, samesite="none", max_age=31536000, path="/")
     resp.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=True, samesite="none", max_age=31536000, path="/")

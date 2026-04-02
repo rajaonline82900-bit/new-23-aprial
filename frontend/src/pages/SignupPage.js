@@ -5,7 +5,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { ArrowLeft, CheckCircle, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
 import MatkaLogo from '../components/MatkaLogo';
@@ -13,12 +13,10 @@ import MatkaLogo from '../components/MatkaLogo';
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const SignupPage = () => {
-  const [step, setStep] = useState('form'); // 'form', 'otp', 'password'
+  const [step, setStep] = useState('form'); // 'form', 'otp'
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { refreshUser } = useAuth();
   const navigate = useNavigate();
@@ -42,37 +40,26 @@ const SignupPage = () => {
     }
   };
 
-  const handleVerifyOTP = async (e) => {
+  const handleVerifyAndSignup = async (e) => {
     e.preventDefault();
     if (otp.length < 4) { toast.error('कृपया 4 अंकों का OTP दर्ज करें'); return; }
 
     setLoading(true);
     try {
+      // First verify OTP
       await axios.post(`${API_URL}/api/auth/otp/verify`, { phone, otp }, { withCredentials: true });
-      setStep('password');
-      toast.success('OTP सत्यापित! अब पासवर्ड बनाएं');
-    } catch (e) {
-      toast.error(e.response?.data?.detail || 'OTP गलत है');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCompleteSignup = async (e) => {
-    e.preventDefault();
-    if (password.length < 6) { toast.error('पासवर्ड कम से कम 6 अक्षर का होना चाहिए'); return; }
-
-    setLoading(true);
-    try {
+      
+      // Then complete signup (no password needed)
       await axios.post(`${API_URL}/api/auth/otp/complete-signup`, { 
-        phone, name, password,
+        phone, name,
         referral_code: refCode || undefined
       }, { withCredentials: true });
+      
       toast.success('अकाउंट बन गया! स्वागत है');
       await refreshUser();
       navigate('/dashboard');
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'अकाउंट बनाने में समस्या');
+      toast.error(e.response?.data?.detail || 'OTP गलत है');
     } finally {
       setLoading(false);
     }
@@ -88,12 +75,9 @@ const SignupPage = () => {
       <Card className="w-full max-w-sm bg-[#141418] border-white/10 relative z-10">
         <CardHeader className="space-y-3">
           <div className="flex items-center gap-3">
-            {step !== 'form' && (
+            {step === 'otp' && (
               <button
-                onClick={() => {
-                  if (step === 'password') { setStep('otp'); setPassword(''); }
-                  else if (step === 'otp') { setStep('form'); setOtp(''); }
-                }}
+                onClick={() => { setStep('form'); setOtp(''); }}
                 className="p-2 rounded-lg bg-[#0A0A0C] border border-white/10 text-gray-400 hover:text-white transition-all"
                 data-testid="signup-back-button"
               >
@@ -105,9 +89,9 @@ const SignupPage = () => {
                 <MatkaLogo size="lg" />
               </div>
             )}
-            {step !== 'form' && (
+            {step === 'otp' && (
               <CardTitle className="text-xl font-bold text-white font-['Unbounded']">
-                {step === 'password' ? 'पासवर्ड बनाएं' : 'OTP दर्ज करें'}
+                OTP दर्ज करें
               </CardTitle>
             )}
           </div>
@@ -118,9 +102,8 @@ const SignupPage = () => {
           )}
           {/* Step indicator */}
           <div className="flex gap-2">
-            <div className={`h-1 flex-1 rounded-full ${step === 'form' || step === 'otp' || step === 'password' ? 'bg-[#D4AF37]' : 'bg-white/10'}`} />
-            <div className={`h-1 flex-1 rounded-full ${step === 'otp' || step === 'password' ? 'bg-[#D4AF37]' : 'bg-white/10'}`} />
-            <div className={`h-1 flex-1 rounded-full ${step === 'password' ? 'bg-[#D4AF37]' : 'bg-white/10'}`} />
+            <div className={`h-1 flex-1 rounded-full ${step === 'form' || step === 'otp' ? 'bg-[#D4AF37]' : 'bg-white/10'}`} />
+            <div className={`h-1 flex-1 rounded-full ${step === 'otp' ? 'bg-[#D4AF37]' : 'bg-white/10'}`} />
           </div>
         </CardHeader>
 
@@ -188,7 +171,7 @@ const SignupPage = () => {
           )}
 
           {step === 'otp' && (
-            <form onSubmit={handleVerifyOTP} className="space-y-4">
+            <form onSubmit={handleVerifyAndSignup} className="space-y-4">
               <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center gap-2">
                 <CheckCircle className="w-4 h-4 text-green-400" />
                 <p className="text-green-400 text-sm">+91 {phone} पर OTP भेज दिया गया</p>
@@ -214,7 +197,7 @@ const SignupPage = () => {
                 data-testid="verify-otp-button"
                 className="w-full bg-[#D4AF37] hover:bg-[#FDE047] text-black font-bold"
               >
-                {loading ? 'सत्यापित हो रहा है...' : 'OTP सत्यापित करें'}
+                {loading ? 'अकाउंट बन रहा है...' : 'अकाउंट बनाएं'}
               </Button>
 
               <button
@@ -224,48 +207,6 @@ const SignupPage = () => {
               >
                 नंबर बदलें या दोबारा OTP भेजें
               </button>
-            </form>
-          )}
-
-          {step === 'password' && (
-            <form onSubmit={handleCompleteSignup} className="space-y-4">
-              <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-green-400" />
-                <p className="text-green-400 text-sm">+91 {phone} सत्यापित हो गया</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-gray-300">पासवर्ड बनाएं</Label>
-                <div className="relative">
-                  <Input
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="कम से कम 6 अक्षर"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={6}
-                    data-testid="signup-password-input"
-                    className="bg-[#0A0A0C] border-white/10 text-white placeholder:text-gray-500 focus:border-[#D4AF37] focus:ring-[#D4AF37] pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-                <p className="text-gray-500 text-xs">यह पासवर्ड लॉगिन के लिए उपयोग होगा</p>
-              </div>
-
-              <Button
-                type="submit"
-                disabled={loading}
-                data-testid="complete-signup-button"
-                className="w-full bg-[#D4AF37] hover:bg-[#FDE047] text-black font-bold"
-              >
-                {loading ? 'अकाउंट बन रहा है...' : 'अकाउंट बनाएं'}
-              </Button>
             </form>
           )}
         </CardContent>

@@ -35,48 +35,12 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    // CRITICAL: If returning from OAuth callback, skip the /me check.
-    // AuthCallback will exchange the session_id and establish the session first.
     if (window.location.hash?.includes('session_id=')) {
       setLoading(false);
       return;
     }
     checkAuth();
   }, [checkAuth]);
-
-  const login = async (phone, password) => {
-    try {
-      const { data } = await axios.post(
-        `${API_URL}/api/auth/login`,
-        { phone, password },
-        { withCredentials: true }
-      );
-      setUser(data);
-      return { success: true };
-    } catch (e) {
-      return { 
-        success: false, 
-        error: formatApiErrorDetail(e.response?.data?.detail) || e.message 
-      };
-    }
-  };
-
-  const register = async (name, email, password, phone) => {
-    try {
-      const { data } = await axios.post(
-        `${API_URL}/api/auth/register`,
-        { name, email, password, phone },
-        { withCredentials: true }
-      );
-      setUser(data);
-      return { success: true };
-    } catch (e) {
-      return { 
-        success: false, 
-        error: formatApiErrorDetail(e.response?.data?.detail) || e.message 
-      };
-    }
-  };
 
   const logout = async () => {
     try {
@@ -92,7 +56,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
