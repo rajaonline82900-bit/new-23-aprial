@@ -307,7 +307,7 @@ const DashboardPage = () => {
                               })()}
                             </p>
                           </div>
-                          <h4 className="text-base font-bold text-[#D4AF37] truncate px-2">{game.name_hi}</h4>
+                          <h4 className="text-lg font-bold text-[#D4AF37] truncate px-2">{game.name_hi}</h4>
                           {/* Play / Time Out / Holiday */}
                           {game.is_holiday ? (
                             <div className="px-4 py-2 rounded-xl bg-orange-500/20 border border-orange-500/40 text-orange-400 font-bold text-sm text-center whitespace-nowrap" data-testid={`holiday-btn-${game.id}`}>
