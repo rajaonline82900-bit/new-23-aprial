@@ -131,7 +131,7 @@ const DashboardPage = () => {
               <MatkaLogo size="sm" />
             </div>
             
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               <button
                 onClick={() => {
                   if (window.deferredPrompt) {
@@ -142,9 +142,10 @@ const DashboardPage = () => {
                   }
                 }}
                 data-testid="download-apk-button"
-                className="p-1.5 rounded-lg bg-gradient-to-r from-[#D4AF37] to-[#FDE047] text-black hover:scale-105 active:scale-95 transition-transform shadow-lg shadow-[#D4AF37]/20"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#D4AF37] to-[#FDE047] text-black font-bold text-xs hover:scale-105 active:scale-95 transition-transform shadow-lg shadow-[#D4AF37]/20"
               >
-                <Download className="w-4 h-4" />
+                <Download className="w-3.5 h-3.5" />
+                Download App
               </button>
               
               {user?.role === 'admin' && (
@@ -154,20 +155,6 @@ const DashboardPage = () => {
                   </button>
                 </Link>
               )}
-              
-              <Link to="/profile" data-testid="profile-icon-link">
-                <button className="p-1.5 rounded-lg bg-[#141418] border border-white/10 text-gray-400 hover:text-[#D4AF37] hover:border-[#D4AF37]/30 transition-all">
-                  <User className="w-4 h-4" />
-                </button>
-              </Link>
-              
-              <button
-                onClick={handleLogout}
-                data-testid="logout-button"
-                className="p-1.5 rounded-lg bg-[#141418] border border-white/10 text-gray-400 hover:text-white hover:border-white/20 transition-all"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
             </div>
           </div>
         </div>
