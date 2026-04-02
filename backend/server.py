@@ -1534,6 +1534,189 @@ async def stripe_webhook(request: Request):
         return {"received": True}
 
 # Admin Routes
+import asyncio
+
+# ===== AUTO RESULT FETCH FROM MATKA API =====
+MATKA_API_BASE = "https://matkawebhook.matka-api.online"
+MATKA_API_USERNAME = os.environ.get("MATKA_API_USERNAME", "")
+MATKA_API_PASSWORD = os.environ.get("MATKA_API_PASSWORD", "")
+
+# Mapping: API market name → app game_id
+MARKET_TO_GAME = {
+    "DISAWER": "disawar",
+    "DELHI BAZAR": "delhi_bazar",
+    "SHRI GANESH": "shri_ganesh",
+    "FARIDABAD": "faridabad",
+    "GHAZIABAD": "ghaziabad",
+    "GALI": "gali",
+}
+
+matka_api_token = {"token": None}
+
+async def refresh_matka_token():
+    """Get fresh token from Matka API"""
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.post(
+                f"{MATKA_API_BASE}/get-refresh-token-delhi",
+                data={"username": MATKA_API_USERNAME, "password": MATKA_API_PASSWORD}
+            )
+            data = resp.json()
+            if data.get("status"):
+                matka_api_token["token"] = data["refresh_token"]
+                logging.info(f"Matka API token refreshed: {matka_api_token['token'][:8]}...")
+                return True
+    except Exception as e:
+        logging.error(f"Matka API token refresh failed: {e}")
+    return False
+
+async def fetch_matka_results(date_str=None):
+    """Fetch results from Matka API and auto-declare"""
+    if not MATKA_API_USERNAME or not MATKA_API_PASSWORD:
+        return {"error": "Matka API credentials not configured"}
+    
+    if not matka_api_token["token"]:
+        if not await refresh_matka_token():
+            return {"error": "Token refresh failed"}
+    
+    ist_now = datetime.now(timezone(timedelta(hours=5, minutes=30)))
+    if not date_str:
+        date_str = ist_now.strftime("%Y-%m-%d")
+    
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.post(
+                f"{MATKA_API_BASE}/market-data-delhi",
+                data={
+                    "username": MATKA_API_USERNAME,
+                    "API_token": matka_api_token["token"],
+                    "markte_name": "",
+                    "date": date_str
+                }
+            )
+            data = resp.json()
+        
+        if not data.get("status"):
+            # Token expired, refresh and retry
+            if await refresh_matka_token():
+                async with httpx.AsyncClient(timeout=15) as client:
+                    resp = await client.post(
+                        f"{MATKA_API_BASE}/market-data-delhi",
+                        data={
+                            "username": MATKA_API_USERNAME,
+                            "API_token": matka_api_token["token"],
+                            "markte_name": "",
+                            "date": date_str
+                        }
+                    )
+                    data = resp.json()
+            if not data.get("status"):
+                return {"error": "API fetch failed"}
+        
+        results_applied = []
+        all_results = data.get("today_result", []) + data.get("old_result", [])
+        
+        games_dict = await get_games_dict()
+        
+        for r in all_results:
+            market_name = r.get("market_name", "").upper().strip()
+            jodi = r.get("jodi", "").strip()
+            result_date = r.get("aankdo_date", "").strip()
+            
+            if not jodi or not result_date or len(jodi) != 2 or not jodi.isdigit():
+                continue
+            
+            game_id = MARKET_TO_GAME.get(market_name)
+            if not game_id or game_id not in games_dict:
+                continue
+            
+            # Check if result already exists
+            existing = await db.results.find_one({"game_id": game_id, "date": result_date})
+            if existing:
+                continue
+            
+            # Auto-declare result
+            single_result = jodi[-1]
+            result_doc = {
+                "id": str(uuid.uuid4()),
+                "game_id": game_id,
+                "date": result_date,
+                "single_result": single_result,
+                "jodi_result": jodi,
+                "declared_at": datetime.now(timezone.utc),
+                "auto_declared": True
+            }
+            await db.results.insert_one(result_doc)
+            
+            # Process winning bets (same logic as manual declare)
+            andar_digit = jodi[0]
+            bahar_digit = jodi[1]
+            
+            winning_jodi = await db.bets.find({"game_id": game_id, "date": result_date, "bet_type": "jodi", "number": jodi, "status": "pending"}).to_list(1000)
+            winning_andar = await db.bets.find({"game_id": game_id, "date": result_date, "bet_type": "haruf_andar", "number": andar_digit, "status": "pending"}).to_list(1000)
+            winning_bahar = await db.bets.find({"game_id": game_id, "date": result_date, "bet_type": "haruf_bahar", "number": bahar_digit, "status": "pending"}).to_list(1000)
+            
+            # Crossing bets
+            winning_crossing = []
+            crossing_bets = await db.bets.find({"game_id": game_id, "date": result_date, "bet_type": "crossing", "status": "pending"}).to_list(1000)
+            for cb in crossing_bets:
+                cn = cb.get("number", "")
+                if len(cn) == 2:
+                    d1, d2 = cn[0], cn[1]
+                    if (d1 == andar_digit and d2 == bahar_digit) or (d1 == bahar_digit and d2 == andar_digit):
+                        winning_crossing.append(cb)
+            
+            all_winners = winning_jodi + winning_andar + winning_bahar + winning_crossing
+            for bet in all_winners:
+                await db.users.update_one({"_id": ObjectId(bet["user_id"])}, {"$inc": {"balance": bet["potential_win"]}})
+                await db.bets.update_one({"id": bet["id"]}, {"$set": {"status": "won", "won_amount": bet["potential_win"]}})
+            
+            await db.bets.update_many({"game_id": game_id, "date": result_date, "status": "pending"}, {"$set": {"status": "lost"}})
+            
+            # Push notifications
+            game_info = games_dict[game_id]
+            push_title = f"{game_info['name_hi']} - रिजल्ट आ गया!"
+            push_body = f"जोड़ी: {jodi} | सिंगल: {single_result}"
+            await send_push_to_all(push_title, push_body, "/dashboard")
+            
+            results_applied.append({"game": game_id, "jodi": jodi, "date": result_date, "winners": len(all_winners)})
+            logging.info(f"Auto-result: {game_info['name_hi']} = {jodi} ({result_date}), Winners: {len(all_winners)}")
+        
+        return {"results_applied": results_applied, "total": len(results_applied)}
+    
+    except Exception as e:
+        logging.error(f"Matka API fetch error: {e}")
+        return {"error": str(e)}
+
+# Background task for auto-fetching results
+auto_fetch_running = False
+
+async def auto_fetch_loop():
+    global auto_fetch_running
+    auto_fetch_running = True
+    logging.info("Auto-result fetch loop started")
+    while auto_fetch_running:
+        try:
+            result = await fetch_matka_results()
+            if result.get("total", 0) > 0:
+                logging.info(f"Auto-fetch: {result['total']} new results declared")
+        except Exception as e:
+            logging.error(f"Auto-fetch loop error: {e}")
+        await asyncio.sleep(300)  # Check every 5 minutes
+
+@app.on_event("startup")
+async def start_auto_fetch():
+    if MATKA_API_USERNAME and MATKA_API_PASSWORD:
+        asyncio.create_task(auto_fetch_loop())
+        logging.info("Auto-result fetch scheduled (every 5 min)")
+
+# Admin endpoint to manually trigger fetch
+@api_router.post("/admin/results/auto-fetch")
+async def trigger_auto_fetch(request: Request):
+    await get_admin_user(request)
+    result = await fetch_matka_results()
+    return result
+
 @api_router.post("/admin/results")
 async def declare_result(result: ResultDeclare, request: Request):
     await get_admin_user(request)

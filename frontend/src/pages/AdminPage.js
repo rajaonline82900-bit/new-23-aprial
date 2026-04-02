@@ -55,7 +55,8 @@ import {
   RotateCcw,
   Undo2,
   UserPlus,
-  Download
+  Download,
+  RefreshCw
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -818,6 +819,38 @@ const AdminPage = () => {
                 </CardContent>
               </Card>
             )}
+
+            {/* Auto Fetch Button */}
+            <Card className="bg-[#141418] border-[#D4AF37]/20 mb-4">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-white font-bold">ऑटो रिजल्ट</h3>
+                    <p className="text-gray-400 text-sm">API से रिजल्ट ऑटो फेच होते हैं (हर 5 मिनट)</p>
+                  </div>
+                  <Button
+                    onClick={async () => {
+                      try {
+                        const { data } = await axios.post(`${API_URL}/api/admin/results/auto-fetch`, {}, { withCredentials: true });
+                        if (data.total > 0) {
+                          toast.success(`${data.total} नए रिजल्ट डिक्लेयर हुए!`);
+                          fetchResultsStatus();
+                        } else {
+                          toast.info('कोई नया रिजल्ट नहीं मिला');
+                        }
+                      } catch (error) {
+                        toast.error(error.response?.data?.detail || 'फेच विफल');
+                      }
+                    }}
+                    data-testid="auto-fetch-btn"
+                    className="bg-[#D4AF37] hover:bg-[#FDE047] text-black font-bold"
+                  >
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    अभी फेच करें
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
 
             <Card className="bg-[#141418] border-white/10">
               <CardHeader>
