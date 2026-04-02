@@ -77,9 +77,9 @@ const BetsPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#0A0A0C] pb-20">
+    <div className="min-h-screen bg-[#0A0A0C] pb-20 app-shell">
       <header className="sticky top-0 z-50 glass border-b border-white/10">
-        <div className="container mx-auto px-4 py-4">
+        <div className="px-3 py-3">
           <div className="flex items-center gap-3">
             <Link to="/dashboard">
               <button className="p-2 rounded-lg bg-[#141418] border border-white/10 text-gray-400 hover:text-white transition-all">
@@ -91,7 +91,7 @@ const BetsPage = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6 space-y-4">
+      <main className="px-3 py-4 space-y-4">
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <Card className="bg-[#141418] border-white/10">

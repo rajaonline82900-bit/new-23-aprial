@@ -5,6 +5,7 @@ import axios from 'axios';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
+import MatkaLogo from '../components/MatkaLogo';
 import { 
   Coins, 
   Wallet, 
@@ -112,26 +113,23 @@ const DashboardPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0C]">
+    <div className="min-h-screen bg-[#0A0A0C] app-shell">
       {/* Header */}
       <header className="sticky top-0 z-50 glass border-b border-white/10">
-        <div className="container mx-auto px-4 py-4">
+        <div className="px-3 py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <button
                 onClick={() => setSidebarOpen(true)}
                 data-testid="sidebar-toggle"
-                className="p-2 rounded-lg bg-[#141418] border border-white/10 text-gray-400 hover:text-white transition-all"
+                className="p-1.5 rounded-lg bg-[#141418] border border-white/10 text-gray-400 hover:text-white transition-all"
               >
                 <Menu className="w-5 h-5" />
               </button>
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#FDE047] flex items-center justify-center">
-                <Coins className="w-5 h-5 text-black" />
-              </div>
-              <h1 className="text-xl font-bold text-white font-['Unbounded']">MATKA 11</h1>
+              <MatkaLogo size="sm" />
             </div>
             
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5">
               <button
                 onClick={() => {
                   if (window.deferredPrompt) {
@@ -142,38 +140,32 @@ const DashboardPage = () => {
                   }
                 }}
                 data-testid="download-apk-button"
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-[#D4AF37] to-[#FDE047] text-black font-bold text-sm hover:scale-105 active:scale-95 transition-transform shadow-lg shadow-[#D4AF37]/20"
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-[#D4AF37] to-[#FDE047] text-black font-bold text-[11px] hover:scale-105 active:scale-95 transition-transform shadow-lg shadow-[#D4AF37]/20"
               >
-                <Download className="w-4 h-4" />
-                <span className="hidden sm:inline">App Install करें</span>
-                <span className="sm:hidden">Install</span>
+                <Download className="w-3.5 h-3.5" />
+                Install
               </button>
-              <div className="hidden sm:flex items-center gap-2 bg-[#141418] px-4 py-2 rounded-lg border border-white/10">
-                <Wallet className="w-4 h-4 text-[#D4AF37]" />
-                <span className="text-white font-semibold">₹{user?.balance?.toFixed(2) || '0.00'}</span>
-              </div>
               
               {user?.role === 'admin' && (
                 <Link to="/admin">
-                  <Button variant="outline" size="sm" className="border-[#D4AF37]/50 text-[#D4AF37] hover:bg-[#D4AF37]/10">
-                    <Shield className="w-4 h-4 mr-2" />
-                    Admin
-                  </Button>
+                  <button className="p-1.5 rounded-lg bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/20 transition-all" data-testid="admin-panel-btn">
+                    <Shield className="w-4 h-4" />
+                  </button>
                 </Link>
               )}
               
               <Link to="/profile" data-testid="profile-icon-link">
-                <button className="p-2 rounded-lg bg-[#141418] border border-white/10 text-gray-400 hover:text-[#D4AF37] hover:border-[#D4AF37]/30 transition-all">
-                  <User className="w-5 h-5" />
+                <button className="p-1.5 rounded-lg bg-[#141418] border border-white/10 text-gray-400 hover:text-[#D4AF37] hover:border-[#D4AF37]/30 transition-all">
+                  <User className="w-4 h-4" />
                 </button>
               </Link>
               
               <button
                 onClick={handleLogout}
                 data-testid="logout-button"
-                className="p-2 rounded-lg bg-[#141418] border border-white/10 text-gray-400 hover:text-white hover:border-white/20 transition-all"
+                className="p-1.5 rounded-lg bg-[#141418] border border-white/10 text-gray-400 hover:text-white hover:border-white/20 transition-all"
               >
-                <LogOut className="w-5 h-5" />
+                <LogOut className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -181,22 +173,22 @@ const DashboardPage = () => {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-6">
+      <main className="px-3 py-4 pb-24">
         {/* Welcome Section */}
-        <div className="mb-8">
-          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2 font-['Unbounded']">
-            नमस्ते, {user?.name} <Sparkles className="inline w-6 h-6 text-[#D4AF37]" />
+        <div className="mb-6">
+          <h2 className="text-xl font-bold text-white mb-1 font-['Unbounded']">
+            नमस्ते, {user?.name} <Sparkles className="inline w-5 h-5 text-[#D4AF37]" />
           </h2>
           <p className="text-gray-400">आज का भाग्य आजमाएं</p>
         </div>
 
-        {/* Mobile Balance Card */}
-        <Card className="sm:hidden bg-gradient-to-br from-[#D4AF37]/10 to-[#141418] border-[#D4AF37]/20 mb-6">
-          <CardContent className="p-4">
+        {/* Balance Card */}
+        <Card className="bg-gradient-to-br from-[#D4AF37]/10 to-[#141418] border-[#D4AF37]/20 mb-4">
+          <CardContent className="p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-sm">आपका बैलेंस</p>
-                <p className="text-2xl font-bold text-white">₹{user?.balance?.toFixed(2) || '0.00'}</p>
+                <p className="text-gray-400 text-xs">आपका बैलेंस</p>
+                <p className="text-xl font-bold text-white">₹{user?.balance?.toFixed(2) || '0.00'}</p>
               </div>
               <div className="flex items-center gap-2">
                 <Link to="/wallet">
@@ -217,56 +209,56 @@ const DashboardPage = () => {
         </Card>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-4 gap-2 mb-4">
           <Link to="/wallet" data-testid="wallet-link">
             <Card className="bg-[#141418] border-white/10 hover:border-[#D4AF37]/50 transition-all cursor-pointer group">
-              <CardContent className="p-4 flex flex-col items-center gap-2">
-                <div className="w-12 h-12 rounded-full bg-[#D4AF37]/10 flex items-center justify-center group-hover:bg-[#D4AF37]/20 transition-all">
-                  <Wallet className="w-6 h-6 text-[#D4AF37]" />
+              <CardContent className="p-3 flex flex-col items-center gap-1.5">
+                <div className="w-10 h-10 rounded-full bg-[#D4AF37]/10 flex items-center justify-center group-hover:bg-[#D4AF37]/20 transition-all">
+                  <Wallet className="w-5 h-5 text-[#D4AF37]" />
                 </div>
-                <span className="text-white font-medium text-xs sm:text-sm">वॉलेट</span>
+                <span className="text-white font-medium text-[10px]">वॉलेट</span>
               </CardContent>
             </Card>
           </Link>
 
           <a href={telegramLink || '#'} target="_blank" rel="noopener noreferrer" data-testid="telegram-quick-link" onClick={(e) => { if (!telegramLink) e.preventDefault(); }}>
             <Card className="bg-[#141418] border-white/10 hover:border-[#0088cc]/50 transition-all cursor-pointer group">
-              <CardContent className="p-4 flex flex-col items-center gap-2">
-                <div className="w-12 h-12 rounded-full bg-[#0088cc]/10 flex items-center justify-center group-hover:bg-[#0088cc]/20 transition-all">
-                  <Send className="w-6 h-6 text-[#0088cc]" />
+              <CardContent className="p-3 flex flex-col items-center gap-1.5">
+                <div className="w-10 h-10 rounded-full bg-[#0088cc]/10 flex items-center justify-center group-hover:bg-[#0088cc]/20 transition-all">
+                  <Send className="w-5 h-5 text-[#0088cc]" />
                 </div>
-                <span className="text-white font-medium text-xs sm:text-sm">टेलीग्राम</span>
+                <span className="text-white font-medium text-[10px]">टेलीग्राम</span>
               </CardContent>
             </Card>
           </a>
           
           <Link to="/bets" data-testid="bets-link">
             <Card className="bg-[#141418] border-white/10 hover:border-[#10B981]/50 transition-all cursor-pointer group">
-              <CardContent className="p-4 flex flex-col items-center gap-2">
-                <div className="w-12 h-12 rounded-full bg-[#10B981]/10 flex items-center justify-center group-hover:bg-[#10B981]/20 transition-all">
-                  <History className="w-6 h-6 text-[#10B981]" />
+              <CardContent className="p-3 flex flex-col items-center gap-1.5">
+                <div className="w-10 h-10 rounded-full bg-[#10B981]/10 flex items-center justify-center group-hover:bg-[#10B981]/20 transition-all">
+                  <History className="w-5 h-5 text-[#10B981]" />
                 </div>
-                <span className="text-white font-medium text-xs sm:text-sm">मेरी बेट</span>
+                <span className="text-white font-medium text-[10px]">मेरी बेट</span>
               </CardContent>
             </Card>
           </Link>
           
           <Link to="/results" data-testid="results-link">
             <Card className="bg-[#141418] border-white/10 hover:border-purple-500/50 transition-all cursor-pointer group">
-              <CardContent className="p-4 flex flex-col items-center gap-2">
-                <div className="w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center group-hover:bg-purple-500/20 transition-all">
-                  <Trophy className="w-6 h-6 text-purple-400" />
+              <CardContent className="p-3 flex flex-col items-center gap-1.5">
+                <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center group-hover:bg-purple-500/20 transition-all">
+                  <Trophy className="w-5 h-5 text-purple-400" />
                 </div>
-                <span className="text-white font-medium text-xs sm:text-sm">रिजल्ट</span>
+                <span className="text-white font-medium text-[10px]">रिजल्ट</span>
               </CardContent>
             </Card>
           </Link>
         </div>
 
         {/* Games Section */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold text-white font-['Unbounded']">गेम्स</h3>
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-bold text-white font-['Unbounded']">गेम्स</h3>
             <Badge variant="outline" className="border-[#D4AF37]/50 text-[#D4AF37]">
               {games.length} उपलब्ध
             </Badge>
@@ -279,7 +271,7 @@ const DashboardPage = () => {
               ))}
             </div>
           ) : (
-            <div className="grid gap-4">
+            <div className="grid gap-3">
               {games.map((game, index) => {
                 const gameStatus = getGameStatus(game);
                 const CardWrapper = game.is_holiday ? 'div' : Link;
@@ -296,46 +288,44 @@ const DashboardPage = () => {
                       }`}
                       style={{ animationDelay: `${index * 0.1}s` }}
                     >
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div>
-                              <h4 className="text-lg font-semibold text-white">{game.name_hi}</h4>
-                              <div className="flex items-center gap-2 text-gray-400 text-sm">
-                                <Clock className="w-4 h-4" />
-                                <span>{game.start_time} - {game.end_time}</span>
-                              </div>
+                      <CardContent className="p-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="min-w-0 flex-shrink">
+                            <h4 className="text-sm font-semibold text-white truncate">{game.name_hi}</h4>
+                            <div className="flex items-center gap-1 text-gray-400 text-xs">
+                              <Clock className="w-3 h-3 flex-shrink-0" />
+                              <span>{game.start_time} - {game.end_time}</span>
                             </div>
                           </div>
                           
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
                             {/* Yesterday Result Box */}
-                            <div className="text-center px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/30 min-w-[60px]">
-                              <p className="text-red-400 text-[9px] uppercase tracking-wide font-medium">Yesterday</p>
-                              <p className="text-red-500 font-bold text-lg leading-tight">
+                            <div className="text-center px-2 py-1 rounded-lg bg-red-500/10 border border-red-500/30 min-w-[48px]">
+                              <p className="text-red-400 text-[8px] uppercase tracking-wide font-medium leading-tight">Yesterday</p>
+                              <p className="text-red-500 font-bold text-base leading-tight">
                                 {game.yesterday_result?.jodi || '--'}
                               </p>
                             </div>
 
                             {/* Today Result Box */}
-                            <div className="text-center px-3 py-1.5 rounded-lg bg-green-500/10 border border-green-500/30 min-w-[60px]">
-                              <p className="text-green-400 text-[9px] uppercase tracking-wide font-medium">Today</p>
-                              <p className="text-green-500 font-bold text-lg leading-tight">
+                            <div className="text-center px-2 py-1 rounded-lg bg-green-500/10 border border-green-500/30 min-w-[48px]">
+                              <p className="text-green-400 text-[8px] uppercase tracking-wide font-medium leading-tight">Today</p>
+                              <p className="text-green-500 font-bold text-base leading-tight">
                                 {game.today_result?.jodi || '--'}
                               </p>
                             </div>
 
                             {/* Play / Time Out / Holiday Button */}
                             {game.is_holiday ? (
-                              <div className="px-4 py-2 rounded-lg bg-orange-500/20 border border-orange-500/40 text-orange-400 font-bold text-sm min-w-[80px] text-center" data-testid={`holiday-btn-${game.id}`}>
+                              <div className="px-3 py-1.5 rounded-lg bg-orange-500/20 border border-orange-500/40 text-orange-400 font-bold text-xs min-w-[60px] text-center" data-testid={`holiday-btn-${game.id}`}>
                                 Holiday
                               </div>
                             ) : gameStatus.status === 'open' ? (
-                              <div className="px-4 py-2 rounded-lg bg-green-500 text-white font-bold text-sm min-w-[80px] text-center cursor-pointer" data-testid={`play-btn-${game.id}`} onClick={() => speak('प्ले')}>
+                              <div className="px-3 py-1.5 rounded-lg bg-green-500 text-white font-bold text-xs min-w-[60px] text-center cursor-pointer" data-testid={`play-btn-${game.id}`} onClick={() => speak('प्ले')}>
                                 Play
                               </div>
                             ) : (
-                              <div className="px-4 py-2 rounded-lg bg-red-500/20 border border-red-500/40 text-red-400 font-bold text-sm min-w-[80px] text-center" data-testid={`timeout-btn-${game.id}`} onClick={() => speak('टाइम आउट')}>
+                              <div className="px-3 py-1.5 rounded-lg bg-red-500/20 border border-red-500/40 text-red-400 font-bold text-xs min-w-[60px] text-center" data-testid={`timeout-btn-${game.id}`} onClick={() => speak('टाइम आउट')}>
                                 Time Out
                               </div>
                             )}

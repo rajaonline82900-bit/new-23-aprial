@@ -81,10 +81,10 @@ const JantriPage = () => {
     : GAMES.filter(g => g.id === selectedGame);
 
   return (
-    <div className="min-h-screen bg-[#0A0A0C]">
+    <div className="min-h-screen bg-[#0A0A0C] app-shell">
       {/* Header */}
       <header className="sticky top-0 z-50 glass border-b border-white/10">
-        <div className="container mx-auto px-4 py-4">
+        <div className="px-3 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Link to="/dashboard">
@@ -101,7 +101,7 @@ const JantriPage = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6">
+      <main className="px-3 py-4">
         {/* Filters */}
         <Card className="bg-[#141418] border-white/10 mb-6">
           <CardContent className="p-4">

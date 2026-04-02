@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Download, Sparkles, Trophy, Shield, Zap, Clock, Star, ChevronRight, Coins, Smartphone } from 'lucide-react';
+import { Download, Sparkles, Trophy, Shield, Zap, Clock, Star, ChevronRight, Smartphone } from 'lucide-react';
+import MatkaLogo from '../components/MatkaLogo';
 
 const LandingPage = () => {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -58,10 +59,7 @@ const LandingPage = () => {
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/5" style={{ background: 'rgba(10,10,12,0.85)', backdropFilter: 'blur(20px)' }}>
         <div className="container mx-auto px-4 py-3 flex items-center justify-between max-w-6xl">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#FDE047] flex items-center justify-center">
-              <Coins className="w-5 h-5 text-black" />
-            </div>
-            <span className="text-xl font-bold text-white font-['Unbounded']">सट्टा मटका</span>
+            <MatkaLogo size="sm" />
           </div>
           <div className="flex items-center gap-3">
             <Link to="/login" data-testid="landing-login-btn">
@@ -311,10 +309,7 @@ const LandingPage = () => {
       <footer className="py-8 px-4 border-t border-white/5">
         <div className="container mx-auto max-w-6xl text-center">
           <div className="flex items-center justify-center gap-2 mb-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#FDE047] flex items-center justify-center">
-              <Coins className="w-4 h-4 text-black" />
-            </div>
-            <span className="text-white font-bold font-['Unbounded']">सट्टा मटका</span>
+            <MatkaLogo size="sm" />
           </div>
           <p className="text-gray-600 text-xs">Disclaimer: This platform is for entertainment purposes only.</p>
         </div>

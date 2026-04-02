@@ -38,9 +38,9 @@ const ReferPage = () => {
 
   const shareCode = () => {
     const referralLink = `${window.location.origin}/signup?ref=${referralInfo?.code}`;
-    const text = `सट्टा मटका पर खेलें और जीतें!\n\nइस लिंक से साइनअप करें:\n${referralLink}\n\nपहली जमा पर आपको 5% बोनस मिलेगा!`;
+    const text = `MATKA 11 पर खेलें और जीतें!\n\nइस लिंक से साइनअप करें:\n${referralLink}\n\nपहली जमा पर आपको 5% बोनस मिलेगा!`;
     if (navigator.share) {
-      navigator.share({ title: 'सट्टा मटका - Refer & Earn', text, url: referralLink });
+      navigator.share({ title: 'MATKA 11 - Refer & Earn', text, url: referralLink });
     } else {
       navigator.clipboard.writeText(text);
       toast.success('शेयर लिंक कॉपी हो गया!');
@@ -49,7 +49,7 @@ const ReferPage = () => {
 
   const shareWhatsApp = () => {
     const referralLink = `${window.location.origin}/signup?ref=${referralInfo?.code}`;
-    const text = `सट्टा मटका पर खेलें और जीतें! 🎯\n\nइस लिंक से साइनअप करें:\n${referralLink}\n\nपहली जमा पर आपको 5% बोनस मिलेगा! 💰`;
+    const text = `MATKA 11 पर खेलें और जीतें! 🎯\n\nइस लिंक से साइनअप करें:\n${referralLink}\n\nपहली जमा पर आपको 5% बोनस मिलेगा! 💰`;
     const waUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
     window.open(waUrl, '_blank');
   };
@@ -78,9 +78,9 @@ const ReferPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0C] pb-20">
+    <div className="min-h-screen bg-[#0A0A0C] pb-20 app-shell">
       <header className="sticky top-0 z-50 glass border-b border-white/10">
-        <div className="container mx-auto px-4 py-4 flex items-center gap-3">
+        <div className="px-3 py-3 flex items-center gap-3">
           <Link to="/dashboard">
             <button className="p-2 rounded-lg bg-[#141418] border border-white/10 text-gray-400 hover:text-white transition-all">
               <ArrowLeft className="w-5 h-5" />
@@ -90,7 +90,7 @@ const ReferPage = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6 space-y-4">
+      <main className="px-3 py-4 space-y-4">
         {/* Hero Card */}
         <Card className="bg-gradient-to-br from-[#D4AF37]/20 to-[#141418] border-[#D4AF37]/30">
           <CardContent className="p-6 text-center">

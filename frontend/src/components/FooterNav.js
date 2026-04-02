@@ -26,7 +26,7 @@ const FooterNav = () => {
       </button>
 
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#141418] border-t border-white/10" data-testid="footer-nav">
-        <div className="container mx-auto max-w-screen-xl">
+        <div className="max-w-[480px] mx-auto">
           <div className="grid grid-cols-5">
             {items.map(({ to, icon: Icon, label, match }) => (
               <Link

@@ -291,10 +291,10 @@ const GamePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0C]">
+    <div className="min-h-screen bg-[#0A0A0C] app-shell">
       {/* Header */}
       <header className="sticky top-0 z-50 glass border-b border-white/10">
-        <div className="container mx-auto px-4 py-4">
+        <div className="px-3 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Link to="/dashboard">
@@ -319,7 +319,7 @@ const GamePage = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6">
+      <main className="px-3 py-4 pb-24">
         {/* Betting Status Banner */}
         <div className={`mb-4 p-3 rounded-xl border flex items-center justify-between ${
           bettingOpen 
@@ -663,10 +663,10 @@ const GamePage = () => {
 
         {/* Sticky Bottom Bar - Bet Summary (Always Visible) */}
           {hasLowBets && (
-            <div className="fixed bottom-[116px] left-0 right-0 z-50 px-4">
-              <div className="container mx-auto max-w-screen-xl">
-                <div className="blink-warning bg-red-600/20 border-2 border-red-500 rounded-xl p-3 text-center" data-testid="min-bet-warning">
-                  <p className="text-red-500 text-lg font-black">
+            <div className="fixed bottom-[116px] left-0 right-0 z-50 px-3">
+              <div className="max-w-[480px] mx-auto">
+                <div className="blink-warning bg-red-600/20 border-2 border-red-500 rounded-xl p-2 text-center" data-testid="min-bet-warning">
+                  <p className="text-red-500 text-sm font-black">
                     {lowJodiBets.length > 0 && `जोड़ी न्यूनतम ₹${minJodi} | `}
                     {lowHarufBets.length > 0 && `हरूफ न्यूनतम ₹${minHaruf} | `}
                     {lowCross && `क्रॉसिंग न्यूनतम ₹${minCrossing}`}
@@ -675,8 +675,8 @@ const GamePage = () => {
               </div>
             </div>
           )}
-          <div className="fixed bottom-[52px] left-0 right-0 z-50 glass border-t border-white/10 p-4" data-testid="bet-summary-bar">
-            <div className="container mx-auto max-w-screen-xl">
+          <div className="fixed bottom-[52px] left-0 right-0 z-50 glass border-t border-white/10 p-3" data-testid="bet-summary-bar">
+            <div className="max-w-[480px] mx-auto">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                   <div>

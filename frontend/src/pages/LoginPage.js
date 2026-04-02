@@ -5,9 +5,10 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { Coins, Eye, EyeOff, ArrowLeft, CheckCircle, Lock } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, CheckCircle, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
+import MatkaLogo from '../components/MatkaLogo';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -96,7 +97,7 @@ const LoginPage = () => {
           <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#10B981]/5 rounded-full blur-3xl" />
         </div>
 
-        <Card className="w-full max-w-md bg-[#141418] border-white/10 relative z-10">
+        <Card className="w-full max-w-sm bg-[#141418] border-white/10 relative z-10">
           <CardHeader className="space-y-4">
             <div className="flex items-center gap-3">
               <button
@@ -217,16 +218,11 @@ const LoginPage = () => {
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#10B981]/5 rounded-full blur-3xl" />
       </div>
       
-      <Card className="w-full max-w-md bg-[#141418] border-white/10 relative z-10">
-        <CardHeader className="space-y-4 text-center">
+      <Card className="w-full max-w-sm bg-[#141418] border-white/10 relative z-10">
+        <CardHeader className="space-y-3 text-center">
           <div className="flex justify-center">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#FDE047] flex items-center justify-center">
-              <Coins className="w-8 h-8 text-black" />
-            </div>
+            <MatkaLogo size="lg" />
           </div>
-          <CardTitle className="text-2xl font-bold text-white font-['Unbounded']">
-            सट्टा मटका
-          </CardTitle>
           <CardDescription className="text-gray-400">
             अपने अकाउंट में लॉगिन करें
           </CardDescription>
