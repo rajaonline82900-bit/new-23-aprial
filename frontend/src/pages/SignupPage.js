@@ -50,10 +50,11 @@ const SignupPage = () => {
       await axios.post(`${API_URL}/api/auth/otp/verify`, { phone, otp }, { withCredentials: true });
       
       // Then complete signup (no password needed)
-      await axios.post(`${API_URL}/api/auth/otp/complete-signup`, { 
+      const resp = await axios.post(`${API_URL}/api/auth/otp/complete-signup`, { 
         phone, name,
         referral_code: refCode || undefined
       }, { withCredentials: true });
+      if (resp.data?.token) localStorage.setItem('matka11_token', resp.data.token);
       
       toast.success('अकाउंट बन गया! स्वागत है');
       await refreshUser();

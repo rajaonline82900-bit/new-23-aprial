@@ -42,7 +42,8 @@ const LoginPage = () => {
     
     setLoading(true);
     try {
-      await axios.post(`${API_URL}/api/auth/login-otp/verify`, { phone, otp }, { withCredentials: true });
+      const resp = await axios.post(`${API_URL}/api/auth/login-otp/verify`, { phone, otp }, { withCredentials: true });
+      if (resp.data?.token) localStorage.setItem('matka11_token', resp.data.token);
       toast.success('लॉगिन सफल!');
       await refreshUser();
       navigate('/dashboard');

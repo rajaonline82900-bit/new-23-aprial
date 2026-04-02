@@ -1,6 +1,5 @@
-const CACHE_NAME = 'satta-matka-v1';
+const CACHE_NAME = 'matka11-v2';
 const STATIC_ASSETS = [
-  '/',
   '/icon-192.png',
   '/icon-512.png'
 ];
@@ -22,9 +21,35 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
-  if (event.request.url.includes('/api/')) return;
+  const url = new URL(event.request.url);
 
+  // Never cache API calls
+  if (event.request.method !== 'GET') return;
+  if (url.pathname.startsWith('/api/')) return;
+
+  // For navigation (HTML pages) - always go network first, never serve stale HTML
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match('/'))
+    );
+    return;
+  }
+
+  // For static assets (images, icons) - cache first, then network
+  if (url.pathname.match(/\.(png|jpg|jpeg|ico|svg|woff2?)$/)) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        return cached || fetch(event.request).then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          return response;
+        });
+      })
+    );
+    return;
+  }
+
+  // For JS/CSS - network first, fallback to cache
   event.respondWith(
     fetch(event.request)
       .then((response) => {
@@ -38,7 +63,7 @@ self.addEventListener('fetch', (event) => {
 
 // Push Notification
 self.addEventListener('push', (event) => {
-  let data = { title: 'सट्टा मटका', body: 'नया रिजल्ट आ गया!' };
+  let data = { title: 'MATKA 11', body: 'Result aa gaya!' };
   try {
     data = event.data.json();
   } catch (e) {}

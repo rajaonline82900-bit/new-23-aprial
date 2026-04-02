@@ -8,17 +8,17 @@ const API_URL = process.env.REACT_APP_BACKEND_URL;
 // Configure axios defaults
 axios.defaults.withCredentials = true;
 
-function formatApiErrorDetail(detail) {
-  if (detail == null) return "Something went wrong. Please try again.";
-  if (typeof detail === "string") return detail;
-  if (Array.isArray(detail))
-    return detail.map((e) => (e && typeof e.msg === "string" ? e.msg : JSON.stringify(e))).filter(Boolean).join(" ");
-  if (detail && typeof detail.msg === "string") return detail.msg;
-  return String(detail);
-}
+// Add token from localStorage to every request as fallback
+axios.interceptors.request.use((config) => {
+  const token = localStorage.getItem('matka11_token');
+  if (token && !config.headers['Authorization']) {
+    config.headers['Authorization'] = `Bearer ${token}`;
+  }
+  return config;
+});
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null); // null = checking, false = not authenticated
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const checkAuth = useCallback(async () => {
@@ -29,15 +29,12 @@ export const AuthProvider = ({ children }) => {
       });
       setUser(data);
     } catch (error) {
-      // Only set user to false on actual 401 (unauthorized)
-      // Network errors or server errors should not log user out
       if (error.response && error.response.status === 401) {
+        localStorage.removeItem('matka11_token');
         setUser(false);
       } else if (!user) {
-        // Only set false if no user was previously authenticated
         setUser(false);
       }
-      // If user was already authenticated, keep them logged in on network errors
     } finally {
       setLoading(false);
     }
@@ -57,6 +54,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Logout error:', error);
     }
+    localStorage.removeItem('matka11_token');
     setUser(false);
   };
 

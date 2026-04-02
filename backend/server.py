@@ -285,7 +285,8 @@ async def register(user_data: UserRegister, response: Request):
         "name": user_data.name,
         "email": email,
         "role": "user",
-        "balance": 0.0
+        "balance": 0.0,
+        "token": access_token
     })
     resp.set_cookie(key="access_token", value=access_token, httponly=True, secure=True, samesite="none", max_age=31536000, path="/")
     resp.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=True, samesite="none", max_age=31536000, path="/")
@@ -322,7 +323,8 @@ async def login(user_data: UserLogin):
         "email": user.get("email", ""),
         "phone": user.get("phone", ""),
         "role": user.get("role", "user"),
-        "balance": user.get("balance", 0.0)
+        "balance": user.get("balance", 0.0),
+        "token": access_token
     })
     resp.set_cookie(key="access_token", value=access_token, httponly=True, secure=True, samesite="none", max_age=31536000, path="/")
     resp.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=True, samesite="none", max_age=31536000, path="/")
@@ -515,7 +517,8 @@ async def complete_signup(data: OTPCompleteSignup):
         "email": virtual_email,
         "phone": phone,
         "role": "user",
-        "balance": 0.0
+        "balance": 0.0,
+        "token": access_token
     })
     resp.set_cookie(key="access_token", value=access_token, httponly=True, secure=True, samesite="none", max_age=31536000, path="/")
     resp.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=True, samesite="none", max_age=31536000, path="/")
@@ -574,7 +577,8 @@ async def login_otp_verify(data: OTPVerify):
         "email": user.get("email", ""),
         "phone": user.get("phone", ""),
         "role": user.get("role", "user"),
-        "balance": user.get("balance", 0.0)
+        "balance": user.get("balance", 0.0),
+        "token": access_token
     })
     resp.set_cookie(key="access_token", value=access_token, httponly=True, secure=True, samesite="none", max_age=31536000, path="/")
     resp.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=True, samesite="none", max_age=31536000, path="/")
@@ -610,7 +614,8 @@ async def admin_login(data: AdminLogin):
         "email": user.get("email", ""),
         "phone": user.get("phone", ""),
         "role": user.get("role", "admin"),
-        "balance": user.get("balance", 0.0)
+        "balance": user.get("balance", 0.0),
+        "token": access_token
     })
     resp.set_cookie(key="access_token", value=access_token, httponly=True, secure=True, samesite="none", max_age=31536000, path="/")
     resp.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=True, samesite="none", max_age=31536000, path="/")

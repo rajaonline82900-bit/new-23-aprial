@@ -27,7 +27,8 @@ const AdminLoginPage = () => {
     
     setLoading(true);
     try {
-      await axios.post(`${API_URL}/api/auth/admin/login`, { email, password }, { withCredentials: true });
+      const resp = await axios.post(`${API_URL}/api/auth/admin/login`, { email, password }, { withCredentials: true });
+      if (resp.data?.token) localStorage.setItem('matka11_token', resp.data.token);
       toast.success('एडमिन लॉगिन सफल!');
       await refreshUser();
       navigate('/admin');
