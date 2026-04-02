@@ -55,7 +55,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 # JWT utilities
 def create_access_token(user_id: str, email: str) -> str:
-    payload = {"sub": user_id, "email": email, "exp": datetime.now(timezone.utc) + timedelta(days=30), "type": "access"}
+    payload = {"sub": user_id, "email": email, "exp": datetime.now(timezone.utc) + timedelta(days=365), "type": "access"}
     return jwt.encode(payload, get_jwt_secret(), algorithm=JWT_ALGORITHM)
 
 def create_refresh_token(user_id: str) -> str:
