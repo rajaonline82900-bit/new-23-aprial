@@ -345,8 +345,8 @@ async def get_me(request: Request):
 async def logout():
     from starlette.responses import JSONResponse
     resp = JSONResponse(content={"message": "Logged out successfully"})
-    resp.delete_cookie("access_token", path="/")
-    resp.delete_cookie("refresh_token", path="/")
+    resp.delete_cookie("access_token", path="/", samesite="none", secure=True)
+    resp.delete_cookie("refresh_token", path="/", samesite="none", secure=True)
     return resp
 
 # Profile Update

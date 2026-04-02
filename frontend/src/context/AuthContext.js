@@ -24,15 +24,24 @@ export const AuthProvider = ({ children }) => {
   const checkAuth = useCallback(async () => {
     try {
       const { data } = await axios.get(`${API_URL}/api/auth/me`, {
-        withCredentials: true
+        withCredentials: true,
+        timeout: 10000
       });
       setUser(data);
     } catch (error) {
-      setUser(false);
+      // Only set user to false on actual 401 (unauthorized)
+      // Network errors or server errors should not log user out
+      if (error.response && error.response.status === 401) {
+        setUser(false);
+      } else if (!user) {
+        // Only set false if no user was previously authenticated
+        setUser(false);
+      }
+      // If user was already authenticated, keep them logged in on network errors
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (window.location.hash?.includes('session_id=')) {
