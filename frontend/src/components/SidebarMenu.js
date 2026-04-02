@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 import {
   X,
   Globe,
@@ -13,7 +14,9 @@ import {
   Send,
   ShieldCheck,
   ChevronRight,
-  Download
+  Download,
+  LogOut,
+  User
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -27,10 +30,18 @@ const LANGUAGES = [
 ];
 
 const SidebarMenu = ({ open, onClose }) => {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [settings, setSettings] = useState({});
   const [langOpen, setLangOpen] = useState(false);
   const [selectedLang, setSelectedLang] = useState('hi');
   const [deferredPrompt, setDeferredPrompt] = useState(null);
+
+  const handleLogout = async () => {
+    onClose();
+    await logout();
+    navigate('/login');
+  };
 
   useEffect(() => {
     const handler = (e) => {
@@ -130,16 +141,26 @@ const SidebarMenu = ({ open, onClose }) => {
         className="fixed top-0 left-0 h-full w-[280px] bg-[#0A0A0C] border-r border-white/10 z-[70] overflow-y-auto animate-slide-in"
         data-testid="sidebar-menu"
       >
-        {/* Sidebar Header */}
-        <div className="flex items-center justify-between p-4 border-b border-white/10">
-          <h2 className="text-lg font-bold text-white font-['Unbounded']">मेनू</h2>
-          <button
-            onClick={onClose}
-            data-testid="sidebar-close"
-            className="p-2 rounded-lg bg-[#141418] border border-white/10 text-gray-400 hover:text-white transition-all"
-          >
-            <X className="w-5 h-5" />
-          </button>
+        {/* Profile Section at Top */}
+        <div className="p-4 border-b border-white/10">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#FDE047] flex items-center justify-center shadow-lg shadow-[#D4AF37]/20">
+                <User className="w-5 h-5 text-black" />
+              </div>
+              <div>
+                <p className="text-white font-bold text-sm" data-testid="sidebar-user-name">{user?.name || 'User'}</p>
+                <p className="text-gray-500 text-xs" data-testid="sidebar-user-phone">{user?.phone || ''}</p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              data-testid="sidebar-close"
+              className="p-2 rounded-lg bg-[#141418] border border-white/10 text-gray-400 hover:text-white transition-all"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Menu Items */}
@@ -308,6 +329,21 @@ const SidebarMenu = ({ open, onClose }) => {
               </div>
             </div>
             <ChevronRight className="w-4 h-4 text-[#D4AF37]" />
+          </button>
+        </div>
+
+        {/* Logout Button at Bottom */}
+        <div className="mx-4 border-t border-white/10 my-2" />
+        <div className="p-3 pb-6">
+          <button
+            onClick={handleLogout}
+            data-testid="sidebar-logout-btn"
+            className="w-full flex items-center gap-3 p-3 rounded-lg bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 hover:border-red-500/50 transition-all"
+          >
+            <div className="w-9 h-9 rounded-lg bg-red-500/20 flex items-center justify-center">
+              <LogOut className="w-4 h-4 text-red-400" />
+            </div>
+            <p className="text-red-400 text-sm font-bold">Logout</p>
           </button>
         </div>
       </div>
