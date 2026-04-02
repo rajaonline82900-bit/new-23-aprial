@@ -1,53 +1,41 @@
-# Satta Matka Betting Application - PRD
+# MATKA 11 - Satta Matka Betting Application
 
 ## Original Problem Statement
-Build a Satta Matka betting application with Jantri, Haruf Andar/Bahar, Cross Bet, IMB UPI Payment Gateway deposit, and Admin Panel. App name: MATKA 11.
+Build a Satta Matka betting application supporting games like Delhi Bazaar, Shri Ganesh, Faridabad, Ghaziabad, Gali, and Disawar. Features: deposit/withdrawal, Jantri/Haruf betting, crossing, result/bet history, PWA, push notifications, Refer & Earn, real OTP Authentication. Admin Panel for management, result declaration, auto-result API, user stats, dynamic settings.
 
 ## Tech Stack
-- Frontend: React, Tailwind CSS, Shadcn UI, React Router
+- Frontend: React, Tailwind CSS, Shadcn UI, PWA (Service Workers)
 - Backend: FastAPI, Motor (Async MongoDB), PyJWT
 - Database: MongoDB
-- Payments: IMB UPI Payment Gateway (secure-stage.imb.org.in)
+- Integrations: DVHosting SMS API, Bavli Matka Auto-Result API
 
-## Auth Flow
-- **User Signup**: Name + Phone + OTP → Account created (no password)
-- **User Login**: Phone + OTP (every time)
-- **Admin Login**: Separate page `/admin-login` → Email + Password
+## Core Features Implemented
+1. Phone + OTP Authentication (Users) - No passwords
+2. Admin Login (Email/Password) at /admin-login
+3. MATKA 11 Branding with custom PWA icons
+4. Game Cards with sorted active/closed, AM/PM times, Yesterday/Today results, LIVE blink
+5. Auto-logout fix (1-year cookies + localStorage fallback + Network-first SW)
+6. Bavli Auto Result API integration (Delhi + General markets)
+7. Admin Panel with deposit/withdrawal management, user tracking, dynamic settings
+8. Sidebar Menu with Profile (top), menu items, and Logout (bottom)
+9. Header with hamburger menu, logo, Download App button, admin shield
 
-## Completed Features
-- [x] OTP-based Auth (signup + login without password)
-- [x] Admin separate login page (/admin-login with email+password)
-- [x] Jantri Betting Grid (00-99 jodi, 90x)
-- [x] Haruf Andar/Bahar (0-9, 9x)
-- [x] Cross Bet (auto-generate jodi combinations)
-- [x] IMB UPI Payment Gateway deposit integration
-- [x] Withdrawal via UPI, Bank Account, QR Scanner Image (3 methods)
-- [x] Game time lock (start_time/end_time)
-- [x] Admin Panel (users, games, results, stats, bet distribution, deposit/withdrawal management)
-- [x] FooterNav on all pages
-- [x] Constant bet summary bar with Play/Delete buttons
-- [x] Result Reverse & Bet Reverse in Admin Panel
-- [x] Daily Result Tracking
-- [x] Dynamic Admin Settings
-- [x] Today/Yesterday dual result boxes on Dashboard
-- [x] Play/Time Out button on game cards
-- [x] Game Holiday
-- [x] Sidebar Menu
-- [x] PWA Support with MATKA 11 branding
-- [x] Refer & Earn (5% of first deposit)
-- [x] Push notifications on result declaration
-- [x] Profile page
-- [x] External Auto-Result API integration
-- [x] Online/Last Seen indicators in Admin
-- [x] MATKA 11 logo branding + responsive app-shell layout
-- [x] JWT 1 Year expiry + Cookie max_age 1 Year
+## Completed Tasks (Latest: April 2, 2026)
+- [Apr 2] Moved Profile to sidebar TOP, Logout to sidebar BOTTOM
+- [Apr 2] Replaced Download icon with "Download App" text button in header
+- [Apr 2] Removed Profile/Logout from header
+- [Previous] Fixed auto-logout, PWA icons, game cards redesign, Bavli API, admin credentials
 
-## Admin Credentials
-- Email: admin@sattamatka.com
-- Password: Admin@123
-- Login URL: /admin-login
+## Architecture
+```
+/app/backend/server.py - Monolithic FastAPI (~2940 lines)
+/app/frontend/src/components/SidebarMenu.js - Sidebar with Profile/Logout
+/app/frontend/src/pages/DashboardPage.js - Main dashboard
+/app/frontend/src/context/AuthContext.js - Auth with cookie+localStorage
+```
 
-## Upcoming Tasks
-- P1: Refactor server.py (2800+ lines) and AdminPage.js (2000+ lines) into modular files
+## Backlog
+- P1: Refactor server.py into modular routers
+- P1: Refactor AdminPage.js into smaller components
 - P2: Email notifications for transactions
 - P2: Referral earnings history section
