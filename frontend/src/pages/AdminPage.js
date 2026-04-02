@@ -1251,7 +1251,22 @@ const AdminPage = () => {
                           <div>
                             <p className="text-white font-medium">{w.user_name}</p>
                             <p className="text-gray-400 text-sm">{w.user_phone || w.user_email}</p>
-                            <p className="text-gray-400 text-sm">UPI: {w.upi_id}</p>
+                            <p className="text-gray-400 text-sm">
+                              {w.withdrawal_method === 'bank' && (
+                                <span>बैंक: {w.account_holder} | A/C: {w.bank_account} | IFSC: {w.ifsc_code}</span>
+                              )}
+                              {w.withdrawal_method === 'scanner' && (
+                                <span>स्कैनर अपलोड किया</span>
+                              )}
+                              {(!w.withdrawal_method || w.withdrawal_method === 'upi') && (
+                                <span>UPI: {w.upi_id}</span>
+                              )}
+                            </p>
+                            {w.withdrawal_method === 'scanner' && w.scanner_image && (
+                              <a href={`${API_URL}${w.scanner_image}`} target="_blank" rel="noopener noreferrer" className="inline-block mt-2">
+                                <img src={`${API_URL}${w.scanner_image}`} alt="Scanner" className="w-24 h-24 object-contain rounded-lg border border-white/10 hover:border-[#D4AF37]/50 transition-all" />
+                              </a>
+                            )}
                           </div>
                           <div className="text-right">
                             <p className="text-xl font-bold text-white">₹{w.amount}</p>
@@ -1295,7 +1310,7 @@ const AdminPage = () => {
                         <div key={index} className="flex items-center justify-between p-3 bg-[#0A0A0C] rounded-lg border border-emerald-500/10">
                           <div>
                             <p className="text-white font-medium text-sm">{w.user_name}</p>
-                            <p className="text-gray-400 text-xs">{w.user_phone || w.user_email} | UPI: {w.upi_id}</p>
+                            <p className="text-gray-400 text-xs">{w.user_phone || w.user_email} | {w.withdrawal_method === 'bank' ? `बैंक: ${w.bank_account}` : w.withdrawal_method === 'scanner' ? 'स्कैनर' : `UPI: ${w.upi_id}`}</p>
                             <p className="text-gray-500 text-xs">{w.approved_at ? utcDate(w.approved_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true, hour: '2-digit', minute: '2-digit', timeZoneName: 'short' }) : w.created_at ? utcDate(w.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true, hour: '2-digit', minute: '2-digit', timeZoneName: 'short' }) : ''}</p>
                           </div>
                           <div className="text-right">
@@ -1320,7 +1335,7 @@ const AdminPage = () => {
                         <div key={index} className="flex items-center justify-between p-3 bg-[#0A0A0C] rounded-lg border border-red-500/10">
                           <div>
                             <p className="text-white font-medium text-sm">{w.user_name}</p>
-                            <p className="text-gray-400 text-xs">{w.user_phone || w.user_email} | UPI: {w.upi_id}</p>
+                            <p className="text-gray-400 text-xs">{w.user_phone || w.user_email} | {w.withdrawal_method === 'bank' ? `बैंक: ${w.bank_account}` : w.withdrawal_method === 'scanner' ? 'स्कैनर' : `UPI: ${w.upi_id}`}</p>
                             <p className="text-gray-500 text-xs">{w.rejected_at ? utcDate(w.rejected_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true, hour: '2-digit', minute: '2-digit', timeZoneName: 'short' }) : w.created_at ? utcDate(w.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true, hour: '2-digit', minute: '2-digit', timeZoneName: 'short' }) : ''}</p>
                           </div>
                           <div className="text-right">

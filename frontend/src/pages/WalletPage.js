@@ -28,7 +28,10 @@ import {
   CheckCircle,
   XCircle,
   Loader2,
-  Download
+  Download,
+  Building2,
+  QrCode,
+  Upload
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -51,6 +54,13 @@ const WalletPage = () => {
   const [txFilter, setTxFilter] = useState('all');
   const [appSettings, setAppSettings] = useState({});
   const [cancellingId, setCancellingId] = useState(null);
+  const [withdrawMethod, setWithdrawMethod] = useState('upi');
+  const [bankAccount, setBankAccount] = useState('');
+  const [ifscCode, setIfscCode] = useState('');
+  const [accountHolder, setAccountHolder] = useState('');
+  const [scannerImage, setScannerImage] = useState(null);
+  const [scannerPreview, setScannerPreview] = useState('');
+  const [uploadingScanner, setUploadingScanner] = useState(false);
 
   const fetchWallet = useCallback(async () => {
     try {
@@ -172,6 +182,29 @@ const WalletPage = () => {
     }
   };
 
+  const handleScannerUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('केवल इमेज फाइल अपलोड करें');
+      return;
+    }
+    setScannerPreview(URL.createObjectURL(file));
+    setUploadingScanner(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const { data } = await axios.post(`${API_URL}/api/wallet/upload-scanner`, formData, { withCredentials: true });
+      setScannerImage(data.url);
+      toast.success('स्कैनर अपलोड हो गया');
+    } catch (error) {
+      toast.error('स्कैनर अपलोड विफल');
+      setScannerPreview('');
+    } finally {
+      setUploadingScanner(false);
+    }
+  };
+
   const handleWithdraw = async () => {
     const minW = appSettings.min_withdrawal || 100;
     if (!withdrawAmount || parseFloat(withdrawAmount) < minW) {
@@ -184,23 +217,46 @@ const WalletPage = () => {
       return;
     }
 
-    if (!upiId) {
+    if (withdrawMethod === 'upi' && !upiId) {
       toast.error('कृपया UPI ID दर्ज करें');
+      return;
+    }
+    if (withdrawMethod === 'bank' && (!bankAccount || !ifscCode || !accountHolder)) {
+      toast.error('कृपया सभी बैंक डिटेल्स भरें');
+      return;
+    }
+    if (withdrawMethod === 'scanner' && !scannerImage) {
+      toast.error('कृपया QR/स्कैनर इमेज अपलोड करें');
       return;
     }
 
     setProcessing(true);
 
     try {
-      await axios.post(`${API_URL}/api/wallet/withdraw`, {
+      const payload = {
         amount: parseFloat(withdrawAmount),
-        upi_id: upiId
-      }, { withCredentials: true });
+        withdrawal_method: withdrawMethod,
+      };
+      if (withdrawMethod === 'upi') payload.upi_id = upiId;
+      if (withdrawMethod === 'bank') {
+        payload.bank_account = bankAccount;
+        payload.ifsc_code = ifscCode;
+        payload.account_holder = accountHolder;
+      }
+      if (withdrawMethod === 'scanner') payload.scanner_image = scannerImage;
+
+      await axios.post(`${API_URL}/api/wallet/withdraw`, payload, { withCredentials: true });
 
       toast.success('निकासी अनुरोध सबमिट हो गया');
       setWithdrawOpen(false);
       setWithdrawAmount('');
       setUpiId('');
+      setBankAccount('');
+      setIfscCode('');
+      setAccountHolder('');
+      setScannerImage(null);
+      setScannerPreview('');
+      setWithdrawMethod('upi');
       await refreshUser();
       await fetchWallet();
     } catch (error) {
@@ -549,17 +605,116 @@ const WalletPage = () => {
               </p>
             </div>
             
+            {/* Method Tabs */}
             <div>
-              <Label className="text-gray-300">UPI ID</Label>
-              <Input
-                type="text"
-                placeholder="example@upi"
-                value={upiId}
-                onChange={(e) => setUpiId(e.target.value)}
-                data-testid="withdraw-upi-input"
-                className="bg-[#0A0A0C] border-white/10 text-white mt-2"
-              />
+              <Label className="text-gray-300 mb-2 block">भुगतान विधि चुनें</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { key: 'upi', label: 'UPI ID', icon: <CreditCard className="w-4 h-4" /> },
+                  { key: 'bank', label: 'बैंक', icon: <Building2 className="w-4 h-4" /> },
+                  { key: 'scanner', label: 'स्कैनर', icon: <QrCode className="w-4 h-4" /> },
+                ].map((m) => (
+                  <button
+                    key={m.key}
+                    onClick={() => setWithdrawMethod(m.key)}
+                    data-testid={`withdraw-method-${m.key}`}
+                    className={`flex flex-col items-center gap-1 py-3 rounded-lg text-sm font-bold transition-all ${
+                      withdrawMethod === m.key
+                        ? 'bg-[#D4AF37] text-black'
+                        : 'bg-[#0A0A0C] text-gray-400 border border-white/10 hover:border-[#D4AF37]/50'
+                    }`}
+                  >
+                    {m.icon}
+                    {m.label}
+                  </button>
+                ))}
+              </div>
             </div>
+
+            {/* UPI Fields */}
+            {withdrawMethod === 'upi' && (
+              <div>
+                <Label className="text-gray-300">UPI ID</Label>
+                <Input
+                  type="text"
+                  placeholder="example@upi"
+                  value={upiId}
+                  onChange={(e) => setUpiId(e.target.value)}
+                  data-testid="withdraw-upi-input"
+                  className="bg-[#0A0A0C] border-white/10 text-white mt-2"
+                />
+              </div>
+            )}
+
+            {/* Bank Account Fields */}
+            {withdrawMethod === 'bank' && (
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-gray-300">खाताधारक का नाम</Label>
+                  <Input
+                    type="text"
+                    placeholder="खाताधारक का नाम"
+                    value={accountHolder}
+                    onChange={(e) => setAccountHolder(e.target.value)}
+                    data-testid="withdraw-account-holder"
+                    className="bg-[#0A0A0C] border-white/10 text-white mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-gray-300">अकाउंट नंबर</Label>
+                  <Input
+                    type="text"
+                    placeholder="अकाउंट नंबर"
+                    value={bankAccount}
+                    onChange={(e) => setBankAccount(e.target.value)}
+                    data-testid="withdraw-bank-account"
+                    className="bg-[#0A0A0C] border-white/10 text-white mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-gray-300">IFSC कोड</Label>
+                  <Input
+                    type="text"
+                    placeholder="IFSC कोड"
+                    value={ifscCode}
+                    onChange={(e) => setIfscCode(e.target.value)}
+                    data-testid="withdraw-ifsc-code"
+                    className="bg-[#0A0A0C] border-white/10 text-white mt-1"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Scanner Upload */}
+            {withdrawMethod === 'scanner' && (
+              <div>
+                <Label className="text-gray-300">QR / स्कैनर इमेज अपलोड करें</Label>
+                <div className="mt-2">
+                  {scannerPreview ? (
+                    <div className="relative">
+                      <img src={scannerPreview} alt="Scanner" className="w-full max-h-48 object-contain rounded-lg border border-white/10" />
+                      <button
+                        onClick={() => { setScannerPreview(''); setScannerImage(null); }}
+                        className="absolute top-2 right-2 p-1 rounded-full bg-red-600 text-white hover:bg-red-700"
+                      >
+                        <XCircle className="w-4 h-4" />
+                      </button>
+                      {uploadingScanner && (
+                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-lg">
+                          <Loader2 className="w-8 h-8 text-[#D4AF37] animate-spin" />
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center p-6 rounded-lg border-2 border-dashed border-white/20 hover:border-[#D4AF37]/50 cursor-pointer transition-all bg-[#0A0A0C]" data-testid="scanner-upload-area">
+                      <Upload className="w-8 h-8 text-gray-400 mb-2" />
+                      <span className="text-gray-400 text-sm">इमेज चुनें या यहाँ ड्रॉप करें</span>
+                      <input type="file" accept="image/*" className="hidden" onChange={handleScannerUpload} />
+                    </label>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           <Button

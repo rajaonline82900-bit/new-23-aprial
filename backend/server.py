@@ -1,7 +1,8 @@
 from dotenv import load_dotenv
 load_dotenv()
 
-from fastapi import FastAPI, APIRouter, HTTPException, Request, Depends, Body
+from fastapi import FastAPI, APIRouter, HTTPException, Request, Depends, Body, UploadFile, File
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
@@ -209,6 +210,9 @@ class WithdrawRequest(BaseModel):
     upi_id: Optional[str] = None
     bank_account: Optional[str] = None
     ifsc_code: Optional[str] = None
+    account_holder: Optional[str] = None
+    scanner_image: Optional[str] = None
+    withdrawal_method: Optional[str] = "upi"
 
 class DepositRequest(BaseModel):
     amount: float
@@ -1185,8 +1189,8 @@ async def request_withdrawal(withdraw: WithdrawRequest, request: Request):
     if withdraw.amount > user.get("balance", 0):
         raise HTTPException(status_code=400, detail="Insufficient balance")
     
-    if not withdraw.upi_id and not (withdraw.bank_account and withdraw.ifsc_code):
-        raise HTTPException(status_code=400, detail="Provide UPI ID or bank details")
+    if not withdraw.upi_id and not (withdraw.bank_account and withdraw.ifsc_code) and not withdraw.scanner_image:
+        raise HTTPException(status_code=400, detail="UPI ID, बैंक डिटेल्स या स्कैनर दें")
     
     # Deduct balance
     await db.users.update_one(
@@ -1203,15 +1207,38 @@ async def request_withdrawal(withdraw: WithdrawRequest, request: Request):
         "user_phone": user.get("phone", ""),
         "type": "withdrawal",
         "amount": withdraw.amount,
+        "withdrawal_method": withdraw.withdrawal_method or "upi",
         "upi_id": withdraw.upi_id,
         "bank_account": withdraw.bank_account,
         "ifsc_code": withdraw.ifsc_code,
+        "account_holder": withdraw.account_holder,
+        "scanner_image": withdraw.scanner_image,
         "status": "pending",
         "created_at": datetime.now(timezone.utc)
     }
     await db.transactions.insert_one(withdrawal_doc)
     
     return {"message": "Withdrawal request submitted", "id": withdrawal_doc["id"]}
+
+@api_router.post("/wallet/upload-scanner")
+async def upload_scanner(file: UploadFile = File(...), request: Request = None):
+    user = await get_current_user(request)
+    
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="केवल इमेज फाइल अपलोड करें")
+    
+    ext = file.filename.split(".")[-1] if "." in file.filename else "png"
+    filename = f"{uuid.uuid4()}.{ext}"
+    filepath = f"/app/backend/uploads/{filename}"
+    
+    content = await file.read()
+    if len(content) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="फाइल 5MB से बड़ी नहीं होनी चाहिए")
+    
+    with open(filepath, "wb") as f:
+        f.write(content)
+    
+    return {"url": f"/api/uploads/{filename}"}
 
 # Results Routes
 # Referral reward helper — gives referrer 5% of first deposit
@@ -2485,6 +2512,7 @@ async def update_settings(request: Request):
     return {"message": "Settings updated successfully"}
 
 app.include_router(api_router)
+app.mount("/api/uploads", StaticFiles(directory="/app/backend/uploads"), name="uploads")
 
 app.add_middleware(
     CORSMiddleware,
