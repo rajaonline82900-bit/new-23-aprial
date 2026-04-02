@@ -129,7 +129,7 @@ const DashboardPage = () => {
               <MatkaLogo size="sm" />
             </div>
             
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1">
               <button
                 onClick={() => {
                   if (window.deferredPrompt) {
@@ -140,10 +140,9 @@ const DashboardPage = () => {
                   }
                 }}
                 data-testid="download-apk-button"
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-[#D4AF37] to-[#FDE047] text-black font-bold text-[11px] hover:scale-105 active:scale-95 transition-transform shadow-lg shadow-[#D4AF37]/20"
+                className="p-1.5 rounded-lg bg-gradient-to-r from-[#D4AF37] to-[#FDE047] text-black hover:scale-105 active:scale-95 transition-transform shadow-lg shadow-[#D4AF37]/20"
               >
-                <Download className="w-3.5 h-3.5" />
-                Install
+                <Download className="w-4 h-4" />
               </button>
               
               {user?.role === 'admin' && (
