@@ -3,7 +3,6 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import FooterNav from '../components/FooterNav';
-import { speak } from '../utils/voice';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -142,36 +141,14 @@ const WalletPage = () => {
     }
   }, [fetchWallet, refreshUser, searchParams, checkPaymentStatus]);
 
-  // Voice warning when withdrawal dialog opens and time is outside allowed window
-  useEffect(() => {
-    if (withdrawOpen && appSettings.withdrawal_start_time && appSettings.withdrawal_end_time) {
-      const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
-      const curMin = now.getHours() * 60 + now.getMinutes();
-      const [sh, sm] = appSettings.withdrawal_start_time.split(':').map(Number);
-      const [eh, em] = appSettings.withdrawal_end_time.split(':').map(Number);
-      const startMin = sh * 60 + sm;
-      const endMin = eh * 60 + em;
-      const allowed = startMin > endMin ? (curMin >= startMin || curMin <= endMin) : (curMin >= startMin && curMin <= endMin);
-      if (!allowed) {
-        speak(`निकासी बंद है। निकासी का समय ${appSettings.withdrawal_start_time} से ${appSettings.withdrawal_end_time} तक है`);
-      }
-    }
-  }, [withdrawOpen, appSettings]);
-
   const handleWithdrawAmountChange = (val) => {
     setWithdrawAmount(val);
     const minW = appSettings.min_withdrawal || 100;
-    if (val && parseFloat(val) > 0 && parseFloat(val) < minW) {
-      speak(`न्यूनतम निकासी ${minW} रुपये है`);
-    }
+  
   };
 
   const handleDepositAmountChange = (val) => {
     setDepositAmount(val);
-    const minD = appSettings.min_deposit || 100;
-    if (val && parseFloat(val) > 0 && parseFloat(val) < minD) {
-      speak(`न्यूनतम जमा ${minD} रुपये है`);
-    }
   };
 
   const handleDeposit = async () => {
@@ -179,7 +156,6 @@ const WalletPage = () => {
     const minD = appSettings.min_deposit || 100;
     if (!amount || amount < minD) {
       toast.error(`न्यूनतम जमा ₹${minD} है`);
-      speak(`न्यूनतम जमा ${minD} रुपये है`);
       return;
     }
     if (amount > 50000) {
@@ -243,7 +219,6 @@ const WalletPage = () => {
     const minW = appSettings.min_withdrawal || 100;
     if (!withdrawAmount || parseFloat(withdrawAmount) < minW) {
       toast.error(`न्यूनतम निकासी ₹${minW} है`);
-      speak(`न्यूनतम निकासी ${minW} रुपये है`);
       return;
     }
 

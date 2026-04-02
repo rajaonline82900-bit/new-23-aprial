@@ -8,7 +8,6 @@ Build a Satta Matka betting application with Jantri, Haruf Andar/Bahar, Cross Be
 - Backend: FastAPI, Motor (Async MongoDB), PyJWT
 - Database: MongoDB
 - Payments: IMB UPI Payment Gateway (secure-stage.imb.org.in)
-- Notifications: Telegram (aiohttp), WhatsApp (Twilio) - stubbed
 
 ## Completed Features
 - [x] JWT Authentication
@@ -24,44 +23,54 @@ Build a Satta Matka betting application with Jantri, Haruf Andar/Bahar, Cross Be
 - [x] Result Reverse & Bet Reverse in Admin Panel
 - [x] Daily Result Tracking (duplicate protection + status tracker)
 - [x] Dynamic Admin Settings (Telegram/WhatsApp links)
-- [x] Today/Yesterday dual result boxes on Dashboard game cards (Red=Yesterday, Green=Today) [31-Mar-2026]
-- [x] Play/Time Out button on game cards based on game time [31-Mar-2026]
-- [x] Floating Refer button (bottom-right FAB) [31-Mar-2026]
-- [x] IMB Payment Gateway balance update bug fix (redirect_url, JSON parsing, verify key mapping) [31-Mar-2026]
-- [x] Payment opens in new tab (no logout issue) [31-Mar-2026]
-- [x] Game Holiday - last date of month auto holiday, betting blocked [31-Mar-2026]
-- [x] Sidebar Menu with Language, How to Play, Deposit History, Result History, Refer & Earn, Rate List, Customer Support, Withdrawal Proof [31-Mar-2026]
-- [x] Date + Time shown in deposit/withdraw transactions [31-Mar-2026]
-- [x] PWA Support (manifest.json, service worker, app icons, install button) [31-Mar-2026]
-- [x] Landing Page with hero, games, features, how-to-play, rate list, CTA sections [31-Mar-2026]
-- [x] Signup with OTP (mobile + name, demo OTP 1234) + Continue with Gmail (Emergent Google Auth) [31-Mar-2026]
-- [x] Withdrawal history with IST timezone date+time [31-Mar-2026]
-- [x] Admin user details date+time in all 4 tabs (IST) [31-Mar-2026]
-- [x] Bet History filters (status, game, date) with stats bar [31-Mar-2026]
-- [x] Refer & Earn full logic (referral code, share, apply, ₹50 bonus) [31-Mar-2026]
-- [x] Transaction history CSV export [31-Mar-2026]
-- [x] Push notifications on result declaration (VAPID web push to all subscribers) [31-Mar-2026]
-- [x] Landing page removed, signup page as front page [31-Mar-2026]
-- [x] Telegram quick action button on Dashboard (between Wallet & My Bet, admin-controlled link) [31-Mar-2026]
-- [x] Signup rewritten: Name → Phone → OTP → Password (no confirm password) [31-Mar-2026]
-- [x] Login rewritten: Phone + Password (admin can use email) [31-Mar-2026]
-- [x] Password Reset via OTP: Phone → OTP → New Password [31-Mar-2026]
-- [x] Admin Panel: Deposit user list tab added [31-Mar-2026]
-- [x] Admin Panel: Single button removed from bet reverse filter [31-Mar-2026]
-- [x] Admin Panel: Withdrawal approved & rejected history with sub-tabs [31-Mar-2026]
-- [x] Withdrawal dialog cross/close button fixed [01-Apr-2026]
-- [x] Withdrawal cancel button for pending withdrawals [01-Apr-2026]
-- [x] Refer & Earn: 5% of first deposit reward (not instant ₹50 bonus) [01-Apr-2026]
-- [x] Profile page: edit name/email + change password [01-Apr-2026]
-- [x] Refer & Earn: link-based referral (/signup?ref=CODE), auto-apply on signup [01-Apr-2026]
-- [x] Refer & Earn: WhatsApp direct share button added [01-Apr-2026]
+- [x] Today/Yesterday dual result boxes on Dashboard game cards
+- [x] Play/Time Out button on game cards based on game time
+- [x] Floating Refer button (bottom-right FAB)
+- [x] IMB Payment Gateway balance update bug fix
+- [x] Payment opens in new tab (no logout issue)
+- [x] Game Holiday - last date of month auto holiday, betting blocked
+- [x] Sidebar Menu with Language, How to Play, Deposit History, Result History, Refer & Earn, Rate List, Customer Support, Withdrawal Proof
+- [x] Date + Time shown in deposit/withdraw transactions
+- [x] PWA Support (manifest.json, service worker, app icons, install button)
+- [x] Signup with OTP (mobile + name, demo OTP 1234) + Continue with Gmail
+- [x] Withdrawal history with IST timezone date+time
+- [x] Admin user details date+time in all 4 tabs (IST)
+- [x] Bet History filters (status, game, date) with stats bar
+- [x] Refer & Earn full logic (referral code, share, apply, 5% of 1st deposit)
+- [x] Transaction history CSV export
+- [x] Push notifications on result declaration (VAPID web push)
+- [x] Signup page as front page
+- [x] Telegram quick action button on Dashboard
+- [x] Signup: Name → Phone → OTP → Password flow
+- [x] Login: Phone + Password (admin can use email)
+- [x] Password Reset via OTP
+- [x] Admin Panel: Deposit user list tab, withdrawal approved & rejected history
+- [x] Withdrawal dialog cross/close button fixed
+- [x] Withdrawal cancel button for pending withdrawals
+- [x] Profile page: edit name/email + change password
+- [x] Refer & Earn: link-based referral, WhatsApp direct share button
+- [x] Removed email from signup, virtual email in Profile
+- [x] Account Creation Date/Time in Profile and Admin User List
+- [x] User delete option and Mobile Number Search in Admin panel
+- [x] "Today New Users" stat in Admin panel
+- [x] JWT token expiry extended to 1 Year
+- [x] 3 Withdrawal Methods (UPI, Bank, QR Scanner Image)
+- [x] Disabled app zoom, Refer button in Footer
+- [x] External Auto-Result API integration
+- [x] Online/Last Seen indicators in Admin User List
+- [x] Matka 11 branding & deposit/withdrawal icons
+- [x] Web Speech API voice for button clicks
+- [x] Warning voice removed (was stuttering on blink) [02-Apr-2026]
 
 ## Payment Integration
 - Provider: IMB UPI Payment Gateway
 - API URL: https://secure-stage.imb.org.in
-- Create Order → Redirect to payment page → Callback/Webhook → Balance credit
-- Endpoints: POST /api/wallet/deposit, GET /api/wallet/imb-callback, POST /api/wallet/imb-webhook
 
 ## Admin Credentials
 - Email: admin@sattamatka.com
 - Password: Admin@123
+
+## Upcoming Tasks
+- P1: Refactor server.py (2800+ lines) and AdminPage.js (2000+ lines) into modular files
+- P2: Email notifications for transactions
+- P2: Referral earnings history section

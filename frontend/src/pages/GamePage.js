@@ -201,17 +201,6 @@ const GamePage = () => {
   const totalBetCount = activeBets.length + activeAndar.length + activeBahar.length + (crossBetAmount >= minCrossing ? crossJodis.length : 0);
   const hasLowBets = lowJodiBets.length > 0 || lowHarufBets.length > 0 || lowCross;
 
-  // Voice warning for minimum bets
-  useEffect(() => {
-    if (hasLowBets) {
-      const parts = [];
-      if (lowJodiBets.length > 0) parts.push(`जोड़ी न्यूनतम ${minJodi} रुपये`);
-      if (lowHarufBets.length > 0) parts.push(`हरूफ न्यूनतम ${minHaruf} रुपये`);
-      if (lowCross) parts.push(`क्रॉसिंग न्यूनतम ${minCrossing} रुपये`);
-      speak(parts.join('। '));
-    }
-  }, [hasLowBets]); // eslint-disable-line react-hooks/exhaustive-deps
-
   const handlePlaceBatchBets = async () => {
     if (!bettingOpen) {
       toast.error('बेटिंग बंद है!');
