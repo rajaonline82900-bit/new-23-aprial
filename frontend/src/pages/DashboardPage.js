@@ -271,7 +271,11 @@ const DashboardPage = () => {
             </div>
           ) : (
             <div className="grid gap-3">
-              {games.map((game, index) => {
+              {[...games].sort((a, b) => {
+                const statusA = getGameStatus(a).status === 'open' ? 0 : 1;
+                const statusB = getGameStatus(b).status === 'open' ? 0 : 1;
+                return statusA - statusB;
+              }).map((game, index) => {
                 const gameStatus = getGameStatus(game);
                 const CardWrapper = game.is_holiday ? 'div' : Link;
                 const cardProps = game.is_holiday 
