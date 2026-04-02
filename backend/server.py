@@ -1652,86 +1652,89 @@ MARKET_TO_GAME = {
     "GALI": "gali",
 }
 
-matka_api_token = {"token": None}
+# Tokens for both API groups
+matka_api_tokens = {"delhi": None, "general": None}
 
-async def refresh_matka_token():
-    """Get fresh token from Matka API"""
+async def refresh_matka_token(group="delhi"):
+    """Get fresh token from Matka API for delhi or general group"""
+    endpoint = "get-refresh-token-delhi" if group == "delhi" else "get-refresh-token"
     try:
         async with httpx.AsyncClient(timeout=15) as client:
             resp = await client.post(
-                f"{MATKA_API_BASE}/get-refresh-token-delhi",
+                f"{MATKA_API_BASE}/{endpoint}",
                 data={"username": MATKA_API_USERNAME, "password": MATKA_API_PASSWORD}
             )
             data = resp.json()
             if data.get("status"):
-                matka_api_token["token"] = data["refresh_token"]
-                logging.info(f"Matka API token refreshed: {matka_api_token['token'][:8]}...")
+                matka_api_tokens[group] = data["refresh_token"]
+                logging.info(f"Matka API [{group}] token refreshed: {matka_api_tokens[group][:8]}...")
                 return True
     except Exception as e:
-        logging.error(f"Matka API token refresh failed: {e}")
+        logging.error(f"Matka API [{group}] token refresh failed: {e}")
     return False
 
+async def fetch_from_endpoint(client, endpoint, token, market_name, date_str):
+    """Fetch results from a specific API endpoint"""
+    resp = await client.post(
+        f"{MATKA_API_BASE}/{endpoint}",
+        data={
+            "username": MATKA_API_USERNAME,
+            "API_token": token,
+            "markte_name": market_name,
+            "date": date_str
+        }
+    )
+    return resp.json()
+
 async def fetch_matka_results(date_str=None):
-    """Fetch results from Matka API and auto-declare"""
+    """Fetch results from both Delhi and General Matka APIs and auto-declare"""
     if not MATKA_API_USERNAME or not MATKA_API_PASSWORD:
         return {"error": "Matka API credentials not configured"}
     
-    if not matka_api_token["token"]:
-        if not await refresh_matka_token():
-            return {"error": "Token refresh failed"}
+    # Refresh tokens if needed
+    for group in ["delhi", "general"]:
+        if not matka_api_tokens[group]:
+            await refresh_matka_token(group)
     
     ist_now = datetime.now(timezone(timedelta(hours=5, minutes=30)))
     if not date_str:
         date_str = ist_now.strftime("%Y-%m-%d")
     
+    all_api_results = []
+    
     try:
         async with httpx.AsyncClient(timeout=15) as client:
-            # Fetch from blank query (gets all today/recent results)
-            resp = await client.post(
-                f"{MATKA_API_BASE}/market-data-delhi",
-                data={
-                    "username": MATKA_API_USERNAME,
-                    "API_token": matka_api_token["token"],
-                    "markte_name": "",
-                    "date": date_str
-                }
-            )
-            data = resp.json()
-        
-        if not data.get("status"):
-            if await refresh_matka_token():
-                async with httpx.AsyncClient(timeout=15) as client:
-                    resp = await client.post(
-                        f"{MATKA_API_BASE}/market-data-delhi",
-                        data={
-                            "username": MATKA_API_USERNAME,
-                            "API_token": matka_api_token["token"],
-                            "markte_name": "",
-                            "date": date_str
-                        }
-                    )
-                    data = resp.json()
-            if not data.get("status"):
-                return {"error": "API fetch failed"}
-        
-        # Also fetch DISAWER specifically (returns more historical data)
-        all_api_results = data.get("today_result", []) + data.get("old_result", [])
-        try:
-            async with httpx.AsyncClient(timeout=15) as client:
-                resp2 = await client.post(
-                    f"{MATKA_API_BASE}/market-data-delhi",
-                    data={
-                        "username": MATKA_API_USERNAME,
-                        "API_token": matka_api_token["token"],
-                        "markte_name": "DISAWER",
-                        "date": date_str
-                    }
-                )
-                data2 = resp2.json()
-                if data2.get("status"):
-                    all_api_results += data2.get("today_result", []) + data2.get("old_result", [])
-        except:
-            pass
+            # Fetch from DELHI endpoint (blank market = all Delhi markets)
+            for group, endpoint in [("delhi", "market-data-delhi"), ("general", "market-data")]:
+                token = matka_api_tokens.get(group)
+                if not token:
+                    continue
+                
+                try:
+                    data = await fetch_from_endpoint(client, endpoint, token, "", date_str)
+                    
+                    if not data.get("status"):
+                        # Token expired, refresh and retry
+                        if await refresh_matka_token(group):
+                            token = matka_api_tokens[group]
+                            data = await fetch_from_endpoint(client, endpoint, token, "", date_str)
+                    
+                    if data.get("status"):
+                        all_api_results += data.get("today_result", []) + data.get("old_result", [])
+                except Exception as e:
+                    logging.error(f"Matka API [{group}] fetch error: {e}")
+            
+            # Also fetch DISAWER specifically from both endpoints
+            for group, endpoint in [("delhi", "market-data-delhi"), ("general", "market-data")]:
+                token = matka_api_tokens.get(group)
+                if not token:
+                    continue
+                try:
+                    data = await fetch_from_endpoint(client, endpoint, token, "DISAWER", date_str)
+                    if data.get("status"):
+                        all_api_results += data.get("today_result", []) + data.get("old_result", [])
+                except:
+                    pass
         
         games_dict = await get_games_dict()
         
