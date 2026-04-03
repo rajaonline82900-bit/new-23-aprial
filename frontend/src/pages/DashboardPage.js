@@ -140,7 +140,14 @@ const DashboardPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0C] app-shell">
+    <div className="min-h-screen bg-[#0A0A0C] app-shell relative overflow-hidden">
+      {/* Gradient Background */}
+      <div className="fixed inset-0 -z-10">
+        <div className="absolute inset-0 bg-[#0A0A0C]" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[#D4AF37]/[0.04] rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-purple-900/[0.06] rounded-full blur-[100px]" />
+        <div className="absolute top-1/2 left-0 w-[300px] h-[300px] bg-blue-900/[0.04] rounded-full blur-[80px]" />
+      </div>
       {/* Header - Fixed */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-[#0A0A0C] border-b border-white/10" style={{maxWidth: '480px', margin: '0 auto'}}>
         <div className="px-3 py-3">
