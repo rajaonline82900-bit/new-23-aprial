@@ -1650,7 +1650,7 @@ MATKA_API_PASSWORD = os.environ.get("MATKA_API_PASSWORD", "")
 # Mapping: API market name → app game_id
 MARKET_TO_GAME = {
     "DISAWER": "disawar",
-    "DELHI BAZAR": "delhi_bazar",
+    "DELHI BAZAR": "delhi_bazaar",
     "SHRI GANESH": "shri_ganesh",
     "FARIDABAD": "faridabad",
     "GHAZIABAD": "ghaziabad",
