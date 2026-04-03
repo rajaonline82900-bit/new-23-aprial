@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
@@ -31,6 +31,25 @@ const DashboardPage = () => {
   const [telegramLink, setTelegramLink] = useState('');
   const [whatsappLink, setWhatsappLink] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const gamesRef = useRef(null);
+
+  // Scroll reveal animation for game cards
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.remove('game-card-hidden');
+            entry.target.classList.add('game-card-visible');
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -30px 0px' }
+    );
+    const cards = document.querySelectorAll('.game-card-animate');
+    cards.forEach((card) => observer.observe(card));
+    return () => cards.forEach((card) => observer.unobserve(card));
+  }, [games]);
 
   useEffect(() => {
     fetchGames();
@@ -292,12 +311,12 @@ const DashboardPage = () => {
                 return (
                   <CardWrapper {...cardProps}>
                     <Card 
-                      className={`border-white/10 transition-all stagger-item ${
+                      className={`game-card-animate game-card-hidden border-white/10 transition-all ${
                         game.is_holiday 
                           ? 'bg-[#141418]/60 opacity-70 cursor-not-allowed' 
                           : 'bg-[#141418] hover:border-[#D4AF37]/50 cursor-pointer'
                       }`}
-                      style={{ animationDelay: `${index * 0.1}s` }}
+                      style={{ animationDelay: `${index * 0.08}s` }}
                     >
                       <CardContent className="p-3">
                         {/* Row 1: Last Time | Game Name | Play/TimeOut */}

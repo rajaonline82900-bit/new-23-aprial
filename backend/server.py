@@ -764,7 +764,16 @@ async def get_games():
     
     games_dict = await get_games_dict()
     
-    for game_id, game in games_dict.items():
+    # Fixed order for games
+    GAME_ORDER = ["delhi_bazaar", "shri_ganesh", "faridabad", "ghaziabad", "gali", "disawar"]
+    ordered_ids = [gid for gid in GAME_ORDER if gid in games_dict]
+    # Add any remaining games not in the fixed order
+    for gid in games_dict:
+        if gid not in ordered_ids:
+            ordered_ids.append(gid)
+    
+    for game_id in ordered_ids:
+        game = games_dict[game_id]
         if not game.get("is_active", True):
             continue
         
