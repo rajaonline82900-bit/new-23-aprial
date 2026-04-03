@@ -2,25 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import MatkaLogo from '../components/MatkaLogo';
 import { 
-  Coins, 
   Wallet, 
-  History, 
   Trophy, 
-  Clock, 
-  ChevronRight,
-  Sparkles,
   Shield,
-  Bell,
-  Calendar,
-  Home,
-  IndianRupee,
-  BarChart3,
-  Gift,
   Send,
   Menu,
   Download,
@@ -163,12 +152,9 @@ const DashboardPage = () => {
         {/* Branding Banner */}
         <div className="mb-4 rounded-xl overflow-hidden bg-gradient-to-r from-[#1a1a2e] via-[#16213e] to-[#0f3460] border border-[#D4AF37]/30 shadow-lg shadow-[#D4AF37]/10" data-testid="branding-banner">
           <div className="px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <MatkaLogo size="sm" />
-              <div>
-                <p className="text-[#D4AF37] font-bold text-base font-['Unbounded'] leading-tight">MATKA 11</p>
-                <p className="text-gray-400 text-[10px]">India's Trusted Matka Platform</p>
-              </div>
+            <div>
+              <p className="text-[#D4AF37] font-bold text-lg font-['Unbounded'] leading-tight">MATKA 11</p>
+              <p className="text-gray-400 text-[10px]">India's Trusted Matka Platform</p>
             </div>
             <a
               href="https://www.google.com/search?q=matka11.online"
@@ -186,14 +172,6 @@ const DashboardPage = () => {
               <span className="text-white text-xs font-medium">www.matka11.online</span>
             </a>
           </div>
-        </div>
-
-        {/* Welcome Section */}
-        <div className="mb-6">
-          <h2 className="text-xl font-bold text-white mb-1 font-['Unbounded']">
-            नमस्ते, {user?.name} <Sparkles className="inline w-5 h-5 text-[#D4AF37]" />
-          </h2>
-          <p className="text-gray-400">आज का भाग्य आजमाएं</p>
         </div>
 
         {/* Balance Card */}
