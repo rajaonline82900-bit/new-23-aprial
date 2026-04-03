@@ -36,6 +36,25 @@ const DashboardPage = () => {
     fetchGames();
     fetchSettings();
     refreshUser();
+
+    // Auto-refresh games every 30 seconds for live results (especially PWA)
+    const interval = setInterval(() => {
+      fetchGames();
+    }, 30000);
+
+    // Also refresh when app comes back to foreground (PWA tab switch)
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchGames();
+        refreshUser();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, [refreshUser]);
 
   const fetchSettings = async () => {
