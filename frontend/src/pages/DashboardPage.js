@@ -58,13 +58,13 @@ const DashboardPage = () => {
 
     // Auto-refresh games every 30 seconds for live results (especially PWA)
     const interval = setInterval(() => {
-      fetchGames();
+      fetchGames(false);
     }, 30000);
 
     // Also refresh when app comes back to foreground (PWA tab switch)
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
-        fetchGames();
+        fetchGames(false);
         refreshUser();
       }
     };
@@ -84,12 +84,12 @@ const DashboardPage = () => {
     } catch (error) {}
   };
 
-  const fetchGames = async () => {
+  const fetchGames = async (showError = true) => {
     try {
       const { data } = await axios.get(`${API_URL}/api/games`, { withCredentials: true });
       setGames(data.games);
     } catch (error) {
-      toast.error('गेम्स लोड नहीं हो पाए');
+      if (showError) toast.error('गेम्स लोड नहीं हो पाए');
     } finally {
       setLoading(false);
     }
