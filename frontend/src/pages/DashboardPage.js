@@ -315,15 +315,16 @@ const DashboardPage = () => {
           <div className="grid gap-3">
             {games.map((game, index) => {
                 const gameStatus = getGameStatus(game);
-                const CardWrapper = game.is_holiday ? 'div' : Link;
-                const cardProps = game.is_holiday 
+                const isDisabled = game.is_holiday || gameStatus.status !== 'open';
+                const CardWrapper = isDisabled ? 'div' : Link;
+                const cardProps = isDisabled 
                   ? { key: game.id, 'data-testid': `game-card-${game.id}` }
                   : { key: game.id, to: `/game/${game.id}`, 'data-testid': `game-card-${game.id}` };
                 return (
                   <CardWrapper {...cardProps}>
                     <Card 
                       className={`game-card-animate game-card-hidden border-white/10 transition-all ${
-                        game.is_holiday 
+                        isDisabled 
                           ? 'bg-[#141418]/60 opacity-70 cursor-not-allowed' 
                           : 'bg-[#141418] hover:border-[#D4AF37]/50 cursor-pointer'
                       }`}

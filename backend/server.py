@@ -1861,6 +1861,39 @@ async def trigger_auto_fetch(request: Request):
     result = await fetch_matka_results()
     return result
 
+# ===== HELP MESSAGES / ANNOUNCEMENTS =====
+class HelpMessageCreate(BaseModel):
+    title: str
+    message: str
+    is_active: bool = True
+
+@api_router.get("/help/messages")
+async def get_help_messages():
+    messages = await db.help_messages.find(
+        {"is_active": True}, {"_id": 0}
+    ).sort("created_at", -1).to_list(50)
+    return {"messages": messages}
+
+@api_router.post("/admin/help/messages")
+async def create_help_message(msg: HelpMessageCreate, request: Request):
+    await get_admin_user(request)
+    doc = {
+        "id": str(uuid.uuid4()),
+        "title": msg.title,
+        "message": msg.message,
+        "is_active": msg.is_active,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.help_messages.insert_one(doc)
+    return {"message": "Message created", "id": doc["id"]}
+
+@api_router.delete("/admin/help/messages/{message_id}")
+async def delete_help_message(message_id: str, request: Request):
+    await get_admin_user(request)
+    await db.help_messages.delete_one({"id": message_id})
+    return {"message": "Message deleted"}
+
+
 @api_router.post("/admin/results")
 async def declare_result(result: ResultDeclare, request: Request):
     await get_admin_user(request)

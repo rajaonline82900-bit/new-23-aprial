@@ -779,6 +779,13 @@ const AdminPage = () => {
             >
               सेटिंग्स
             </TabsTrigger>
+            <TabsTrigger 
+              value="help"
+              data-testid="admin-help-tab"
+              className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black"
+            >
+              Help Messages
+            </TabsTrigger>
           </TabsList>
 
           {/* Results Tab */}
@@ -1675,6 +1682,11 @@ const AdminPage = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Help Messages Tab */}
+          <TabsContent value="help">
+            <HelpMessagesAdmin token={token} API={API} />
+          </TabsContent>
         </Tabs>
       </main>
 
@@ -2085,6 +2097,87 @@ const AdminPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+};
+
+// Help Messages Admin Component
+const HelpMessagesAdmin = ({ token, API }) => {
+  const [messages, setMessages] = useState([]);
+  const [title, setTitle] = useState('');
+  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const headers = { Authorization: `Bearer ${token}` };
+
+  const fetchMessages = async () => {
+    try {
+      const res = await axios.get(`${API}/api/help/messages`, { headers });
+      setMessages(res.data.messages || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => { fetchMessages(); }, []);
+
+  const handleCreate = async () => {
+    if (!title.trim() || !message.trim()) { toast.error('Title aur message dono likho'); return; }
+    setLoading(true);
+    try {
+      await axios.post(`${API}/api/admin/help/messages`, { title, message }, { headers });
+      toast.success('Message bhej diya');
+      setTitle(''); setMessage('');
+      fetchMessages();
+    } catch (err) {
+      toast.error('Error creating message');
+    } finally { setLoading(false); }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await axios.delete(`${API}/api/admin/help/messages/${id}`, { headers });
+      toast.success('Message delete ho gaya');
+      fetchMessages();
+    } catch (err) {
+      toast.error('Delete failed');
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <Card className="bg-[#141418] border-white/10">
+        <CardHeader><CardTitle className="text-white text-base">New Help Message</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <div>
+            <Label className="text-gray-400">Title</Label>
+            <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Message title" className="bg-[#0A0A0C] border-white/10 text-white" data-testid="help-msg-title" />
+          </div>
+          <div>
+            <Label className="text-gray-400">Message</Label>
+            <textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="Message content..." rows={4} className="w-full p-3 rounded-lg bg-[#0A0A0C] border border-white/10 text-white text-sm resize-none focus:outline-none focus:border-[#D4AF37]" data-testid="help-msg-content" />
+          </div>
+          <Button onClick={handleCreate} disabled={loading} className="bg-[#D4AF37] hover:bg-[#D4AF37]/80 text-black font-bold w-full" data-testid="help-msg-send">
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Send Message'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <h3 className="text-white font-bold">Active Messages ({messages.length})</h3>
+      {messages.map(msg => (
+        <Card key={msg.id} className="bg-[#141418] border-white/10">
+          <CardContent className="p-4 flex items-start justify-between">
+            <div className="flex-1">
+              <h4 className="text-[#D4AF37] font-bold text-sm">{msg.title}</h4>
+              <p className="text-gray-300 text-sm whitespace-pre-wrap">{msg.message}</p>
+              <p className="text-gray-600 text-[10px] mt-1">{new Date(msg.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</p>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => handleDelete(msg.id)} className="text-red-400 hover:text-red-300 hover:bg-red-500/10" data-testid={`delete-msg-${msg.id}`}>
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 };

@@ -20,6 +20,7 @@ import JantriPage from "./pages/JantriPage";
 import HowToPlayPage from "./pages/HowToPlayPage";
 import ReferPage from "./pages/ReferPage";
 import RateListPage from "./pages/RateListPage";
+import HelpPage from "./pages/HelpPage";
 import LandingPage from "./pages/LandingPage";
 import SignupPage from "./pages/SignupPage";
 import AuthCallback from "./pages/AuthCallback";
@@ -194,6 +195,15 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <RateListPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/help"
+        element={
+          <ProtectedRoute>
+            <HelpPage />
           </ProtectedRoute>
         }
       />
