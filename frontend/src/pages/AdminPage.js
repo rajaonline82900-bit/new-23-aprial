@@ -784,7 +784,7 @@ const AdminPage = () => {
               data-testid="admin-help-tab"
               className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black"
             >
-              Help Messages
+              Chat
             </TabsTrigger>
           </TabsList>
 
@@ -1683,9 +1683,9 @@ const AdminPage = () => {
             </Card>
           </TabsContent>
 
-          {/* Help Messages Tab */}
+          {/* Chat Tab */}
           <TabsContent value="help">
-            <HelpMessagesAdmin token={token} API={API} />
+            <AdminChatInbox token={token} API={API} />
           </TabsContent>
         </Tabs>
       </main>
@@ -2101,80 +2101,111 @@ const AdminPage = () => {
   );
 };
 
-// Help Messages Admin Component
-const HelpMessagesAdmin = ({ token, API }) => {
+// Admin Chat Inbox Component
+const AdminChatInbox = ({ token, API }) => {
+  const [chatUsers, setChatUsers] = useState([]);
+  const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [title, setTitle] = useState('');
-  const [message, setMessage] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [reply, setReply] = useState('');
+  const [sending, setSending] = useState(false);
+  const bottomRef = React.useRef(null);
 
   const headers = { Authorization: `Bearer ${token}` };
 
-  const fetchMessages = async () => {
+  const fetchChatUsers = async () => {
     try {
-      const res = await axios.get(`${API}/api/help/messages`, { headers });
+      const res = await axios.get(`${API}/api/admin/chat/users`, { headers });
+      setChatUsers(res.data.users || []);
+    } catch (err) { console.error(err); }
+  };
+
+  const fetchMessages = async (userId) => {
+    try {
+      const res = await axios.get(`${API}/api/admin/chat/messages/${userId}`, { headers });
       setMessages(res.data.messages || []);
-    } catch (err) {
-      console.error(err);
+    } catch (err) { console.error(err); }
+  };
+
+  useEffect(() => {
+    fetchChatUsers();
+    const interval = setInterval(fetchChatUsers, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (selectedUser) {
+      fetchMessages(selectedUser.user_id);
+      const interval = setInterval(() => fetchMessages(selectedUser.user_id), 5000);
+      return () => clearInterval(interval);
     }
-  };
+  }, [selectedUser]);
 
-  useEffect(() => { fetchMessages(); }, []);
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
-  const handleCreate = async () => {
-    if (!title.trim() || !message.trim()) { toast.error('Title aur message dono likho'); return; }
-    setLoading(true);
+  const handleReply = async () => {
+    if (!reply.trim() || !selectedUser || sending) return;
+    setSending(true);
     try {
-      await axios.post(`${API}/api/admin/help/messages`, { title, message }, { headers });
-      toast.success('Message bhej diya');
-      setTitle(''); setMessage('');
-      fetchMessages();
-    } catch (err) {
-      toast.error('Error creating message');
-    } finally { setLoading(false); }
+      await axios.post(`${API}/api/admin/chat/reply/${selectedUser.user_id}`, { message: reply.trim() }, { headers });
+      setReply('');
+      fetchMessages(selectedUser.user_id);
+    } catch (err) { console.error(err); }
+    finally { setSending(false); }
   };
 
-  const handleDelete = async (id) => {
-    try {
-      await axios.delete(`${API}/api/admin/help/messages/${id}`, { headers });
-      toast.success('Message delete ho gaya');
-      fetchMessages();
-    } catch (err) {
-      toast.error('Delete failed');
-    }
-  };
+  const formatTime = (dateStr) => new Date(dateStr).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+  if (selectedUser) {
+    return (
+      <div className="space-y-3">
+        <Button variant="ghost" onClick={() => { setSelectedUser(null); setMessages([]); fetchChatUsers(); }} className="text-gray-400 hover:text-white mb-2" data-testid="chat-back">
+          <ArrowLeft className="w-4 h-4 mr-2" /> {selectedUser.user_name} ({selectedUser.user_phone})
+        </Button>
+        <div className="bg-[#0A0A0C] rounded-xl border border-white/10 p-3 h-[400px] overflow-y-auto">
+          {messages.map(msg => (
+            <div key={msg.id} className={`flex mb-2 ${msg.sender === 'admin' ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-[75%] px-3 py-2 rounded-2xl ${msg.sender === 'admin' ? 'bg-[#D4AF37] text-black rounded-br-md' : 'bg-[#1E1E24] text-white rounded-bl-md border border-white/10'}`}>
+                <p className="text-sm whitespace-pre-wrap break-words">{msg.message}</p>
+                <p className={`text-[9px] mt-0.5 text-right ${msg.sender === 'admin' ? 'text-black/50' : 'text-gray-500'}`}>{formatTime(msg.created_at)}</p>
+              </div>
+            </div>
+          ))}
+          <div ref={bottomRef} />
+        </div>
+        <div className="flex gap-2">
+          <Input value={reply} onChange={e => setReply(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleReply()} placeholder="Reply type करें..." className="bg-[#0A0A0C] border-white/10 text-white flex-1" data-testid="admin-chat-reply-input" />
+          <Button onClick={handleReply} disabled={!reply.trim() || sending} className="bg-[#D4AF37] hover:bg-[#D4AF37]/80 text-black font-bold" data-testid="admin-chat-reply-btn">Send</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-4">
-      <Card className="bg-[#141418] border-white/10">
-        <CardHeader><CardTitle className="text-white text-base">New Help Message</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          <div>
-            <Label className="text-gray-400">Title</Label>
-            <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Message title" className="bg-[#0A0A0C] border-white/10 text-white" data-testid="help-msg-title" />
-          </div>
-          <div>
-            <Label className="text-gray-400">Message</Label>
-            <textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="Message content..." rows={4} className="w-full p-3 rounded-lg bg-[#0A0A0C] border border-white/10 text-white text-sm resize-none focus:outline-none focus:border-[#D4AF37]" data-testid="help-msg-content" />
-          </div>
-          <Button onClick={handleCreate} disabled={loading} className="bg-[#D4AF37] hover:bg-[#D4AF37]/80 text-black font-bold w-full" data-testid="help-msg-send">
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Send Message'}
-          </Button>
-        </CardContent>
-      </Card>
-
-      <h3 className="text-white font-bold">Active Messages ({messages.length})</h3>
-      {messages.map(msg => (
-        <Card key={msg.id} className="bg-[#141418] border-white/10">
-          <CardContent className="p-4 flex items-start justify-between">
-            <div className="flex-1">
-              <h4 className="text-[#D4AF37] font-bold text-sm">{msg.title}</h4>
-              <p className="text-gray-300 text-sm whitespace-pre-wrap">{msg.message}</p>
-              <p className="text-gray-600 text-[10px] mt-1">{new Date(msg.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</p>
+    <div className="space-y-3">
+      <h3 className="text-white font-bold text-base">User Chats ({chatUsers.length})</h3>
+      {chatUsers.length === 0 ? (
+        <div className="text-center py-12 text-gray-500">कोई chat नहीं है</div>
+      ) : chatUsers.map(u => (
+        <Card key={u.user_id} className="bg-[#141418] border-white/10 cursor-pointer hover:border-[#D4AF37]/50 transition-all" onClick={() => setSelectedUser(u)} data-testid={`chat-user-${u.user_id}`}>
+          <CardContent className="p-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[#D4AF37]/20 flex items-center justify-center">
+                <span className="text-[#D4AF37] font-bold">{u.user_name?.charAt(0)?.toUpperCase()}</span>
+              </div>
+              <div>
+                <p className="text-white font-bold text-sm">{u.user_name}</p>
+                <p className="text-gray-500 text-xs">{u.user_phone}</p>
+                <p className="text-gray-400 text-xs truncate max-w-[200px]">{u.last_message}</p>
+              </div>
             </div>
-            <Button variant="ghost" size="sm" onClick={() => handleDelete(msg.id)} className="text-red-400 hover:text-red-300 hover:bg-red-500/10" data-testid={`delete-msg-${msg.id}`}>
-              <Trash2 className="w-4 h-4" />
-            </Button>
+            <div className="flex flex-col items-end gap-1">
+              <p className="text-gray-600 text-[10px]">{formatTime(u.last_time)}</p>
+              {u.unread > 0 && (
+                <span className="w-5 h-5 rounded-full bg-[#D4AF37] text-black text-[10px] font-bold flex items-center justify-center">{u.unread}</span>
+              )}
+            </div>
           </CardContent>
         </Card>
       ))}

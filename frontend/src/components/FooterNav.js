@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, History, BarChart3, Gift, HelpCircle } from 'lucide-react';
+import { Home, History, BarChart3, Gift, MessageCircle } from 'lucide-react';
 
 const FooterNav = () => {
   const location = useLocation();
@@ -8,7 +8,7 @@ const FooterNav = () => {
 
   const items = [
     { to: '/dashboard', icon: Home, label: 'Home', match: '/dashboard' },
-    { to: '/help', icon: HelpCircle, label: 'Help', match: '/help' },
+    { to: '/chat', icon: MessageCircle, label: 'Chat', match: '/chat' },
     { to: '/refer', icon: Gift, label: 'Refer', match: '/refer' },
     { to: '/bets', icon: History, label: 'Bid History', match: '/bets' },
     { to: '/jantri', icon: BarChart3, label: 'Result Chart', match: '/jantri' },

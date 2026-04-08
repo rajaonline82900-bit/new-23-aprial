@@ -1893,6 +1893,95 @@ async def delete_help_message(message_id: str, request: Request):
     await db.help_messages.delete_one({"id": message_id})
     return {"message": "Message deleted"}
 
+# ===== USER-ADMIN CHAT =====
+class ChatMessageSend(BaseModel):
+    message: str
+
+@api_router.get("/chat/messages")
+async def get_chat_messages(request: Request):
+    user = await get_current_user(request)
+    messages = await db.chat_messages.find(
+        {"user_id": user["_id"]}, {"_id": 0}
+    ).sort("created_at", 1).to_list(200)
+    return {"messages": messages}
+
+@api_router.post("/chat/send")
+async def send_chat_message(msg: ChatMessageSend, request: Request):
+    user = await get_current_user(request)
+    if not msg.message.strip():
+        raise HTTPException(status_code=400, detail="Message cannot be empty")
+    doc = {
+        "id": str(uuid.uuid4()),
+        "user_id": user["_id"],
+        "user_name": user.get("name", "User"),
+        "user_phone": user.get("phone", user.get("email", "")),
+        "sender": "user",
+        "message": msg.message.strip(),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.chat_messages.insert_one(doc)
+    return {"message": "Sent", "id": doc["id"]}
+
+@api_router.get("/admin/chat/users")
+async def get_chat_users(request: Request):
+    await get_admin_user(request)
+    pipeline = [
+        {"$sort": {"created_at": -1}},
+        {"$group": {
+            "_id": "$user_id",
+            "user_name": {"$first": "$user_name"},
+            "user_phone": {"$first": "$user_phone"},
+            "last_message": {"$first": "$message"},
+            "last_time": {"$first": "$created_at"},
+            "unread": {"$sum": {"$cond": [{"$and": [{"$eq": ["$sender", "user"]}, {"$eq": [{"$ifNull": ["$read", False]}, False]}]}, 1, 0]}}
+        }},
+        {"$sort": {"last_time": -1}}
+    ]
+    users = await db.chat_messages.aggregate(pipeline).to_list(100)
+    result = []
+    for u in users:
+        result.append({
+            "user_id": u["_id"],
+            "user_name": u["user_name"],
+            "user_phone": u["user_phone"],
+            "last_message": u["last_message"],
+            "last_time": u["last_time"],
+            "unread": u["unread"]
+        })
+    return {"users": result}
+
+@api_router.get("/admin/chat/messages/{user_id}")
+async def get_chat_messages_admin(user_id: str, request: Request):
+    await get_admin_user(request)
+    messages = await db.chat_messages.find(
+        {"user_id": user_id}, {"_id": 0}
+    ).sort("created_at", 1).to_list(200)
+    # Mark user messages as read
+    await db.chat_messages.update_many(
+        {"user_id": user_id, "sender": "user", "read": {"$ne": True}},
+        {"$set": {"read": True}}
+    )
+    return {"messages": messages}
+
+@api_router.post("/admin/chat/reply/{user_id}")
+async def admin_reply_chat(user_id: str, msg: ChatMessageSend, request: Request):
+    await get_admin_user(request)
+    if not msg.message.strip():
+        raise HTTPException(status_code=400, detail="Message cannot be empty")
+    # Get user info
+    user_doc = await db.users.find_one({"_id": ObjectId(user_id)})
+    doc = {
+        "id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "user_name": user_doc["name"] if user_doc else "User",
+        "user_phone": user_doc.get("phone", "") if user_doc else "",
+        "sender": "admin",
+        "message": msg.message.strip(),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.chat_messages.insert_one(doc)
+    return {"message": "Reply sent", "id": doc["id"]}
+
 
 @api_router.post("/admin/results")
 async def declare_result(result: ResultDeclare, request: Request):
