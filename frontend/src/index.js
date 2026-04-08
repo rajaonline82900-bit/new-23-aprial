@@ -15,6 +15,8 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').then((reg) => {
       console.log('SW registered');
+      // Check for updates every 30 minutes
+      setInterval(() => reg.update(), 30 * 60 * 1000);
       // Auto-subscribe for push after login
       if (Notification.permission === 'granted') {
         subscribePush(reg);

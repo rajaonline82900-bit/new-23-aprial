@@ -7,6 +7,7 @@
   "background_color": "#0A0A0C",
   "theme_color": "#0A0A0C",
   "orientation": "portrait",
+  "categories": ["entertainment", "games"],
   "icons": [
     {
       "src": "/icon-192.png",
@@ -19,6 +20,26 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Chat Support",
+      "short_name": "Chat",
+      "url": "/chat",
+      "icons": [{"src": "/icon-192.png", "sizes": "192x192"}]
+    },
+    {
+      "name": "Wallet",
+      "short_name": "Wallet",
+      "url": "/wallet",
+      "icons": [{"src": "/icon-192.png", "sizes": "192x192"}]
+    },
+    {
+      "name": "Results",
+      "short_name": "Results",
+      "url": "/results",
+      "icons": [{"src": "/icon-192.png", "sizes": "192x192"}]
     }
   ]
 }
