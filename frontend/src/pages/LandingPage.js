@@ -102,17 +102,19 @@ const LandingPage = () => {
               App Open Karein
             </button>
           ) : (
-            <button
-              onClick={handleInstall}
-              className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#D4AF37] to-[#FDE047] text-black font-bold text-lg flex items-center justify-center gap-3 shadow-lg shadow-[#D4AF37]/30 hover:shadow-[#D4AF37]/50 active:scale-[0.98] transition-all"
-              data-testid="landing-download-btn"
-            >
-              <Download className="w-6 h-6" />
-              Download App
-            </button>
+            <>
+              <button
+                onClick={handleInstall}
+                className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#D4AF37] to-[#FDE047] text-black font-bold text-lg flex items-center justify-center gap-3 shadow-lg shadow-[#D4AF37]/30 hover:shadow-[#D4AF37]/50 active:scale-[0.98] transition-all"
+                data-testid="landing-download-btn"
+              >
+                <Download className="w-6 h-6" />
+                {isIOS ? 'iPhone me Install Karein' : 'Download App'}
+              </button>
+            </>
           )}
           <p className="text-center text-gray-500 text-xs mt-3">
-            Android & iPhone dono me chalega
+            {isIOS ? 'Safari browser me kholein aur install karein' : 'Android & iPhone dono me chalega'}
           </p>
           <div className="flex gap-3 mt-4">
             <button
@@ -138,10 +140,10 @@ const LandingPage = () => {
           <div className="fixed inset-0 z-50 bg-black/80 flex items-end" onClick={() => setShowIOSGuide(false)}>
             <div className="w-full max-w-[480px] mx-auto bg-[#141418] rounded-t-3xl p-6 pb-10 animate-slide-up" onClick={e => e.stopPropagation()}>
               <div className="w-10 h-1 rounded-full bg-gray-600 mx-auto mb-6" />
-              <h3 className="text-white font-bold text-lg mb-4 text-center font-['Unbounded']">
+              <h3 className="text-white font-bold text-lg mb-5 text-center font-['Unbounded']">
                 {isIOS ? 'iPhone me Install karein' : 'App Install karein'}
               </h3>
-              <div className="space-y-4">
+              <div className="space-y-5">
                 {isIOS ? (
                   <>
                     <div className="flex items-start gap-3">
@@ -150,7 +152,7 @@ const LandingPage = () => {
                       </div>
                       <div>
                         <p className="text-white text-sm font-bold">Safari me kholein</p>
-                        <p className="text-gray-400 text-xs">www.matka11.online Safari browser me kholein</p>
+                        <p className="text-gray-400 text-xs">www.matka11.online ko <span className="text-blue-400 font-bold">Safari</span> browser me kholein (Chrome nahi!)</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
@@ -158,8 +160,10 @@ const LandingPage = () => {
                         <span className="text-[#D4AF37] font-bold text-sm">2</span>
                       </div>
                       <div>
-                        <p className="text-white text-sm font-bold">Share button dabayein</p>
-                        <p className="text-gray-400 text-xs">Neeche ke Share icon (box with arrow) pe click karein</p>
+                        <p className="text-white text-sm font-bold">Share button dabayein
+                          <svg className="inline w-5 h-5 ml-1 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+                        </p>
+                        <p className="text-gray-400 text-xs">Neeche ke <span className="text-blue-400 font-bold">Share</span> icon pe tap karein</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
@@ -167,8 +171,17 @@ const LandingPage = () => {
                         <span className="text-[#D4AF37] font-bold text-sm">3</span>
                       </div>
                       <div>
-                        <p className="text-white text-sm font-bold">"Add to Home Screen" select karein</p>
-                        <p className="text-gray-400 text-xs">Scroll down karke "Add to Home Screen" pe tap karein</p>
+                        <p className="text-white text-sm font-bold">"Add to Home Screen" pe tap karein</p>
+                        <p className="text-gray-400 text-xs">List me scroll karke <span className="text-white font-bold">Add to Home Screen</span> select karein</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-green-400 font-bold text-sm">4</span>
+                      </div>
+                      <div>
+                        <p className="text-white text-sm font-bold">"Add" pe tap karein</p>
+                        <p className="text-gray-400 text-xs">App Home Screen pe install ho jayegi!</p>
                       </div>
                     </div>
                   </>
