@@ -17,8 +17,14 @@ const AdminLoginPage = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { refreshUser } = useAuth();
+  const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
+
+  // If already logged in as admin, redirect to admin panel
+  if (user && user.role === 'admin') {
+    navigate('/admin', { replace: true });
+    return null;
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
