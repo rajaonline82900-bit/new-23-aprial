@@ -1688,7 +1688,7 @@ const AdminPage = () => {
 
           {/* Chat Tab */}
           <TabsContent value="help">
-            <AdminChatInbox token={token} API={API} />
+            <AdminChatInbox API={API_URL} />
           </TabsContent>
         </Tabs>
       </main>
@@ -2105,7 +2105,7 @@ const AdminPage = () => {
 };
 
 // Admin Chat Inbox Component
-const AdminChatInbox = ({ token, API }) => {
+const AdminChatInbox = ({ API }) => {
   const [chatUsers, setChatUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -2114,18 +2114,16 @@ const AdminChatInbox = ({ token, API }) => {
   const bottomRef = React.useRef(null);
   const fileInputRef = React.useRef(null);
 
-  const headers = { Authorization: `Bearer ${token}` };
-
   const fetchChatUsers = async () => {
     try {
-      const res = await axios.get(`${API}/api/admin/chat/users`, { headers });
+      const res = await axios.get(`${API}/api/admin/chat/users`, { withCredentials: true });
       setChatUsers(res.data.users || []);
     } catch (err) { console.error(err); }
   };
 
   const fetchMessages = async (userId) => {
     try {
-      const res = await axios.get(`${API}/api/admin/chat/messages/${userId}`, { headers });
+      const res = await axios.get(`${API}/api/admin/chat/messages/${userId}`, { withCredentials: true });
       setMessages(res.data.messages || []);
     } catch (err) { console.error(err); }
   };
@@ -2152,7 +2150,7 @@ const AdminChatInbox = ({ token, API }) => {
     if (!reply.trim() || !selectedUser || sending) return;
     setSending(true);
     try {
-      await axios.post(`${API}/api/admin/chat/reply/${selectedUser.user_id}`, { message: reply.trim(), msg_type: 'text' }, { headers });
+      await axios.post(`${API}/api/admin/chat/reply/${selectedUser.user_id}`, { message: reply.trim(), msg_type: 'text' }, { withCredentials: true });
       setReply('');
       fetchMessages(selectedUser.user_id);
     } catch (err) { console.error(err); }
@@ -2166,10 +2164,10 @@ const AdminChatInbox = ({ token, API }) => {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const uploadRes = await axios.post(`${API}/api/chat/upload`, formData, { headers });
+      const uploadRes = await axios.post(`${API}/api/chat/upload`, formData, { withCredentials: true });
       await axios.post(`${API}/api/admin/chat/reply/${selectedUser.user_id}`, {
         message: '', msg_type: 'image', attachment_url: uploadRes.data.url
-      }, { headers });
+      }, { withCredentials: true });
       fetchMessages(selectedUser.user_id);
     } catch (err) { console.error(err); }
     finally { setSending(false); if (fileInputRef.current) fileInputRef.current.value = ''; }
