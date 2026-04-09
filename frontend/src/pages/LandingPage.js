@@ -114,6 +114,23 @@ const LandingPage = () => {
           <p className="text-center text-gray-500 text-xs mt-3">
             Android & iPhone dono me chalega
           </p>
+          <div className="flex gap-3 mt-4">
+            <button
+              onClick={() => navigate('/signup')}
+              className="flex-1 py-3 rounded-xl bg-[#D4AF37] text-black font-bold text-sm flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform"
+              data-testid="landing-signup-btn-top"
+            >
+              Sign Up
+              <ChevronRight className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => navigate('/login')}
+              className="flex-1 py-3 rounded-xl bg-[#141418] border border-white/10 text-white font-bold text-sm flex items-center justify-center gap-1.5 hover:border-[#D4AF37]/50 active:scale-[0.98] transition-all"
+              data-testid="landing-login-btn-top"
+            >
+              Login
+            </button>
+          </div>
         </div>
 
         {/* iOS Install Guide Modal */}
