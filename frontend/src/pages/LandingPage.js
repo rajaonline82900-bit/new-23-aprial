@@ -14,6 +14,12 @@ const LandingPage = () => {
   useEffect(() => {
     if (user) { navigate('/dashboard', { replace: true }); return; }
 
+    // If opened as installed PWA, go directly to signup/login
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+      navigate('/signup', { replace: true });
+      return;
+    }
+
     // Detect iOS
     const ua = navigator.userAgent;
     const isiOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
