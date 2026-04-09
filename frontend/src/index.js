@@ -15,8 +15,19 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').then((reg) => {
       console.log('SW registered');
-      // Check for updates every 30 minutes
-      setInterval(() => reg.update(), 30 * 60 * 1000);
+      // Check for updates every 5 minutes
+      setInterval(() => reg.update(), 5 * 60 * 1000);
+      // When new SW is found, auto-activate and reload
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        if (newWorker) {
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'activated' && navigator.serviceWorker.controller) {
+              window.location.reload();
+            }
+          });
+        }
+      });
       // Auto-subscribe for push after login
       if (Notification.permission === 'granted') {
         subscribePush(reg);
