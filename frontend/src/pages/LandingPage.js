@@ -92,29 +92,27 @@ const LandingPage = () => {
 
         {/* Download Section */}
         <div className="mb-10">
-          {isInstalled ? (
+          <a
+            href={`${process.env.REACT_APP_BACKEND_URL}/api/uploads/matka11.apk`}
+            download="Matka11.apk"
+            className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#D4AF37] to-[#FDE047] text-black font-bold text-lg flex items-center justify-center gap-3 shadow-lg shadow-[#D4AF37]/30 hover:shadow-[#D4AF37]/50 active:scale-[0.98] transition-all"
+            data-testid="landing-download-btn"
+          >
+            <Download className="w-6 h-6" />
+            Download App (.APK)
+          </a>
+          {isIOS && (
             <button
-              onClick={() => navigate('/signup')}
-              className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#10B981] to-[#059669] text-white font-bold text-lg flex items-center justify-center gap-3 shadow-lg shadow-[#10B981]/30 active:scale-[0.98] transition-transform"
-              data-testid="landing-open-app"
+              onClick={handleInstall}
+              className="w-full mt-3 py-3.5 rounded-2xl bg-[#141418] border border-white/20 text-white font-bold text-sm flex items-center justify-center gap-2 hover:border-[#D4AF37]/50 active:scale-[0.98] transition-all"
+              data-testid="landing-ios-install"
             >
-              <Smartphone className="w-6 h-6" />
-              App Open Karein
+              <Smartphone className="w-5 h-5" />
+              iPhone me Install Karein
             </button>
-          ) : (
-            <>
-              <button
-                onClick={handleInstall}
-                className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#D4AF37] to-[#FDE047] text-black font-bold text-lg flex items-center justify-center gap-3 shadow-lg shadow-[#D4AF37]/30 hover:shadow-[#D4AF37]/50 active:scale-[0.98] transition-all"
-                data-testid="landing-download-btn"
-              >
-                <Download className="w-6 h-6" />
-                {isIOS ? 'iPhone me Install Karein' : 'Download App'}
-              </button>
-            </>
           )}
           <p className="text-center text-gray-500 text-xs mt-3">
-            {isIOS ? 'Safari browser me kholein aur install karein' : 'Android & iPhone dono me chalega'}
+            Android & iPhone dono me chalega
           </p>
           <div className="flex gap-3 mt-4">
             <button
