@@ -1,4 +1,4 @@
-const CACHE_NAME = 'matka11-v5';
+const CACHE_NAME = 'matka11-v6';
 const STATIC_ASSETS = [
   '/icon-192.png',
   '/icon-512.png'
@@ -8,7 +8,6 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
   );
-  // Force activate immediately - don't wait for old SW to finish
   self.skipWaiting();
 });
 
@@ -23,11 +22,13 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Never cache API calls or uploads
+  // Never intercept non-GET, API calls, or APK downloads
   if (event.request.method !== 'GET') return;
   if (url.pathname.startsWith('/api/')) return;
+  if (url.pathname.endsWith('.apk')) return;
 
-  // For navigation (HTML pages) - always go network first
+  // For navigation (HTML pages) - network first, fallback to cache
+  // IMPORTANT: Don't cache HTML aggressively to prevent auth loss
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request).catch(() => caches.match('/'))
@@ -89,17 +90,12 @@ self.addEventListener('push', (event) => {
     vibrate: [200, 100, 200],
     data: { url: data.url || '/' },
     tag: data.tag || 'matka11-notification',
-    renotify: true,
-    actions: []
+    renotify: true
   };
 
-  // Chat message notification
   if (data.type === 'chat') {
     options.data.url = '/chat';
     options.tag = 'matka11-chat';
-    options.actions = [
-      { action: 'reply', title: 'Reply' }
-    ];
   }
 
   event.waitUntil(
@@ -113,14 +109,12 @@ self.addEventListener('notificationclick', (event) => {
   
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      // Focus existing window if open
       for (const client of windowClients) {
         if (client.url.includes(self.location.origin)) {
           client.navigate(url);
           return client.focus();
         }
       }
-      // Open new window
       return clients.openWindow(url);
     })
   );
