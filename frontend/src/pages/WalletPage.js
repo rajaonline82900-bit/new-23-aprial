@@ -76,13 +76,13 @@ const WalletPage = () => {
   const checkPaymentStatus = useCallback(async (orderId) => {
     setCheckingPayment(true);
     let attempts = 0;
-    const maxAttempts = 30;
+    const maxAttempts = 120;
     const pollInterval = 3000;
 
     const poll = async () => {
       if (attempts >= maxAttempts) {
         setCheckingPayment(false);
-        toast.info('भुगतान की पुष्टि में समय लग रहा है। कुछ देर बाद पेज रीफ्रेश करें।');
+        toast.info('भुगतान की पुष्टि में समय लग रहा है। कृपया कुछ देर बाद वॉलेट चेक करें।');
         return;
       }
 
@@ -97,6 +97,8 @@ const WalletPage = () => {
           await refreshUser();
           await fetchWallet();
           setCheckingPayment(false);
+          setPaymentLink(null);
+          setDepositOpen(false);
           window.history.replaceState({}, '', '/wallet');
           return;
         }
@@ -104,6 +106,7 @@ const WalletPage = () => {
         if (data.status === 'failed') {
           toast.error('भुगतान विफल हो गया');
           setCheckingPayment(false);
+          setPaymentLink(null);
           window.history.replaceState({}, '', '/wallet');
           return;
         }

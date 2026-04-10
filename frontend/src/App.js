@@ -215,7 +215,7 @@ function AppRoutes() {
       />
 
       {/* Default Route */}
-      <Route path="/" element={<LandingPage />} />
+      <Route path="/" element={<Navigate to="/signup" replace />} />
       <Route path="*" element={<Navigate to="/signup" replace />} />
     </Routes>
   );
