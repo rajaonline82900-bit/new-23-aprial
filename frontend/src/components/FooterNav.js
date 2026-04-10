@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, History, BarChart3, Gift, MessageCircle } from 'lucide-react';
+import { Home, History, BarChart3, Gift } from 'lucide-react';
 
 const FooterNav = () => {
   const location = useLocation();
@@ -8,7 +8,6 @@ const FooterNav = () => {
 
   const items = [
     { to: '/dashboard', icon: Home, label: 'Home', match: '/dashboard' },
-    { to: '/chat', icon: MessageCircle, label: 'Chat', match: '/chat' },
     { to: '/refer', icon: Gift, label: 'Refer', match: '/refer' },
     { to: '/bets', icon: History, label: 'Bid History', match: '/bets' },
     { to: '/jantri', icon: BarChart3, label: 'Result Chart', match: '/jantri' },
@@ -17,7 +16,7 @@ const FooterNav = () => {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#141418] border-t border-white/10" data-testid="footer-nav">
       <div className="max-w-[480px] mx-auto">
-        <div className="grid grid-cols-5">
+        <div className="grid grid-cols-4">
           {items.map(({ to, icon: Icon, label, match }) => (
             <Link
               key={to}
