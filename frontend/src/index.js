@@ -37,7 +37,7 @@ async function subscribePush(registration) {
     const API_URL = process.env.REACT_APP_BACKEND_URL;
     
     // Fetch VAPID key from backend
-    let vapidKey = process.env.REACT_APP_VAPID_PUBLIC_KEY;
+    let vapidKey = null;
     try {
       const resp = await fetch(`${API_URL}/api/push/vapid-key`);
       if (resp.ok) {
@@ -45,10 +45,13 @@ async function subscribePush(registration) {
         if (data.key) vapidKey = data.key;
       }
     } catch (e) {
-      console.log('Using env VAPID key');
+      console.error('VAPID key fetch failed:', e);
     }
     
-    if (!vapidKey) return;
+    if (!vapidKey) {
+      console.error('No VAPID key available - push subscription aborted');
+      return;
+    }
     
     const urlBase64ToUint8Array = (base64String) => {
       const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -57,15 +60,28 @@ async function subscribePush(registration) {
       return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
     };
     
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(vapidKey)
-    });
+    // Check if already subscribed
+    const existingSub = await registration.pushManager.getSubscription();
+    let subscription = existingSub;
+    
+    if (!subscription) {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidKey)
+      });
+      console.log('New push subscription created');
+    } else {
+      console.log('Using existing push subscription');
+    }
     
     const headers = { 'Content-Type': 'application/json' };
-    // Also send auth token from localStorage if available
     const token = localStorage.getItem('matka11_token');
-    if (token) headers['Authorization'] = `Bearer ${token}`;
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    } else {
+      console.error('No auth token found - push subscribe will fail');
+      return;
+    }
     
     const subResp = await fetch(`${API_URL}/api/push/subscribe`, {
       method: 'POST',
@@ -76,10 +92,11 @@ async function subscribePush(registration) {
     if (subResp.ok) {
       console.log('Push subscription registered successfully');
     } else {
-      console.log('Push subscribe failed:', subResp.status);
+      const errData = await subResp.text();
+      console.error('Push subscribe failed:', subResp.status, errData);
     }
   } catch (e) {
-    console.log('Push subscribe error:', e);
+    console.error('Push subscribe error:', e.message || e);
   }
 }
 

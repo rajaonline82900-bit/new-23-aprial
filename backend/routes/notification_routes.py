@@ -1,13 +1,17 @@
 from fastapi import APIRouter, HTTPException, Request
 from datetime import datetime, timezone
+import json as _json
+import logging
 
 from database import db
-from auth import get_current_user
-from config import VAPID_PUBLIC_KEY
+from auth import get_current_user, get_admin_user
+from config import VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY
 from notifications import notification_service
 from models import NotificationSubscribe
+from helpers import send_push_to_all
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 @router.get("/push/vapid-key")
@@ -86,3 +90,48 @@ async def get_telegram_instructions():
         ],
         "note": "रिजल्ट घोषित होते ही आपको Telegram पर notification मिलेगी"
     }
+
+
+@router.get("/push/stats")
+async def get_push_stats(request: Request):
+    await get_admin_user(request)
+    total = await db.push_subscriptions.count_documents({})
+    return {"total_subscriptions": total}
+
+
+@router.post("/push/send_all")
+async def send_push_to_all_users(request: Request):
+    admin = await get_admin_user(request)
+    body = await request.json()
+    title = body.get("title", "MATKA 11")
+    push_body = body.get("body", "")
+    if not push_body:
+        raise HTTPException(status_code=400, detail="Message body required")
+    sent = await send_push_to_all(title, push_body, "/dashboard")
+    logger.info(f"Admin {admin.get('name')} sent push to all: {title} - {push_body} ({sent} sent)")
+    return {"sent": sent, "message": f"{sent} users ko notification bheji gayi"}
+
+
+@router.post("/push/test")
+async def test_push_notification(request: Request):
+    from pywebpush import webpush, WebPushException
+    admin = await get_admin_user(request)
+    # Find admin's subscription
+    sub = await db.push_subscriptions.find_one({"user_id": admin["_id"]})
+    if not sub:
+        raise HTTPException(status_code=400, detail="Pehle apne device pe notification allow karein. Dashboard pe 'Enable' button dabayein.")
+    try:
+        webpush(
+            subscription_info=sub["subscription"],
+            data=_json.dumps({"title": "MATKA 11 - Test", "body": "Yeh test notification hai! Notifications kaam kar rahi hain.", "url": "/dashboard"}),
+            vapid_private_key=VAPID_PRIVATE_KEY,
+            vapid_claims={"sub": "mailto:admin@sattamatka.com"}
+        )
+        return {"message": "Test notification bheji gayi! Check karein."}
+    except WebPushException as e:
+        logger.error(f"Test push failed: {e}")
+        await db.push_subscriptions.delete_one({"_id": sub["_id"]})
+        raise HTTPException(status_code=400, detail="Push failed - subscription expired. Dashboard pe dubara allow karein.")
+    except Exception as e:
+        logger.error(f"Test push error: {e}")
+        raise HTTPException(status_code=500, detail=f"Push error: {str(e)}")

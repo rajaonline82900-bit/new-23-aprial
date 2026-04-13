@@ -32,6 +32,7 @@ const DashboardPage = () => {
   const [telegramLink, setTelegramLink] = useState('');
   const [whatsappLink, setWhatsappLink] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showNotifBanner, setShowNotifBanner] = useState(false);
   const gamesRef = useRef(null);
 
   // Scroll reveal animation for game cards
@@ -98,22 +99,44 @@ const DashboardPage = () => {
 
   // Request notification permission on dashboard load
   useEffect(() => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission().then((perm) => {
-        if (perm === 'granted' && 'serviceWorker' in navigator) {
-          navigator.serviceWorker.ready.then((reg) => {
-            if (window.subscribePush) window.subscribePush(reg);
-          });
-        }
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
+    
+    if (Notification.permission === 'granted') {
+      // Already granted - subscribe silently
+      navigator.serviceWorker.ready.then((reg) => {
+        if (window.subscribePush) window.subscribePush(reg);
       });
-    } else if ('Notification' in window && Notification.permission === 'granted') {
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.ready.then((reg) => {
-          if (window.subscribePush) window.subscribePush(reg);
-        });
+    } else if (Notification.permission === 'default') {
+      // Show banner to ask user to enable
+      const dismissed = localStorage.getItem('notif_banner_dismissed');
+      if (!dismissed) {
+        setShowNotifBanner(true);
       }
     }
   }, []);
+
+  const handleEnableNotifications = async () => {
+    try {
+      const perm = await Notification.requestPermission();
+      if (perm === 'granted') {
+        const reg = await navigator.serviceWorker.ready;
+        if (window.subscribePush) await window.subscribePush(reg);
+        toast.success('Notifications चालू हो गई!');
+      } else {
+        toast.error('Notification permission deny हो गई');
+      }
+    } catch (e) {
+      console.error('Notification enable error:', e);
+      toast.error('Notification enable नहीं हो पाई');
+    }
+    setShowNotifBanner(false);
+    localStorage.setItem('notif_banner_dismissed', 'true');
+  };
+
+  const dismissNotifBanner = () => {
+    setShowNotifBanner(false);
+    localStorage.setItem('notif_banner_dismissed', 'true');
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -222,6 +245,26 @@ const DashboardPage = () => {
           </div>
 
           {/* Balance Card */}
+          {showNotifBanner && (
+            <div className="mb-2 rounded-xl overflow-hidden bg-gradient-to-r from-blue-900/40 to-[#141418] border border-blue-500/30 p-3" data-testid="notification-enable-banner">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+                  </div>
+                  <p className="text-white text-xs">Results की notification पाने के लिए enable करें</p>
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <button onClick={handleEnableNotifications} data-testid="enable-notifications-btn" className="px-3 py-1.5 rounded-lg bg-blue-500 text-white text-xs font-bold hover:bg-blue-600 transition-all">
+                    Enable
+                  </button>
+                  <button onClick={dismissNotifBanner} className="p-1 text-gray-500 hover:text-white transition-all">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           <Card className="bg-gradient-to-br from-[#D4AF37]/10 to-[#141418] border-[#D4AF37]/20 mb-2">
             <CardContent className="p-3">
               <div className="flex items-center justify-between">

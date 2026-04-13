@@ -45,6 +45,10 @@ const LoginPage = () => {
       const resp = await axios.post(`${API_URL}/api/auth/login-otp/verify`, { phone, otp }, { withCredentials: true });
       if (resp.data?.token) localStorage.setItem('matka11_token', resp.data.token);
       toast.success('लॉगिन सफल!');
+      // Try subscribing push after login
+      if ('serviceWorker' in navigator && 'Notification' in window && Notification.permission === 'granted') {
+        navigator.serviceWorker.ready.then((reg) => { if (window.subscribePush) window.subscribePush(reg); });
+      }
       await refreshUser();
       navigate('/dashboard');
     } catch (e) {

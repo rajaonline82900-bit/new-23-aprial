@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../..
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
-import { Save, Loader2 } from 'lucide-react';
+import { Save, Loader2, Bell, Send } from 'lucide-react';
 import { toast } from 'sonner';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -21,6 +21,11 @@ const AdminSettingsTab = () => {
   const [minDeposit, setMinDeposit] = useState(100);
   const [minWithdrawal, setMinWithdrawal] = useState(100);
   const [savingSettings, setSavingSettings] = useState(false);
+  const [pushTitle, setPushTitle] = useState('');
+  const [pushBody, setPushBody] = useState('');
+  const [sendingPush, setSendingPush] = useState(false);
+  const [pushStats, setPushStats] = useState(null);
+  const [testingPush, setTestingPush] = useState(false);
 
   const fetchSettings = useCallback(async () => {
     try {
@@ -30,6 +35,11 @@ const AdminSettingsTab = () => {
       setWithdrawalStartTime(data.withdrawal_start_time || ''); setWithdrawalEndTime(data.withdrawal_end_time || '');
       setMinBetJodi(data.min_bet_jodi || 10); setMinBetHaruf(data.min_bet_haruf || 10); setMinBetCrossing(data.min_bet_crossing || 10);
       setMinDeposit(data.min_deposit || 100); setMinWithdrawal(data.min_withdrawal || 100);
+    } catch (error) {}
+    // Fetch push stats
+    try {
+      const { data } = await axios.get(`${API_URL}/api/push/stats`, { withCredentials: true });
+      setPushStats(data);
     } catch (error) {}
   }, []);
 
@@ -47,6 +57,36 @@ const AdminSettingsTab = () => {
       toast.success('Settings saved!');
     } catch (error) { toast.error('Settings save नहीं हो पाई'); }
     finally { setSavingSettings(false); }
+  };
+
+  const handleSendPushAll = async () => {
+    if (!pushTitle.trim() || !pushBody.trim()) { toast.error('Title और Message दोनों भरें'); return; }
+    setSendingPush(true);
+    try {
+      const { data } = await axios.post(`${API_URL}/api/push/send_all`, { title: pushTitle, body: pushBody }, { withCredentials: true });
+      toast.success(`${data.sent || 0} users को notification भेजी गई!`);
+      setPushTitle(''); setPushBody('');
+    } catch (error) { toast.error(error.response?.data?.detail || 'Push send failed'); }
+    finally { setSendingPush(false); }
+  };
+
+  const handleTestPush = async () => {
+    // Subscribe admin's own device first, then send test
+    setTestingPush(true);
+    try {
+      // First ensure admin is subscribed
+      if ('Notification' in window && 'serviceWorker' in navigator) {
+        const perm = await Notification.requestPermission();
+        if (perm === 'granted') {
+          const reg = await navigator.serviceWorker.ready;
+          if (window.subscribePush) await window.subscribePush(reg);
+        }
+      }
+      // Then send test push
+      const { data } = await axios.post(`${API_URL}/api/push/test`, {}, { withCredentials: true });
+      toast.success(data.message || 'Test notification भेजी गई!');
+    } catch (error) { toast.error(error.response?.data?.detail || 'Test push failed'); }
+    finally { setTestingPush(false); }
   };
 
   return (
@@ -113,6 +153,40 @@ const AdminSettingsTab = () => {
               <Label className="text-gray-300 mb-2 block">न्यूनतम निकासी (₹)</Label>
               <Input type="number" value={minWithdrawal} onChange={(e) => setMinWithdrawal(e.target.value)} data-testid="settings-min-withdrawal" className="bg-[#0A0A0C] border-white/10 text-white" />
             </div>
+          </div>
+        </div>
+
+        <div className="border-t border-white/10 pt-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-white font-bold flex items-center gap-2"><Bell className="w-5 h-5 text-blue-400" /> Push Notifications</h3>
+            {pushStats && (
+              <span className="text-xs px-2 py-1 rounded-full bg-blue-500/20 text-blue-400">
+                {pushStats.total_subscriptions} subscribed users
+              </span>
+            )}
+          </div>
+          
+          <div className="mb-4 p-3 rounded-lg bg-[#0A0A0C] border border-white/5">
+            <p className="text-gray-400 text-xs mb-3">पहले "Test Push" से अपने device पे test करें, फिर सबको भेजें</p>
+            <Button onClick={handleTestPush} disabled={testingPush} data-testid="test-push-btn" className="w-full mb-3 bg-blue-600 hover:bg-blue-700 text-white font-bold">
+              {testingPush ? <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Testing...</span>
+                : <span className="flex items-center gap-2"><Bell className="w-4 h-4" /> Test Push (अपने Device पे)</span>}
+            </Button>
+          </div>
+
+          <div className="space-y-3">
+            <div>
+              <Label className="text-gray-300 mb-2 block">Notification Title</Label>
+              <Input type="text" placeholder="जैसे: MATKA 11 - नया अपडेट!" value={pushTitle} onChange={(e) => setPushTitle(e.target.value)} data-testid="push-title-input" className="bg-[#0A0A0C] border-white/10 text-white" />
+            </div>
+            <div>
+              <Label className="text-gray-300 mb-2 block">Notification Message</Label>
+              <Input type="text" placeholder="जैसे: आज का रिजल्ट आ गया!" value={pushBody} onChange={(e) => setPushBody(e.target.value)} data-testid="push-body-input" className="bg-[#0A0A0C] border-white/10 text-white" />
+            </div>
+            <Button onClick={handleSendPushAll} disabled={sendingPush} data-testid="send-push-all-btn" className="w-full bg-[#D4AF37] hover:bg-[#FDE047] text-black font-bold">
+              {sendingPush ? <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> भेज रहे हैं...</span>
+                : <span className="flex items-center gap-2"><Send className="w-4 h-4" /> सबको Notification भेजें</span>}
+            </Button>
           </div>
         </div>
 
