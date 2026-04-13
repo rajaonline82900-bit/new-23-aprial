@@ -92,7 +92,20 @@ async def declare_result(result: ResultDeclare, request: Request):
         "bet_type": "haruf_bahar", "number": bahar_digit, "status": "pending"
     }).to_list(1000)
 
-    all_winners = winning_single_bets + winning_jodi_bets + winning_andar_bets + winning_bahar_bets
+    # Crossing bets
+    winning_crossing_bets = []
+    crossing_bets = await db.bets.find({
+        "game_id": result.game_id, "date": result_date,
+        "bet_type": "crossing", "status": "pending"
+    }).to_list(1000)
+    for cb in crossing_bets:
+        cn = cb.get("number", "")
+        if len(cn) == 2:
+            d1, d2 = cn[0], cn[1]
+            if (d1 == andar_digit and d2 == bahar_digit) or (d1 == bahar_digit and d2 == andar_digit):
+                winning_crossing_bets.append(cb)
+
+    all_winners = winning_single_bets + winning_jodi_bets + winning_andar_bets + winning_bahar_bets + winning_crossing_bets
     for bet in all_winners:
         await db.users.update_one({"_id": ObjectId(bet["user_id"])}, {"$inc": {"balance": bet["potential_win"]}})
         await db.bets.update_one({"id": bet["id"]}, {"$set": {"status": "won", "won_amount": bet["potential_win"]}})
