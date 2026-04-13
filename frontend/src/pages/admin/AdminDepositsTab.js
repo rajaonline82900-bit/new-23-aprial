@@ -23,22 +23,22 @@ const AdminDepositsTab = () => {
   }, [fetchDeposits]);
 
   return (
-    <Card className="bg-gray-50 border-gray-200">
+    <Card className="bg-[#141418] border-white/10">
       <CardHeader>
-        <CardTitle className="text-gray-900 font-['Unbounded']">जमा सूची</CardTitle>
-        <CardDescription className="text-gray-500">सभी सफल जमा की सूची</CardDescription>
+        <CardTitle className="text-white font-['Unbounded']">जमा सूची</CardTitle>
+        <CardDescription className="text-gray-400">सभी सफल जमा की सूची</CardDescription>
       </CardHeader>
       <CardContent>
         {deposits.length === 0 ? (
-          <div className="text-center py-8"><p className="text-gray-500">कोई जमा नहीं मिला</p></div>
+          <div className="text-center py-8"><p className="text-gray-400">कोई जमा नहीं मिला</p></div>
         ) : (
           <div className="space-y-3">
             {deposits.map((d, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-100">
+              <div key={index} className="flex items-center justify-between p-3 bg-[#0A0A0C] rounded-lg border border-white/5">
                 <div>
-                  <p className="text-gray-900 font-medium text-sm">{d.user_name || 'User'}</p>
-                  <p className="text-gray-500 text-xs">{d.user_phone || d.user_email || ''}</p>
-                  <p className="text-gray-500 text-xs">
+                  <p className="text-white font-medium text-sm">{d.user_name || 'User'}</p>
+                  <p className="text-gray-400 text-xs">{d.user_phone || d.user_email || ''}</p>
+                  <p className="text-gray-400 text-xs">
                     {d.created_at ? utcDate(d.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true, day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
                   </p>
                 </div>

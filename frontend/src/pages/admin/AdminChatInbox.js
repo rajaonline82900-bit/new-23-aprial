@@ -130,15 +130,15 @@ const AdminChatInbox = ({ API }) => {
     return (
       <div className="space-y-3">
         <input type="file" ref={fileInputRef} accept="image/*" onChange={handleImageUpload} className="hidden" />
-        <Button variant="ghost" onClick={() => { setSelectedUser(null); setMessages([]); fetchChatUsers(); }} className="text-gray-500 hover:text-gray-900 mb-2" data-testid="chat-back">
+        <Button variant="ghost" onClick={() => { setSelectedUser(null); setMessages([]); fetchChatUsers(); }} className="text-gray-400 hover:text-white mb-2" data-testid="chat-back">
           <ArrowLeft className="w-4 h-4 mr-2" /> {selectedUser.user_name} ({selectedUser.user_phone})
         </Button>
-        <div className="bg-white rounded-xl border border-gray-200 p-3 h-[400px] overflow-y-auto">
+        <div className="bg-[#0A0A0C] rounded-xl border border-white/10 p-3 h-[400px] overflow-y-auto">
           {messages.map(msg => (
             <div key={msg.id} className={`flex mb-2 ${msg.sender === 'admin' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[75%] px-3 py-2 rounded-2xl ${msg.sender === 'admin' ? 'bg-[#D4AF37] text-black rounded-br-md' : 'bg-gray-100 text-gray-900 rounded-bl-md border border-gray-200'}`}>
+              <div className={`max-w-[75%] px-3 py-2 rounded-2xl ${msg.sender === 'admin' ? 'bg-[#D4AF37] text-black rounded-br-md' : 'bg-[#1E1E24] text-white rounded-bl-md border border-white/10'}`}>
                 {renderMsgContent(msg)}
-                <div className={`flex items-center justify-end gap-0.5 mt-0.5 ${msg.sender === 'admin' ? 'text-black/50' : 'text-gray-500'}`}>
+                <div className={`flex items-center justify-end gap-0.5 mt-0.5 ${msg.sender === 'admin' ? 'text-black/50' : 'text-gray-400'}`}>
                   <span className="text-[9px]">{formatTime(msg.created_at)}</span>
                   {renderTicks(msg)}
                 </div>
@@ -148,7 +148,7 @@ const AdminChatInbox = ({ API }) => {
           <div ref={bottomRef} />
         </div>
         <div className="flex gap-2">
-          <Button variant="ghost" size="sm" onClick={() => fileInputRef.current?.click()} disabled={sending || isRecording} className="text-gray-500 hover:text-gray-900 border border-gray-200" data-testid="admin-chat-image-btn">
+          <Button variant="ghost" size="sm" onClick={() => fileInputRef.current?.click()} disabled={sending || isRecording} className="text-gray-400 hover:text-white border border-white/10" data-testid="admin-chat-image-btn">
             <Image className="w-4 h-4" />
           </Button>
           {isRecording ? (
@@ -163,10 +163,10 @@ const AdminChatInbox = ({ API }) => {
             </>
           ) : (
             <>
-              <Button variant="ghost" size="sm" onClick={startRecording} disabled={sending} className="text-gray-500 hover:text-gray-900 border border-gray-200" data-testid="admin-chat-mic-btn">
+              <Button variant="ghost" size="sm" onClick={startRecording} disabled={sending} className="text-gray-400 hover:text-white border border-white/10" data-testid="admin-chat-mic-btn">
                 <Mic className="w-4 h-4" />
               </Button>
-              <Input value={reply} onChange={e => setReply(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleReply()} placeholder="Reply type karein..." className="bg-white border-gray-200 text-gray-900 flex-1" data-testid="admin-chat-reply-input" />
+              <Input value={reply} onChange={e => setReply(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleReply()} placeholder="Reply type karein..." className="bg-[#0A0A0C] border-white/10 text-white flex-1" data-testid="admin-chat-reply-input" />
               <Button onClick={handleReply} disabled={!reply.trim() || sending} className="bg-[#D4AF37] hover:bg-[#D4AF37]/80 text-black font-bold" data-testid="admin-chat-reply-btn">Send</Button>
             </>
           )}
@@ -177,20 +177,20 @@ const AdminChatInbox = ({ API }) => {
 
   return (
     <div className="space-y-3">
-      <h3 className="text-gray-900 font-bold text-base">User Chats ({chatUsers.length})</h3>
+      <h3 className="text-white font-bold text-base">User Chats ({chatUsers.length})</h3>
       {chatUsers.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">Koi chat nahi hai</div>
+        <div className="text-center py-12 text-gray-400">Koi chat nahi hai</div>
       ) : chatUsers.map(u => (
-        <Card key={u.user_id} className="bg-gray-50 border-gray-200 cursor-pointer hover:border-[#D4AF37]/50 transition-all" onClick={() => setSelectedUser(u)} data-testid={`chat-user-${u.user_id}`}>
+        <Card key={u.user_id} className="bg-[#141418] border-white/10 cursor-pointer hover:border-[#D4AF37]/50 transition-all" onClick={() => setSelectedUser(u)} data-testid={`chat-user-${u.user_id}`}>
           <CardContent className="p-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-[#D4AF37]/20 flex items-center justify-center">
                 <span className="text-[#D4AF37] font-bold">{u.user_name?.charAt(0)?.toUpperCase()}</span>
               </div>
               <div>
-                <p className="text-gray-900 font-bold text-sm">{u.user_name}</p>
-                <p className="text-gray-500 text-xs">{u.user_phone}</p>
-                <p className="text-gray-500 text-xs truncate max-w-[200px]">{u.last_message}</p>
+                <p className="text-white font-bold text-sm">{u.user_name}</p>
+                <p className="text-gray-400 text-xs">{u.user_phone}</p>
+                <p className="text-gray-400 text-xs truncate max-w-[200px]">{u.last_message}</p>
               </div>
             </div>
             <div className="flex flex-col items-end gap-1">

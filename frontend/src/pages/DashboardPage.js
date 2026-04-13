@@ -141,23 +141,23 @@ const DashboardPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white app-shell relative overflow-hidden">
+    <div className="min-h-screen bg-[#0A0A0C] app-shell relative overflow-hidden">
       {/* Gradient Background */}
       <div className="fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-white" />
+        <div className="absolute inset-0 bg-[#0A0A0C]" />
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[#D4AF37]/[0.04] rounded-full blur-[120px]" />
-        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-purple-200/[0.15] rounded-full blur-[100px]" />
-        <div className="absolute top-1/2 left-0 w-[300px] h-[300px] bg-blue-200/[0.1] rounded-full blur-[80px]" />
+        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-purple-900/[0.06] rounded-full blur-[100px]" />
+        <div className="absolute top-1/2 left-0 w-[300px] h-[300px] bg-blue-900/[0.04] rounded-full blur-[80px]" />
       </div>
       {/* Header - Fixed */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200" style={{maxWidth: '480px', margin: '0 auto'}}>
+      <header className="fixed top-0 left-0 right-0 z-50 bg-[#0A0A0C] border-b border-white/10" style={{maxWidth: '480px', margin: '0 auto'}}>
         <div className="px-3 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setSidebarOpen(true)}
                 data-testid="sidebar-toggle"
-                className="p-1.5 rounded-lg bg-gray-50 border border-gray-200 text-gray-500 hover:text-gray-900 transition-all"
+                className="p-1.5 rounded-lg bg-[#141418] border border-white/10 text-gray-400 hover:text-white transition-all"
               >
                 <Menu className="w-5 h-5" />
               </button>
@@ -194,21 +194,21 @@ const DashboardPage = () => {
       </header>
 
       {/* Main Content - Fixed Top Section */}
-      <div className="fixed top-[52px] left-0 right-0 z-40 bg-white" style={{maxWidth: '480px', margin: '0 auto'}}>
+      <div className="fixed top-[52px] left-0 right-0 z-40 bg-[#0A0A0C]" style={{maxWidth: '480px', margin: '0 auto'}}>
         <div className="px-3 pt-2">
           {/* Branding Banner */}
-          <div className="mb-2 rounded-xl overflow-hidden bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-100 border border-[#D4AF37]/30 shadow-lg shadow-[#D4AF37]/10" data-testid="branding-banner">
+          <div className="mb-2 rounded-xl overflow-hidden bg-gradient-to-r from-[#1a1a2e] via-[#16213e] to-[#0f3460] border border-[#D4AF37]/30 shadow-lg shadow-[#D4AF37]/10" data-testid="branding-banner">
             <div className="px-4 py-2.5 flex items-center justify-between">
               <div>
                 <p className="text-[#D4AF37] font-bold text-lg font-['Unbounded'] leading-tight">MATKA 11</p>
-                <p className="text-gray-500 text-[10px]">India's Trusted Matka Platform</p>
+                <p className="text-gray-400 text-[10px]">India's Trusted Matka Platform</p>
               </div>
               <a
                 href="https://www.google.com/search?q=matka11.online"
                 target="_blank"
                 rel="noopener noreferrer"
                 data-testid="banner-search-link"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/50 border border-gray-200 hover:bg-white transition-all"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0A0A0C]/50 border border-white/10 hover:bg-[#0A0A0C] transition-all"
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
@@ -216,28 +216,28 @@ const DashboardPage = () => {
                   <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
                   <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
                 </svg>
-                <span className="text-gray-900 text-xs font-medium">www.matka11.online</span>
+                <span className="text-white text-xs font-medium">www.matka11.online</span>
               </a>
             </div>
           </div>
 
           {/* Balance Card */}
-          <Card className="bg-gradient-to-br from-[#D4AF37]/10 to-white border-[#D4AF37]/20 mb-2">
+          <Card className="bg-gradient-to-br from-[#D4AF37]/10 to-[#141418] border-[#D4AF37]/20 mb-2">
             <CardContent className="p-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-500 text-xs">आपका बैलेंस</p>
-                  <p className="text-xl font-bold text-gray-900">₹{user?.balance?.toFixed(2) || '0.00'}</p>
+                  <p className="text-gray-400 text-xs">आपका बैलेंस</p>
+                  <p className="text-xl font-bold text-white">₹{user?.balance?.toFixed(2) || '0.00'}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Link to="/wallet">
-                    <Button onClick={() => speak('जमा करें')} className="bg-[#10B981] hover:bg-[#059669] text-gray-900 font-bold flex items-center gap-1.5">
+                    <Button onClick={() => speak('जमा करें')} className="bg-[#10B981] hover:bg-[#059669] text-white font-bold flex items-center gap-1.5">
                       <ArrowDownLeft className="w-4 h-4" />
                       जमा करें
                     </Button>
                   </Link>
                   <Link to="/wallet?tab=withdraw">
-                    <Button onClick={() => speak('निकासी')} className="bg-red-600 hover:bg-red-700 text-gray-900 font-bold flex items-center gap-1.5">
+                    <Button onClick={() => speak('निकासी')} className="bg-red-600 hover:bg-red-700 text-white font-bold flex items-center gap-1.5">
                       <ArrowUpRight className="w-4 h-4" />
                       निकासी
                     </Button>
@@ -250,45 +250,45 @@ const DashboardPage = () => {
           {/* Quick Actions */}
           <div className="grid grid-cols-4 gap-2 mb-2">
             <Link to="/wallet" data-testid="wallet-link">
-              <Card className="bg-gray-50 border-gray-200 hover:border-[#D4AF37]/50 transition-all cursor-pointer group">
+              <Card className="bg-[#141418] border-white/10 hover:border-[#D4AF37]/50 transition-all cursor-pointer group">
                 <CardContent className="p-2.5 flex flex-col items-center gap-1">
                   <div className="w-9 h-9 rounded-full bg-[#D4AF37]/10 flex items-center justify-center group-hover:bg-[#D4AF37]/20 transition-all">
                     <Wallet className="w-4 h-4 text-[#D4AF37]" />
                   </div>
-                  <span className="text-gray-900 font-medium text-[10px]">वॉलेट</span>
+                  <span className="text-white font-medium text-[10px]">वॉलेट</span>
                 </CardContent>
               </Card>
             </Link>
 
             <a href={telegramLink || '#'} target="_blank" rel="noopener noreferrer" data-testid="telegram-quick-link" onClick={(e) => { if (!telegramLink) e.preventDefault(); }}>
-              <Card className="bg-gray-50 border-gray-200 hover:border-[#0088cc]/50 transition-all cursor-pointer group">
+              <Card className="bg-[#141418] border-white/10 hover:border-[#0088cc]/50 transition-all cursor-pointer group">
                 <CardContent className="p-2.5 flex flex-col items-center gap-1">
                   <div className="w-9 h-9 rounded-full bg-[#0088cc]/10 flex items-center justify-center group-hover:bg-[#0088cc]/20 transition-all">
                     <Send className="w-4 h-4 text-[#0088cc]" />
                   </div>
-                  <span className="text-gray-900 font-medium text-[10px]">टेलीग्राम</span>
+                  <span className="text-white font-medium text-[10px]">टेलीग्राम</span>
                 </CardContent>
               </Card>
             </a>
             
             <Link to="/chat" data-testid="chat-quick-link">
-              <Card className="bg-gray-50 border-gray-200 hover:border-[#D4AF37]/50 transition-all cursor-pointer group">
+              <Card className="bg-[#141418] border-white/10 hover:border-[#D4AF37]/50 transition-all cursor-pointer group">
                 <CardContent className="p-2.5 flex flex-col items-center gap-1">
                   <div className="w-9 h-9 rounded-full bg-[#D4AF37]/10 flex items-center justify-center group-hover:bg-[#D4AF37]/20 transition-all">
                     <MessageCircle className="w-4 h-4 text-[#D4AF37]" />
                   </div>
-                  <span className="text-gray-900 font-medium text-[10px]">Chat</span>
+                  <span className="text-white font-medium text-[10px]">Chat</span>
                 </CardContent>
               </Card>
             </Link>
             
             <Link to="/results" data-testid="results-link">
-              <Card className="bg-gray-50 border-gray-200 hover:border-purple-500/50 transition-all cursor-pointer group">
+              <Card className="bg-[#141418] border-white/10 hover:border-purple-500/50 transition-all cursor-pointer group">
                 <CardContent className="p-2.5 flex flex-col items-center gap-1">
                   <div className="w-9 h-9 rounded-full bg-purple-500/10 flex items-center justify-center group-hover:bg-purple-500/20 transition-all">
                     <Trophy className="w-4 h-4 text-purple-400" />
                   </div>
-                  <span className="text-gray-900 font-medium text-[10px]">रिजल्ट</span>
+                  <span className="text-white font-medium text-[10px]">रिजल्ट</span>
                 </CardContent>
               </Card>
             </Link>
@@ -296,7 +296,7 @@ const DashboardPage = () => {
 
           {/* Games Header */}
           <div className="flex items-center justify-between pb-2">
-            <h3 className="text-lg font-bold text-gray-900 font-['Unbounded']">गेम्स</h3>
+            <h3 className="text-lg font-bold text-white font-['Unbounded']">गेम्स</h3>
             <Badge variant="outline" className="border-[#D4AF37]/50 text-[#D4AF37]">
               {games.length} उपलब्ध
             </Badge>
@@ -309,7 +309,7 @@ const DashboardPage = () => {
         {loading ? (
           <div className="grid gap-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-24 bg-gray-50 rounded-xl animate-pulse" />
+              <div key={i} className="h-24 bg-[#141418] rounded-xl animate-pulse" />
             ))}
           </div>
         ) : (
@@ -324,10 +324,10 @@ const DashboardPage = () => {
                 return (
                   <CardWrapper {...cardProps}>
                     <Card 
-                      className={`game-card-animate game-card-hidden border-gray-200 transition-all ${
+                      className={`game-card-animate game-card-hidden border-white/10 transition-all ${
                         isDisabled 
-                          ? 'bg-gray-50/60 opacity-70 cursor-not-allowed' 
-                          : 'bg-gray-50 hover:border-[#D4AF37]/50 cursor-pointer'
+                          ? 'bg-[#141418]/60 opacity-70 cursor-not-allowed' 
+                          : 'bg-[#141418] hover:border-[#D4AF37]/50 cursor-pointer'
                       }`}
                       style={{ animationDelay: `${index * 0.08}s` }}
                     >
@@ -335,8 +335,8 @@ const DashboardPage = () => {
                         {/* Row 1: Last Time | Game Name | Play/TimeOut */}
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex-shrink-0">
-                            <p className="text-gray-500 text-[8px] uppercase tracking-wide font-medium">Last Time</p>
-                            <p className="text-gray-900 font-bold text-sm leading-tight">
+                            <p className="text-gray-400 text-[8px] uppercase tracking-wide font-medium">Last Time</p>
+                            <p className="text-white font-bold text-sm leading-tight">
                               {(() => {
                                 const [h, m] = (game.end_time || '00:00').split(':').map(Number);
                                 const ampm = h >= 12 ? 'PM' : 'AM';
@@ -352,7 +352,7 @@ const DashboardPage = () => {
                               Holiday
                             </div>
                           ) : gameStatus.status === 'open' ? (
-                            <div className="px-5 py-2 rounded-xl bg-green-500 text-gray-900 font-bold text-sm text-center cursor-pointer whitespace-nowrap shadow-lg shadow-green-500/30" data-testid={`play-btn-${game.id}`} onClick={() => speak('प्ले')}>
+                            <div className="px-5 py-2 rounded-xl bg-green-500 text-white font-bold text-sm text-center cursor-pointer whitespace-nowrap shadow-lg shadow-green-500/30" data-testid={`play-btn-${game.id}`} onClick={() => speak('प्ले')}>
                               Play
                             </div>
                           ) : (
@@ -366,8 +366,8 @@ const DashboardPage = () => {
                         <div className="flex items-center gap-2">
                           {/* Yesterday - Red box */}
                           <div className="text-center flex-1 py-2 rounded-lg bg-red-600 border border-red-500">
-                            <p className="text-gray-900/70 text-[8px] uppercase tracking-wide font-medium leading-tight">Yesterday</p>
-                            <p className="text-gray-900 font-bold text-lg leading-tight">
+                            <p className="text-white/70 text-[8px] uppercase tracking-wide font-medium leading-tight">Yesterday</p>
+                            <p className="text-white font-bold text-lg leading-tight">
                               {game.yesterday_result?.jodi || '--'}
                             </p>
                           </div>

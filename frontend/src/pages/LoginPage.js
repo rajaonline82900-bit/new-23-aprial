@@ -55,20 +55,20 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-white">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-[#0A0A0C]">
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl" />
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#10B981]/5 rounded-full blur-3xl" />
       </div>
       
-      <Card className="w-full max-w-sm bg-gray-50 border-gray-200 relative z-10">
+      <Card className="w-full max-w-sm bg-[#141418] border-white/10 relative z-10">
         <CardHeader className="space-y-3 text-center">
           {step === 'phone' && (
             <>
               <div className="flex justify-center">
                 <MatkaLogo size="lg" />
               </div>
-              <CardDescription className="text-gray-500">
+              <CardDescription className="text-gray-400">
                 अपने मोबाइल नंबर से लॉगिन करें
               </CardDescription>
             </>
@@ -77,12 +77,12 @@ const LoginPage = () => {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => { setStep('phone'); setOtp(''); }}
-                className="p-2 rounded-lg bg-white border border-gray-200 text-gray-500 hover:text-gray-900 transition-all"
+                className="p-2 rounded-lg bg-[#0A0A0C] border border-white/10 text-gray-400 hover:text-white transition-all"
                 data-testid="login-back-button"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
-              <h2 className="text-xl font-bold text-gray-900 font-['Unbounded']">OTP दर्ज करें</h2>
+              <h2 className="text-xl font-bold text-white font-['Unbounded']">OTP दर्ज करें</h2>
             </div>
           )}
         </CardHeader>
@@ -93,7 +93,7 @@ const LoginPage = () => {
               <div className="space-y-2">
                 <Label className="text-gray-300">मोबाइल नंबर</Label>
                 <div className="flex gap-2">
-                  <div className="flex items-center px-3 bg-white border border-gray-200 rounded-md text-gray-500 text-sm">
+                  <div className="flex items-center px-3 bg-[#0A0A0C] border border-white/10 rounded-md text-gray-400 text-sm">
                     +91
                   </div>
                   <Input
@@ -104,7 +104,7 @@ const LoginPage = () => {
                     required
                     maxLength={10}
                     data-testid="login-phone-input"
-                    className="bg-white border-gray-200 text-gray-900 placeholder:text-gray-500 focus:border-[#D4AF37] focus:ring-[#D4AF37] flex-1"
+                    className="bg-[#0A0A0C] border-white/10 text-white placeholder:text-gray-400 focus:border-[#D4AF37] focus:ring-[#D4AF37] flex-1"
                   />
                 </div>
               </div>
@@ -119,7 +119,7 @@ const LoginPage = () => {
               </Button>
               
               <div className="mt-6 text-center">
-                <p className="text-gray-500">
+                <p className="text-gray-400">
                   नया अकाउंट बनाएं?{' '}
                   <Link to="/signup" className="text-[#D4AF37] hover:text-[#FDE047] font-medium">
                     साइनअप करें
@@ -146,7 +146,7 @@ const LoginPage = () => {
                   required
                   maxLength={4}
                   data-testid="login-otp-input"
-                  className="bg-white border-gray-200 text-gray-900 text-center text-2xl tracking-[1em] placeholder:text-gray-500 placeholder:tracking-normal placeholder:text-base focus:border-[#D4AF37] focus:ring-[#D4AF37]"
+                  className="bg-[#0A0A0C] border-white/10 text-white text-center text-2xl tracking-[1em] placeholder:text-gray-400 placeholder:tracking-normal placeholder:text-base focus:border-[#D4AF37] focus:ring-[#D4AF37]"
                 />
               </div>
 
@@ -162,7 +162,7 @@ const LoginPage = () => {
               <button
                 type="button"
                 onClick={() => { setStep('phone'); setOtp(''); }}
-                className="w-full text-center text-gray-500 text-sm hover:text-gray-900 transition-all"
+                className="w-full text-center text-gray-400 text-sm hover:text-white transition-all"
               >
                 नंबर बदलें या दोबारा OTP भेजें
               </button>

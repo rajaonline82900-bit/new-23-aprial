@@ -32,24 +32,24 @@ html, body, #root {
 }
 
 :root {
-  --background: 0 0% 100%;
-  --foreground: 240 10% 10%;
-  --card: 210 20% 98%;
-  --card-foreground: 240 10% 10%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 240 10% 10%;
+  --background: 240 6% 4%;
+  --foreground: 0 0% 98%;
+  --card: 240 6% 8%;
+  --card-foreground: 0 0% 98%;
+  --popover: 240 6% 8%;
+  --popover-foreground: 0 0% 98%;
   --primary: 45 74% 52%;
   --primary-foreground: 0 0% 0%;
   --secondary: 160 84% 39%;
   --secondary-foreground: 0 0% 100%;
-  --muted: 210 20% 96%;
-  --muted-foreground: 240 4% 46%;
-  --accent: 210 20% 96%;
-  --accent-foreground: 240 10% 10%;
+  --muted: 240 6% 14%;
+  --muted-foreground: 0 0% 64%;
+  --accent: 240 6% 14%;
+  --accent-foreground: 0 0% 98%;
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 98%;
-  --border: 214 20% 90%;
-  --input: 214 20% 90%;
+  --border: 0 0% 100% / 0.08;
+  --input: 0 0% 100% / 0.08;
   --ring: 45 74% 52%;
   --radius: 0.75rem;
   --chart-1: 45 74% 52%;
@@ -67,8 +67,8 @@ html, body, #root {
 
 body {
   font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-  background-color: #ffffff;
-  color: #1a1a2e;
+  background-color: #0A0A0C;
+  color: #F9FAFB;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
@@ -89,16 +89,16 @@ code {
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #0A0A0C;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #27272A;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #3F3F46;
 }
 
 /* Gold glow effect */
@@ -113,7 +113,7 @@ code {
 
 /* Glass effect */
 .glass {
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(20, 20, 24, 0.8);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
@@ -130,7 +130,7 @@ code {
 
 .number-item.selected {
   background: linear-gradient(135deg, #D4AF37, #FDE047);
-  color: #1a1a2e;
+  color: #0A0A0C;
   box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
 }
 
