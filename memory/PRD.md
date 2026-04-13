@@ -1,98 +1,100 @@
-# MATKA 11 - Satta Matka Betting Platform
+# Satta Matka - MATKA 11 - Product Requirements Document
 
 ## Original Problem Statement
-Build a Satta Matka betting application supporting games like Delhi Bazaar, Shri Ganesh, Faridabad, Ghaziabad, Gali, and Disawar. Features include deposit/withdrawal, Jantri betting, Haruf betting, crossing, result history, bet history, PWA support, push notifications, Refer & Earn, real OTP Authentication, and Admin Panel for management.
+Build a Satta Matka betting application supporting games like Delhi Bazaar, Shri Ganesh, Faridabad, Ghaziabad, Gali, and Disawar. Features include deposit/withdrawal, Jantri betting, Haruf betting, crossing, result history, bet history, PWA support, push notifications, Refer & Earn, real OTP Authentication, and a full Admin Panel.
 
-## Architecture
-- **Frontend**: React + Tailwind CSS + Shadcn/UI + PWA (Service Worker)
-- **Backend**: FastAPI + Motor (Async MongoDB) + PyJWT + pywebpush
+## User Personas
+- **Players**: Hindi-speaking users who bet on Satta Matka games
+- **Admin (Vikram)**: Manages users, declares results, handles withdrawals, sends notifications
+
+## Core Architecture
+- **Frontend**: React + Tailwind CSS + Shadcn UI (Dark Theme)
+- **Backend**: FastAPI + Motor (Async MongoDB)
 - **Database**: MongoDB
-- **3rd Party**: DVHosting SMS API, Bavli Matka API, IMB Payment Gateway
-- **Theme**: White/Light theme with gold (#D4AF37) accent
+- **Auth**: Phone OTP + Admin email/password + JWT
+- **PWA**: Service Worker + Push Notifications (VAPID/pywebpush)
 
 ## Code Structure
-
-### Backend (Modular)
 ```
 /app/backend/
-├── server.py              # Main app entry (~150 lines)
-├── database.py            # MongoDB connection
-├── models.py              # Pydantic models
-├── auth.py                # JWT auth utilities
-├── config.py              # Constants, game config, env vars
-├── helpers.py             # Shared helpers (load_games, send_push)
-├── notifications.py       # Telegram/WhatsApp notification service
-├── routes/
-│   ├── auth_routes.py     # Auth endpoints
-│   ├── game_routes.py     # Games, bets
-│   ├── wallet_routes.py   # Wallet, deposit, withdrawal, referral
-│   ├── result_routes.py   # Results declaration, reverse, auto-fetch
-│   ├── chat_routes.py     # User-Admin chat system
-│   ├── admin_routes.py    # Admin CRUD, stats, settings, game mgmt, auto-expire loop
-│   └── notification_routes.py # Push notifications, VAPID
-└── uploads/               # Chat attachments, APK
-```
-
-### Frontend (Modular Admin)
-```
+├── server.py (slim ~150 lines, includes routers)
+├── config.py, database.py, models.py, auth.py, helpers.py
+├── routes/ (auth, game, wallet, result, chat, admin, notification)
+├── uploads/
 /app/frontend/src/
-├── pages/
-│   ├── AdminPage.js       # Slim admin page with clickable stat cards
-│   ├── admin/
-│   │   ├── AdminResultsTab.js
-│   │   ├── AdminBetsTab.js
-│   │   ├── AdminGamesTab.js
-│   │   ├── AdminWithdrawalsTab.js
-│   │   ├── AdminDepositsTab.js (date+time format)
-│   │   ├── AdminUsersTab.js
-│   │   ├── AdminSettingsTab.js
-│   │   └── AdminChatInbox.js (voice recording added)
-│   ├── DashboardPage.js
-│   ├── ChatPage.js
-│   ├── WalletPage.js (failed status for expired deposits)
-│   ├── SignupPage.js / LoginPage.js
-│   └── AdminLoginPage.js
-└── components/ (Shadcn/UI + custom)
+├── pages/ (Dashboard, Login, Wallet, Chat, Betting, Admin, etc.)
+├── pages/admin/ (AdminUsersTab, AdminBetsTab, AdminResultsTab, etc.)
+├── components/ (FooterNav, SidebarMenu, MatkaLogo)
+├── context/AuthContext.js
+├── public/sw.js (Service Worker)
 ```
 
-## What's Been Implemented
-- [x] Phone + OTP authentication (DVHosting SMS)
-- [x] Admin login (separate /admin-login route)
-- [x] 6 default games with IST time zones
-- [x] Jodi, Single, Haruf Andar/Bahar betting
-- [x] Batch betting support
-- [x] IMB Payment Gateway for deposits
-- [x] Withdrawal system (UPI/Bank/Scanner)
-- [x] Auto-result fetching from Bavli API (every 5 min)
-- [x] Manual result declaration with reverse options
-- [x] Push notifications (VAPID/webpush) - improved service worker
-- [x] PWA with service worker (offline support)
-- [x] APK download for Android
-- [x] User-Admin chat (text, image, voice, read receipts)
-- [x] Admin chat voice recording
-- [x] Refer & Earn (5% bonus on first deposit)
-- [x] Admin panel with full management
-- [x] Code refactoring (modular routes + components)
-- [x] White theme across entire app (user + admin)
-- [x] Clickable admin stat cards (users, new users, deposits)
-- [x] Today's bet amount in stats
-- [x] Date+time in all payment records
-- [x] Auto-expire pending deposits after 10 min (show "failed" not "pending")
-- [x] Improved payment callback URL resolution
+## What's Been Implemented (Complete)
 
-## April 13, 2026 Changes (11 items)
-1. ✅ Total users button clickable → switches to users tab
-2. ✅ Total bets card removed
-3. ✅ Today's bets shows total amount (₹) + bet count
-4. ✅ Today new users clickable → dialog with user details
-5. ✅ Today deposits clickable → dialog with user details + balance
-6. ✅ All payment records show date + time
-7. ✅ Admin chat voice recording added (Mic button)
-8. ✅ Payment callback URL improved (uses origin_url)
-9. ✅ Scanner payment auto-expires to "failed" after 10 min
-10. ✅ White background across entire app (user + admin)
-11. ✅ Push notification service worker updated (requireInteraction, better tags)
+### Phase 1 - Core App
+- Phone OTP login/registration
+- Game listing with live status
+- Jantri betting, Haruf betting, Crossing
+- Wallet with Stripe deposits & UPI withdrawals
+- Result history & Bet history
+- PWA support with service worker
+- Refer & Earn system
+- Dark theme (user-confirmed preference)
 
-## Pending/Future Tasks
-- P2: Email notifications for transactions
-- P2: Referral earnings history section
+### Phase 2 - Admin Panel
+- Admin email/password login at /admin-login
+- Dashboard stats: total users, today bets, deposits, withdrawals
+- Result declaration (manual + auto-fetch from Matka API)
+- Bet distribution reports
+- Game management (CRUD)
+- User management with full details (deposits/withdrawals/bets/winnings)
+- Wallet management (add/deduct balance)
+- User deletion
+- Withdrawal approve/reject
+- Deposit listing with dates
+- Settings management (Telegram, WhatsApp, min bets, withdrawal times)
+- Admin Chat with voice recording support
+- Jantri report & export
+
+### Phase 3 - Refactoring & Enhancements (Latest Session)
+- Modularized server.py into FastAPI APIRouters
+- Split AdminPage.js into component-based architecture
+- Added admin stat cards with clickable modals
+- Today New Users modal with clickable user detail view (2026-04-13)
+- Push notification token fix: localStorage key corrected to 'matka11_token' (2026-04-13)
+- Admin users limit bumped to 500 (2026-04-13)
+- Pending deposit auto-expiry after 10 minutes
+- Admin voice recording in chat
+
+## Pending / Backlog
+
+### P1 - Push Notifications E2E
+- Token key fix deployed (matka11_token) but needs real user to test browser permission flow
+- DB currently has 0 push subscriptions - awaiting real user interaction
+
+### P2 - Future Features
+- Email notifications for transactions
+- Referral earnings history section
+
+## 3rd Party Integrations
+- DVHosting SMS API (requires user API key)
+- Bavli Matka API (auto-result fetch, requires user API key)
+- pywebpush VAPID (system-generated keys)
+- Stripe (deposits)
+
+## Key API Endpoints
+- Auth: POST /api/auth/send-otp, /api/auth/verify-otp, /api/auth/admin/login
+- Games: GET /api/games, /api/games/{id}/results
+- Bets: POST /api/bets/place, GET /api/bets/history
+- Wallet: POST /api/wallet/deposit, /api/wallet/withdraw
+- Admin: GET /api/admin/stats, /api/admin/users, /api/admin/today-new-users
+- Push: GET /api/push/vapid-key, POST /api/push/subscribe, POST /api/push/send_all
+
+## DB Schema
+- users: {_id, name, phone, password_hash, role, balance, push_subscription, created_at, last_seen}
+- games: {game_id, name, name_hi, start_time, end_time, display_time, is_active}
+- bets: {id, user_id, game_id, number, bet_type, amount, status, potential_win, date}
+- transactions: {id, user_id, type, amount, status, created_at, utr_number, session_id}
+- results: {id, game_id, date, single_result, jodi_result, declared_at}
+- push_subscriptions: {user_id, subscription, updated_at}
+- messages: {sender_id, receiver_id, message, msg_type, attachment_url, read}
