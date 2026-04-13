@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import {
   ArrowLeft, Shield, Users, Trophy, Wallet, UserPlus,
-  ArrowDownLeft, ArrowUpRight, Coins, History, Loader2
+  ArrowDownLeft, ArrowUpRight, Coins, History, Loader2, Eye
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -36,6 +36,10 @@ const AdminPage = () => {
   const [todayUsers, setTodayUsers] = useState([]);
   const [todayDeposits, setTodayDeposits] = useState({ deposits: [], total: 0, total_amount: 0 });
   const [loadingDialog, setLoadingDialog] = useState(false);
+  const [selectedTodayUser, setSelectedTodayUser] = useState(null);
+  const [todayUserDetailOpen, setTodayUserDetailOpen] = useState(false);
+  const [todayUserDetails, setTodayUserDetails] = useState(null);
+  const [loadingUserDetail, setLoadingUserDetail] = useState(false);
 
   useEffect(() => {
     if (user?.role !== 'admin') { toast.error('Admin access required'); navigate('/dashboard'); return; }
@@ -61,6 +65,27 @@ const AdminPage = () => {
       setTodayUsers(data.users);
     } catch (e) { toast.error('Load failed'); }
     finally { setLoadingDialog(false); }
+  };
+
+  const openTodayUserDetail = async (u) => {
+    setSelectedTodayUser(u);
+    setTodayUserDetailOpen(true);
+    setLoadingUserDetail(true);
+    try {
+      const [depositsRes, withdrawalsRes, betsRes, winningsRes] = await Promise.all([
+        axios.get(`${API_URL}/api/admin/users/${u._id}/deposits`, { withCredentials: true }),
+        axios.get(`${API_URL}/api/admin/users/${u._id}/withdrawals`, { withCredentials: true }),
+        axios.get(`${API_URL}/api/admin/users/${u._id}/bets`, { withCredentials: true }),
+        axios.get(`${API_URL}/api/admin/users/${u._id}/winnings`, { withCredentials: true })
+      ]);
+      setTodayUserDetails({
+        deposits: depositsRes.data.deposits, totalDeposited: depositsRes.data.total_deposited,
+        withdrawals: withdrawalsRes.data.withdrawals, totalWithdrawn: withdrawalsRes.data.total_withdrawn,
+        bets: betsRes.data.bets, betStats: betsRes.data.stats,
+        winnings: winningsRes.data.winnings, totalWinnings: winningsRes.data.total_winnings
+      });
+    } catch (e) { toast.error('User details load failed'); }
+    finally { setLoadingUserDetail(false); }
   };
 
   const openTodayDeposits = async () => {
@@ -163,7 +188,7 @@ const AdminPage = () => {
           ) : (
             <div className="space-y-3">
               {todayUsers.map((u, i) => (
-                <div key={i} className="flex items-center justify-between p-3 bg-[#0A0A0C] rounded-lg border border-white/10">
+                <div key={i} onClick={() => openTodayUserDetail(u)} className="flex items-center justify-between p-3 bg-[#0A0A0C] rounded-lg border border-white/10 cursor-pointer hover:border-cyan-400/50 transition-all" data-testid={`today-user-${i}`}>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center">
                       <span className="text-cyan-400 font-bold">{u.name?.charAt(0)?.toUpperCase()}</span>
@@ -176,9 +201,12 @@ const AdminPage = () => {
                       </p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-white">₹{u.balance?.toFixed(2) || '0.00'}</p>
-                    <Badge className="bg-cyan-500/20 text-cyan-400 border-0 text-xs">{u.role || 'user'}</Badge>
+                  <div className="text-right flex items-center gap-2">
+                    <div>
+                      <p className="font-semibold text-white">₹{u.balance?.toFixed(2) || '0.00'}</p>
+                      <Badge className="bg-cyan-500/20 text-cyan-400 border-0 text-xs">{u.role || 'user'}</Badge>
+                    </div>
+                    <Eye className="w-4 h-4 text-gray-400" />
                   </div>
                 </div>
               ))}
@@ -218,6 +246,97 @@ const AdminPage = () => {
                 </div>
               ))}
             </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Today User Detail Dialog */}
+      <Dialog open={todayUserDetailOpen} onOpenChange={setTodayUserDetailOpen}>
+        <DialogContent className="bg-[#141418] border-white/10 text-white max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-['Unbounded'] flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-cyan-500/20 flex items-center justify-center">
+                <span className="text-cyan-400 font-bold text-xl">{selectedTodayUser?.name?.charAt(0)?.toUpperCase()}</span>
+              </div>
+              <div>
+                <p>{selectedTodayUser?.name}</p>
+                <p className="text-sm text-gray-400 font-normal">{selectedTodayUser?.phone || selectedTodayUser?.email}</p>
+                <p className="text-xs text-gray-500 font-normal">
+                  रजिस्टर: {selectedTodayUser?.created_at ? utcDate(selectedTodayUser.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true, day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                </p>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+
+          {loadingUserDetail ? (
+            <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-[#D4AF37]" /></div>
+          ) : todayUserDetails ? (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                <div className="p-3 bg-[#0A0A0C] rounded-lg text-center"><p className="text-gray-400 text-xs">बैलेंस</p><p className="text-lg font-bold text-white">₹{selectedTodayUser?.balance?.toFixed(2) || '0'}</p></div>
+                <div className="p-3 bg-[#0A0A0C] rounded-lg text-center"><p className="text-gray-400 text-xs">कुल जमा</p><p className="text-lg font-bold text-emerald-400">₹{todayUserDetails.totalDeposited || 0}</p></div>
+                <div className="p-3 bg-[#0A0A0C] rounded-lg text-center"><p className="text-gray-400 text-xs">कुल निकासी</p><p className="text-lg font-bold text-red-400">₹{todayUserDetails.totalWithdrawn || 0}</p></div>
+                <div className="p-3 bg-[#0A0A0C] rounded-lg text-center"><p className="text-gray-400 text-xs">कुल जीत</p><p className="text-lg font-bold text-[#D4AF37]">₹{todayUserDetails.totalWinnings || 0}</p></div>
+              </div>
+
+              {todayUserDetails.betStats && (
+                <div className="grid grid-cols-4 gap-2 mb-4">
+                  <div className="p-2 bg-[#0A0A0C] rounded text-center"><p className="text-xs text-gray-400">कुल बेट्स</p><p className="text-white font-bold">{todayUserDetails.betStats.total_bets}</p></div>
+                  <div className="p-2 bg-[#0A0A0C] rounded text-center"><p className="text-xs text-gray-400">जीती</p><p className="text-emerald-400 font-bold">{todayUserDetails.betStats.won}</p></div>
+                  <div className="p-2 bg-[#0A0A0C] rounded text-center"><p className="text-xs text-gray-400">हारी</p><p className="text-red-400 font-bold">{todayUserDetails.betStats.lost}</p></div>
+                  <div className="p-2 bg-[#0A0A0C] rounded text-center"><p className="text-xs text-gray-400">लंबित</p><p className="text-yellow-400 font-bold">{todayUserDetails.betStats.pending}</p></div>
+                </div>
+              )}
+
+              {/* Recent Deposits */}
+              {todayUserDetails.deposits?.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-sm font-medium text-gray-300 mb-2">हाल की जमा</p>
+                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                    {todayUserDetails.deposits.slice(0, 5).map((d, i) => (
+                      <div key={i} className="flex items-center justify-between p-2 bg-[#0A0A0C] rounded text-sm">
+                        <div className="flex items-center gap-2"><ArrowDownLeft className="w-3 h-3 text-emerald-400" /><span className="text-white">₹{d.amount}</span></div>
+                        <Badge className={d.status === 'completed' ? 'bg-emerald-500/20 text-emerald-400 text-xs' : 'bg-yellow-500/20 text-yellow-400 text-xs'}>{d.status}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Recent Bets */}
+              {todayUserDetails.bets?.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-sm font-medium text-gray-300 mb-2">हाल की बेट्स</p>
+                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                    {todayUserDetails.bets.slice(0, 5).map((b, i) => (
+                      <div key={i} className="flex items-center justify-between p-2 bg-[#0A0A0C] rounded text-sm">
+                        <span className="text-white">{b.game_name} - {b.number} ({b.bet_type})</span>
+                        <Badge className={b.status === 'won' ? 'bg-emerald-500/20 text-emerald-400 text-xs' : b.status === 'lost' ? 'bg-red-500/20 text-red-400 text-xs' : 'bg-yellow-500/20 text-yellow-400 text-xs'}>
+                          {b.status === 'won' ? `₹${b.won_amount}` : b.status}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Recent Withdrawals */}
+              {todayUserDetails.withdrawals?.length > 0 && (
+                <div>
+                  <p className="text-sm font-medium text-gray-300 mb-2">हाल की निकासी</p>
+                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                    {todayUserDetails.withdrawals.slice(0, 5).map((w, i) => (
+                      <div key={i} className="flex items-center justify-between p-2 bg-[#0A0A0C] rounded text-sm">
+                        <div className="flex items-center gap-2"><ArrowUpRight className="w-3 h-3 text-red-400" /><span className="text-white">₹{w.amount}</span></div>
+                        <Badge className={w.status === 'approved' ? 'bg-emerald-500/20 text-emerald-400 text-xs' : w.status === 'rejected' ? 'bg-red-500/20 text-red-400 text-xs' : 'bg-yellow-500/20 text-yellow-400 text-xs'}>{w.status}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <p className="text-gray-400 text-center py-8">कोई डेटा नहीं</p>
           )}
         </DialogContent>
       </Dialog>

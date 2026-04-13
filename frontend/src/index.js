@@ -62,13 +62,22 @@ async function subscribePush(registration) {
       applicationServerKey: urlBase64ToUint8Array(vapidKey)
     });
     
-    await fetch(`${API_URL}/api/push/subscribe`, {
+    const headers = { 'Content-Type': 'application/json' };
+    // Also send auth token from localStorage if available
+    const token = localStorage.getItem('matka11_token');
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    
+    const subResp = await fetch(`${API_URL}/api/push/subscribe`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: headers,
       credentials: 'include',
       body: JSON.stringify({ subscription: subscription.toJSON() })
     });
-    console.log('Push subscription registered');
+    if (subResp.ok) {
+      console.log('Push subscription registered successfully');
+    } else {
+      console.log('Push subscribe failed:', subResp.status);
+    }
   } catch (e) {
     console.log('Push subscribe error:', e);
   }

@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 # ===== Admin User Management =====
 
 @router.get("/admin/users")
-async def get_all_users(request: Request, skip: int = 0, limit: int = 50):
+async def get_all_users(request: Request, skip: int = 0, limit: int = 500):
     await get_admin_user(request)
     users = await db.users.find({}, {"password_hash": 0}).skip(skip).limit(limit).to_list(limit)
     for user in users:

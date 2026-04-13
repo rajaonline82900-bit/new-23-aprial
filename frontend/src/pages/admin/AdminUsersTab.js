@@ -30,7 +30,7 @@ const AdminUsersTab = () => {
 
   const fetchUsers = useCallback(async () => {
     try {
-      const { data } = await axios.get(`${API_URL}/api/admin/users`, { withCredentials: true });
+      const { data } = await axios.get(`${API_URL}/api/admin/users?limit=500`, { withCredentials: true });
       setUsers(data.users);
     } catch (error) {}
   }, []);
