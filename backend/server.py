@@ -21,7 +21,7 @@ from routes.game_routes import router as game_router
 from routes.wallet_routes import router as wallet_router
 from routes.result_routes import router as result_router
 from routes.chat_routes import router as chat_router
-from routes.admin_routes import router as admin_router, auto_fetch_loop
+from routes.admin_routes import router as admin_router, auto_fetch_loop, expire_pending_deposits_loop
 from routes.notification_routes import router as notification_router
 
 # Configure logging
@@ -143,6 +143,8 @@ async def start_auto_fetch():
     if MATKA_API_USERNAME and MATKA_API_PASSWORD:
         asyncio.create_task(auto_fetch_loop())
         logger.info("Auto-result fetch scheduled (every 5 min)")
+    asyncio.create_task(expire_pending_deposits_loop())
+    logger.info("Pending deposit expiry loop started (every 2 min)")
 
 
 @app.on_event("shutdown")

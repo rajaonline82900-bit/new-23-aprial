@@ -297,30 +297,32 @@ const WalletPage = () => {
     switch (status) {
       case 'completed':
       case 'approved':
-        return <Badge className="bg-emerald-500/20 text-emerald-400"><CheckCircle className="w-3 h-3 mr-1" /> पूर्ण</Badge>;
+        return <Badge className="bg-emerald-500/20 text-emerald-600"><CheckCircle className="w-3 h-3 mr-1" /> पूर्ण</Badge>;
       case 'pending':
-        return <Badge className="bg-yellow-500/20 text-yellow-400"><Clock className="w-3 h-3 mr-1" /> लंबित</Badge>;
+        return <Badge className="bg-yellow-500/20 text-yellow-600"><Clock className="w-3 h-3 mr-1" /> लंबित</Badge>;
       case 'rejected':
-        return <Badge className="bg-red-500/20 text-red-400"><XCircle className="w-3 h-3 mr-1" /> अस्वीकृत</Badge>;
+        return <Badge className="bg-red-500/20 text-red-600"><XCircle className="w-3 h-3 mr-1" /> अस्वीकृत</Badge>;
       case 'cancelled':
-        return <Badge className="bg-orange-500/20 text-orange-400"><XCircle className="w-3 h-3 mr-1" /> रद्द</Badge>;
+        return <Badge className="bg-orange-500/20 text-orange-600"><XCircle className="w-3 h-3 mr-1" /> रद्द</Badge>;
+      case 'failed':
+        return <Badge className="bg-red-500/20 text-red-600"><XCircle className="w-3 h-3 mr-1" /> विफल</Badge>;
       default:
-        return <Badge className="bg-gray-500/20 text-gray-400">{status}</Badge>;
+        return <Badge className="bg-gray-500/20 text-gray-500">{status}</Badge>;
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0C] app-shell">
+    <div className="min-h-screen bg-white app-shell">
       {/* Header */}
-      <header className="sticky top-0 z-50 glass border-b border-white/10">
+      <header className="sticky top-0 z-50 glass border-b border-gray-200">
         <div className="px-3 py-3">
           <div className="flex items-center gap-3">
             <Link to="/dashboard">
-              <button className="p-2 rounded-lg bg-[#141418] border border-white/10 text-gray-400 hover:text-white transition-all">
+              <button className="p-2 rounded-lg bg-gray-50 border border-gray-200 text-gray-500 hover:text-gray-900 transition-all">
                 <ArrowLeft className="w-5 h-5" />
               </button>
             </Link>
-            <h1 className="text-xl font-bold text-white font-['Unbounded']">वॉलेट</h1>
+            <h1 className="text-xl font-bold text-gray-900 font-['Unbounded']">वॉलेट</h1>
           </div>
         </div>
       </header>
@@ -333,8 +335,8 @@ const WalletPage = () => {
               <div className="flex items-center gap-3">
                 <Loader2 className="w-6 h-6 text-[#D4AF37] animate-spin" />
                 <div>
-                  <p className="text-white font-medium">भुगतान स्थिति की जांच हो रही है...</p>
-                  <p className="text-gray-400 text-sm">कृपया प्रतीक्षा करें</p>
+                  <p className="text-gray-900 font-medium">भुगतान स्थिति की जांच हो रही है...</p>
+                  <p className="text-gray-500 text-sm">कृपया प्रतीक्षा करें</p>
                 </div>
               </div>
             </CardContent>
@@ -346,8 +348,8 @@ const WalletPage = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 mb-1">कुल बैलेंस</p>
-                <p className="text-4xl font-bold text-white font-['Unbounded']">
+                <p className="text-gray-500 mb-1">कुल बैलेंस</p>
+                <p className="text-4xl font-bold text-gray-900 font-['Unbounded']">
                   ₹{user?.balance?.toFixed(2) || '0.00'}
                 </p>
               </div>
@@ -360,7 +362,7 @@ const WalletPage = () => {
               <Button
                 onClick={() => { setDepositOpen(true); setPaymentLink(null); }}
                 data-testid="deposit-button"
-                className="h-12 bg-[#10B981] hover:bg-[#059669] text-white font-bold"
+                className="h-12 bg-[#10B981] hover:bg-[#059669] text-gray-900 font-bold"
               >
                 <Plus className="w-5 h-5 mr-2" />
                 जमा करें
@@ -369,7 +371,7 @@ const WalletPage = () => {
                 onClick={() => setWithdrawOpen(true)}
                 data-testid="withdraw-button"
                 variant="outline"
-                className="h-12 border-white/20 text-white hover:bg-white/10"
+                className="h-12 border-white/20 text-gray-900 hover:bg-white/10"
               >
                 <Minus className="w-5 h-5 mr-2" />
                 निकासी
@@ -379,14 +381,14 @@ const WalletPage = () => {
         </Card>
 
         {/* Transactions */}
-        <Card className="bg-[#141418] border-white/10">
+        <Card className="bg-gray-50 border-gray-200">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="text-white font-['Unbounded']">लेनदेन</CardTitle>
+              <CardTitle className="text-gray-900 font-['Unbounded']">लेनदेन</CardTitle>
               <a
                 href={`${API_URL}/api/wallet/export`}
                 data-testid="export-transactions"
-                className="px-3 py-1.5 rounded-lg bg-[#0A0A0C] border border-white/10 text-gray-400 hover:text-white text-xs font-medium transition-all flex items-center gap-1"
+                className="px-3 py-1.5 rounded-lg bg-white border border-gray-200 text-gray-500 hover:text-gray-900 text-xs font-medium transition-all flex items-center gap-1"
               >
                 <Download className="w-3 h-3" />
                 Export CSV
@@ -406,7 +408,7 @@ const WalletPage = () => {
                   className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
                     txFilter === tab.key
                       ? 'bg-[#D4AF37] text-black'
-                      : 'bg-[#0A0A0C] text-gray-400 border border-white/10 hover:border-white/30'
+                      : 'bg-white text-gray-500 border border-gray-200 hover:border-white/30'
                   }`}
                 >
                   {tab.label}
@@ -421,7 +423,7 @@ const WalletPage = () => {
               </div>
             ) : transactions.filter(tx => txFilter === 'all' || tx.type === txFilter).length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-gray-400">कोई लेनदेन नहीं</p>
+                <p className="text-gray-500">कोई लेनदेन नहीं</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -430,7 +432,7 @@ const WalletPage = () => {
                   .map((tx, index) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between p-4 bg-[#0A0A0C] rounded-lg border border-white/5"
+                    className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-100"
                   >
                     <div className="flex items-center gap-3">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
@@ -444,13 +446,13 @@ const WalletPage = () => {
                         }
                       </div>
                       <div>
-                        <p className="text-white font-medium">
+                        <p className="text-gray-900 font-medium">
                           {tx.type === 'deposit' ? 'जमा' : 'निकासी'}
                           {tx.type === 'withdrawal' && tx.upi_id && (
                             <span className="text-gray-500 text-xs ml-2">({tx.upi_id})</span>
                           )}
                         </p>
-                        <p className="text-gray-400 text-sm">
+                        <p className="text-gray-500 text-sm">
                           {utcDate(tx.created_at).toLocaleDateString('hi-IN', { timeZone: 'Asia/Kolkata' })} • {utcDate(tx.created_at).toLocaleTimeString('hi-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true, timeZoneName: 'short' })}
                         </p>
                       </div>
@@ -483,10 +485,10 @@ const WalletPage = () => {
 
       {/* Deposit Dialog */}
       <Dialog open={depositOpen} onOpenChange={setDepositOpen}>
-        <DialogContent className="bg-[#141418] border-white/10 text-white max-w-md">
+        <DialogContent className="bg-gray-50 border-gray-200 text-gray-900 max-w-md">
           <DialogHeader>
             <DialogTitle className="font-['Unbounded']">पैसे जमा करें</DialogTitle>
-            <DialogDescription className="text-gray-400">
+            <DialogDescription className="text-gray-500">
               राशि दर्ज करें और UPI से भुगतान करें
             </DialogDescription>
           </DialogHeader>
@@ -500,7 +502,7 @@ const WalletPage = () => {
                 value={depositAmount}
                 onChange={(e) => handleDepositAmountChange(e.target.value)}
                 data-testid="deposit-amount-input"
-                className="bg-[#0A0A0C] border-white/10 text-white mt-2 text-lg h-12"
+                className="bg-white border-gray-200 text-gray-900 mt-2 text-lg h-12"
               />
             </div>
 
@@ -514,7 +516,7 @@ const WalletPage = () => {
                   className={`py-2 rounded-lg text-sm font-bold transition-all ${
                     depositAmount === String(amt)
                       ? 'bg-[#D4AF37] text-black'
-                      : 'bg-[#0A0A0C] text-gray-300 border border-white/10 hover:border-[#D4AF37]/50'
+                      : 'bg-white text-gray-300 border border-gray-200 hover:border-[#D4AF37]/50'
                   }`}
                 >
                   ₹{amt >= 1000 ? `${amt/1000}K` : amt}
@@ -527,7 +529,7 @@ const WalletPage = () => {
             onClick={handleDeposit}
             disabled={!depositAmount || parseFloat(depositAmount) < 100 || processing}
             data-testid="confirm-deposit-button"
-            className="w-full mt-4 h-12 bg-[#10B981] hover:bg-[#059669] text-white font-bold"
+            className="w-full mt-4 h-12 bg-[#10B981] hover:bg-[#059669] text-gray-900 font-bold"
           >
             {processing ? (
               <span className="flex items-center gap-2">
@@ -565,10 +567,10 @@ const WalletPage = () => {
 
       {/* Withdraw Dialog */}
       <Dialog open={withdrawOpen} onOpenChange={setWithdrawOpen}>
-        <DialogContent className="bg-[#141418] border-white/10 text-white max-w-md">
+        <DialogContent className="bg-gray-50 border-gray-200 text-gray-900 max-w-md">
           <DialogHeader>
             <DialogTitle className="font-['Unbounded']">पैसे निकालें</DialogTitle>
-            <DialogDescription className="text-gray-400">
+            <DialogDescription className="text-gray-500">
               निकासी राशि और UPI ID दर्ज करें
             </DialogDescription>
           </DialogHeader>
@@ -606,14 +608,14 @@ const WalletPage = () => {
                 value={withdrawAmount}
                 onChange={(e) => handleWithdrawAmountChange(e.target.value)}
                 data-testid="withdraw-amount-input"
-                className="bg-[#0A0A0C] border-white/10 text-white mt-2"
+                className="bg-white border-gray-200 text-gray-900 mt-2"
               />
               {withdrawAmount && parseFloat(withdrawAmount) < (appSettings.min_withdrawal || 100) && (
                 <div className="blink-warning mt-2 p-2 rounded-lg bg-red-600/20 border border-red-500">
                   <p className="text-red-500 text-lg font-black text-center">न्यूनतम निकासी ₹{appSettings.min_withdrawal || 100} है!</p>
                 </div>
               )}
-              <p className="text-gray-400 text-sm mt-1">
+              <p className="text-gray-500 text-sm mt-1">
                 उपलब्ध: ₹{user?.balance?.toFixed(2) || '0.00'}
               </p>
             </div>
@@ -634,7 +636,7 @@ const WalletPage = () => {
                     className={`flex flex-col items-center gap-1 py-3 rounded-lg text-sm font-bold transition-all ${
                       withdrawMethod === m.key
                         ? 'bg-[#D4AF37] text-black'
-                        : 'bg-[#0A0A0C] text-gray-400 border border-white/10 hover:border-[#D4AF37]/50'
+                        : 'bg-white text-gray-500 border border-gray-200 hover:border-[#D4AF37]/50'
                     }`}
                   >
                     {m.icon}
@@ -654,7 +656,7 @@ const WalletPage = () => {
                   value={upiId}
                   onChange={(e) => setUpiId(e.target.value)}
                   data-testid="withdraw-upi-input"
-                  className="bg-[#0A0A0C] border-white/10 text-white mt-2"
+                  className="bg-white border-gray-200 text-gray-900 mt-2"
                 />
               </div>
             )}
@@ -670,7 +672,7 @@ const WalletPage = () => {
                     value={accountHolder}
                     onChange={(e) => setAccountHolder(e.target.value)}
                     data-testid="withdraw-account-holder"
-                    className="bg-[#0A0A0C] border-white/10 text-white mt-1"
+                    className="bg-white border-gray-200 text-gray-900 mt-1"
                   />
                 </div>
                 <div>
@@ -681,7 +683,7 @@ const WalletPage = () => {
                     value={bankAccount}
                     onChange={(e) => setBankAccount(e.target.value)}
                     data-testid="withdraw-bank-account"
-                    className="bg-[#0A0A0C] border-white/10 text-white mt-1"
+                    className="bg-white border-gray-200 text-gray-900 mt-1"
                   />
                 </div>
                 <div>
@@ -692,7 +694,7 @@ const WalletPage = () => {
                     value={ifscCode}
                     onChange={(e) => setIfscCode(e.target.value)}
                     data-testid="withdraw-ifsc-code"
-                    className="bg-[#0A0A0C] border-white/10 text-white mt-1"
+                    className="bg-white border-gray-200 text-gray-900 mt-1"
                   />
                 </div>
               </div>
@@ -705,10 +707,10 @@ const WalletPage = () => {
                 <div className="mt-2">
                   {scannerPreview ? (
                     <div className="relative">
-                      <img src={scannerPreview} alt="Scanner" className="w-full max-h-48 object-contain rounded-lg border border-white/10" />
+                      <img src={scannerPreview} alt="Scanner" className="w-full max-h-48 object-contain rounded-lg border border-gray-200" />
                       <button
                         onClick={() => { setScannerPreview(''); setScannerImage(null); }}
-                        className="absolute top-2 right-2 p-1 rounded-full bg-red-600 text-white hover:bg-red-700"
+                        className="absolute top-2 right-2 p-1 rounded-full bg-red-600 text-gray-900 hover:bg-red-700"
                       >
                         <XCircle className="w-4 h-4" />
                       </button>
@@ -719,9 +721,9 @@ const WalletPage = () => {
                       )}
                     </div>
                   ) : (
-                    <label className="flex flex-col items-center justify-center p-6 rounded-lg border-2 border-dashed border-white/20 hover:border-[#D4AF37]/50 cursor-pointer transition-all bg-[#0A0A0C]" data-testid="scanner-upload-area">
-                      <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                      <span className="text-gray-400 text-sm">इमेज चुनें या यहाँ ड्रॉप करें</span>
+                    <label className="flex flex-col items-center justify-center p-6 rounded-lg border-2 border-dashed border-white/20 hover:border-[#D4AF37]/50 cursor-pointer transition-all bg-white" data-testid="scanner-upload-area">
+                      <Upload className="w-8 h-8 text-gray-500 mb-2" />
+                      <span className="text-gray-500 text-sm">इमेज चुनें या यहाँ ड्रॉप करें</span>
                       <input type="file" accept="image/*" className="hidden" onChange={handleScannerUpload} />
                     </label>
                   )}

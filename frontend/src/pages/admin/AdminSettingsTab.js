@@ -50,68 +50,68 @@ const AdminSettingsTab = () => {
   };
 
   return (
-    <Card className="bg-[#141418] border-white/10">
+    <Card className="bg-gray-50 border-gray-200">
       <CardHeader>
-        <CardTitle className="text-white font-['Unbounded']">ऐप सेटिंग्स</CardTitle>
-        <CardDescription className="text-gray-400">Telegram और WhatsApp लिंक सेट करें</CardDescription>
+        <CardTitle className="text-gray-900 font-['Unbounded']">ऐप सेटिंग्स</CardTitle>
+        <CardDescription className="text-gray-500">Telegram और WhatsApp लिंक सेट करें</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div>
           <Label className="text-gray-300 mb-2 block">Telegram Channel/Group Link</Label>
-          <Input type="url" placeholder="https://t.me/yourchannel" value={telegramLink} onChange={(e) => setTelegramLink(e.target.value)} data-testid="settings-telegram-link" className="bg-[#0A0A0C] border-white/10 text-white" />
+          <Input type="url" placeholder="https://t.me/yourchannel" value={telegramLink} onChange={(e) => setTelegramLink(e.target.value)} data-testid="settings-telegram-link" className="bg-white border-gray-200 text-gray-900" />
         </div>
         <div>
           <Label className="text-gray-300 mb-2 block">WhatsApp Group Link</Label>
-          <Input type="url" placeholder="https://chat.whatsapp.com/..." value={whatsappLink} onChange={(e) => setWhatsappLink(e.target.value)} data-testid="settings-whatsapp-link" className="bg-[#0A0A0C] border-white/10 text-white" />
+          <Input type="url" placeholder="https://chat.whatsapp.com/..." value={whatsappLink} onChange={(e) => setWhatsappLink(e.target.value)} data-testid="settings-whatsapp-link" className="bg-white border-gray-200 text-gray-900" />
         </div>
         <div>
           <Label className="text-gray-300 mb-2 block">Withdrawal Proof Telegram Link</Label>
-          <Input type="url" placeholder="https://t.me/withdrawal_proofs" value={withdrawalProofTelegram} onChange={(e) => setWithdrawalProofTelegram(e.target.value)} data-testid="settings-withdrawal-proof" className="bg-[#0A0A0C] border-white/10 text-white" />
+          <Input type="url" placeholder="https://t.me/withdrawal_proofs" value={withdrawalProofTelegram} onChange={(e) => setWithdrawalProofTelegram(e.target.value)} data-testid="settings-withdrawal-proof" className="bg-white border-gray-200 text-gray-900" />
         </div>
 
-        <div className="border-t border-white/10 pt-4">
-          <h3 className="text-white font-bold mb-3">निकासी समय (Withdrawal Time)</h3>
+        <div className="border-t border-gray-200 pt-4">
+          <h3 className="text-gray-900 font-bold mb-3">निकासी समय (Withdrawal Time)</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label className="text-gray-300 mb-2 block">शुरू (Start)</Label>
-              <Input type="time" value={withdrawalStartTime} onChange={(e) => setWithdrawalStartTime(e.target.value)} data-testid="settings-withdrawal-start" className="bg-[#0A0A0C] border-white/10 text-white" />
+              <Input type="time" value={withdrawalStartTime} onChange={(e) => setWithdrawalStartTime(e.target.value)} data-testid="settings-withdrawal-start" className="bg-white border-gray-200 text-gray-900" />
             </div>
             <div>
               <Label className="text-gray-300 mb-2 block">खत्म (End)</Label>
-              <Input type="time" value={withdrawalEndTime} onChange={(e) => setWithdrawalEndTime(e.target.value)} data-testid="settings-withdrawal-end" className="bg-[#0A0A0C] border-white/10 text-white" />
+              <Input type="time" value={withdrawalEndTime} onChange={(e) => setWithdrawalEndTime(e.target.value)} data-testid="settings-withdrawal-end" className="bg-white border-gray-200 text-gray-900" />
             </div>
           </div>
           <p className="text-gray-500 text-xs mt-1">खाली छोड़ने पर 24 घंटे निकासी उपलब्ध रहेगी</p>
         </div>
 
-        <div className="border-t border-white/10 pt-4">
-          <h3 className="text-white font-bold mb-3">न्यूनतम बेट राशि</h3>
+        <div className="border-t border-gray-200 pt-4">
+          <h3 className="text-gray-900 font-bold mb-3">न्यूनतम बेट राशि</h3>
           <div className="grid grid-cols-3 gap-4">
             <div>
               <Label className="text-gray-300 mb-2 block">जोड़ी (₹)</Label>
-              <Input type="number" value={minBetJodi} onChange={(e) => setMinBetJodi(e.target.value)} data-testid="settings-min-bet-jodi" className="bg-[#0A0A0C] border-white/10 text-white" />
+              <Input type="number" value={minBetJodi} onChange={(e) => setMinBetJodi(e.target.value)} data-testid="settings-min-bet-jodi" className="bg-white border-gray-200 text-gray-900" />
             </div>
             <div>
               <Label className="text-gray-300 mb-2 block">हरूफ (₹)</Label>
-              <Input type="number" value={minBetHaruf} onChange={(e) => setMinBetHaruf(e.target.value)} data-testid="settings-min-bet-haruf" className="bg-[#0A0A0C] border-white/10 text-white" />
+              <Input type="number" value={minBetHaruf} onChange={(e) => setMinBetHaruf(e.target.value)} data-testid="settings-min-bet-haruf" className="bg-white border-gray-200 text-gray-900" />
             </div>
             <div>
               <Label className="text-gray-300 mb-2 block">क्रॉसिंग (₹)</Label>
-              <Input type="number" value={minBetCrossing} onChange={(e) => setMinBetCrossing(e.target.value)} data-testid="settings-min-bet-crossing" className="bg-[#0A0A0C] border-white/10 text-white" />
+              <Input type="number" value={minBetCrossing} onChange={(e) => setMinBetCrossing(e.target.value)} data-testid="settings-min-bet-crossing" className="bg-white border-gray-200 text-gray-900" />
             </div>
           </div>
         </div>
 
-        <div className="border-t border-white/10 pt-4">
-          <h3 className="text-white font-bold mb-3">न्यूनतम जमा / निकासी</h3>
+        <div className="border-t border-gray-200 pt-4">
+          <h3 className="text-gray-900 font-bold mb-3">न्यूनतम जमा / निकासी</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label className="text-gray-300 mb-2 block">न्यूनतम जमा (₹)</Label>
-              <Input type="number" value={minDeposit} onChange={(e) => setMinDeposit(e.target.value)} data-testid="settings-min-deposit" className="bg-[#0A0A0C] border-white/10 text-white" />
+              <Input type="number" value={minDeposit} onChange={(e) => setMinDeposit(e.target.value)} data-testid="settings-min-deposit" className="bg-white border-gray-200 text-gray-900" />
             </div>
             <div>
               <Label className="text-gray-300 mb-2 block">न्यूनतम निकासी (₹)</Label>
-              <Input type="number" value={minWithdrawal} onChange={(e) => setMinWithdrawal(e.target.value)} data-testid="settings-min-withdrawal" className="bg-[#0A0A0C] border-white/10 text-white" />
+              <Input type="number" value={minWithdrawal} onChange={(e) => setMinWithdrawal(e.target.value)} data-testid="settings-min-withdrawal" className="bg-white border-gray-200 text-gray-900" />
             </div>
           </div>
         </div>

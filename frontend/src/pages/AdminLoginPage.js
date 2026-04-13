@@ -46,13 +46,13 @@ const AdminLoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-[#0A0A0C]">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-white">
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl" />
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#10B981]/5 rounded-full blur-3xl" />
       </div>
       
-      <Card className="w-full max-w-sm bg-[#141418] border-white/10 relative z-10">
+      <Card className="w-full max-w-sm bg-gray-50 border-gray-200 relative z-10">
         <CardHeader className="space-y-3 text-center">
           <div className="flex justify-center">
             <MatkaLogo size="lg" />
@@ -76,7 +76,7 @@ const AdminLoginPage = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 data-testid="admin-email-input"
-                className="bg-[#0A0A0C] border-white/10 text-white placeholder:text-gray-500 focus:border-[#D4AF37] focus:ring-[#D4AF37]"
+                className="bg-white border-gray-200 text-gray-900 placeholder:text-gray-500 focus:border-[#D4AF37] focus:ring-[#D4AF37]"
               />
             </div>
             
@@ -90,12 +90,12 @@ const AdminLoginPage = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   data-testid="admin-password-input"
-                  className="bg-[#0A0A0C] border-white/10 text-white placeholder:text-gray-500 focus:border-[#D4AF37] focus:ring-[#D4AF37] pr-10"
+                  className="bg-white border-gray-200 text-gray-900 placeholder:text-gray-500 focus:border-[#D4AF37] focus:ring-[#D4AF37] pr-10"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-900"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>

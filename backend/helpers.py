@@ -37,6 +37,7 @@ async def get_games_dict():
 async def send_push_to_all(title: str, body: str, url: str = "/dashboard"):
     subs = await db.push_subscriptions.find({}).to_list(5000)
     sent = 0
+    failed = 0
     for sub in subs:
         try:
             webpush(
@@ -46,9 +47,12 @@ async def send_push_to_all(title: str, body: str, url: str = "/dashboard"):
                 vapid_claims={"sub": "mailto:admin@sattamatka.com"}
             )
             sent += 1
-        except WebPushException:
+        except WebPushException as e:
+            logger.warning(f"Push failed (removing sub): {e}")
             await db.push_subscriptions.delete_one({"_id": sub["_id"]})
+            failed += 1
         except Exception as e:
             logger.error(f"Push error: {e}")
-    logger.info(f"Push notifications sent: {sent}/{len(subs)}")
+            failed += 1
+    logger.info(f"Push notifications sent: {sent}/{len(subs)}, failed: {failed}")
     return sent

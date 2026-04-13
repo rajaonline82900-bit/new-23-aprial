@@ -1,118 +1,101 @@
-const CACHE_NAME = 'matka11-v6';
-const STATIC_ASSETS = [
-  '/icon-192.png',
-  '/icon-512.png'
-];
+const CACHE_NAME = 'matka11-v7';
+const STATIC_ASSETS = ['/manifest.json'];
 
+// Install - cache essential assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(STATIC_ASSETS))
+      .then(() => self.skipWaiting())
   );
-  self.skipWaiting();
 });
 
+// Activate - clean old caches, take control
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+    caches.keys().then(keys => 
+      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
     ).then(() => self.clients.claim())
   );
 });
 
+// Fetch - Network-first for API/navigation, cache-first for static
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
+  
+  // Skip non-http requests
+  if (!url.protocol.startsWith('http')) return;
 
-  // Never intercept non-GET, API calls, or APK downloads
-  if (event.request.method !== 'GET') return;
-  if (url.pathname.startsWith('/api/')) return;
-  if (url.pathname.endsWith('.apk')) return;
+  // API calls: always network
+  if (url.pathname.startsWith('/api')) {
+    event.respondWith(fetch(event.request).catch(() => new Response('{"error":"offline"}', { headers: { 'Content-Type': 'application/json' } })));
+    return;
+  }
 
-  // For navigation (HTML pages) - network first, fallback to cache
-  // IMPORTANT: Don't cache HTML aggressively to prevent auth loss
+  // Navigation requests: network-first, fallback to cache
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request).catch(() => caches.match('/'))
+      fetch(event.request).catch(() => caches.match('/index.html'))
     );
     return;
   }
 
-  // For chat uploaded files (images/audio) - cache after first load
-  if (url.pathname.match(/\/uploads\/chat_/)) {
-    event.respondWith(
-      caches.match(event.request).then((cached) => {
-        return cached || fetch(event.request).then((response) => {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          return response;
-        });
-      })
-    );
-    return;
-  }
-
-  // For static assets (images, icons, fonts) - cache first
-  if (url.pathname.match(/\.(png|jpg|jpeg|ico|svg|woff2?|webp|gif)$/)) {
-    event.respondWith(
-      caches.match(event.request).then((cached) => {
-        return cached || fetch(event.request).then((response) => {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          return response;
-        });
-      })
-    );
-    return;
-  }
-
-  // For JS/CSS - network first, fallback to cache
+  // Static assets: cache-first
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
+    caches.match(event.request).then(cached => cached || fetch(event.request).then(response => {
+      if (response.status === 200 && (url.pathname.endsWith('.js') || url.pathname.endsWith('.css') || url.pathname.endsWith('.png') || url.pathname.endsWith('.ico'))) {
         const clone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-        return response;
-      })
-      .catch(() => caches.match(event.request))
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+      }
+      return response;
+    }))
   );
 });
 
-// Push Notification - Results + Chat messages
+// Push notification handler
 self.addEventListener('push', (event) => {
-  let data = { title: 'MATKA 11', body: 'Result aa gaya!' };
+  let data = { title: 'MATKA 11', body: 'नया अपडेट!', url: '/dashboard' };
+  
   try {
-    data = event.data.json();
-  } catch (e) {}
+    if (event.data) {
+      const parsed = event.data.json();
+      data = { ...data, ...parsed };
+    }
+  } catch (e) {
+    try {
+      data.body = event.data.text();
+    } catch (e2) {}
+  }
 
   const options = {
     body: data.body,
-    icon: '/icon-192.png',
-    badge: '/icon-192.png',
+    icon: '/logo192.png',
+    badge: '/logo192.png',
     vibrate: [200, 100, 200],
-    data: { url: data.url || '/' },
-    tag: data.tag || 'matka11-notification',
-    renotify: true
+    data: { url: data.url || '/dashboard' },
+    requireInteraction: true,
+    tag: 'matka11-notification-' + Date.now(),
+    actions: [{ action: 'open', title: 'देखें' }]
   };
-
-  if (data.type === 'chat') {
-    options.data.url = '/chat';
-    options.tag = 'matka11-chat';
-  }
 
   event.waitUntil(
     self.registration.showNotification(data.title, options)
   );
 });
 
+// Notification click handler
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const url = event.notification.data?.url || '/';
+  
+  const url = event.notification.data?.url || '/dashboard';
   
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
       for (const client of windowClients) {
         if (client.url.includes(self.location.origin)) {
+          client.focus();
           client.navigate(url);
-          return client.focus();
+          return;
         }
       }
       return clients.openWindow(url);

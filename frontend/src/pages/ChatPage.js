@@ -134,17 +134,17 @@ const ChatPage = () => {
   let lastDate = '';
 
   return (
-    <div className="min-h-screen bg-[#0A0A0C] flex flex-col">
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#0A0A0C] border-b border-white/10" style={{maxWidth: '480px', margin: '0 auto'}}>
+    <div className="min-h-screen bg-white flex flex-col">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200" style={{maxWidth: '480px', margin: '0 auto'}}>
         <div className="px-3 py-3 flex items-center gap-3">
-          <button onClick={() => navigate('/dashboard')} className="p-1.5 rounded-lg bg-[#141418] border border-white/10 text-gray-400 hover:text-white transition-all" data-testid="chat-back-btn">
+          <button onClick={() => navigate('/dashboard')} className="p-1.5 rounded-lg bg-gray-50 border border-gray-200 text-gray-500 hover:text-gray-900 transition-all" data-testid="chat-back-btn">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="w-9 h-9 rounded-full bg-[#D4AF37]/20 flex items-center justify-center">
             <MessageCircle className="w-4 h-4 text-[#D4AF37]" />
           </div>
           <div>
-            <p className="text-white font-bold text-sm">MATKA 11 Support</p>
+            <p className="text-gray-900 font-bold text-sm">MATKA 11 Support</p>
             <p className="text-green-400 text-[10px]">Online</p>
           </div>
         </div>
@@ -154,7 +154,7 @@ const ChatPage = () => {
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <MessageCircle className="w-12 h-12 text-gray-600 mb-3" />
-            <p className="text-gray-400 text-sm">Admin se baat karein</p>
+            <p className="text-gray-500 text-sm">Admin se baat karein</p>
             <p className="text-gray-600 text-xs mt-1">Message, photo ya voice bhejein</p>
           </div>
         )}
@@ -167,11 +167,11 @@ const ChatPage = () => {
             <React.Fragment key={msg.id}>
               {showDateHeader && (
                 <div className="flex justify-center my-3">
-                  <span className="text-[10px] text-gray-500 bg-[#141418] px-3 py-1 rounded-full">{msgDate}</span>
+                  <span className="text-[10px] text-gray-500 bg-gray-50 px-3 py-1 rounded-full">{msgDate}</span>
                 </div>
               )}
               <div className={`flex mb-2 ${isUser ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[75%] px-3 py-2 rounded-2xl ${isUser ? 'bg-[#D4AF37] text-black rounded-br-md' : 'bg-[#1E1E24] text-white rounded-bl-md border border-white/10'}`} data-testid={`chat-msg-${msg.id}`}>
+                <div className={`max-w-[75%] px-3 py-2 rounded-2xl ${isUser ? 'bg-[#D4AF37] text-black rounded-br-md' : 'bg-gray-100 text-gray-900 rounded-bl-md border border-gray-200'}`} data-testid={`chat-msg-${msg.id}`}>
                   {renderMsgContent(msg)}
                   <div className={`flex items-center justify-end gap-0.5 mt-0.5 ${isUser ? 'text-black/50' : 'text-gray-500'}`}>
                     <span className="text-[9px]">{formatTime(msg.created_at)}</span>
@@ -186,22 +186,22 @@ const ChatPage = () => {
       </main>
 
       {/* Input Bar */}
-      <div className="fixed bottom-14 left-0 right-0 z-40 bg-[#0A0A0C] border-t border-white/10 px-3 py-2" style={{maxWidth: '480px', margin: '0 auto'}}>
+      <div className="fixed bottom-14 left-0 right-0 z-40 bg-white border-t border-gray-200 px-3 py-2" style={{maxWidth: '480px', margin: '0 auto'}}>
         <input type="file" ref={fileInputRef} accept="image/*" onChange={handleImageSelect} className="hidden" data-testid="chat-file-input" />
         {recording ? (
           <div className="flex items-center gap-3">
             <div className="flex-1 flex items-center gap-2 bg-red-500/10 border border-red-500/30 rounded-full px-4 py-2.5">
               <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
               <span className="text-red-400 text-sm font-mono">{formatRecordTime(recordTime)}</span>
-              <span className="text-gray-400 text-xs">Recording...</span>
+              <span className="text-gray-500 text-xs">Recording...</span>
             </div>
             <button onClick={stopRecording} className="w-10 h-10 rounded-full bg-red-500 flex items-center justify-center" data-testid="chat-stop-record">
-              <Square className="w-4 h-4 text-white fill-white" />
+              <Square className="w-4 h-4 text-gray-900 fill-white" />
             </button>
           </div>
         ) : (
           <div className="flex items-center gap-2">
-            <button onClick={() => fileInputRef.current?.click()} disabled={sending} className="w-10 h-10 rounded-full bg-[#141418] border border-white/10 flex items-center justify-center text-gray-400 hover:text-white disabled:opacity-40 transition-all" data-testid="chat-image-btn">
+            <button onClick={() => fileInputRef.current?.click()} disabled={sending} className="w-10 h-10 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-900 disabled:opacity-40 transition-all" data-testid="chat-image-btn">
               <Image className="w-4 h-4" />
             </button>
             <input
@@ -209,7 +209,7 @@ const ChatPage = () => {
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && sendTextMessage()}
               placeholder="Message type karein..."
-              className="flex-1 bg-[#141418] border border-white/10 rounded-full px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#D4AF37] placeholder-gray-500"
+              className="flex-1 bg-gray-50 border border-gray-200 rounded-full px-4 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-[#D4AF37] placeholder-gray-500"
               data-testid="chat-input"
             />
             {input.trim() ? (

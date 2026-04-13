@@ -165,6 +165,10 @@ async def get_admin_stats(request: Request):
     today_bets = await db.bets.count_documents({"date": today})
     today_new_users = await db.users.count_documents({"created_at": {"$gte": today_start}})
 
+    # Calculate today's total bet amount
+    today_bets_list = await db.bets.find({"date": today}, {"amount": 1}).to_list(10000)
+    today_bet_amount = sum(b.get("amount", 0) for b in today_bets_list)
+
     today_deposits = await db.transactions.find({
         "type": "deposit", "status": "completed", "created_at": {"$gte": today_start}
     }).to_list(1000)
@@ -193,6 +197,7 @@ async def get_admin_stats(request: Request):
         "total_users": total_users, "total_bets": total_bets,
         "pending_withdrawals": pending_withdrawals,
         "today_bets": today_bets, "today_new_users": today_new_users,
+        "today_bet_amount": today_bet_amount,
         "today_deposit_amount": today_deposit_amount,
         "today_withdrawal_amount": today_withdrawal_amount,
         "pending_withdrawal_amount": pending_withdrawal_amount,
@@ -200,6 +205,37 @@ async def get_admin_stats(request: Request):
         "total_withdrawal_amount": total_withdrawal_amount,
         "notifications": {**notification_status, "total_subscribers": total_subscribers}
     }
+
+
+@router.get("/admin/today-new-users")
+async def get_today_new_users(request: Request):
+    await get_admin_user(request)
+    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    users = await db.users.find({"created_at": {"$gte": today_start}}, {"password_hash": 0}).sort("created_at", -1).to_list(500)
+    for u in users:
+        u["_id"] = str(u["_id"])
+    return {"users": users, "total": len(users)}
+
+
+@router.get("/admin/today-deposits")
+async def get_today_deposits(request: Request):
+    await get_admin_user(request)
+    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    deposits = await db.transactions.find({
+        "type": "deposit", "status": "completed", "created_at": {"$gte": today_start}
+    }, {"_id": 0}).sort("created_at", -1).to_list(500)
+
+    for d in deposits:
+        user = await db.users.find_one({"_id": ObjectId(d["user_id"])}, {"name": 1, "phone": 1, "email": 1, "balance": 1})
+        if user:
+            d["user_name"] = user.get("name", "")
+            d["user_phone"] = user.get("phone", "")
+            d["user_email"] = user.get("email", "")
+            d["user_balance"] = user.get("balance", 0)
+
+    total_amount = sum(d.get("amount", 0) for d in deposits)
+    return {"deposits": deposits, "total": len(deposits), "total_amount": total_amount}
+
 
 
 # ===== Admin Withdrawals & Deposits =====
@@ -675,6 +711,24 @@ async def auto_fetch_loop():
         except Exception as e:
             logger.error(f"Auto-fetch loop error: {e}")
         await asyncio.sleep(300)
+
+
+async def expire_pending_deposits_loop():
+    """Mark pending deposits as failed after 10 minutes"""
+    logger.info("Pending deposit expiry loop started")
+    while True:
+        try:
+            cutoff = datetime.now(timezone.utc) - timedelta(minutes=10)
+            result = await db.transactions.update_many(
+                {"type": "deposit", "status": "pending", "created_at": {"$lt": cutoff}},
+                {"$set": {"status": "failed"}}
+            )
+            if result.modified_count > 0:
+                logger.info(f"Expired {result.modified_count} pending deposits")
+        except Exception as e:
+            logger.error(f"Deposit expiry loop error: {e}")
+        await asyncio.sleep(120)
+
 
 
 @router.post("/admin/results/auto-fetch")

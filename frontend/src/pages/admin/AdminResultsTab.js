@@ -79,18 +79,18 @@ const AdminResultsTab = ({ games }) => {
   return (
     <>
       {todayResults.games.length > 0 && (
-        <Card className="bg-[#141418] border-white/10 mb-6">
+        <Card className="bg-gray-50 border-gray-200 mb-6">
           <CardHeader className="pb-3">
-            <CardTitle className="text-white font-['Unbounded'] text-base">आज के रिजल्ट ({todayResults.date})</CardTitle>
+            <CardTitle className="text-gray-900 font-['Unbounded'] text-base">आज के रिजल्ट ({todayResults.date})</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
               {todayResults.games.map((g) => (
-                <div key={g.game_id} className={`flex items-center justify-between p-3 rounded-lg border ${g.declared ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-[#0A0A0C] border-white/5'}`} data-testid={`result-status-${g.game_id}`}>
+                <div key={g.game_id} className={`flex items-center justify-between p-3 rounded-lg border ${g.declared ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-white border-gray-100'}`} data-testid={`result-status-${g.game_id}`}>
                   <div className="flex items-center gap-3">
                     <div className={`w-2.5 h-2.5 rounded-full ${g.declared ? 'bg-emerald-500' : 'bg-gray-600'}`}></div>
                     <div>
-                      <p className="text-white font-medium text-sm">{g.name_hi}</p>
+                      <p className="text-gray-900 font-medium text-sm">{g.name_hi}</p>
                       <p className="text-gray-500 text-xs">{g.start_time} - {g.end_time} | बेट्स: {g.total_bets}</p>
                     </div>
                   </div>
@@ -108,12 +108,12 @@ const AdminResultsTab = ({ games }) => {
         </Card>
       )}
 
-      <Card className="bg-[#141418] border-[#D4AF37]/20 mb-4">
+      <Card className="bg-gray-50 border-[#D4AF37]/20 mb-4">
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-white font-bold">ऑटो रिजल्ट</h3>
-              <p className="text-gray-400 text-sm">API से रिजल्ट ऑटो फेच होते हैं (हर 5 मिनट)</p>
+              <h3 className="text-gray-900 font-bold">ऑटो रिजल्ट</h3>
+              <p className="text-gray-500 text-sm">API से रिजल्ट ऑटो फेच होते हैं (हर 5 मिनट)</p>
             </div>
             <Button
               onClick={async () => {
@@ -132,17 +132,17 @@ const AdminResultsTab = ({ games }) => {
         </CardContent>
       </Card>
 
-      <Card className="bg-[#141418] border-white/10">
-        <CardHeader><CardTitle className="text-white font-['Unbounded']">नया रिजल्ट घोषित करें</CardTitle></CardHeader>
+      <Card className="bg-gray-50 border-gray-200">
+        <CardHeader><CardTitle className="text-gray-900 font-['Unbounded']">नया रिजल्ट घोषित करें</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
               <Label className="text-gray-300 mb-2 block">गेम चुनें</Label>
               <Select value={selectedGame} onValueChange={setSelectedGame}>
-                <SelectTrigger data-testid="admin-game-select" className="bg-[#0A0A0C] border-white/10 text-white"><SelectValue placeholder="गेम चुनें" /></SelectTrigger>
-                <SelectContent className="bg-[#141418] border-white/10">
+                <SelectTrigger data-testid="admin-game-select" className="bg-white border-gray-200 text-gray-900"><SelectValue placeholder="गेम चुनें" /></SelectTrigger>
+                <SelectContent className="bg-gray-50 border-gray-200">
                   {games.filter(g => g.is_active !== false).map((game) => (
-                    <SelectItem key={game.game_id} value={game.game_id} className="text-white hover:bg-white/10">{game.name_hi}</SelectItem>
+                    <SelectItem key={game.game_id} value={game.game_id} className="text-gray-900 hover:bg-gray-100">{game.name_hi}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -151,12 +151,12 @@ const AdminResultsTab = ({ games }) => {
               <Label className="text-gray-300 mb-2 block">तारीख</Label>
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" data-testid="admin-date-picker" className="w-full justify-start text-left bg-[#0A0A0C] border-white/10 text-white">
+                  <Button variant="outline" data-testid="admin-date-picker" className="w-full justify-start text-left bg-white border-gray-200 text-gray-900">
                     <CalendarIcon className="mr-2 h-4 w-4" />{format(resultDate, 'PPP')}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 bg-[#141418] border-white/10">
-                  <Calendar mode="single" selected={resultDate} onSelect={(date) => date && setResultDate(date)} className="bg-[#141418]" />
+                <PopoverContent className="w-auto p-0 bg-gray-50 border-gray-200">
+                  <Calendar mode="single" selected={resultDate} onSelect={(date) => date && setResultDate(date)} className="bg-gray-50" />
                 </PopoverContent>
               </Popover>
             </div>
@@ -166,8 +166,8 @@ const AdminResultsTab = ({ games }) => {
             <Label className="text-gray-300 mb-2 block">जोड़ी रिजल्ट (00-99)</Label>
             <Input type="text" maxLength={2} placeholder="00-99" value={jodiResult}
               onChange={(e) => setJodiResult(e.target.value.replace(/[^0-9]/g, ''))}
-              data-testid="admin-jodi-result-input" className="bg-[#0A0A0C] border-white/10 text-white text-center text-4xl h-20 font-bold" />
-            <p className="text-gray-400 text-sm mt-2">रिजल्ट जोड़ी नंबर (00-99) दर्ज करें</p>
+              data-testid="admin-jodi-result-input" className="bg-white border-gray-200 text-gray-900 text-center text-4xl h-20 font-bold" />
+            <p className="text-gray-500 text-sm mt-2">रिजल्ट जोड़ी नंबर (00-99) दर्ज करें</p>
           </div>
 
           <Button onClick={handleDeclareResult} disabled={declaring} data-testid="admin-declare-result-button" className="w-full h-12 bg-[#D4AF37] hover:bg-[#FDE047] text-black font-bold">
@@ -175,7 +175,7 @@ const AdminResultsTab = ({ games }) => {
               : <span className="flex items-center gap-2"><Trophy className="w-5 h-5" />रिजल्ट घोषित करें</span>}
           </Button>
 
-          <div className="border-t border-white/10 pt-4 mt-4">
+          <div className="border-t border-gray-200 pt-4 mt-4">
             <p className="text-red-400 font-semibold mb-3">रिवर्स ऑप्शन</p>
             <div className="grid sm:grid-cols-2 gap-3">
               <Button onClick={handleReverseResult} disabled={reversingResult || !selectedGame} data-testid="admin-reverse-result-button" variant="outline" className="h-12 border-red-500/50 text-red-400 hover:bg-red-500/10">
@@ -188,11 +188,11 @@ const AdminResultsTab = ({ games }) => {
               </Button>
             </div>
             <div className="mt-3">
-              <Label className="text-gray-400 text-sm mb-2 block">बेट रिवर्स फ़िल्टर (बेट टाइप)</Label>
+              <Label className="text-gray-500 text-sm mb-2 block">बेट रिवर्स फ़िल्टर (बेट टाइप)</Label>
               <div className="flex flex-wrap gap-2">
                 {[{ value: 'all', label: 'सभी' }, { value: 'jodi', label: 'जोड़ी' }, { value: 'haruf_andar', label: 'हरूफ अंदर' }, { value: 'haruf_bahar', label: 'हरूफ बाहर' }].map((opt) => (
                   <button key={opt.value} onClick={() => setReverseBetType(opt.value)} data-testid={`reverse-filter-${opt.value}`}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${reverseBetType === opt.value ? 'bg-orange-500/20 border border-orange-500/50 text-orange-400' : 'bg-[#0A0A0C] text-gray-400 border border-white/10 hover:border-orange-500/30'}`}>
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${reverseBetType === opt.value ? 'bg-orange-500/20 border border-orange-500/50 text-orange-400' : 'bg-white text-gray-500 border border-gray-200 hover:border-orange-500/30'}`}>
                     {opt.label}
                   </button>
                 ))}

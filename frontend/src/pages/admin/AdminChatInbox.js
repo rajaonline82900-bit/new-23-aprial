@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { ArrowLeft, Image, Check, CheckCheck } from 'lucide-react';
+import { ArrowLeft, Image, Check, CheckCheck, Mic, Square } from 'lucide-react';
 
 const AdminChatInbox = ({ API }) => {
   const [chatUsers, setChatUsers] = useState([]);
@@ -11,8 +11,13 @@ const AdminChatInbox = ({ API }) => {
   const [messages, setMessages] = useState([]);
   const [reply, setReply] = useState('');
   const [sending, setSending] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
   const bottomRef = useRef(null);
   const fileInputRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const recordingChunksRef = useRef([]);
+  const recordingTimerRef = useRef(null);
 
   const fetchChatUsers = async () => {
     try {
@@ -70,6 +75,43 @@ const AdminChatInbox = ({ API }) => {
     finally { setSending(false); if (fileInputRef.current) fileInputRef.current.value = ''; }
   };
 
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg' });
+      mediaRecorderRef.current = mediaRecorder;
+      recordingChunksRef.current = [];
+      mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordingChunksRef.current.push(e.data); };
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        clearInterval(recordingTimerRef.current);
+        setRecordingTime(0);
+        const blob = new Blob(recordingChunksRef.current, { type: 'audio/webm' });
+        if (blob.size < 500 || !selectedUser) return;
+        setSending(true);
+        try {
+          const formData = new FormData();
+          formData.append('file', blob, `voice_${Date.now()}.webm`);
+          const uploadRes = await axios.post(`${API}/api/chat/upload`, formData, { withCredentials: true });
+          await axios.post(`${API}/api/admin/chat/reply/${selectedUser.user_id}`, { message: '', msg_type: 'voice', attachment_url: uploadRes.data.url }, { withCredentials: true });
+          fetchMessages(selectedUser.user_id);
+        } catch (err) { console.error(err); }
+        finally { setSending(false); }
+      };
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+      recordingTimerRef.current = setInterval(() => setRecordingTime(t => t + 1), 1000);
+    } catch (err) { console.error('Mic access denied:', err); }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
   const formatTime = (dateStr) => new Date(dateStr).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
 
   const renderMsgContent = (msg) => {
@@ -88,13 +130,13 @@ const AdminChatInbox = ({ API }) => {
     return (
       <div className="space-y-3">
         <input type="file" ref={fileInputRef} accept="image/*" onChange={handleImageUpload} className="hidden" />
-        <Button variant="ghost" onClick={() => { setSelectedUser(null); setMessages([]); fetchChatUsers(); }} className="text-gray-400 hover:text-white mb-2" data-testid="chat-back">
+        <Button variant="ghost" onClick={() => { setSelectedUser(null); setMessages([]); fetchChatUsers(); }} className="text-gray-500 hover:text-gray-900 mb-2" data-testid="chat-back">
           <ArrowLeft className="w-4 h-4 mr-2" /> {selectedUser.user_name} ({selectedUser.user_phone})
         </Button>
-        <div className="bg-[#0A0A0C] rounded-xl border border-white/10 p-3 h-[400px] overflow-y-auto">
+        <div className="bg-white rounded-xl border border-gray-200 p-3 h-[400px] overflow-y-auto">
           {messages.map(msg => (
             <div key={msg.id} className={`flex mb-2 ${msg.sender === 'admin' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[75%] px-3 py-2 rounded-2xl ${msg.sender === 'admin' ? 'bg-[#D4AF37] text-black rounded-br-md' : 'bg-[#1E1E24] text-white rounded-bl-md border border-white/10'}`}>
+              <div className={`max-w-[75%] px-3 py-2 rounded-2xl ${msg.sender === 'admin' ? 'bg-[#D4AF37] text-black rounded-br-md' : 'bg-gray-100 text-gray-900 rounded-bl-md border border-gray-200'}`}>
                 {renderMsgContent(msg)}
                 <div className={`flex items-center justify-end gap-0.5 mt-0.5 ${msg.sender === 'admin' ? 'text-black/50' : 'text-gray-500'}`}>
                   <span className="text-[9px]">{formatTime(msg.created_at)}</span>
@@ -106,11 +148,28 @@ const AdminChatInbox = ({ API }) => {
           <div ref={bottomRef} />
         </div>
         <div className="flex gap-2">
-          <Button variant="ghost" size="sm" onClick={() => fileInputRef.current?.click()} disabled={sending} className="text-gray-400 hover:text-white border border-white/10" data-testid="admin-chat-image-btn">
+          <Button variant="ghost" size="sm" onClick={() => fileInputRef.current?.click()} disabled={sending || isRecording} className="text-gray-500 hover:text-gray-900 border border-gray-200" data-testid="admin-chat-image-btn">
             <Image className="w-4 h-4" />
           </Button>
-          <Input value={reply} onChange={e => setReply(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleReply()} placeholder="Reply type karein..." className="bg-[#0A0A0C] border-white/10 text-white flex-1" data-testid="admin-chat-reply-input" />
-          <Button onClick={handleReply} disabled={!reply.trim() || sending} className="bg-[#D4AF37] hover:bg-[#D4AF37]/80 text-black font-bold" data-testid="admin-chat-reply-btn">Send</Button>
+          {isRecording ? (
+            <>
+              <div className="flex items-center gap-2 flex-1 px-3 bg-red-50 rounded-lg border border-red-200">
+                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+                <span className="text-red-600 text-sm font-medium">{Math.floor(recordingTime / 60)}:{String(recordingTime % 60).padStart(2, '0')}</span>
+              </div>
+              <Button onClick={stopRecording} className="bg-red-500 hover:bg-red-600 text-white" data-testid="admin-chat-stop-recording">
+                <Square className="w-4 h-4" />
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="ghost" size="sm" onClick={startRecording} disabled={sending} className="text-gray-500 hover:text-gray-900 border border-gray-200" data-testid="admin-chat-mic-btn">
+                <Mic className="w-4 h-4" />
+              </Button>
+              <Input value={reply} onChange={e => setReply(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleReply()} placeholder="Reply type karein..." className="bg-white border-gray-200 text-gray-900 flex-1" data-testid="admin-chat-reply-input" />
+              <Button onClick={handleReply} disabled={!reply.trim() || sending} className="bg-[#D4AF37] hover:bg-[#D4AF37]/80 text-black font-bold" data-testid="admin-chat-reply-btn">Send</Button>
+            </>
+          )}
         </div>
       </div>
     );
@@ -118,20 +177,20 @@ const AdminChatInbox = ({ API }) => {
 
   return (
     <div className="space-y-3">
-      <h3 className="text-white font-bold text-base">User Chats ({chatUsers.length})</h3>
+      <h3 className="text-gray-900 font-bold text-base">User Chats ({chatUsers.length})</h3>
       {chatUsers.length === 0 ? (
         <div className="text-center py-12 text-gray-500">Koi chat nahi hai</div>
       ) : chatUsers.map(u => (
-        <Card key={u.user_id} className="bg-[#141418] border-white/10 cursor-pointer hover:border-[#D4AF37]/50 transition-all" onClick={() => setSelectedUser(u)} data-testid={`chat-user-${u.user_id}`}>
+        <Card key={u.user_id} className="bg-gray-50 border-gray-200 cursor-pointer hover:border-[#D4AF37]/50 transition-all" onClick={() => setSelectedUser(u)} data-testid={`chat-user-${u.user_id}`}>
           <CardContent className="p-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-[#D4AF37]/20 flex items-center justify-center">
                 <span className="text-[#D4AF37] font-bold">{u.user_name?.charAt(0)?.toUpperCase()}</span>
               </div>
               <div>
-                <p className="text-white font-bold text-sm">{u.user_name}</p>
+                <p className="text-gray-900 font-bold text-sm">{u.user_name}</p>
                 <p className="text-gray-500 text-xs">{u.user_phone}</p>
-                <p className="text-gray-400 text-xs truncate max-w-[200px]">{u.last_message}</p>
+                <p className="text-gray-500 text-xs truncate max-w-[200px]">{u.last_message}</p>
               </div>
             </div>
             <div className="flex flex-col items-end gap-1">

@@ -31,10 +31,23 @@ window.addEventListener('beforeinstallprompt', (e) => {
   window.deferredPrompt = e;
 });
 
-// Push subscription helper
+// Push subscription helper - fetches VAPID key from backend API
 async function subscribePush(registration) {
   try {
-    const vapidKey = process.env.REACT_APP_VAPID_PUBLIC_KEY;
+    const API_URL = process.env.REACT_APP_BACKEND_URL;
+    
+    // Fetch VAPID key from backend
+    let vapidKey = process.env.REACT_APP_VAPID_PUBLIC_KEY;
+    try {
+      const resp = await fetch(`${API_URL}/api/push/vapid-key`);
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data.key) vapidKey = data.key;
+      }
+    } catch (e) {
+      console.log('Using env VAPID key');
+    }
+    
     if (!vapidKey) return;
     
     const urlBase64ToUint8Array = (base64String) => {
@@ -49,13 +62,13 @@ async function subscribePush(registration) {
       applicationServerKey: urlBase64ToUint8Array(vapidKey)
     });
     
-    const API_URL = process.env.REACT_APP_BACKEND_URL;
     await fetch(`${API_URL}/api/push/subscribe`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
       body: JSON.stringify({ subscription: subscription.toJSON() })
     });
+    console.log('Push subscription registered');
   } catch (e) {
     console.log('Push subscribe error:', e);
   }

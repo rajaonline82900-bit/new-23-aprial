@@ -92,12 +92,16 @@ async def create_deposit(deposit: DepositRequest, request: Request):
         raise HTTPException(status_code=400, detail="Maximum deposit ₹50000")
 
     order_id = f"DEP-{str(uuid.uuid4())[:8].upper()}"
-    frontend_url = os.environ.get("FRONTEND_URL", "").rstrip("/")
+    # Use origin_url from the request body as the base for callback
+    frontend_url = deposit.origin_url.rstrip("/") if deposit.origin_url else ""
+    if not frontend_url:
+        frontend_url = os.environ.get("FRONTEND_URL", "").rstrip("/")
     if not frontend_url:
         scheme = request.headers.get("x-forwarded-proto", "https")
         host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
         frontend_url = f"{scheme}://{host}"
     redirect_url = f"{frontend_url}/api/wallet/imb-callback"
+    logging.info(f"IMB redirect_url resolved to: {redirect_url}")
 
     async with aiohttp.ClientSession() as session:
         form_data = aiohttp.FormData()
