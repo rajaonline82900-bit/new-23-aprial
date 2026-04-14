@@ -415,36 +415,34 @@ const GamePage = () => {
             </div>
           </CardHeader>
           <CardContent>
-            {/* Jantri Grid - 10x10 */}
-            <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
+            {/* Jantri Grid - 5 cols, each card: number + ₹ + input */}
+            <div className="grid grid-cols-5 gap-2">
               {ALL_JODIS.map((jodi) => {
-                const hasAmount = jantriAmounts[jodi] && parseInt(jantriAmounts[jodi]) >= 10;
+                const amt = jantriAmounts[jodi] || '';
+                const hasAmount = amt && parseInt(amt) >= minJodi;
                 return (
                   <div
                     key={jodi}
-                    className={`rounded-lg border transition-all ${
+                    data-testid={`jantri-jodi-${jodi}`}
+                    className={`rounded-lg border text-center transition-all ${
                       hasAmount
-                        ? 'border-[#D4AF37]/70 bg-[#D4AF37]/10'
-                        : 'border-white/10 bg-[#0A0A0C]'
+                        ? 'border-[#D4AF37] bg-[#D4AF37]/10'
+                        : 'border-white/15 bg-[#0A0A0C]'
                     }`}
                   >
-                    <button
-                      onClick={() => handleSetQuickAmount(jodi)}
-                      data-testid={`jantri-jodi-${jodi}`}
-                      className={`w-full pt-2 pb-1 text-center font-bold text-lg transition-all ${
-                        hasAmount ? 'text-[#D4AF37]' : 'text-white hover:text-[#D4AF37]'
-                      }`}
-                    >
-                      {jodi}
-                    </button>
+                    <p className={`font-bold text-xl pt-2 pb-0.5 ${hasAmount ? 'text-[#D4AF37]' : 'text-white'}`}>{jodi}</p>
+                    <p className="text-[#D4AF37] text-xs">₹</p>
                     <input
                       type="text"
                       inputMode="numeric"
-                      placeholder="₹"
-                      value={jantriAmounts[jodi] || ''}
+                      value={amt || '0'}
+                      onFocus={(e) => { if (e.target.value === '0') e.target.value = ''; }}
+                      onBlur={(e) => { if (!e.target.value) e.target.value = '0'; }}
                       onChange={(e) => handleJantriAmountChange(jodi, e.target.value)}
                       data-testid={`jantri-amount-${jodi}`}
-                      className="w-full bg-transparent border-t border-white/5 text-center text-xs py-1 text-emerald-400 placeholder-gray-600 outline-none focus:border-[#D4AF37]/50"
+                      className={`w-full bg-transparent border-t border-white/10 text-center text-base font-bold py-1.5 outline-none focus:border-[#D4AF37]/50 ${
+                        hasAmount ? 'text-[#D4AF37]' : 'text-gray-400'
+                      }`}
                     />
                   </div>
                 );
@@ -677,42 +675,31 @@ const GamePage = () => {
           )}
           <div className="fixed bottom-[52px] left-0 right-0 z-50 glass border-t border-white/10 p-3" data-testid="bet-summary-bar">
             <div className="max-w-[480px] mx-auto">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div>
-                    <p className="text-gray-400 text-xs">बेट्स</p>
-                    <p className="text-white font-bold text-lg" data-testid="total-jodis">{totalBetCount}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400 text-xs">कुल राशि</p>
-                    <p className="text-[#D4AF37] font-bold text-lg" data-testid="total-amount">₹{totalAmount}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Button
-                    onClick={() => { setJantriAmounts({}); setAndarAmounts({}); setBaharAmounts({}); setCrossDigits([]); setCrossAmount(''); }}
-                    disabled={totalBetCount === 0}
-                    data-testid="delete-all-bets-button"
-                    variant="outline"
-                    className="h-12 px-4 border-red-500/50 text-red-400 hover:bg-red-500/10 disabled:opacity-30"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </Button>
-                  <Button
-                    onClick={() => { speak('प्ले'); handlePlaceBatchBets(); }}
-                    disabled={placing || !bettingOpen || totalBetCount === 0}
-                    data-testid="place-batch-bet-button"
-                    className="h-12 px-8 bg-[#D4AF37] hover:bg-[#FDE047] text-black font-bold text-base disabled:opacity-50"
-                  >
-                  {!bettingOpen ? (
-                    <span className="flex items-center gap-2"><Lock className="w-5 h-5" /> बंद</span>
-                  ) : placing ? (
-                    <span className="flex items-center gap-2"><Coins className="w-5 h-5 animate-spin" /> लग रही है...</span>
-                  ) : (
-                    <span className="flex items-center gap-2"><Send className="w-5 h-5" /> Play</span>
-                  )}
+              <p className="text-white font-bold text-base mb-2" data-testid="total-amount">Total: <span className="text-[#D4AF37]">₹ {totalAmount}</span></p>
+              <div className="flex items-center gap-3">
+                <Button
+                  onClick={() => { setJantriAmounts({}); setAndarAmounts({}); setBaharAmounts({}); setCrossDigits([]); setCrossAmount(''); }}
+                  disabled={totalBetCount === 0}
+                  data-testid="delete-all-bets-button"
+                  variant="outline"
+                  className="flex-1 h-12 border-white/20 text-white hover:bg-white/10 font-bold text-base disabled:opacity-30"
+                >
+                  Clear
                 </Button>
-                </div>
+                <Button
+                  onClick={() => { speak('प्ले'); handlePlaceBatchBets(); }}
+                  disabled={placing || !bettingOpen || totalBetCount === 0}
+                  data-testid="place-batch-bet-button"
+                  className="flex-1 h-12 bg-[#1a1a3e] hover:bg-[#252560] text-white font-bold text-base disabled:opacity-50"
+                >
+                {!bettingOpen ? (
+                  <span className="flex items-center gap-2"><Lock className="w-5 h-5" /> बंद</span>
+                ) : placing ? (
+                  <span className="flex items-center gap-2"><Coins className="w-5 h-5 animate-spin" /> लग रही है...</span>
+                ) : (
+                  'PLAY'
+                )}
+              </Button>
               </div>
             </div>
           </div>
