@@ -33,6 +33,7 @@ const DashboardPage = () => {
   const [whatsappLink, setWhatsappLink] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showNotifBanner, setShowNotifBanner] = useState(false);
+  const [unreadChat, setUnreadChat] = useState(0);
   const gamesRef = useRef(null);
 
   // Scroll reveal animation for game cards
@@ -57,10 +58,12 @@ const DashboardPage = () => {
     fetchGames();
     fetchSettings();
     refreshUser();
+    fetchUnreadChat();
 
     // Auto-refresh games every 30 seconds for live results (especially PWA)
     const interval = setInterval(() => {
       fetchGames(false);
+      fetchUnreadChat();
     }, 30000);
 
     // Also refresh when app comes back to foreground (PWA tab switch)
@@ -68,6 +71,7 @@ const DashboardPage = () => {
       if (document.visibilityState === 'visible') {
         fetchGames(false);
         refreshUser();
+        fetchUnreadChat();
       }
     };
     document.addEventListener('visibilitychange', handleVisibility);
@@ -96,6 +100,14 @@ const DashboardPage = () => {
       setLoading(false);
     }
   };
+
+  const fetchUnreadChat = async () => {
+    try {
+      const { data } = await axios.get(`${API_URL}/api/chat/unread-count`, { withCredentials: true });
+      setUnreadChat(data.unread || 0);
+    } catch (e) {}
+  };
+
 
   // Request notification permission on dashboard load
   useEffect(() => {
@@ -316,9 +328,12 @@ const DashboardPage = () => {
             
             <Link to="/chat" data-testid="chat-quick-link">
               <Card className="bg-[#141418] border-white/10 hover:border-[#D4AF37]/50 transition-all cursor-pointer group">
-                <CardContent className="p-2.5 flex flex-col items-center gap-1">
-                  <div className="w-9 h-9 rounded-full bg-[#D4AF37]/10 flex items-center justify-center group-hover:bg-[#D4AF37]/20 transition-all">
+                <CardContent className="p-2.5 flex flex-col items-center gap-1 relative">
+                  <div className="relative w-9 h-9 rounded-full bg-[#D4AF37]/10 flex items-center justify-center group-hover:bg-[#D4AF37]/20 transition-all">
                     <MessageCircle className="w-4 h-4 text-[#D4AF37]" />
+                    {unreadChat > 0 && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[8px] font-bold flex items-center justify-center" data-testid="chat-unread-badge">{unreadChat > 9 ? '9+' : unreadChat}</span>
+                    )}
                   </div>
                   <span className="text-white font-medium text-[10px]">Chat</span>
                 </CardContent>

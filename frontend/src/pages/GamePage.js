@@ -22,7 +22,6 @@ import {
   IndianRupee,
   BarChart3
 } from 'lucide-react';
-import FooterNav from '../components/FooterNav';
 import { speak } from '../utils/voice';
 import { toast } from 'sonner';
 
@@ -330,7 +329,7 @@ const GamePage = () => {
         </div>
       </header>
 
-      <main className="px-3 py-4 pb-24">
+      <main className="px-3 py-4 pb-32">
         {/* Betting Status Banner */}
         <div className={`mb-4 p-3 rounded-xl border flex items-center justify-between ${
           bettingOpen 
@@ -506,23 +505,26 @@ const GamePage = () => {
                             : 'border-white/10 bg-[#0A0A0C]'
                         }`}
                       >
-                        <button
-                          onClick={() => handleSetHarufQuickAmount('andar', numStr)}
+                        <p
                           data-testid={`haruf-andar-${num}`}
-                          className={`w-full pt-2 pb-1 text-center font-bold text-xl transition-all ${
-                            hasAmount ? 'text-blue-400' : 'text-white hover:text-blue-400'
+                          className={`w-full pt-2 pb-1 text-center font-bold text-xl ${
+                            hasAmount ? 'text-blue-400' : 'text-white'
                           }`}
                         >
                           {num}
-                        </button>
+                        </p>
+                        <p className="text-blue-400 text-xs text-center">₹</p>
                         <input
                           type="text"
                           inputMode="numeric"
-                          placeholder="₹"
-                          value={andarAmounts[numStr] || ''}
+                          value={andarAmounts[numStr] || '0'}
+                          onFocus={(e) => { if (e.target.value === '0') e.target.value = ''; }}
+                          onBlur={(e) => { if (!e.target.value) e.target.value = '0'; }}
                           onChange={(e) => handleHarufAmountChange('andar', numStr, e.target.value)}
                           data-testid={`haruf-andar-amount-${num}`}
-                          className="w-full bg-transparent border-t border-white/5 text-center text-xs py-1 text-emerald-400 placeholder-gray-600 outline-none focus:border-blue-500/50"
+                          className={`w-full bg-transparent border-t border-white/10 text-center text-base font-bold py-1.5 outline-none focus:border-blue-500/50 ${
+                            hasAmount ? 'text-blue-400' : 'text-gray-400'
+                          }`}
                         />
                       </div>
                     );
@@ -549,23 +551,26 @@ const GamePage = () => {
                             : 'border-white/10 bg-[#0A0A0C]'
                         }`}
                       >
-                        <button
-                          onClick={() => handleSetHarufQuickAmount('bahar', numStr)}
+                        <p
                           data-testid={`haruf-bahar-${num}`}
-                          className={`w-full pt-2 pb-1 text-center font-bold text-xl transition-all ${
-                            hasAmount ? 'text-orange-400' : 'text-white hover:text-orange-400'
+                          className={`w-full pt-2 pb-1 text-center font-bold text-xl ${
+                            hasAmount ? 'text-orange-400' : 'text-white'
                           }`}
                         >
                           {num}
-                        </button>
+                        </p>
+                        <p className="text-orange-400 text-xs text-center">₹</p>
                         <input
                           type="text"
                           inputMode="numeric"
-                          placeholder="₹"
-                          value={baharAmounts[numStr] || ''}
+                          value={baharAmounts[numStr] || '0'}
+                          onFocus={(e) => { if (e.target.value === '0') e.target.value = ''; }}
+                          onBlur={(e) => { if (!e.target.value) e.target.value = '0'; }}
                           onChange={(e) => handleHarufAmountChange('bahar', numStr, e.target.value)}
                           data-testid={`haruf-bahar-amount-${num}`}
-                          className="w-full bg-transparent border-t border-white/5 text-center text-xs py-1 text-emerald-400 placeholder-gray-600 outline-none focus:border-orange-500/50"
+                          className={`w-full bg-transparent border-t border-white/10 text-center text-base font-bold py-1.5 outline-none focus:border-orange-500/50 ${
+                            hasAmount ? 'text-orange-400' : 'text-gray-400'
+                          }`}
                         />
                       </div>
                     );
@@ -691,7 +696,7 @@ const GamePage = () => {
 
         {/* Sticky Bottom Bar - Bet Summary (Always Visible) */}
           {hasLowBets && (
-            <div className="fixed bottom-[116px] left-0 right-0 z-50 px-3">
+            <div className="fixed bottom-[70px] left-0 right-0 z-50 px-3">
               <div className="max-w-[480px] mx-auto">
                 <div className="blink-warning bg-red-600/20 border-2 border-red-500 rounded-xl p-2 text-center" data-testid="min-bet-warning">
                   <p className="text-red-500 text-sm font-black">
@@ -703,7 +708,7 @@ const GamePage = () => {
               </div>
             </div>
           )}
-          <div className="fixed bottom-[52px] left-0 right-0 z-50 glass border-t border-white/10 p-3" data-testid="bet-summary-bar">
+          <div className="fixed bottom-0 left-0 right-0 z-50 glass border-t border-white/10 p-3" data-testid="bet-summary-bar">
             <div className="max-w-[480px] mx-auto">
               <p className="text-white font-bold text-base mb-2" data-testid="total-amount">Total: <span className="text-[#D4AF37]">₹ {totalAmount}</span></p>
               <div className="flex items-center gap-3">
@@ -734,8 +739,6 @@ const GamePage = () => {
             </div>
           </div>
       </main>
-
-      <FooterNav />
     </div>
   );
 };

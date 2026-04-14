@@ -23,6 +23,17 @@ async def get_chat_messages(request: Request):
     return {"messages": messages}
 
 
+@router.get("/chat/unread-count")
+async def get_unread_count(request: Request):
+    user = await get_current_user(request)
+    count = await db.chat_messages.count_documents(
+        {"user_id": user["_id"], "sender": "admin", "read": {"$ne": True}}
+    )
+    return {"unread": count}
+
+
+
+
 @router.post("/chat/send")
 async def send_chat_message(msg: ChatMessageSend, request: Request):
     user = await get_current_user(request)
