@@ -20,6 +20,7 @@ import AdminDepositsTab from './admin/AdminDepositsTab';
 import AdminUsersTab from './admin/AdminUsersTab';
 import AdminSettingsTab from './admin/AdminSettingsTab';
 import AdminChatInbox from './admin/AdminChatInbox';
+import AdminJantriTab from './admin/AdminJantriTab';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 const utcDate = (d) => { if (!d) return new Date(); const s = String(d); return new Date(s.endsWith('Z') ? s : s + 'Z'); };
@@ -152,6 +153,7 @@ const AdminPage = () => {
           <TabsList className="bg-[#141418] border border-white/10 mb-6 flex-wrap">
             {[
               { value: 'results', label: 'रिजल्ट घोषणा' },
+              { value: 'jantri', label: 'जंतरी रिपोर्ट' },
               { value: 'bets', label: 'बेट रिपोर्ट' },
               { value: 'games', label: 'गेम सेटिंग्स' },
               { value: 'withdrawals', label: 'निकासी' },
@@ -167,6 +169,7 @@ const AdminPage = () => {
             ))}
           </TabsList>
           <TabsContent value="results"><AdminResultsTab games={games} /></TabsContent>
+          <TabsContent value="jantri"><AdminJantriTab games={games} /></TabsContent>
           <TabsContent value="bets"><AdminBetsTab games={games} /></TabsContent>
           <TabsContent value="games"><AdminGamesTab /></TabsContent>
           <TabsContent value="withdrawals"><AdminWithdrawalsTab /></TabsContent>

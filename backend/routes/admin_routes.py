@@ -361,7 +361,93 @@ async def get_bet_distribution(request: Request, game_id: Optional[str] = None, 
     }
 
 
-# ===== Jantri Report =====
+# ===== Jantri Report (Bid History) =====
+
+@router.get("/admin/jantri-report")
+async def get_jantri_bid_report(request: Request, game_id: str = "all", date: Optional[str] = None):
+    """Jantri report showing bet amounts on each number (00-99 jodi, 0-9 haruf)"""
+    await get_admin_user(request)
+
+    if not date:
+        date = datetime.now(IST).strftime("%Y-%m-%d")
+
+    query = {"date": date}
+    if game_id and game_id != "all":
+        query["game_id"] = game_id
+
+    bets = await db.bets.find(query, {"_id": 0}).to_list(10000)
+
+    # Initialize all numbers with 0
+    jodi = {f"{i:02d}": 0 for i in range(100)}
+    andar = {str(i): 0 for i in range(10)}
+    bahar = {str(i): 0 for i in range(10)}
+    crossing = {}
+
+    for bet in bets:
+        bt = bet.get("bet_type", "")
+        num = bet.get("number", "")
+        amt = bet.get("amount", 0)
+        if bt == "jodi" and num in jodi:
+            jodi[num] += amt
+        elif bt == "haruf_andar" and num in andar:
+            andar[num] += amt
+        elif bt == "haruf_bahar" and num in bahar:
+            bahar[num] += amt
+        elif bt == "crossing" and len(num) == 2:
+            crossing[num] = crossing.get(num, 0) + amt
+
+    jodi_total = sum(jodi.values())
+    andar_total = sum(andar.values())
+    bahar_total = sum(bahar.values())
+    crossing_total = sum(crossing.values())
+    total = jodi_total + andar_total + bahar_total + crossing_total
+
+    # Calculate max loss (worst case payout for operator if a specific result wins)
+    # For each possible jodi result, calculate the total payout
+    max_loss = 0
+    worst_jodi = "00"
+    jodi_mult = 100
+    haruf_mult = 10
+    crossing_mult = 100  # crossing pays same as jodi
+
+    for num in range(100):
+        jodi_num = f"{num:02d}"
+        d1 = jodi_num[0]  # andar digit
+        d2 = jodi_num[1]  # bahar digit
+        payout = jodi[jodi_num] * jodi_mult + andar[d1] * haruf_mult + bahar[d2] * haruf_mult
+        # Add crossing payouts for this result
+        for cn, ca in crossing.items():
+            if len(cn) == 2:
+                cd1, cd2 = cn[0], cn[1]
+                if (cd1 == d1 and cd2 == d2) or (cd1 == d2 and cd2 == d1):
+                    payout += ca * crossing_mult
+        if payout > max_loss:
+            max_loss = payout
+            worst_jodi = jodi_num
+
+    profit = total - max_loss
+
+    return {
+        "date": date,
+        "game_id": game_id,
+        "jodi": jodi,
+        "andar": andar,
+        "bahar": bahar,
+        "crossing": crossing,
+        "summary": {
+            "jodi_total": jodi_total,
+            "andar_total": andar_total,
+            "bahar_total": bahar_total,
+            "crossing_total": crossing_total,
+            "total": total,
+            "max_loss": max_loss,
+            "worst_jodi": worst_jodi,
+            "profit": profit
+        }
+    }
+
+
+# ===== Jantri Results History =====
 
 @router.get("/admin/jantri")
 async def get_jantri_report(request: Request, game_id: Optional[str] = None, days: int = 30):
