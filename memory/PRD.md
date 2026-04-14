@@ -9,19 +9,6 @@ Build a Satta Matka betting application supporting games like Delhi Bazaar, Shri
 - **Auth**: Phone OTP + Admin email/password + JWT
 - **PWA**: Service Worker + Push Notifications (VAPID/pywebpush)
 
-## Code Structure
-```
-/app/backend/
-├── server.py (slim ~150 lines)
-├── config.py, database.py, models.py, auth.py, helpers.py
-├── routes/ (auth, game, wallet, result, chat, admin, notification)
-/app/frontend/src/
-├── pages/ (Dashboard, Login, Wallet, Chat, Betting, Admin, etc.)
-├── pages/admin/ (AdminUsersTab, AdminBetsTab, AdminResultsTab, AdminSettingsTab, etc.)
-├── components/, context/AuthContext.js
-├── public/sw.js (Service Worker)
-```
-
 ## Completed Features
 
 ### Core App
@@ -31,26 +18,35 @@ Build a Satta Matka betting application supporting games like Delhi Bazaar, Shri
 
 ### Admin Panel
 - Admin login, Stats dashboard, Result declaration (manual + auto-fetch)
-- User management (full details, wallet adjust, delete)
-- Withdrawal approve/reject, Deposits, Game CRUD, Settings
-- Admin Chat with voice recording, Jantri report
+- User management, Wallet adjust/delete, Withdrawal approve/reject
+- Deposits, Game CRUD, Settings, Admin Chat with voice
+- Jantri results history & export
 
 ### Push Notifications (Completed 2026-04-13)
-- **Backend**: VAPID keys, `/api/push/subscribe`, `/api/push/send_all`, `/api/push/test`, `/api/push/stats`
-- **Frontend**: Notification Enable banner on Dashboard (user-gesture trigger), subscribePush with proper auth token
-- **Admin**: Push Notifications section in Settings - Test Push button, Send All with custom title/message, subscribed users count
-- **Fix**: localStorage key corrected to `matka11_token`, requestPermission moved to user click handler
+- Backend: VAPID, subscribe, send_all, test, stats endpoints
+- Frontend: Enable banner (user-gesture), subscribePush with auth token
+- Admin: Test Push, Send All, subscribed users count
+- Auto-push on result declaration (manual + auto-fetch)
 
-### Refactoring
-- server.py → modular APIRouters, AdminPage.js → component-based architecture
-- Today New Users clickable modal with full user detail view
+### Jantri Report / Bid History (Completed 2026-04-14)
+- New tab "जंतरी रिपोर्ट" in Admin Panel
+- Jodi (00-99): 10x10 grid showing bet amounts on each number
+- Andar Haruf (0-9): Row showing amounts per digit
+- Bahar Haruf (0-9): Row showing amounts per digit
+- Crossing bets display
+- Summary: Jantri(Jodi), Andar, Bahar, Loss (Max Payout), Profit, Total
+- Date picker + Game selector + Submit/Reset
+- Backend: /api/admin/jantri-report endpoint
+
+### Bug Fixes (2026-04-14)
+- Crossing bets now handled in manual result declaration (was only in auto-fetch)
 
 ## Pending / Backlog
-- P1: Push notification real-world testing (needs real user to allow notifications)
+- P1: Push notification real-world testing (needs real user to allow)
 - P2: Email notifications for transactions
 - P2: Referral earnings history section
 
 ## Key API Endpoints
-- Push: GET /api/push/vapid-key, POST /api/push/subscribe, POST /api/push/send_all, POST /api/push/test, GET /api/push/stats
-- Auth: POST /api/auth/send-otp, /api/auth/verify-otp, /api/auth/admin/login
+- Jantri: GET /api/admin/jantri-report?game_id=&date=
+- Push: GET /api/push/stats, POST /api/push/test, POST /api/push/send_all
 - Admin: GET /api/admin/stats, /api/admin/users, /api/admin/today-new-users
