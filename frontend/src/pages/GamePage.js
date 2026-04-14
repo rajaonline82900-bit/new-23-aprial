@@ -73,6 +73,7 @@ const GamePage = () => {
   // Cross Bet state
   const [crossDigits, setCrossDigits] = useState([]);
   const [crossAmount, setCrossAmount] = useState('');
+  const [crossWithJoda, setCrossWithJoda] = useState(false);
   const [appSettings, setAppSettings] = useState({});
 
   useEffect(() => {
@@ -167,6 +168,15 @@ const GamePage = () => {
         }
       }
     }
+    // With Joda - add same digit pairs (11, 22, 33...)
+    if (crossWithJoda) {
+      for (let i = 0; i < crossDigits.length; i++) {
+        const joda = String(crossDigits[i]) + String(crossDigits[i]);
+        if (!crossJodis.includes(joda)) {
+          crossJodis.push(joda);
+        }
+      }
+    }
   }
 
   const crossBetAmount = parseInt(crossAmount) || 0;
@@ -176,6 +186,7 @@ const GamePage = () => {
   const clearCrossBet = () => {
     setCrossDigits([]);
     setCrossAmount('');
+    setCrossWithJoda(false);
   };
 
   // Calculate totals - Jantri
@@ -611,6 +622,25 @@ const GamePage = () => {
               })}
             </div>
 
+            {/* With Joda Toggle */}
+            <div className="flex items-center justify-between mb-4 p-3 bg-[#0A0A0C] rounded-xl border border-white/10">
+              <div>
+                <p className="text-white font-bold text-sm">With Joda (जोड़ा)</p>
+                <p className="text-gray-500 text-xs">11, 22, 33, 44... जैसी जोड़ियां भी शामिल करें</p>
+              </div>
+              <button
+                onClick={() => setCrossWithJoda(prev => !prev)}
+                data-testid="cross-with-joda-toggle"
+                className={`relative w-12 h-6 rounded-full transition-all ${
+                  crossWithJoda ? 'bg-[#D4AF37]' : 'bg-gray-600'
+                }`}
+              >
+                <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${
+                  crossWithJoda ? 'left-6' : 'left-0.5'
+                }`} />
+              </button>
+            </div>
+
             {/* Amount Input */}
             <div className="mb-4">
               <p className="text-gray-400 text-sm mb-2">प्रति जोड़ी राशि (₹)</p>
@@ -678,7 +708,7 @@ const GamePage = () => {
               <p className="text-white font-bold text-base mb-2" data-testid="total-amount">Total: <span className="text-[#D4AF37]">₹ {totalAmount}</span></p>
               <div className="flex items-center gap-3">
                 <Button
-                  onClick={() => { setJantriAmounts({}); setAndarAmounts({}); setBaharAmounts({}); setCrossDigits([]); setCrossAmount(''); }}
+                  onClick={() => { setJantriAmounts({}); setAndarAmounts({}); setBaharAmounts({}); setCrossDigits([]); setCrossAmount(''); setCrossWithJoda(false); }}
                   disabled={totalBetCount === 0}
                   data-testid="delete-all-bets-button"
                   variant="outline"
