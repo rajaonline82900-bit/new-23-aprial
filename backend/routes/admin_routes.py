@@ -645,18 +645,31 @@ async def delete_help_message(message_id: str, request: Request):
 
 @router.get("/admin/auto-fetch-debug")
 async def auto_fetch_debug(request: Request):
-    """Debug endpoint to check auto-fetch status"""
+    """Debug endpoint - force refresh tokens and fetch"""
     await get_admin_user(request)
     import config as cfg
+    errors = []
     # Force refresh tokens
     for group in ["delhi", "general"]:
-        await refresh_matka_token(group)
+        matka_api_tokens[group] = ""  # Clear to force refresh
+        try:
+            success = await refresh_matka_token(group)
+            if not success:
+                errors.append(f"{group}: token refresh failed")
+        except Exception as e:
+            errors.append(f"{group}: {str(e)}")
+    
+    # Force fetch
+    result = await fetch_matka_results()
+    
     return {
         "matka_username": MATKA_API_USERNAME or "NOT SET",
         "matka_password_set": bool(MATKA_API_PASSWORD),
         "matka_base": MATKA_API_BASE,
         "tokens": {k: (v[:10] + "..." if v else "EMPTY") for k, v in matka_api_tokens.items()},
         "auto_fetch_running": cfg.auto_fetch_running,
+        "fetch_result": result,
+        "errors": errors,
     }
 
 
@@ -665,13 +678,13 @@ async def auto_fetch_debug(request: Request):
 async def refresh_matka_token(group="delhi"):
     endpoint = "get-refresh-token-delhi" if group == "delhi" else "get-refresh-token"
     try:
-        async with httpx.AsyncClient(timeout=15) as client:
+        async with httpx.AsyncClient(timeout=15, verify=False) as client:
             resp = await client.post(
                 f"{MATKA_API_BASE}/{endpoint}",
                 data={"username": MATKA_API_USERNAME, "password": MATKA_API_PASSWORD}
             )
             data = resp.json()
-            logger.info(f"Matka API [{group}] token response: {str(data)[:200]}")
+            logger.info(f"Matka API [{group}] token response status={resp.status_code}: {str(data)[:200]}")
             token = data.get("refresh_token") or data.get("token") or data.get("api_token") or ""
             if token:
                 matka_api_tokens[group] = token
@@ -680,7 +693,7 @@ async def refresh_matka_token(group="delhi"):
             else:
                 logger.error(f"Matka API [{group}] no token in response: {data}")
     except Exception as e:
-        logger.error(f"Matka API [{group}] token refresh failed: {e}")
+        logger.error(f"Matka API [{group}] token refresh failed: {type(e).__name__}: {e}")
     return False
 
 
@@ -712,7 +725,7 @@ async def fetch_matka_results(date_str=None):
     all_api_results = []
 
     try:
-        async with httpx.AsyncClient(timeout=15) as client:
+        async with httpx.AsyncClient(timeout=15, verify=False) as client:
             for group, endpoint in [("delhi", "market-data-delhi"), ("general", "market-data")]:
                 token = matka_api_tokens.get(group)
                 if not token:
