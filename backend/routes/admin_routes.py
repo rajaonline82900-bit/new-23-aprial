@@ -648,6 +648,9 @@ async def auto_fetch_debug(request: Request):
     """Debug endpoint to check auto-fetch status"""
     await get_admin_user(request)
     import config as cfg
+    # Force refresh tokens
+    for group in ["delhi", "general"]:
+        await refresh_matka_token(group)
     return {
         "matka_username": MATKA_API_USERNAME or "NOT SET",
         "matka_password_set": bool(MATKA_API_PASSWORD),
@@ -668,10 +671,14 @@ async def refresh_matka_token(group="delhi"):
                 data={"username": MATKA_API_USERNAME, "password": MATKA_API_PASSWORD}
             )
             data = resp.json()
-            if data.get("status"):
-                matka_api_tokens[group] = data["refresh_token"]
-                logger.info(f"Matka API [{group}] token refreshed: {matka_api_tokens[group][:8]}...")
+            logger.info(f"Matka API [{group}] token response: {str(data)[:200]}")
+            token = data.get("refresh_token") or data.get("token") or data.get("api_token") or ""
+            if token:
+                matka_api_tokens[group] = token
+                logger.info(f"Matka API [{group}] token refreshed: {token[:8]}...")
                 return True
+            else:
+                logger.error(f"Matka API [{group}] no token in response: {data}")
     except Exception as e:
         logger.error(f"Matka API [{group}] token refresh failed: {e}")
     return False
@@ -687,11 +694,16 @@ async def fetch_from_endpoint(client, endpoint, token, market_name, date_str):
 
 async def fetch_matka_results(date_str=None):
     if not MATKA_API_USERNAME or not MATKA_API_PASSWORD:
+        logger.error(f"Matka API credentials missing: user={MATKA_API_USERNAME}")
         return {"error": "Matka API credentials not configured"}
 
+    # Always try to refresh tokens if empty
     for group in ["delhi", "general"]:
-        if not matka_api_tokens[group]:
-            await refresh_matka_token(group)
+        if not matka_api_tokens.get(group):
+            success = await refresh_matka_token(group)
+            if not success:
+                logger.error(f"Matka API [{group}] token refresh failed, retrying...")
+                await refresh_matka_token(group)
 
     ist_now = datetime.now(IST)
     if not date_str:
