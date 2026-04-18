@@ -33,23 +33,31 @@
     <body>
         <noscript>You need to enable JavaScript to run this app.</noscript>
         <div id="root">
-            <!-- Branded splash shown before React loads -->
+            <!-- Branded splash: M button center, gold dots rotate around it -->
             <div id="app-splash" style="min-height:100vh;background:#0A0A0C;display:flex;flex-direction:column;align-items:center;justify-content:center;">
-                <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;animation:pulse 1.5s ease-in-out infinite;">
-                    <div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#D4AF37,#FDE047,#D4AF37);display:flex;align-items:center;justify-content:center;font-weight:900;font-family:'Unbounded',sans-serif;color:#000;font-size:20px;box-shadow:0 4px 15px rgba(212,175,55,0.3);">M</div>
-                    <div style="display:flex;align-items:baseline;gap:2px;">
-                        <span style="font-size:28px;font-weight:900;font-family:'Unbounded',sans-serif;background:linear-gradient(90deg,#D4AF37,#FDE047,#D4AF37);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">MATKA</span>
-                        <span style="font-size:32px;font-weight:900;font-family:'Unbounded',sans-serif;color:#fff;">11</span>
-                    </div>
+                <div style="position:relative;width:100px;height:100px;margin-bottom:28px;">
+                    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10;width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,#D4AF37,#FDE047,#D4AF37);display:flex;align-items:center;justify-content:center;font-weight:900;font-family:'Unbounded',sans-serif;color:#000;font-size:22px;box-shadow:0 4px 20px rgba(212,175,55,0.4);">M</div>
+                    <div class="splash-ring"><b></b><i></i><em></em><s></s><u></u><small></small></div>
                 </div>
-                <div style="display:flex;gap:6px;">
-                    <div style="width:8px;height:8px;border-radius:50%;background:#D4AF37;animation:bounce 0.6s ease-in-out infinite alternate;"></div>
-                    <div style="width:8px;height:8px;border-radius:50%;background:#D4AF37;animation:bounce 0.6s ease-in-out 0.15s infinite alternate;"></div>
-                    <div style="width:8px;height:8px;border-radius:50%;background:#D4AF37;animation:bounce 0.6s ease-in-out 0.3s infinite alternate;"></div>
+                <div style="display:flex;align-items:baseline;gap:4px;">
+                    <span style="font-size:24px;font-weight:900;font-family:'Unbounded',sans-serif;background:linear-gradient(90deg,#D4AF37,#FDE047,#D4AF37);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">MATKA</span>
+                    <span style="font-size:28px;font-weight:900;font-family:'Unbounded',sans-serif;color:#fff;">11</span>
                 </div>
                 <style>
-                    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.7}}
-                    @keyframes bounce{0%{transform:translateY(0)}100%{transform:translateY(-8px)}}
+                    .splash-ring{position:absolute;inset:0;animation:splash-spin 1.2s linear infinite;}
+                    .splash-ring::before,.splash-ring::after,
+                    .splash-ring b,.splash-ring i,.splash-ring em,.splash-ring s,.splash-ring u,.splash-ring small{
+                        content:'';position:absolute;width:9px;height:9px;border-radius:50%;background:#D4AF37;
+                    }
+                    .splash-ring::before{top:0;left:50%;transform:translateX(-50%);opacity:1;}
+                    .splash-ring::after{top:15%;right:15%;opacity:0.88;}
+                    .splash-ring b{display:block;top:50%;right:0;transform:translateY(-50%);opacity:0.75;}
+                    .splash-ring i{display:block;bottom:15%;right:15%;opacity:0.63;font-style:normal;}
+                    .splash-ring em{display:block;bottom:0;left:50%;transform:translateX(-50%);opacity:0.5;font-style:normal;}
+                    .splash-ring s{display:block;bottom:15%;left:15%;opacity:0.38;text-decoration:none;}
+                    .splash-ring u{display:block;top:50%;left:0;transform:translateY(-50%);opacity:0.25;text-decoration:none;}
+                    .splash-ring small{display:block;top:15%;left:15%;opacity:0.13;}
+                    @keyframes splash-spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
                 </style>
             </div>
         </div>

@@ -101,15 +101,21 @@ const AdminPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0A0A0C] flex flex-col items-center justify-center">
-        <div className="flex items-center gap-2 mb-4 animate-pulse">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#D4AF37] via-[#FDE047] to-[#D4AF37] flex items-center justify-center font-black font-['Unbounded'] text-black text-sm shadow-lg shadow-[#D4AF37]/30">M</div>
+        <div className="relative w-20 h-20 mb-6">
+          <div className="absolute inset-0 flex items-center justify-center z-10">
+            <div className="w-11 h-11 rounded-lg bg-gradient-to-br from-[#D4AF37] via-[#FDE047] to-[#D4AF37] flex items-center justify-center font-black font-['Unbounded'] text-black text-base shadow-lg shadow-[#D4AF37]/30">M</div>
+          </div>
+          <div className="absolute inset-0 animate-[spin_1.5s_linear_infinite]">
+            {[0,45,90,135,180,225,270,315].map((deg, i) => (
+              <div key={i} className="absolute w-full h-full" style={{transform:`rotate(${deg}deg)`}}>
+                <div className="w-2 h-2 rounded-full bg-[#D4AF37] mx-auto" style={{opacity:0.3+(i*0.09)}} />
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="flex items-baseline gap-0.5">
           <span className="text-xl font-black font-['Unbounded'] bg-gradient-to-r from-[#D4AF37] to-[#FDE047] bg-clip-text text-transparent">MATKA</span>
           <span className="text-2xl font-black font-['Unbounded'] text-white">11</span>
-        </div>
-        <div className="flex gap-1.5">
-          <div className="w-2 h-2 rounded-full bg-[#D4AF37] animate-bounce" style={{animationDelay: '0ms'}} />
-          <div className="w-2 h-2 rounded-full bg-[#D4AF37] animate-bounce" style={{animationDelay: '150ms'}} />
-          <div className="w-2 h-2 rounded-full bg-[#D4AF37] animate-bounce" style={{animationDelay: '300ms'}} />
         </div>
       </div>
     );

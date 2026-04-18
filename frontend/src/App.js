@@ -4,26 +4,32 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { Toaster } from "./components/ui/sonner";
 import "./index.css";
 
-// Branded Splash Screen
+// Branded Splash Screen - M button with rotating dots
 const SplashScreen = () => (
   <div className="min-h-screen bg-[#0A0A0C] flex flex-col items-center justify-center">
-    <div className="flex items-center gap-2.5 mb-6 animate-pulse">
-      <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#D4AF37] via-[#FDE047] to-[#D4AF37] flex items-center justify-center font-black font-['Unbounded'] text-black text-2xl shadow-lg shadow-[#D4AF37]/30">
-        M
+    <div className="relative w-24 h-24 mb-8">
+      {/* Center M button */}
+      <div className="absolute inset-0 flex items-center justify-center z-10">
+        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#D4AF37] via-[#FDE047] to-[#D4AF37] flex items-center justify-center font-black font-['Unbounded'] text-black text-2xl shadow-lg shadow-[#D4AF37]/30">
+          M
+        </div>
       </div>
-      <div className="flex items-baseline gap-0.5">
-        <span className="text-3xl font-black font-['Unbounded'] tracking-tight bg-gradient-to-r from-[#D4AF37] via-[#FDE047] to-[#D4AF37] bg-clip-text text-transparent">
-          MATKA
-        </span>
-        <span className="text-4xl font-black font-['Unbounded'] tracking-tighter text-white">
-          11
-        </span>
+      {/* Rotating dots */}
+      <div className="absolute inset-0 animate-[spin_1.5s_linear_infinite]">
+        {[0, 45, 90, 135, 180, 225, 270, 315].map((deg, i) => (
+          <div key={i} className="absolute w-full h-full" style={{ transform: `rotate(${deg}deg)` }}>
+            <div className="w-2.5 h-2.5 rounded-full bg-[#D4AF37] mx-auto" style={{ opacity: 0.3 + (i * 0.09) }} />
+          </div>
+        ))}
       </div>
     </div>
-    <div className="flex gap-1.5">
-      <div className="w-2 h-2 rounded-full bg-[#D4AF37] animate-bounce" style={{animationDelay: '0ms'}} />
-      <div className="w-2 h-2 rounded-full bg-[#D4AF37] animate-bounce" style={{animationDelay: '150ms'}} />
-      <div className="w-2 h-2 rounded-full bg-[#D4AF37] animate-bounce" style={{animationDelay: '300ms'}} />
+    <div className="flex items-baseline gap-1">
+      <span className="text-2xl font-black font-['Unbounded'] tracking-tight bg-gradient-to-r from-[#D4AF37] via-[#FDE047] to-[#D4AF37] bg-clip-text text-transparent">
+        MATKA
+      </span>
+      <span className="text-3xl font-black font-['Unbounded'] tracking-tighter text-white">
+        11
+      </span>
     </div>
   </div>
 );
