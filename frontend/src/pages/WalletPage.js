@@ -508,7 +508,7 @@ const WalletPage = () => {
 
             {/* Quick Amount Buttons */}
             <div className="grid grid-cols-4 gap-2">
-              {[100, 500, 1000, 2000, 5000, 10000].map((amt) => (
+              {[200, 500, 1000, 2000].map((amt) => (
                 <button
                   key={amt}
                   onClick={() => setDepositAmount(String(amt))}
@@ -519,7 +519,7 @@ const WalletPage = () => {
                       : 'bg-[#0A0A0C] text-gray-300 border border-white/10 hover:border-[#D4AF37]/50'
                   }`}
                 >
-                  ₹{amt >= 1000 ? `${amt/1000}K` : amt}
+                  ₹{amt}
                 </button>
               ))}
             </div>
