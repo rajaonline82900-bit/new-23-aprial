@@ -942,17 +942,17 @@ async def auto_fetch_loop():
 
 
 async def expire_pending_deposits_loop():
-    """Mark pending deposits as expired after 30 minutes"""
-    logger.info("Pending deposit expiry loop started")
+    """Mark pending deposits as expired after 2 hours"""
+    logger.info("Pending deposit expiry loop started (2 hour timeout)")
     while True:
         try:
-            cutoff = datetime.now(timezone.utc) - timedelta(minutes=30)
+            cutoff = datetime.now(timezone.utc) - timedelta(hours=2)
             result = await db.transactions.update_many(
                 {"type": "deposit", "status": "pending", "created_at": {"$lt": cutoff}},
                 {"$set": {"status": "expired"}}
             )
             if result.modified_count > 0:
-                logger.info(f"Expired {result.modified_count} pending deposits (30 min)")
+                logger.info(f"Expired {result.modified_count} pending deposits (2 hours)")
         except Exception as e:
             logger.error(f"Deposit expiry loop error: {e}")
         await asyncio.sleep(120)

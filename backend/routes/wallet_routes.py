@@ -182,18 +182,17 @@ async def imb_callback(request: Request):
 
         if verified:
             transaction = await db.transactions.find_one({"order_id": order_id})
-            if transaction and transaction["status"] in ("pending", "failed"):
-                if transaction["status"] != "completed":
-                    await db.users.update_one(
-                        {"_id": ObjectId(transaction["user_id"])},
-                        {"$inc": {"balance": transaction["amount"]}}
-                    )
-                    await db.transactions.update_one(
-                        {"order_id": order_id},
-                        {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc)}}
-                    )
-                    logging.info(f"Deposit completed: order={order_id}, amount={transaction['amount']}")
-                    await process_referral_reward(transaction["user_id"], transaction["amount"])
+            if transaction and transaction["status"] != "completed":
+                await db.users.update_one(
+                    {"_id": ObjectId(transaction["user_id"])},
+                    {"$inc": {"balance": transaction["amount"]}}
+                )
+                await db.transactions.update_one(
+                    {"order_id": order_id},
+                    {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc)}}
+                )
+                logging.info(f"Deposit completed: order={order_id}, amount={transaction['amount']}, prev_status={transaction['status']}")
+                await process_referral_reward(transaction["user_id"], transaction["amount"])
     else:
         await db.transactions.update_one({"order_id": order_id}, {"$set": {"status": "failed"}})
 
@@ -214,7 +213,7 @@ async def imb_webhook(request: Request):
 
     if status == "SUCCESS" and order_id:
         transaction = await db.transactions.find_one({"order_id": order_id})
-        if transaction and transaction["status"] in ("pending", "failed"):
+        if transaction and transaction["status"] != "completed":
             await db.users.update_one(
                 {"_id": ObjectId(transaction["user_id"])},
                 {"$inc": {"balance": transaction["amount"]}}
@@ -223,6 +222,7 @@ async def imb_webhook(request: Request):
                 {"order_id": order_id},
                 {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc)}}
             )
+            logging.info(f"Webhook deposit completed: order={order_id}, amount={transaction['amount']}")
             await process_referral_reward(transaction["user_id"], transaction["amount"])
     elif order_id:
         # Only mark as failed if not already completed
