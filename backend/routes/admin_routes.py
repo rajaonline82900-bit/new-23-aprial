@@ -673,6 +673,69 @@ async def auto_fetch_debug(request: Request):
     }
 
 
+@router.post("/admin/results/push-external")
+async def push_results_external(request: Request):
+    """Accept results pushed from external source (preview server cron)"""
+    body = await request.json()
+    secret = body.get("secret", "")
+    if secret != os.environ.get("JWT_SECRET", ""):
+        raise HTTPException(status_code=403, detail="Invalid secret")
+    
+    results_list = body.get("results", [])
+    applied = []
+    games_dict = await get_games_dict()
+    
+    for r in results_list:
+        game_id = r.get("game_id", "")
+        jodi = r.get("jodi", "")
+        result_date = r.get("date", "")
+        
+        if not game_id or not jodi or not result_date or game_id not in games_dict:
+            continue
+        
+        existing = await db.results.find_one({"game_id": game_id, "date": result_date})
+        if existing:
+            continue
+        
+        single_result = jodi[-1]
+        result_doc = {
+            "id": str(uuid.uuid4()), "game_id": game_id, "date": result_date,
+            "single_result": single_result, "jodi_result": jodi,
+            "declared_at": datetime.now(timezone.utc), "auto_declared": True
+        }
+        await db.results.insert_one(result_doc)
+        
+        # Process winning bets
+        andar_digit = jodi[0]
+        bahar_digit = jodi[1]
+        winning_jodi = await db.bets.find({"game_id": game_id, "date": result_date, "bet_type": "jodi", "number": jodi, "status": "pending"}).to_list(1000)
+        winning_andar = await db.bets.find({"game_id": game_id, "date": result_date, "bet_type": "haruf_andar", "number": andar_digit, "status": "pending"}).to_list(1000)
+        winning_bahar = await db.bets.find({"game_id": game_id, "date": result_date, "bet_type": "haruf_bahar", "number": bahar_digit, "status": "pending"}).to_list(1000)
+        winning_crossing = []
+        crossing_bets = await db.bets.find({"game_id": game_id, "date": result_date, "bet_type": "crossing", "status": "pending"}).to_list(1000)
+        for cb in crossing_bets:
+            cn = cb.get("number", "")
+            if len(cn) == 2:
+                d1, d2 = cn[0], cn[1]
+                if (d1 == andar_digit and d2 == bahar_digit) or (d1 == bahar_digit and d2 == andar_digit):
+                    winning_crossing.append(cb)
+        
+        all_winners = winning_jodi + winning_andar + winning_bahar + winning_crossing
+        for bet in all_winners:
+            await db.users.update_one({"_id": ObjectId(bet["user_id"])}, {"$inc": {"balance": bet["potential_win"]}})
+            await db.bets.update_one({"id": bet["id"]}, {"$set": {"status": "won", "won_amount": bet["potential_win"]}})
+        await db.bets.update_many({"game_id": game_id, "date": result_date, "status": "pending"}, {"$set": {"status": "lost"}})
+        
+        game_info = games_dict[game_id]
+        await send_push_to_all(f"{game_info['name_hi']} - रिजल्ट आ गया!", f"जोड़ी: {jodi} | सिंगल: {single_result}", "/dashboard")
+        
+        applied.append({"game": game_id, "jodi": jodi, "date": result_date, "winners": len(all_winners)})
+        logger.info(f"External push result: {game_info['name_hi']} = {jodi} ({result_date}), Winners: {len(all_winners)}")
+    
+    return {"applied": applied, "total": len(applied)}
+
+
+
 # ===== Auto Result Fetch =====
 
 async def refresh_matka_token(group="delhi"):
@@ -833,6 +896,24 @@ async def fetch_matka_results(date_str=None):
         return {"error": str(e)}
 
 
+async def push_results_to_production(results_applied):
+    """Push newly declared results to production server"""
+    prod_url = os.environ.get("PRODUCTION_URL", "")
+    if not prod_url or not results_applied:
+        return
+    jwt_secret = os.environ.get("JWT_SECRET", "")
+    try:
+        payload = {
+            "secret": jwt_secret,
+            "results": [{"game_id": r["game"], "jodi": r["jodi"], "date": r["date"]} for r in results_applied]
+        }
+        async with httpx.AsyncClient(timeout=15, verify=False) as client:
+            resp = await client.post(f"{prod_url}/api/admin/results/push-external", json=payload)
+            logger.info(f"Push to production: {resp.status_code} - {resp.text[:200]}")
+    except Exception as e:
+        logger.error(f"Push to production failed: {e}")
+
+
 async def auto_fetch_loop():
     import config
     config.auto_fetch_running = True
@@ -842,6 +923,8 @@ async def auto_fetch_loop():
         result = await fetch_matka_results()
         total = result.get("total", 0)
         logger.info(f"Auto-fetch initial: {total} new results declared")
+        if total > 0:
+            await push_results_to_production(result.get("results_applied", []))
     except Exception as e:
         logger.error(f"Auto-fetch initial error: {e}")
     # Then loop every 5 minutes
@@ -851,6 +934,7 @@ async def auto_fetch_loop():
             result = await fetch_matka_results()
             if result.get("total", 0) > 0:
                 logger.info(f"Auto-fetch: {result['total']} new results declared")
+                await push_results_to_production(result.get("results_applied", []))
             elif result.get("error"):
                 logger.error(f"Auto-fetch error: {result['error']}")
         except Exception as e:
