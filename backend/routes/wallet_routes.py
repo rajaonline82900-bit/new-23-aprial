@@ -170,7 +170,7 @@ async def imb_callback(request: Request):
                         if imb_order_status.upper() == "SUCCESS":
                             verified = True
                     except Exception:
-                        logging.warning(f"IMB verify returned non-JSON, trusting callback status=SUCCESS")
+                        logging.warning("IMB verify returned non-JSON, trusting callback status=SUCCESS")
                         verified = True
         except Exception as e:
             logging.error(f"IMB verify error: {e}")
@@ -178,17 +178,18 @@ async def imb_callback(request: Request):
 
         if verified:
             transaction = await db.transactions.find_one({"order_id": order_id})
-            if transaction and transaction["status"] == "pending":
-                await db.users.update_one(
-                    {"_id": ObjectId(transaction["user_id"])},
-                    {"$inc": {"balance": transaction["amount"]}}
-                )
-                await db.transactions.update_one(
-                    {"order_id": order_id},
-                    {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc)}}
-                )
-                logging.info(f"Deposit completed: order={order_id}, amount={transaction['amount']}")
-                await process_referral_reward(transaction["user_id"], transaction["amount"])
+            if transaction and transaction["status"] in ("pending", "failed"):
+                if transaction["status"] != "completed":
+                    await db.users.update_one(
+                        {"_id": ObjectId(transaction["user_id"])},
+                        {"$inc": {"balance": transaction["amount"]}}
+                    )
+                    await db.transactions.update_one(
+                        {"order_id": order_id},
+                        {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc)}}
+                    )
+                    logging.info(f"Deposit completed: order={order_id}, amount={transaction['amount']}")
+                    await process_referral_reward(transaction["user_id"], transaction["amount"])
     else:
         await db.transactions.update_one({"order_id": order_id}, {"$set": {"status": "failed"}})
 
@@ -209,7 +210,7 @@ async def imb_webhook(request: Request):
 
     if status == "SUCCESS" and order_id:
         transaction = await db.transactions.find_one({"order_id": order_id})
-        if transaction and transaction["status"] == "pending":
+        if transaction and transaction["status"] in ("pending", "failed"):
             await db.users.update_one(
                 {"_id": ObjectId(transaction["user_id"])},
                 {"$inc": {"balance": transaction["amount"]}}
@@ -220,7 +221,10 @@ async def imb_webhook(request: Request):
             )
             await process_referral_reward(transaction["user_id"], transaction["amount"])
     elif order_id:
-        await db.transactions.update_one({"order_id": order_id}, {"$set": {"status": "failed"}})
+        # Only mark as failed if not already completed
+        transaction = await db.transactions.find_one({"order_id": order_id})
+        if transaction and transaction["status"] == "pending":
+            await db.transactions.update_one({"order_id": order_id}, {"$set": {"status": "failed"}})
 
     return {"status": "ok"}
 
@@ -236,6 +240,7 @@ async def check_deposit_status(order_id: str, request: Request):
     if transaction["status"] == "completed":
         return {"status": "completed", "amount": transaction["amount"]}
 
+    # Also check IMB for failed transactions (might have been auto-expired)
     try:
         async with aiohttp.ClientSession() as session:
             form_data = aiohttp.FormData()
@@ -264,7 +269,11 @@ async def check_deposit_status(order_id: str, request: Request):
                 await process_referral_reward(user["_id"], transaction["amount"])
             return {"status": "completed", "amount": transaction["amount"]}
 
-        return {"status": imb_order_status.lower() or "pending", "amount": transaction["amount"]}
+        # Don't return "failed" from IMB - just return current status or pending
+        if imb_order_status.upper() in ("FAILED", "EXPIRED"):
+            return {"status": "failed", "amount": transaction["amount"]}
+
+        return {"status": "pending", "amount": transaction["amount"]}
     except Exception as e:
         logging.error(f"IMB status check error: {e}")
         return {"status": transaction["status"], "amount": transaction["amount"]}

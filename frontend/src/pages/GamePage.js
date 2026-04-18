@@ -695,21 +695,17 @@ const GamePage = () => {
         )}
 
         {/* Sticky Bottom Bar - Bet Summary (Always Visible) */}
-          {hasLowBets && (
-            <div className="fixed bottom-[70px] left-0 right-0 z-50 px-3">
-              <div className="max-w-[480px] mx-auto">
-                <div className="blink-warning bg-red-600/20 border-2 border-red-500 rounded-xl p-2 text-center" data-testid="min-bet-warning">
+          <div className="fixed bottom-0 left-0 right-0 z-50 glass border-t border-white/10 p-3" data-testid="bet-summary-bar">
+            <div className="max-w-[480px] mx-auto">
+              {hasLowBets && (
+                <div className="blink-warning bg-red-600/20 border-2 border-red-500 rounded-xl p-2 text-center mb-2" data-testid="min-bet-warning">
                   <p className="text-red-500 text-sm font-black">
                     {lowJodiBets.length > 0 && `जोड़ी न्यूनतम ₹${minJodi} | `}
                     {lowHarufBets.length > 0 && `हरूफ न्यूनतम ₹${minHaruf} | `}
                     {lowCross && `क्रॉसिंग न्यूनतम ₹${minCrossing}`}
                   </p>
                 </div>
-              </div>
-            </div>
-          )}
-          <div className="fixed bottom-0 left-0 right-0 z-50 glass border-t border-white/10 p-3" data-testid="bet-summary-bar">
-            <div className="max-w-[480px] mx-auto">
+              )}
               <p className="text-white font-bold text-base mb-2" data-testid="total-amount">Total: <span className="text-[#D4AF37]">₹ {totalAmount}</span></p>
               <div className="flex items-center gap-3">
                 <Button
