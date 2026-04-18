@@ -642,6 +642,21 @@ async def delete_help_message(message_id: str, request: Request):
     return {"message": "Message deleted"}
 
 
+
+@router.get("/admin/auto-fetch-debug")
+async def auto_fetch_debug(request: Request):
+    """Debug endpoint to check auto-fetch status"""
+    await get_admin_user(request)
+    import config as cfg
+    return {
+        "matka_username": MATKA_API_USERNAME or "NOT SET",
+        "matka_password_set": bool(MATKA_API_PASSWORD),
+        "matka_base": MATKA_API_BASE,
+        "tokens": {k: (v[:10] + "..." if v else "EMPTY") for k, v in matka_api_tokens.items()},
+        "auto_fetch_running": cfg.auto_fetch_running,
+    }
+
+
 # ===== Auto Result Fetch =====
 
 async def refresh_matka_token(group="delhi"):
@@ -723,6 +738,8 @@ async def fetch_matka_results(date_str=None):
                 unique_results.append(r)
 
         results_applied = []
+        skipped_no_match = []
+        skipped_existing = []
         for r in unique_results:
             market_name = r.get("market_name", "").upper().strip()
             jodi = r.get("jodi", "").strip()
@@ -733,10 +750,12 @@ async def fetch_matka_results(date_str=None):
 
             game_id = MARKET_TO_GAME.get(market_name)
             if not game_id or game_id not in games_dict:
+                skipped_no_match.append(market_name)
                 continue
 
             existing = await db.results.find_one({"game_id": game_id, "date": result_date})
             if existing:
+                skipped_existing.append(f"{market_name}={jodi}@{result_date}")
                 continue
 
             single_result = jodi[-1]
@@ -778,7 +797,11 @@ async def fetch_matka_results(date_str=None):
             results_applied.append({"game": game_id, "jodi": jodi, "date": result_date, "winners": len(all_winners)})
             logger.info(f"Auto-result: {game_info['name_hi']} = {jodi} ({result_date}), Winners: {len(all_winners)}")
 
-        return {"results_applied": results_applied, "total": len(results_applied)}
+        if skipped_existing:
+            logger.info(f"Auto-fetch skipped (already exist): {skipped_existing}")
+        if skipped_no_match and len(results_applied) == 0:
+            logger.info(f"Auto-fetch no match for: {skipped_no_match[:10]}")
+        return {"results_applied": results_applied, "total": len(results_applied), "skipped_existing": len(skipped_existing), "api_results_count": len(unique_results)}
 
     except Exception as e:
         logger.error(f"Matka API fetch error: {e}")
