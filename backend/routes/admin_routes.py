@@ -788,15 +788,25 @@ async def fetch_matka_results(date_str=None):
 async def auto_fetch_loop():
     import config
     config.auto_fetch_running = True
-    logger.info("Auto-result fetch loop started")
+    logger.info(f"Auto-result fetch loop started (username={MATKA_API_USERNAME}, base={MATKA_API_BASE})")
+    # First fetch immediately on startup
+    try:
+        result = await fetch_matka_results()
+        total = result.get("total", 0)
+        logger.info(f"Auto-fetch initial: {total} new results declared")
+    except Exception as e:
+        logger.error(f"Auto-fetch initial error: {e}")
+    # Then loop every 5 minutes
     while config.auto_fetch_running:
+        await asyncio.sleep(300)
         try:
             result = await fetch_matka_results()
             if result.get("total", 0) > 0:
                 logger.info(f"Auto-fetch: {result['total']} new results declared")
+            elif result.get("error"):
+                logger.error(f"Auto-fetch error: {result['error']}")
         except Exception as e:
             logger.error(f"Auto-fetch loop error: {e}")
-        await asyncio.sleep(300)
 
 
 async def expire_pending_deposits_loop():
