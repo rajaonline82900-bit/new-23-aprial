@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import FooterNav from '../components/FooterNav';
@@ -31,7 +31,8 @@ import {
   Download,
   Building2,
   QrCode,
-  Upload
+  Upload,
+  MessageCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -40,6 +41,7 @@ const utcDate = (d) => { if (!d) return new Date(); const s = String(d); return 
 
 const WalletPage = () => {
   const { user, refreshUser } = useAuth();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -545,6 +547,24 @@ const WalletPage = () => {
                 }
               </span>
             )}
+          </Button>
+
+          {/* Deposit Warning */}
+          <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-xl" data-testid="deposit-warning">
+            <p className="text-yellow-400 text-xs font-bold text-center leading-relaxed">
+              जमा (DEPOSIT) करने के लिए हर बार स्केनर (BARCODE) का स्क्रीन शॉट लेकर ही पेमेंट करो। पेमेंट करने के बाद एप्लिकेशन को रिफ्रेश कर लेना। 1 मिनट में पेमेंट जमा हो जायेगा।
+            </p>
+          </div>
+
+          {/* Chat Button for payment issues */}
+          <Button
+            onClick={() => { setDepositOpen(false); navigate('/chat'); }}
+            variant="outline"
+            data-testid="deposit-chat-btn"
+            className="w-full mt-2 h-10 border-white/10 text-gray-300 hover:text-white hover:border-[#D4AF37]/50"
+          >
+            <MessageCircle className="w-4 h-4 mr-2" />
+            पेमेंट में समस्या? Chat करें
           </Button>
 
           {/* Payment Link - shown when popup is blocked */}
