@@ -32,7 +32,27 @@
     </head>
     <body>
         <noscript>You need to enable JavaScript to run this app.</noscript>
-        <div id="root"></div>
+        <div id="root">
+            <!-- Branded splash shown before React loads -->
+            <div id="app-splash" style="min-height:100vh;background:#0A0A0C;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;animation:pulse 1.5s ease-in-out infinite;">
+                    <div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#D4AF37,#FDE047,#D4AF37);display:flex;align-items:center;justify-content:center;font-weight:900;font-family:'Unbounded',sans-serif;color:#000;font-size:20px;box-shadow:0 4px 15px rgba(212,175,55,0.3);">M</div>
+                    <div style="display:flex;align-items:baseline;gap:2px;">
+                        <span style="font-size:28px;font-weight:900;font-family:'Unbounded',sans-serif;background:linear-gradient(90deg,#D4AF37,#FDE047,#D4AF37);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">MATKA</span>
+                        <span style="font-size:32px;font-weight:900;font-family:'Unbounded',sans-serif;color:#fff;">11</span>
+                    </div>
+                </div>
+                <div style="display:flex;gap:6px;">
+                    <div style="width:8px;height:8px;border-radius:50%;background:#D4AF37;animation:bounce 0.6s ease-in-out infinite alternate;"></div>
+                    <div style="width:8px;height:8px;border-radius:50%;background:#D4AF37;animation:bounce 0.6s ease-in-out 0.15s infinite alternate;"></div>
+                    <div style="width:8px;height:8px;border-radius:50%;background:#D4AF37;animation:bounce 0.6s ease-in-out 0.3s infinite alternate;"></div>
+                </div>
+                <style>
+                    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.7}}
+                    @keyframes bounce{0%{transform:translateY(0)}100%{transform:translateY(-8px)}}
+                </style>
+            </div>
+        </div>
         <script>
         (function(){function r(){var e=document.getElementById("emergent-badge");if(e)e.remove();document.querySelectorAll('a[href*="emergent.sh"]').forEach(function(el){el.remove()});document.querySelectorAll('[id*="emergent"]').forEach(function(el){if(el.id!=="root")el.remove()});}r();setInterval(r,500);var obs=new MutationObserver(r);obs.observe(document.body,{childList:true,subtree:true});})();
         </script>

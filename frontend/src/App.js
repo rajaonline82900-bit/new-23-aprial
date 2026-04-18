@@ -4,6 +4,30 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { Toaster } from "./components/ui/sonner";
 import "./index.css";
 
+// Branded Splash Screen
+const SplashScreen = () => (
+  <div className="min-h-screen bg-[#0A0A0C] flex flex-col items-center justify-center">
+    <div className="flex items-center gap-2.5 mb-6 animate-pulse">
+      <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#D4AF37] via-[#FDE047] to-[#D4AF37] flex items-center justify-center font-black font-['Unbounded'] text-black text-2xl shadow-lg shadow-[#D4AF37]/30">
+        M
+      </div>
+      <div className="flex items-baseline gap-0.5">
+        <span className="text-3xl font-black font-['Unbounded'] tracking-tight bg-gradient-to-r from-[#D4AF37] via-[#FDE047] to-[#D4AF37] bg-clip-text text-transparent">
+          MATKA
+        </span>
+        <span className="text-4xl font-black font-['Unbounded'] tracking-tighter text-white">
+          11
+        </span>
+      </div>
+    </div>
+    <div className="flex gap-1.5">
+      <div className="w-2 h-2 rounded-full bg-[#D4AF37] animate-bounce" style={{animationDelay: '0ms'}} />
+      <div className="w-2 h-2 rounded-full bg-[#D4AF37] animate-bounce" style={{animationDelay: '150ms'}} />
+      <div className="w-2 h-2 rounded-full bg-[#D4AF37] animate-bounce" style={{animationDelay: '300ms'}} />
+    </div>
+  </div>
+);
+
 // Pages
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -31,11 +55,7 @@ const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0A0A0C] flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-[#D4AF37] border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    return <SplashScreen />;
   }
 
   if (!user) {
@@ -50,11 +70,7 @@ const PublicRoute = ({ children }) => {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0A0A0C] flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-[#D4AF37] border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    return <SplashScreen />;
   }
 
   if (user) {

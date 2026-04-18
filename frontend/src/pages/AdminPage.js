@@ -100,8 +100,17 @@ const AdminPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0A0A0C] flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-[#D4AF37] border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#0A0A0C] flex flex-col items-center justify-center">
+        <div className="flex items-center gap-2 mb-4 animate-pulse">
+          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#D4AF37] via-[#FDE047] to-[#D4AF37] flex items-center justify-center font-black font-['Unbounded'] text-black text-sm shadow-lg shadow-[#D4AF37]/30">M</div>
+          <span className="text-xl font-black font-['Unbounded'] bg-gradient-to-r from-[#D4AF37] to-[#FDE047] bg-clip-text text-transparent">MATKA</span>
+          <span className="text-2xl font-black font-['Unbounded'] text-white">11</span>
+        </div>
+        <div className="flex gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-[#D4AF37] animate-bounce" style={{animationDelay: '0ms'}} />
+          <div className="w-2 h-2 rounded-full bg-[#D4AF37] animate-bounce" style={{animationDelay: '150ms'}} />
+          <div className="w-2 h-2 rounded-full bg-[#D4AF37] animate-bounce" style={{animationDelay: '300ms'}} />
+        </div>
       </div>
     );
   }
