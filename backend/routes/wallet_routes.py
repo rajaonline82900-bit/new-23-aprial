@@ -74,7 +74,7 @@ async def get_wallet(request: Request):
 
     transactions = await db.transactions.find(
         {"user_id": user["_id"]}, {"_id": 0}
-    ).sort("created_at", -1).limit(20).to_list(20)
+    ).sort("created_at", -1).limit(50).to_list(50)
 
     return {"balance": user.get("balance", 0.0), "transactions": transactions}
 

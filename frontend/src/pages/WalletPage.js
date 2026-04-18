@@ -397,11 +397,12 @@ const WalletPage = () => {
               </a>
             </div>
             {/* Filter Tabs */}
-            <div className="flex gap-2 mt-3">
+            <div className="flex gap-2 mt-3 flex-wrap">
               {[
                 { key: 'all', label: 'सभी' },
                 { key: 'deposit', label: 'जमा' },
                 { key: 'withdrawal', label: 'निकासी' },
+                { key: 'pending_failed', label: 'Pending / Failed' },
               ].map((tab) => (
                 <button
                   key={tab.key}
@@ -423,14 +424,22 @@ const WalletPage = () => {
               <div className="flex justify-center py-8">
                 <div className="w-8 h-8 border-2 border-[#D4AF37] border-t-transparent rounded-full animate-spin" />
               </div>
-            ) : transactions.filter(tx => txFilter === 'all' || tx.type === txFilter).length === 0 ? (
+            ) : transactions.filter(tx => {
+              if (txFilter === 'all') return true;
+              if (txFilter === 'pending_failed') return ['pending', 'failed', 'expired'].includes(tx.status);
+              return tx.type === txFilter;
+            }).length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-gray-400">कोई लेनदेन नहीं</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {transactions
-                  .filter(tx => txFilter === 'all' || tx.type === txFilter)
+                  .filter(tx => {
+                    if (txFilter === 'all') return true;
+                    if (txFilter === 'pending_failed') return ['pending', 'failed', 'expired'].includes(tx.status);
+                    return tx.type === txFilter;
+                  })
                   .map((tx, index) => (
                   <div
                     key={index}
@@ -454,9 +463,10 @@ const WalletPage = () => {
                             <span className="text-gray-400 text-xs ml-2">({tx.upi_id})</span>
                           )}
                         </p>
-                        <p className="text-gray-400 text-sm">
-                          {utcDate(tx.created_at).toLocaleDateString('hi-IN', { timeZone: 'Asia/Kolkata' })} • {utcDate(tx.created_at).toLocaleTimeString('hi-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true, timeZoneName: 'short' })}
+                        <p className="text-gray-400 text-xs">
+                          {utcDate(tx.created_at).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric' })} | {utcDate(tx.created_at).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true })}
                         </p>
+                        {tx.order_id && <p className="text-gray-600 text-[10px]">#{tx.order_id}</p>}
                       </div>
                     </div>
                     <div className="text-right flex flex-col items-end gap-1">
