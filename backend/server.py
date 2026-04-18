@@ -143,6 +143,11 @@ async def start_auto_fetch():
     if MATKA_API_USERNAME and MATKA_API_PASSWORD:
         asyncio.create_task(auto_fetch_loop())
         logger.info("Auto-result fetch scheduled (every 5 min)")
+    # Production push cron - pushes results to matka11.online
+    prod_url = os.environ.get("PRODUCTION_URL", "")
+    if prod_url:
+        asyncio.create_task(production_push_loop(prod_url))
+        logger.info(f"Production push cron started -> {prod_url}")
     asyncio.create_task(expire_pending_deposits_loop())
     logger.info("Pending deposit expiry loop started (every 2 min)")
 
@@ -150,3 +155,64 @@ async def start_auto_fetch():
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
+
+
+async def production_push_loop(prod_url):
+    """Push auto-fetched results to production server every 3 minutes"""
+    import httpx as _httpx
+    from datetime import timedelta
+    from config import IST, MATKA_API_USERNAME as MUSER, MATKA_API_PASSWORD as MPASS, MATKA_API_BASE as MBASE, MARKET_TO_GAME
+
+    admin_email = os.environ.get("ADMIN_EMAIL", "admin@sattamatka.com")
+    admin_pass = os.environ.get("ADMIN_PASSWORD", "Admin@123")
+
+    logger.info("Production push loop waiting 30s for startup...")
+    await asyncio.sleep(30)
+
+    while True:
+        try:
+            date_str = datetime.now(IST).strftime("%Y-%m-%d")
+            async with _httpx.AsyncClient(timeout=20, verify=False) as c:
+                # Get matka token
+                r = await c.post(f"{MBASE}/get-refresh-token-delhi", data={"username": MUSER, "password": MPASS})
+                token = r.json().get("refresh_token", "")
+                if not token:
+                    logger.error("Prod push: no matka token")
+                    await asyncio.sleep(180)
+                    continue
+
+                # Get results
+                r2 = await c.post(f"{MBASE}/market-data-delhi", data={"username": MUSER, "API_token": token, "markte_name": "", "date": date_str})
+                api_results = {}
+                for res in r2.json().get("today_result", []):
+                    name = res.get("market_name", "").upper().strip()
+                    jodi = res.get("jodi", "").strip()
+                    if name in MARKET_TO_GAME and res.get("aankdo_date") == date_str and jodi and len(jodi) == 2 and jodi.isdigit():
+                        api_results[MARKET_TO_GAME[name]] = jodi
+
+                if not api_results:
+                    await asyncio.sleep(180)
+                    continue
+
+                # Login to production
+                lr = await c.post(f"{prod_url}/api/auth/admin/login", json={"email": admin_email, "password": admin_pass})
+                admin_token = lr.json().get("token", "")
+                if not admin_token:
+                    logger.error("Prod push: cannot login")
+                    await asyncio.sleep(180)
+                    continue
+
+                # Check pending
+                sr = await c.get(f"{prod_url}/api/admin/results/status", headers={"Authorization": f"Bearer {admin_token}"})
+                pending = {g["game_id"] for g in sr.json().get("games", []) if not g.get("declared")}
+
+                # Push
+                for game_id, jodi in api_results.items():
+                    if game_id in pending:
+                        dr = await c.post(f"{prod_url}/api/admin/results", headers={"Authorization": f"Bearer {admin_token}", "Content-Type": "application/json"}, json={"game_id": game_id, "date": date_str, "jodi_result": jodi})
+                        logger.info(f"Prod push: {game_id}={jodi} -> {dr.json().get('message','')}")
+
+        except Exception as e:
+            logger.error(f"Prod push error: {e}")
+
+        await asyncio.sleep(180)
