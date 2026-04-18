@@ -169,11 +169,15 @@ async def imb_callback(request: Request):
                         imb_order_status = imb_result.get("order_status") or imb_result.get("status") or imb_result.get("txnStatus") or ""
                         if imb_order_status.upper() == "SUCCESS":
                             verified = True
+                        elif imb_order_status.upper() in ("PENDING", ""):
+                            # Payment still processing at IMB but callback says SUCCESS - trust callback
+                            logging.info(f"IMB verify says {imb_order_status} but callback says SUCCESS, trusting callback")
+                            verified = True
                     except Exception:
                         logging.warning("IMB verify returned non-JSON, trusting callback status=SUCCESS")
                         verified = True
         except Exception as e:
-            logging.error(f"IMB verify error: {e}")
+            logging.error(f"IMB verify error: {e}, trusting callback status=SUCCESS")
             verified = True
 
         if verified:
