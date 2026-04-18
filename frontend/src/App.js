@@ -1,6 +1,7 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { LanguageProvider } from "./context/LanguageContext";
 import { Toaster } from "./components/ui/sonner";
 import "./index.css";
 
@@ -247,6 +248,7 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <LanguageProvider>
         <div className="App">
           <AppRoutes />
           <Toaster 
@@ -260,6 +262,7 @@ function App() {
             }}
           />
         </div>
+        </LanguageProvider>
       </AuthProvider>
     </BrowserRouter>
   );

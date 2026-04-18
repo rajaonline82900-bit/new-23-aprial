@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useLang } from '../context/LanguageContext';
 import axios from 'axios';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -26,6 +27,7 @@ const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const DashboardPage = () => {
   const { user, logout, refreshUser } = useAuth();
+  const { t } = useLang();
   const navigate = useNavigate();
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -213,7 +215,7 @@ const DashboardPage = () => {
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#D4AF37] to-[#FDE047] text-black font-bold text-xs hover:scale-105 active:scale-95 transition-transform shadow-lg shadow-[#D4AF37]/20"
               >
                 <Download className="w-3.5 h-3.5" />
-                Download App
+                {t('download_app')}
               </button>
               
               {user?.role === 'admin' && (
@@ -264,11 +266,11 @@ const DashboardPage = () => {
                   <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0">
                     <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
                   </div>
-                  <p className="text-white text-xs">Results की notification पाने के लिए enable करें</p>
+                  <p className="text-white text-xs">{t('enable_notif')}</p>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
                   <button onClick={handleEnableNotifications} data-testid="enable-notifications-btn" className="px-3 py-1.5 rounded-lg bg-blue-500 text-white text-xs font-bold hover:bg-blue-600 transition-all">
-                    Enable
+                    {t('enable')}
                   </button>
                   <button onClick={dismissNotifBanner} className="p-1 text-gray-500 hover:text-white transition-all">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
@@ -281,20 +283,20 @@ const DashboardPage = () => {
             <CardContent className="p-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-400 text-xs">आपका बैलेंस</p>
+                  <p className="text-gray-400 text-xs">{t('your_balance')}</p>
                   <p className="text-xl font-bold text-white">₹{user?.balance?.toFixed(2) || '0.00'}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Link to="/wallet">
                     <Button onClick={() => speak('जमा करें')} className="bg-[#10B981] hover:bg-[#059669] text-white font-bold flex items-center gap-1.5">
                       <ArrowDownLeft className="w-4 h-4" />
-                      जमा करें
+                      {t('deposit')}
                     </Button>
                   </Link>
                   <Link to="/wallet?tab=withdraw">
                     <Button onClick={() => speak('निकासी')} className="bg-red-600 hover:bg-red-700 text-white font-bold flex items-center gap-1.5">
                       <ArrowUpRight className="w-4 h-4" />
-                      निकासी
+                      {t('withdraw')}
                     </Button>
                   </Link>
                 </div>
@@ -310,7 +312,7 @@ const DashboardPage = () => {
                   <div className="w-9 h-9 rounded-full bg-[#D4AF37]/10 flex items-center justify-center group-hover:bg-[#D4AF37]/20 transition-all">
                     <Wallet className="w-4 h-4 text-[#D4AF37]" />
                   </div>
-                  <span className="text-white font-medium text-[10px]">वॉलेट</span>
+                  <span className="text-white font-medium text-[10px]">{t('wallet')}</span>
                 </CardContent>
               </Card>
             </Link>
@@ -321,7 +323,7 @@ const DashboardPage = () => {
                   <div className="w-9 h-9 rounded-full bg-[#0088cc]/10 flex items-center justify-center group-hover:bg-[#0088cc]/20 transition-all">
                     <Send className="w-4 h-4 text-[#0088cc]" />
                   </div>
-                  <span className="text-white font-medium text-[10px]">टेलीग्राम</span>
+                  <span className="text-white font-medium text-[10px]">{t('telegram')}</span>
                 </CardContent>
               </Card>
             </a>
@@ -335,7 +337,7 @@ const DashboardPage = () => {
                       <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[8px] font-bold flex items-center justify-center" data-testid="chat-unread-badge">{unreadChat > 9 ? '9+' : unreadChat}</span>
                     )}
                   </div>
-                  <span className="text-white font-medium text-[10px]">Chat</span>
+                  <span className="text-white font-medium text-[10px]">{t('chat')}</span>
                 </CardContent>
               </Card>
             </Link>
@@ -346,7 +348,7 @@ const DashboardPage = () => {
                   <div className="w-9 h-9 rounded-full bg-purple-500/10 flex items-center justify-center group-hover:bg-purple-500/20 transition-all">
                     <Trophy className="w-4 h-4 text-purple-400" />
                   </div>
-                  <span className="text-white font-medium text-[10px]">रिजल्ट</span>
+                  <span className="text-white font-medium text-[10px]">{t('results')}</span>
                 </CardContent>
               </Card>
             </Link>
@@ -354,9 +356,9 @@ const DashboardPage = () => {
 
           {/* Games Header */}
           <div className="flex items-center justify-between pb-2">
-            <h3 className="text-lg font-bold text-white font-['Unbounded']">गेम्स</h3>
+            <h3 className="text-lg font-bold text-white font-['Unbounded']">{t('games')}</h3>
             <Badge variant="outline" className="border-[#D4AF37]/50 text-[#D4AF37]">
-              {games.length} उपलब्ध
+              {games.length} {t('available')}
             </Badge>
           </div>
         </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { useLang } from '../context/LanguageContext';
 import {
   X,
   Globe,
@@ -31,10 +32,10 @@ const LANGUAGES = [
 
 const SidebarMenu = ({ open, onClose }) => {
   const { user, logout } = useAuth();
+  const { lang, changeLang, t } = useLang();
   const navigate = useNavigate();
   const [settings, setSettings] = useState({});
   const [langOpen, setLangOpen] = useState(false);
-  const [selectedLang, setSelectedLang] = useState('hi');
   const [deferredPrompt, setDeferredPrompt] = useState(null);
 
   const handleLogout = async () => {
@@ -55,8 +56,6 @@ const SidebarMenu = ({ open, onClose }) => {
   useEffect(() => {
     if (open) {
       fetchSettings();
-      const saved = localStorage.getItem('app_lang');
-      if (saved) setSelectedLang(saved);
     }
   }, [open]);
 
@@ -68,8 +67,7 @@ const SidebarMenu = ({ open, onClose }) => {
   };
 
   const handleLangSelect = (code) => {
-    setSelectedLang(code);
-    localStorage.setItem('app_lang', code);
+    changeLang(code);
     setLangOpen(false);
   };
 
@@ -79,8 +77,9 @@ const SidebarMenu = ({ open, onClose }) => {
     {
       type: 'action',
       icon: Globe,
-      label: 'Language',
-      sublabel: LANGUAGES.find(l => l.code === selectedLang)?.label,
+      label: t('language'),
+      labelKey: 'Language',
+      sublabel: LANGUAGES.find(l => l.code === lang)?.label,
       onClick: () => setLangOpen(!langOpen),
       color: 'text-blue-400',
       bg: 'bg-blue-500/10',
@@ -88,7 +87,7 @@ const SidebarMenu = ({ open, onClose }) => {
     {
       type: 'link',
       icon: HelpCircle,
-      label: 'How to Play',
+      label: t('how_to_play'),
       to: '/how-to-play',
       color: 'text-emerald-400',
       bg: 'bg-emerald-500/10',
@@ -96,7 +95,7 @@ const SidebarMenu = ({ open, onClose }) => {
     {
       type: 'link',
       icon: ArrowDownLeft,
-      label: 'Deposit History',
+      label: t('deposit_hist'),
       to: '/wallet',
       color: 'text-green-400',
       bg: 'bg-green-500/10',
@@ -104,7 +103,7 @@ const SidebarMenu = ({ open, onClose }) => {
     {
       type: 'link',
       icon: Trophy,
-      label: 'Result History',
+      label: t('result_history'),
       to: '/results',
       color: 'text-purple-400',
       bg: 'bg-purple-500/10',
@@ -112,7 +111,7 @@ const SidebarMenu = ({ open, onClose }) => {
     {
       type: 'link',
       icon: Gift,
-      label: 'Refer & Earn',
+      label: t('refer_earn'),
       to: '/refer',
       color: 'text-pink-400',
       bg: 'bg-pink-500/10',
@@ -120,7 +119,7 @@ const SidebarMenu = ({ open, onClose }) => {
     {
       type: 'link',
       icon: Star,
-      label: 'Rate List',
+      label: t('rate_list'),
       to: '/rate-list',
       color: 'text-yellow-400',
       bg: 'bg-yellow-500/10',
@@ -189,20 +188,20 @@ const SidebarMenu = ({ open, onClose }) => {
                   </button>
 
                   {/* Language Dropdown */}
-                  {langOpen && item.label === 'Language' && (
+                  {langOpen && item.labelKey === 'Language' && (
                     <div className="ml-12 mt-1 space-y-1">
-                      {LANGUAGES.map((lang) => (
+                      {LANGUAGES.map((lng) => (
                         <button
-                          key={lang.code}
-                          onClick={() => handleLangSelect(lang.code)}
-                          data-testid={`lang-${lang.code}`}
+                          key={lng.code}
+                          onClick={() => handleLangSelect(lng.code)}
+                          data-testid={`lang-${lng.code}`}
                           className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${
-                            selectedLang === lang.code
+                            lang === lng.code
                               ? 'bg-[#D4AF37]/20 text-[#D4AF37] font-medium'
                               : 'text-gray-400 hover:bg-[#0A0A0C]/5 hover:text-white'
                           }`}
                         >
-                          {lang.label}
+                          {lng.label}
                         </button>
                       ))}
                     </div>
@@ -236,7 +235,7 @@ const SidebarMenu = ({ open, onClose }) => {
 
         {/* Customer Support Section */}
         <div className="p-3">
-          <p className="text-gray-400 text-xs uppercase tracking-wider px-3 mb-2">Customer Support</p>
+          <p className="text-gray-400 text-xs uppercase tracking-wider px-3 mb-2">{t('customer_support')}</p>
 
           {settings.telegram_link && (
             <a
@@ -324,8 +323,8 @@ const SidebarMenu = ({ open, onClose }) => {
                 <Download className="w-4 h-4 text-[#D4AF37]" />
               </div>
               <div className="text-left">
-                <p className="text-[#D4AF37] text-sm font-bold">App Install करें</p>
-                <p className="text-gray-400 text-[10px]">Home Screen पर ऐड करें</p>
+                <p className="text-[#D4AF37] text-sm font-bold">{t('install_app')}</p>
+                <p className="text-gray-400 text-[10px]">{t('install_app_desc')}</p>
               </div>
             </div>
             <ChevronRight className="w-4 h-4 text-[#D4AF37]" />
@@ -343,7 +342,7 @@ const SidebarMenu = ({ open, onClose }) => {
             <div className="w-9 h-9 rounded-lg bg-red-500/20 flex items-center justify-center">
               <LogOut className="w-4 h-4 text-red-400" />
             </div>
-            <p className="text-red-400 text-sm font-bold">Logout</p>
+            <p className="text-red-400 text-sm font-bold">{t('logout')}</p>
           </button>
         </div>
       </div>

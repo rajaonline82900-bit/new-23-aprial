@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useLang } from '../context/LanguageContext';
 import axios from 'axios';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -53,6 +54,7 @@ const ALL_JODIS = Array.from({ length: 100 }, (_, i) => String(i).padStart(2, '0
 const GamePage = () => {
   const { gameId } = useParams();
   const { user, refreshUser } = useAuth();
+  const { t } = useLang();
   const navigate = useNavigate();
   const [game, setGame] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -359,10 +361,10 @@ const GamePage = () => {
             )}
             <div>
               <p className={`font-semibold ${bettingOpen ? 'text-emerald-400' : 'text-red-400'}`}>
-                {bettingOpen ? 'बेटिंग खुली है' : 'बेटिंग बंद है'}
+                {bettingOpen ? t('betting_open') : t('betting_closed')}
               </p>
               <p className="text-gray-400 text-xs">
-                समय: {game?.start_time || '--:--'} से {game?.end_time || '--:--'} तक
+                {t('time_from_to', { start: game?.start_time || '--:--', end: game?.end_time || '--:--' })}
               </p>
             </div>
           </div>
@@ -382,7 +384,7 @@ const GamePage = () => {
                 : 'bg-[#141418] text-gray-400 border border-white/10 hover:border-[#D4AF37]/50'
             }`}
           >
-            <span className="text-base">जंतरी बेट</span>
+            <span className="text-base">{t('jantri_bet')}</span>
             {activeBets.length > 0 && (
               <span className="ml-1 text-xs bg-black/30 px-2 py-0.5 rounded-full">{activeBets.length}</span>
             )}
@@ -396,7 +398,7 @@ const GamePage = () => {
                 : 'bg-[#141418] text-gray-400 border border-white/10 hover:border-[#D4AF37]/50'
             }`}
           >
-            <span className="text-base">हरूफ बेट</span>
+            <span className="text-base">{t('haruf_bet')}</span>
             {(activeAndar.length + activeBahar.length) > 0 && (
               <span className="ml-1 text-xs bg-black/30 px-2 py-0.5 rounded-full">{activeAndar.length + activeBahar.length}</span>
             )}
@@ -410,7 +412,7 @@ const GamePage = () => {
                 : 'bg-[#141418] text-gray-400 border border-white/10 hover:border-[#D4AF37]/50'
             }`}
           >
-            <span className="text-base">क्रॉस बेट</span>
+            <span className="text-base">{t('cross_bet')}</span>
             {crossJodis.length > 0 && crossBetAmount >= 10 && (
               <span className="ml-1 text-xs bg-black/30 px-2 py-0.5 rounded-full">{crossJodis.length}</span>
             )}
@@ -423,7 +425,7 @@ const GamePage = () => {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-white font-['Unbounded'] text-lg">
-                जंतरी - जोड़ी बेट (00-99)
+                {t('jantri_jodi')}
               </CardTitle>
               {activeBets.length > 0 && (
                 <Button
@@ -434,7 +436,7 @@ const GamePage = () => {
                   className="border-red-500/50 text-red-400 hover:bg-red-500/10"
                 >
                   <Trash2 className="w-4 h-4 mr-1" />
-                  सब हटाओ
+                  {t('clear_all')}
                 </Button>
               )}
             </div>
@@ -483,7 +485,7 @@ const GamePage = () => {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-white font-['Unbounded'] text-lg">
-                हरूफ अंदर / बाहर (0-9)
+                {t('haruf_andar_bahar')}
               </CardTitle>
               {(activeAndar.length > 0 || activeBahar.length > 0) && (
                 <Button
@@ -494,7 +496,7 @@ const GamePage = () => {
                   className="border-red-500/50 text-red-400 hover:bg-red-500/10"
                 >
                   <Trash2 className="w-4 h-4 mr-1" />
-                  हटाओ
+                  {t('remove')}
                 </Button>
               )}
             </div>
@@ -505,7 +507,7 @@ const GamePage = () => {
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                  <h3 className="text-blue-400 font-bold text-base">अंदर (पहला अंक)</h3>
+                  <h3 className="text-blue-400 font-bold text-base">{t('andar')}</h3>
                 </div>
                 <div className="grid grid-cols-5 gap-2">
                   {[0,1,2,3,4,5,6,7,8,9].map((num) => {
@@ -551,7 +553,7 @@ const GamePage = () => {
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-                  <h3 className="text-orange-400 font-bold text-base">बाहर (दूसरा अंक)</h3>
+                  <h3 className="text-orange-400 font-bold text-base">{t('bahar')}</h3>
                 </div>
                 <div className="grid grid-cols-5 gap-2">
                   {[0,1,2,3,4,5,6,7,8,9].map((num) => {
@@ -603,7 +605,7 @@ const GamePage = () => {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-white font-['Unbounded'] text-lg">
-                क्रॉस बेट
+                {t('cross_bet_title')}
               </CardTitle>
               {crossDigits.length > 0 && (
                 <Button
@@ -614,14 +616,14 @@ const GamePage = () => {
                   className="border-red-500/50 text-red-400 hover:bg-red-500/10"
                 >
                   <Trash2 className="w-4 h-4 mr-1" />
-                  हटाओ
+                  {t('remove')}
                 </Button>
               )}
             </div>
           </CardHeader>
           <CardContent>
             {/* Digit Selection */}
-            <p className="text-gray-400 text-sm mb-3">नंबर चुनें (कम से कम 2)</p>
+            <p className="text-gray-400 text-sm mb-3">{t('select_numbers')}</p>
             <div className="grid grid-cols-5 gap-3 mb-6">
               {[0,1,2,3,4,5,6,7,8,9].map((num) => {
                 const isSelected = crossDigits.includes(num);
@@ -645,8 +647,8 @@ const GamePage = () => {
             {/* With Joda Toggle */}
             <div className="flex items-center justify-between mb-4 p-3 bg-[#0A0A0C] rounded-xl border border-white/10">
               <div>
-                <p className="text-white font-bold text-sm">With Joda (जोड़ा)</p>
-                <p className="text-gray-500 text-xs">11, 22, 33, 44... जैसी जोड़ियां भी शामिल करें</p>
+                <p className="text-white font-bold text-sm">{t('with_joda')}</p>
+                <p className="text-gray-500 text-xs">{t('with_joda_desc')}</p>
               </div>
               <button
                 onClick={() => setCrossWithJoda(prev => !prev)}
@@ -663,7 +665,7 @@ const GamePage = () => {
 
             {/* Amount Input */}
             <div className="mb-4">
-              <p className="text-gray-400 text-sm mb-2">प्रति जोड़ी राशि (₹)</p>
+              <p className="text-gray-400 text-sm mb-2">{t('per_jodi_amount')}</p>
               <Input
                 type="number"
                 placeholder="हर जोड़ी पर कितना लगाना है"
@@ -693,7 +695,7 @@ const GamePage = () => {
                 </div>
                 {crossBetAmount >= 10 && (
                   <div className="text-sm">
-                    <span className="text-gray-400">कुल राशि: </span>
+                    <span className="text-gray-400">{t('total_amount')}: </span>
                     <span className="text-[#D4AF37] font-bold">₹{crossTotal}</span>
                   </div>
                 )}
@@ -702,7 +704,7 @@ const GamePage = () => {
 
             {crossDigits.length < 2 && (
               <p className="text-gray-500 text-sm text-center mt-2">
-                कम से कम 2 नंबर चुनें - सभी क्रॉस जोड़ियां बनेंगी
+                {t('select_min_2')}
               </p>
             )}
           </CardContent>
@@ -721,7 +723,7 @@ const GamePage = () => {
                   </p>
                 </div>
               )}
-              <p className="text-white font-bold text-base mb-2" data-testid="total-amount">Total: <span className="text-[#D4AF37]">₹ {totalAmount}</span></p>
+              <p className="text-white font-bold text-base mb-2" data-testid="total-amount">{t('total')}: <span className="text-[#D4AF37]">₹ {totalAmount}</span></p>
               <div className="flex items-center gap-3">
                 <Button
                   onClick={() => { setJantriAmounts({}); setAndarAmounts({}); setBaharAmounts({}); setCrossDigits([]); setCrossAmount(''); setCrossWithJoda(false); }}
@@ -730,7 +732,7 @@ const GamePage = () => {
                   variant="outline"
                   className="flex-1 h-12 border-white/20 text-white hover:bg-white/10 font-bold text-base disabled:opacity-30"
                 >
-                  Clear
+                  {t('clear')}
                 </Button>
                 <Button
                   onClick={() => { speak('प्ले'); handlePlaceBatchBets(); }}
@@ -739,11 +741,11 @@ const GamePage = () => {
                   className="flex-1 h-12 bg-[#1a1a3e] hover:bg-[#252560] text-white font-bold text-base disabled:opacity-50"
                 >
                 {!bettingOpen ? (
-                  <span className="flex items-center gap-2"><Lock className="w-5 h-5" /> बंद</span>
+                  <span className="flex items-center gap-2"><Lock className="w-5 h-5" /> {t('closed')}</span>
                 ) : placing ? (
-                  <span className="flex items-center gap-2"><Coins className="w-5 h-5 animate-spin" /> लग रही है...</span>
+                  <span className="flex items-center gap-2"><Coins className="w-5 h-5 animate-spin" /> {t('placing')}</span>
                 ) : (
-                  'PLAY'
+                  t('play').toUpperCase()
                 )}
               </Button>
               </div>

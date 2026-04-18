@@ -1,16 +1,18 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, History, BarChart3, Gift } from 'lucide-react';
+import { useLang } from '../context/LanguageContext';
 
 const FooterNav = () => {
   const location = useLocation();
   const path = location.pathname;
+  const { t } = useLang();
 
   const items = [
-    { to: '/dashboard', icon: Home, label: 'Home', match: '/dashboard' },
-    { to: '/refer', icon: Gift, label: 'Refer', match: '/refer' },
-    { to: '/bets', icon: History, label: 'Bid History', match: '/bets' },
-    { to: '/jantri', icon: BarChart3, label: 'Result Chart', match: '/jantri' },
+    { to: '/dashboard', icon: Home, label: t('home'), match: '/dashboard' },
+    { to: '/refer', icon: Gift, label: t('refer'), match: '/refer' },
+    { to: '/bets', icon: History, label: t('bid_history'), match: '/bets' },
+    { to: '/jantri', icon: BarChart3, label: t('result_chart'), match: '/jantri' },
   ];
 
   return (
