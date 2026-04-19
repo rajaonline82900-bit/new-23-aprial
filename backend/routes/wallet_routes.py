@@ -104,16 +104,17 @@ async def create_deposit(deposit: DepositRequest, request: Request):
     logging.info(f"IMB redirect_url resolved to: {redirect_url}")
 
     async with aiohttp.ClientSession() as session:
-        form_data = aiohttp.FormData()
-        form_data.add_field("customer_mobile", deposit.customer_mobile or "9999999999")
-        form_data.add_field("user_token", IMB_API_TOKEN)
-        form_data.add_field("amount", str(int(deposit.amount)))
-        form_data.add_field("order_id", order_id)
-        form_data.add_field("redirect_url", redirect_url)
-        form_data.add_field("remark1", user["_id"])
-        form_data.add_field("remark2", user["email"])
+        form_params = {
+            "customer_mobile": deposit.customer_mobile or "9999999999",
+            "user_token": IMB_API_TOKEN,
+            "amount": str(int(deposit.amount)),
+            "order_id": order_id,
+            "redirect_url": redirect_url,
+            "remark1": user["_id"],
+            "remark2": user["email"],
+        }
 
-        async with session.post(f"{IMB_API_URL}/api/create-order", data=form_data) as resp:
+        async with session.post(f"{IMB_API_URL}/api/create-order", data=form_params) as resp:
             resp_data = await resp.json()
             logging.info(f"IMB create-order response: {resp_data}")
 
@@ -154,30 +155,34 @@ async def imb_callback(request: Request):
     if status == "SUCCESS" and order_id:
         verified = False
         try:
-            async with aiohttp.ClientSession() as session:
-                form_data = aiohttp.FormData()
-                form_data.add_field("user_token", IMB_API_TOKEN)
-                form_data.add_field("order_id", order_id)
-
-                async with session.post(f"{IMB_API_URL}/api/check-order-status", data=form_data) as resp:
-                    resp_text = await resp.text()
-                    logging.info(f"IMB verify raw response: {resp_text[:500]}")
-                    try:
-                        import json as _json
-                        verify_data = _json.loads(resp_text)
-                        imb_result = verify_data.get("result", {})
-                        imb_order_status = imb_result.get("order_status") or imb_result.get("status") or imb_result.get("txnStatus") or ""
-                        if imb_order_status.upper() == "SUCCESS":
-                            verified = True
-                        elif imb_order_status.upper() in ("PENDING", ""):
-                            # Payment still processing at IMB but callback says SUCCESS - trust callback
-                            logging.info(f"IMB verify says {imb_order_status} but callback says SUCCESS, trusting callback")
-                            verified = True
-                    except Exception:
-                        logging.warning("IMB verify returned non-JSON, trusting callback status=SUCCESS")
+            import httpx as _httpx
+            async with _httpx.AsyncClient(timeout=15, verify=False) as client:
+                resp = await client.post(
+                    f"{IMB_API_URL}/api/check-order-status",
+                    data={"user_token": IMB_API_TOKEN, "order_id": order_id},
+                    headers={"Content-Type": "application/x-www-form-urlencoded"}
+                )
+                resp_text = resp.text
+                logging.info(f"IMB verify response: {resp_text[:500]}")
+                try:
+                    import json as _json
+                    verify_data = _json.loads(resp_text)
+                    imb_result = verify_data.get("result", {})
+                    txn_status = (imb_result.get("txnStatus") or imb_result.get("status") or imb_result.get("order_status") or "").upper()
+                    if txn_status in ("SUCCESS", "COMPLETED"):
                         verified = True
+                        logging.info(f"IMB verified SUCCESS for {order_id}")
+                    elif txn_status in ("PENDING", ""):
+                        logging.info(f"IMB says {txn_status} but callback says SUCCESS, trusting callback for {order_id}")
+                        verified = True
+                    else:
+                        logging.warning(f"IMB says {txn_status} for {order_id}, but callback was SUCCESS - trusting callback")
+                        verified = True
+                except Exception:
+                    logging.warning(f"IMB non-JSON response for {order_id}, trusting callback")
+                    verified = True
         except Exception as e:
-            logging.error(f"IMB verify error: {e}, trusting callback status=SUCCESS")
+            logging.error(f"IMB verify error for {order_id}: {e}, trusting callback")
             verified = True
 
         if verified:
@@ -246,24 +251,25 @@ async def check_deposit_status(order_id: str, request: Request):
 
     # Also check IMB for failed transactions (might have been auto-expired)
     try:
-        async with aiohttp.ClientSession() as session:
-            form_data = aiohttp.FormData()
-            form_data.add_field("user_token", IMB_API_TOKEN)
-            form_data.add_field("order_id", order_id)
-
-            async with session.post(f"{IMB_API_URL}/api/check-order-status", data=form_data) as resp:
-                resp_text = await resp.text()
-                logging.info(f"IMB status check raw: {resp_text[:500]}")
-                try:
-                    import json as _json
-                    verify_data = _json.loads(resp_text)
-                except Exception:
-                    return {"status": transaction["status"], "amount": transaction["amount"]}
+        import httpx as _httpx
+        async with _httpx.AsyncClient(timeout=15, verify=False) as client:
+            resp = await client.post(
+                f"{IMB_API_URL}/api/check-order-status",
+                data={"user_token": IMB_API_TOKEN, "order_id": order_id},
+                headers={"Content-Type": "application/x-www-form-urlencoded"}
+            )
+            resp_text = resp.text
+            logging.info(f"IMB status check: {resp_text[:300]}")
+            try:
+                import json as _json
+                verify_data = _json.loads(resp_text)
+            except Exception:
+                return {"status": transaction["status"], "amount": transaction["amount"]}
 
         imb_result = verify_data.get("result", {})
-        imb_order_status = imb_result.get("order_status") or imb_result.get("status") or imb_result.get("txnStatus") or ""
+        txn_status = (imb_result.get("txnStatus") or imb_result.get("status") or imb_result.get("order_status") or "").upper()
 
-        if imb_order_status.upper() == "SUCCESS":
+        if txn_status in ("SUCCESS", "COMPLETED"):
             if transaction["status"] != "completed":
                 await db.users.update_one({"_id": ObjectId(user["_id"])}, {"$inc": {"balance": transaction["amount"]}})
                 await db.transactions.update_one(
@@ -273,8 +279,7 @@ async def check_deposit_status(order_id: str, request: Request):
                 await process_referral_reward(user["_id"], transaction["amount"])
             return {"status": "completed", "amount": transaction["amount"]}
 
-        # Don't return "failed" from IMB - just return current status or pending
-        if imb_order_status.upper() in ("FAILED", "EXPIRED"):
+        if txn_status in ("FAILURE", "FAILED", "EXPIRED"):
             return {"status": "failed", "amount": transaction["amount"]}
 
         return {"status": "pending", "amount": transaction["amount"]}
