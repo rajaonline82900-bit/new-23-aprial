@@ -256,22 +256,72 @@ async def get_withdrawals(request: Request, status: str = "pending"):
 
 
 @router.get("/admin/deposits")
-async def get_admin_deposits(request: Request, skip: int = 0, limit: int = 50):
+async def get_admin_deposits(request: Request, skip: int = 0, limit: int = 50, status: str = "all"):
     await get_admin_user(request)
-    deposits = await db.transactions.find(
-        {"type": "deposit", "status": "completed"}, {"_id": 0}
-    ).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    query = {"type": "deposit"}
+    if status and status != "all":
+        query["status"] = status
+    
+    deposits = await db.transactions.find(query, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
 
+    # Batch fetch users
+    user_ids = list(set(d.get("user_id") for d in deposits if d.get("user_id")))
+    users_list = await db.users.find({"_id": {"$in": [ObjectId(uid) for uid in user_ids]}}, {"name": 1, "phone": 1, "email": 1}).to_list(500)
+    user_map = {str(u["_id"]): u for u in users_list}
     for d in deposits:
-        user = await db.users.find_one({"_id": ObjectId(d["user_id"])}, {"name": 1, "phone": 1, "email": 1})
-        if user:
-            d["user_name"] = user.get("name", "")
-            d["user_phone"] = user.get("phone", "")
-            d["user_email"] = user.get("email", "")
+        user = user_map.get(d.get("user_id"), {})
+        d["user_name"] = user.get("name", "")
+        d["user_phone"] = user.get("phone", "")
+        d["user_email"] = user.get("email", "")
 
-    total = await db.transactions.count_documents({"type": "deposit", "status": "completed"})
+    total = await db.transactions.count_documents(query)
     total_amount = sum(d.get("amount", 0) for d in deposits)
-    return {"deposits": deposits, "total": total, "total_amount": total_amount}
+    
+    # Stats
+    stats = {
+        "all": await db.transactions.count_documents({"type": "deposit"}),
+        "pending": await db.transactions.count_documents({"type": "deposit", "status": "pending"}),
+        "completed": await db.transactions.count_documents({"type": "deposit", "status": "completed"}),
+        "failed": await db.transactions.count_documents({"type": "deposit", "status": "failed"}),
+        "expired": await db.transactions.count_documents({"type": "deposit", "status": "expired"}),
+    }
+    return {"deposits": deposits, "total": total, "total_amount": total_amount, "stats": stats}
+
+
+@router.post("/admin/deposits/{order_id}/approve")
+async def admin_approve_deposit(order_id: str, request: Request):
+    """Admin manually approves a pending/failed/expired deposit"""
+    await get_admin_user(request)
+    transaction = await db.transactions.find_one({"order_id": order_id, "type": "deposit"})
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    if transaction["status"] == "completed":
+        raise HTTPException(status_code=400, detail="Already completed")
+    
+    await db.users.update_one(
+        {"_id": ObjectId(transaction["user_id"])},
+        {"$inc": {"balance": transaction["amount"]}}
+    )
+    await db.transactions.update_one(
+        {"order_id": order_id},
+        {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc), "approved_by_admin": True}}
+    )
+    logger.info(f"Admin approved deposit: order={order_id}, amount={transaction['amount']}, user={transaction['user_id']}")
+    return {"message": f"₹{transaction['amount']} जमा approve हो गया"}
+
+
+@router.post("/admin/deposits/{order_id}/reject")
+async def admin_reject_deposit(order_id: str, request: Request):
+    """Admin manually rejects a deposit"""
+    await get_admin_user(request)
+    transaction = await db.transactions.find_one({"order_id": order_id, "type": "deposit"})
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    if transaction["status"] == "completed":
+        raise HTTPException(status_code=400, detail="Already completed - cannot reject")
+    
+    await db.transactions.update_one({"order_id": order_id}, {"$set": {"status": "rejected"}})
+    return {"message": "Deposit rejected"}
 
 
 @router.post("/admin/withdrawals/{withdrawal_id}/approve")
