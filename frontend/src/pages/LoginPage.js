@@ -2,29 +2,18 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/button';
-import { Phone } from 'lucide-react';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader } from '../components/ui/card';
+import { ArrowLeft, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
+import MatkaLogo from '../components/MatkaLogo';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
-const BokehBackground = () => (
-  <>
-    <div className="absolute inset-0 bg-gradient-to-b from-[#080c18] via-[#0a1020] to-[#060a14]" />
-    <div className="absolute top-[10%] left-[15%] w-24 h-24 bg-[#1a2a60]/25 rounded-full blur-[40px]" />
-    <div className="absolute top-[5%] right-[20%] w-16 h-16 bg-[#3a2a6e]/20 rounded-full blur-[30px]" />
-    <div className="absolute top-[30%] left-[60%] w-10 h-10 bg-[#2a4a8e]/15 rounded-full blur-[20px]" />
-    <div className="absolute bottom-[25%] left-[10%] w-20 h-20 bg-[#2a1a5e]/20 rounded-full blur-[35px]" />
-    <div className="absolute bottom-[15%] right-[15%] w-14 h-14 bg-[#1a3a7e]/15 rounded-full blur-[25px]" />
-    <div className="absolute top-[50%] left-[40%] w-8 h-8 bg-[#4a3a8e]/12 rounded-full blur-[15px]" />
-    <div className="absolute top-[12%] left-[30%] w-1.5 h-1.5 bg-[#6080c0]/40 rounded-full" />
-    <div className="absolute top-[25%] right-[25%] w-1 h-1 bg-[#8090c0]/30 rounded-full" />
-    <div className="absolute bottom-[35%] left-[20%] w-1 h-1 bg-[#7080b0]/25 rounded-full" />
-  </>
-);
-
 const LoginPage = () => {
-  const [step, setStep] = useState('phone');
+  const [step, setStep] = useState('phone'); // 'phone', 'otp'
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
@@ -33,137 +22,158 @@ const LoginPage = () => {
 
   const handleSendOTP = async (e) => {
     e.preventDefault();
-    if (phone.length < 10) { toast.error('Please enter valid mobile number'); return; }
+    if (phone.length < 10) { toast.error('कृपया सही मोबाइल नंबर दर्ज करें'); return; }
+    
     setLoading(true);
     try {
       await axios.post(`${API_URL}/api/auth/login-otp/send`, { phone }, { withCredentials: true });
       setStep('otp');
-      toast.success('OTP sent successfully!');
-    } catch (e) { toast.error(e.response?.data?.detail || 'Failed to send OTP'); }
-    finally { setLoading(false); }
+      toast.success('OTP भेज दिया गया है');
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'OTP भेजने में समस्या');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleVerifyOTP = async (e) => {
     e.preventDefault();
-    if (otp.length < 4) { toast.error('Please enter 4 digit OTP'); return; }
+    if (otp.length < 4) { toast.error('कृपया 4 अंकों का OTP दर्ज करें'); return; }
+    
     setLoading(true);
     try {
       const resp = await axios.post(`${API_URL}/api/auth/login-otp/verify`, { phone, otp }, { withCredentials: true });
       if (resp.data?.token) localStorage.setItem('matka11_token', resp.data.token);
-      toast.success('Login successful!');
+      toast.success('लॉगिन सफल!');
+      // Try subscribing push after login
       if ('serviceWorker' in navigator && 'Notification' in window && Notification.permission === 'granted') {
         navigator.serviceWorker.ready.then((reg) => { if (window.subscribePush) window.subscribePush(reg); });
       }
       await refreshUser();
       navigate('/dashboard');
-    } catch (e) { toast.error(e.response?.data?.detail || 'Invalid OTP'); }
-    finally { setLoading(false); }
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'OTP गलत है');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden flex flex-col items-center justify-center px-6">
-      <BokehBackground />
-
-      {step === 'phone' ? (
-        <div className="w-full max-w-sm relative z-10">
-          {/* M11 Logo */}
-          <div className="flex flex-col items-center mb-1">
-            <div className="relative">
-              <div className="text-5xl font-black font-['Unbounded'] tracking-wider text-center leading-none"
-                style={{
-                  background: 'linear-gradient(180deg, #e8eaf0 0%, #a0a8c0 30%, #7080a8 60%, #4a5a80 100%)',
-                  WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-                  filter: 'drop-shadow(0 2px 8px rgba(100,120,180,0.3))',
-                }}>
-                M11
+    <div className="min-h-screen flex items-center justify-center p-4 bg-[#0A0A0C]">
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#10B981]/5 rounded-full blur-3xl" />
+      </div>
+      
+      <Card className="w-full max-w-sm bg-[#141418] border-white/10 relative z-10">
+        <CardHeader className="space-y-3 text-center">
+          {step === 'phone' && (
+            <>
+              <div className="flex justify-center">
+                <MatkaLogo size="lg" />
               </div>
-              <div className="flex justify-center mt-1">
-                <svg width="40" height="36" viewBox="0 0 40 36" fill="none">
-                  <ellipse cx="20" cy="6" rx="8" ry="4" stroke="#8090b0" strokeWidth="1.5" fill="none"/>
-                  <path d="M12 6 C10 12, 6 18, 8 26 C10 32, 16 35, 20 35 C24 35, 30 32, 32 26 C34 18, 30 12, 28 6"
-                    stroke="#8090b0" strokeWidth="1.5" fill="none"/>
-                  <ellipse cx="20" cy="6" rx="5" ry="2.5" fill="#2a3a6e" stroke="#6070a0" strokeWidth="0.8"/>
-                </svg>
+              <CardDescription className="text-gray-400">
+                अपने मोबाइल नंबर से लॉगिन करें
+              </CardDescription>
+            </>
+          )}
+          {step === 'otp' && (
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => { setStep('phone'); setOtp(''); }}
+                className="p-2 rounded-lg bg-[#0A0A0C] border border-white/10 text-gray-400 hover:text-white transition-all"
+                data-testid="login-back-button"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <h2 className="text-xl font-bold text-white font-['Unbounded']">OTP दर्ज करें</h2>
+            </div>
+          )}
+        </CardHeader>
+        
+        <CardContent>
+          {step === 'phone' && (
+            <form onSubmit={handleSendOTP} className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-gray-300">मोबाइल नंबर</Label>
+                <div className="flex gap-2">
+                  <div className="flex items-center px-3 bg-[#0A0A0C] border border-white/10 rounded-md text-gray-400 text-sm">
+                    +91
+                  </div>
+                  <Input
+                    type="tel"
+                    placeholder="XXXXXXXXXX"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                    required
+                    maxLength={10}
+                    data-testid="login-phone-input"
+                    className="bg-[#0A0A0C] border-white/10 text-white placeholder:text-gray-400 focus:border-[#D4AF37] focus:ring-[#D4AF37] flex-1"
+                  />
+                </div>
               </div>
-            </div>
-            <h1 className="text-xl font-black font-['Unbounded'] tracking-widest mt-2"
-              style={{
-                background: 'linear-gradient(180deg, #c8d0e8 0%, #7888b0 100%)',
-                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-              }}>
-              MATKA 11
-            </h1>
-            <p className="text-[#5a6a90] text-xs mt-0.5 italic">Play Smart, Win Big!</p>
-          </div>
-
-          <p className="text-white text-center text-base font-semibold mt-4 mb-4">Login</p>
-
-          <form onSubmit={handleSendOTP} className="space-y-2.5">
-            <div className="flex items-center h-11 bg-[#101828]/90 border border-[#1e2a4a]/60 rounded-xl px-3 gap-2 backdrop-blur-sm">
-              <Phone className="w-4 h-4 text-[#4a5a80] flex-shrink-0" />
-              <span className="text-[#5a6a8a] text-xs font-semibold">+91</span>
-              <div className="w-px h-4 bg-[#1e2a4a]" />
-              <input type="tel" placeholder="Mobile Number" value={phone}
-                onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                required maxLength={10} data-testid="login-phone-input"
-                className="flex-1 bg-transparent text-white text-sm placeholder:text-[#3a4a6a] outline-none" />
-            </div>
-
-            <div className="pt-1">
-              <Button type="submit" disabled={loading} data-testid="login-send-otp-button"
-                className="w-full h-11 rounded-xl font-black text-sm tracking-wider text-white shadow-xl shadow-[#1a2a5e]/40 border-0"
-                style={{ background: 'linear-gradient(135deg, #1a3a8e 0%, #2a50be 50%, #1a3a8e 100%)' }}>
-                {loading ? 'SENDING OTP...' : 'SEND OTP'}
+              
+              <Button
+                type="submit"
+                disabled={loading}
+                data-testid="login-send-otp-button"
+                className="w-full bg-[#D4AF37] hover:bg-[#FDE047] text-black font-bold transition-all duration-200"
+              >
+                {loading ? 'OTP भेज रहे हैं...' : 'OTP भेजें'}
               </Button>
-            </div>
-          </form>
+              
+              <div className="mt-6 text-center">
+                <p className="text-gray-400">
+                  नया अकाउंट बनाएं?{' '}
+                  <Link to="/signup" className="text-[#D4AF37] hover:text-[#FDE047] font-medium">
+                    साइनअप करें
+                  </Link>
+                </p>
+              </div>
+            </form>
+          )}
 
-          <p className="text-center text-[#4a5a7a] text-sm mt-5">
-            Don't have an account?{' '}
-            <Link to="/signup" className="text-[#8898c8] hover:text-white font-bold underline underline-offset-2">Register Now</Link>
-          </p>
-        </div>
-      ) : (
-        <div className="w-full max-w-sm relative z-10">
-          <button onClick={() => { setStep('phone'); setOtp(''); }} data-testid="login-back-button"
-            className="flex items-center gap-2 text-[#4a5a7a] hover:text-white mb-5">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-            <span className="text-sm">Back</span>
-          </button>
+          {step === 'otp' && (
+            <form onSubmit={handleVerifyOTP} className="space-y-4">
+              <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-green-400" />
+                <p className="text-green-400 text-sm">+91 {phone} पर OTP भेज दिया गया</p>
+              </div>
 
-          <div className="flex flex-col items-center mb-5">
-            <div className="text-3xl font-black font-['Unbounded']"
-              style={{ background: 'linear-gradient(180deg, #c0c8e8 0%, #6070a0 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              M11
-            </div>
-            <h2 className="text-white text-lg font-bold mt-1">Verify OTP</h2>
-            <div className="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-              <svg className="w-3.5 h-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-              <span className="text-emerald-400 text-xs">OTP sent to +91 {phone}</span>
-            </div>
-          </div>
+              <div className="space-y-2">
+                <Label className="text-gray-300">OTP दर्ज करें</Label>
+                <Input
+                  type="text"
+                  placeholder="4 अंकों का OTP"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                  required
+                  maxLength={4}
+                  data-testid="login-otp-input"
+                  className="bg-[#0A0A0C] border-white/10 text-white text-center text-2xl tracking-[1em] placeholder:text-gray-400 placeholder:tracking-normal placeholder:text-base focus:border-[#D4AF37] focus:ring-[#D4AF37]"
+                />
+              </div>
 
-          <form onSubmit={handleVerifyOTP} className="space-y-3">
-            <div className="flex items-center h-14 bg-[#101828]/90 border border-[#1e2a4a]/60 rounded-xl backdrop-blur-sm">
-              <input type="text" placeholder="- - - -" value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                required maxLength={4} data-testid="login-otp-input"
-                className="w-full bg-transparent text-white text-center text-3xl tracking-[0.5em] placeholder:text-[#2a3a5a] placeholder:text-xl placeholder:tracking-[0.3em] outline-none h-full" />
-            </div>
+              <Button
+                type="submit"
+                disabled={loading}
+                data-testid="login-verify-otp-button"
+                className="w-full bg-[#D4AF37] hover:bg-[#FDE047] text-black font-bold"
+              >
+                {loading ? 'लॉगिन हो रहा है...' : 'लॉगिन करें'}
+              </Button>
 
-            <Button type="submit" disabled={loading} data-testid="login-verify-otp-button"
-              className="w-full h-11 rounded-xl font-black text-sm tracking-wider text-white shadow-xl shadow-[#1a2a5e]/40 border-0"
-              style={{ background: 'linear-gradient(135deg, #1a3a8e 0%, #2a50be 50%, #1a3a8e 100%)' }}>
-              {loading ? 'VERIFYING...' : 'LOGIN NOW'}
-            </Button>
-
-            <button type="button" onClick={() => { setStep('phone'); setOtp(''); }}
-              className="w-full text-center text-[#4a5a7a] text-sm hover:text-white">
-              Change number or resend OTP
-            </button>
-          </form>
-        </div>
-      )}
+              <button
+                type="button"
+                onClick={() => { setStep('phone'); setOtp(''); }}
+                className="w-full text-center text-gray-400 text-sm hover:text-white transition-all"
+              >
+                नंबर बदलें या दोबारा OTP भेजें
+              </button>
+            </form>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
