@@ -222,10 +222,11 @@ function AppRoutes() {
   );
 }
 
-// Global overlays shown only to authenticated users
+// Global overlays shown only to authenticated NON-admin users
 const AuthedOverlays = () => {
   const { user } = useAuth();
   if (!user) return null;
+  if (user.role === 'admin') return null;
   return <ResultPopupListener />;
 };
 

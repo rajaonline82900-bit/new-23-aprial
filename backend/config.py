@@ -14,6 +14,12 @@ DVHOSTING_API_URL = os.environ.get("DVHOSTING_API_URL")
 # VAPID Keys
 VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "")
 VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "")
+# If VAPID_PRIVATE_KEY points to a PEM file path that exists, pywebpush accepts it directly.
+# Otherwise if a pem file exists alongside backend, prefer that for correctness.
+import os as _os
+_pem_path = _os.path.join(_os.path.dirname(__file__), "vapid_private.txt")
+if _os.path.exists(_pem_path):
+    VAPID_PRIVATE_KEY = _pem_path
 
 # Matka API
 MATKA_API_BASE = "https://matkawebhook.matka-api.online"
