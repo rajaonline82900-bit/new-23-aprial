@@ -256,8 +256,8 @@ async def production_push_loop(prod_url):
     from datetime import timedelta
     from config import IST, MATKA_API_USERNAME as MUSER, MATKA_API_PASSWORD as MPASS, MATKA_API_BASE as MBASE, MARKET_TO_GAME
 
-    admin_email = os.environ.get("ADMIN_EMAIL", "admin@sattamatka.com")
-    admin_pass = os.environ.get("ADMIN_PASSWORD", "Admin@123")
+    admin_email = os.environ.get("PRODUCTION_ADMIN_EMAIL") or os.environ.get("ADMIN_EMAIL", "admin@sattamatka.com")
+    admin_pass = os.environ.get("PRODUCTION_ADMIN_PASSWORD") or os.environ.get("ADMIN_PASSWORD", "Admin@123")
 
     logger.info("Production push loop waiting 30s for startup...")
     await asyncio.sleep(30)

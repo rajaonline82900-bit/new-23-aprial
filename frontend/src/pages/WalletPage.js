@@ -78,8 +78,8 @@ const WalletPage = () => {
   const checkPaymentStatus = useCallback(async (orderId) => {
     setCheckingPayment(true);
     let attempts = 0;
-    const maxAttempts = 120;
-    const pollInterval = 3000;
+    const maxAttempts = 180;
+    const pollInterval = 2000;
 
     const poll = async () => {
       if (attempts >= maxAttempts) {
@@ -101,6 +101,8 @@ const WalletPage = () => {
           setCheckingPayment(false);
           setPaymentLink(null);
           setDepositOpen(false);
+          setPaymentIframeUrl('');
+          setPaymentOrderId('');
           window.history.replaceState({}, '', '/wallet');
           return;
         }
@@ -109,6 +111,8 @@ const WalletPage = () => {
           toast.error('भुगतान विफल हो गया');
           setCheckingPayment(false);
           setPaymentLink(null);
+          setPaymentIframeUrl('');
+          setPaymentOrderId('');
           window.history.replaceState({}, '', '/wallet');
           return;
         }
