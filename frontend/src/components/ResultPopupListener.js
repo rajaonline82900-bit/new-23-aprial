@@ -20,22 +20,45 @@ const GAME_NAMES = {
 const playTing = () => {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const play = (freq, start, dur) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
-      gain.gain.setValueAtTime(0.0001, ctx.currentTime + start);
-      gain.gain.exponentialRampToValueAtTime(0.4, ctx.currentTime + start + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + start + dur);
-      osc.start(ctx.currentTime + start);
-      osc.stop(ctx.currentTime + start + dur);
+
+    // Single coin clink: high metallic frequencies with fast decay
+    const coin = (startTime, pitch = 1) => {
+      // Bright metallic transient - two high oscillators
+      [2800, 1900, 1400].forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq * pitch, ctx.currentTime + startTime);
+        // fast pitch drop for "ching" effect
+        osc.frequency.exponentialRampToValueAtTime(freq * pitch * 0.85, ctx.currentTime + startTime + 0.08);
+        gain.gain.setValueAtTime(0.0001, ctx.currentTime + startTime);
+        gain.gain.exponentialRampToValueAtTime(0.25 / (i + 1), ctx.currentTime + startTime + 0.005);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + startTime + 0.18);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + startTime);
+        osc.stop(ctx.currentTime + startTime + 0.2);
+      });
+
+      // Low "thud" for coin hitting surface
+      const bass = ctx.createOscillator();
+      const bassGain = ctx.createGain();
+      bass.type = 'sine';
+      bass.frequency.setValueAtTime(180 * pitch, ctx.currentTime + startTime);
+      bass.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + startTime + 0.1);
+      bassGain.gain.setValueAtTime(0.0001, ctx.currentTime + startTime);
+      bassGain.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + startTime + 0.005);
+      bassGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + startTime + 0.12);
+      bass.connect(bassGain);
+      bassGain.connect(ctx.destination);
+      bass.start(ctx.currentTime + startTime);
+      bass.stop(ctx.currentTime + startTime + 0.15);
     };
-    // two chime notes like a cheerful ting-ting
-    play(880, 0, 0.4);
-    play(1320, 0.15, 0.5);
+
+    // Play 3 coins dropping in quick succession - cash register feel
+    coin(0, 1.0);
+    coin(0.09, 1.08);
+    coin(0.2, 0.95);
   } catch (e) {}
 };
 
