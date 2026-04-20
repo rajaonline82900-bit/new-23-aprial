@@ -156,6 +156,9 @@ const WalletPage = () => {
     setDepositAmount(val);
   };
 
+  const [paymentIframeUrl, setPaymentIframeUrl] = useState('');
+  const [paymentOrderId, setPaymentOrderId] = useState('');
+
   const handleDeposit = async () => {
     const amount = parseFloat(depositAmount);
     const minD = appSettings.min_deposit || 100;
@@ -176,17 +179,11 @@ const WalletPage = () => {
         origin_url: window.location.origin
       }, { withCredentials: true });
 
-      // Try to open in new tab
-      const paymentWindow = window.open(data.url, '_blank');
-      
-      if (!paymentWindow || paymentWindow.closed || typeof paymentWindow.closed === 'undefined') {
-        // Popup blocked — show payment link in dialog
-        setPaymentLink(data.url);
-      } else {
-        setDepositOpen(false);
-        setDepositAmount('');
-        toast.success('भुगतान पेज नई टैब में खुल गया है।');
-      }
+      // Show payment in same page via iframe
+      setPaymentIframeUrl(data.url);
+      setPaymentOrderId(data.order_id);
+      setDepositOpen(false);
+      setDepositAmount('');
       
       // Start polling for payment status
       checkPaymentStatus(data.order_id);
@@ -195,6 +192,13 @@ const WalletPage = () => {
     } finally {
       setProcessing(false);
     }
+  };
+
+  const closePaymentIframe = () => {
+    setPaymentIframeUrl('');
+    setPaymentOrderId('');
+    fetchWallet();
+    refreshUser();
   };
 
   const handleScannerUpload = async (e) => {
@@ -577,21 +581,6 @@ const WalletPage = () => {
             पेमेंट में समस्या? Chat करें
           </Button>
 
-          {/* Payment Link - shown when popup is blocked */}
-          {paymentLink && (
-            <div className="mt-3 p-3 bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-lg">
-              <p className="text-sm text-gray-300 mb-2">भुगतान पेज खोलने के लिए नीचे क्लिक करें:</p>
-              <a
-                href={paymentLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-testid="payment-link-btn"
-                className="block w-full text-center py-3 bg-[#D4AF37] hover:bg-[#FDE047] text-black font-bold rounded-lg transition-all"
-              >
-                भुगतान पेज खोलें
-              </a>
-            </div>
-          )}
         </DialogContent>
       </Dialog>
 
@@ -780,6 +769,29 @@ const WalletPage = () => {
         </DialogContent>
       </Dialog>
       <FooterNav />
+
+      {/* Payment Iframe - Same Page */}
+      {paymentIframeUrl && (
+        <div className="fixed inset-0 z-[100] bg-[#0A0A0C]" data-testid="payment-iframe-container">
+          <div className="flex items-center justify-between p-3 bg-[#141418] border-b border-white/10">
+            <p className="text-white font-bold text-sm">भुगतान करें</p>
+            <button
+              onClick={closePaymentIframe}
+              data-testid="close-payment-iframe"
+              className="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg"
+            >
+              बंद करें
+            </button>
+          </div>
+          <iframe
+            src={paymentIframeUrl}
+            title="Payment"
+            className="w-full border-0"
+            style={{ height: 'calc(100vh - 52px)' }}
+            data-testid="payment-iframe"
+          />
+        </div>
+      )}
     </div>
   );
 };
