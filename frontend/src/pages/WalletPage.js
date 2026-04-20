@@ -78,13 +78,13 @@ const WalletPage = () => {
   const checkPaymentStatus = useCallback(async (orderId) => {
     setCheckingPayment(true);
     let attempts = 0;
-    const maxAttempts = 180;
-    const pollInterval = 2000;
+    const maxAttempts = 240; // 8 minutes total
+    const pollInterval = 2500;
+    const failGracePeriod = 60; // First 2.5 min * ignore failed status to let user complete payment
 
     const poll = async () => {
       if (attempts >= maxAttempts) {
         setCheckingPayment(false);
-        toast.info('भुगतान की पुष्टि में समय लग रहा है। कृपया कुछ देर बाद वॉलेट चेक करें।');
         return;
       }
 
@@ -107,13 +107,10 @@ const WalletPage = () => {
           return;
         }
 
-        if (data.status === 'failed') {
-          toast.error('भुगतान विफल हो गया');
+        // Only honour "failed" after grace period so user gets time to pay
+        if (data.status === 'failed' && attempts >= failGracePeriod) {
+          // Still don't auto-close iframe - let user close manually
           setCheckingPayment(false);
-          setPaymentLink(null);
-          setPaymentIframeUrl('');
-          setPaymentOrderId('');
-          window.history.replaceState({}, '', '/wallet');
           return;
         }
 
