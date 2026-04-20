@@ -175,15 +175,15 @@ async def auto_verify_deposits_loop():
     
     while True:
         try:
-            # Find pending + expired deposits from last 24 hours
+            # Find pending + expired + failed deposits from last 24 hours (in case genuinely paid)
             cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
             pending_deposits = await db.transactions.find(
-                {"type": "deposit", "status": {"$in": ["pending", "expired"]}, "created_at": {"$gt": cutoff}},
+                {"type": "deposit", "status": {"$in": ["pending", "expired", "failed"]}, "created_at": {"$gt": cutoff}},
                 {"_id": 0}
-            ).to_list(50)
+            ).to_list(100)
             
             if pending_deposits:
-                logger.info(f"Auto-verify: checking {len(pending_deposits)} pending/expired deposits")
+                logger.info(f"Auto-verify: checking {len(pending_deposits)} pending/expired/failed deposits")
                 
                 async with _httpx.AsyncClient(timeout=15, verify=False) as client:
                     for dep in pending_deposits:
@@ -200,22 +200,24 @@ async def auto_verify_deposits_loop():
                             txn_status = (verify_data.get("result", {}).get("txnStatus") or "").upper()
                             
                             if txn_status in ("COMPLETED", "SUCCESS"):
-                                # Credit user
-                                await db.users.update_one(
-                                    {"_id": ObjectId(dep["user_id"])},
-                                    {"$inc": {"balance": dep["amount"]}}
-                                )
-                                await db.transactions.update_one(
-                                    {"order_id": order_id},
-                                    {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc), "auto_verified": True}}
-                                )
-                                logger.info(f"Auto-verify CREDITED: {order_id} ₹{dep['amount']} -> user {dep['user_id']}")
+                                # Idempotent credit: only if not already completed
+                                fresh = await db.transactions.find_one({"order_id": order_id})
+                                if fresh and fresh.get("status") != "completed":
+                                    await db.users.update_one(
+                                        {"_id": ObjectId(dep["user_id"])},
+                                        {"$inc": {"balance": dep["amount"]}}
+                                    )
+                                    await db.transactions.update_one(
+                                        {"order_id": order_id},
+                                        {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc), "auto_verified": True}}
+                                    )
+                                    logger.info(f"Auto-verify CREDITED: {order_id} ₹{dep['amount']} -> user {dep['user_id']} (prev_status={dep.get('status')})")
                         except Exception as e:
                             logger.error(f"Auto-verify error for {order_id}: {e}")
         except Exception as e:
             logger.error(f"Auto-verify loop error: {e}")
         
-        await asyncio.sleep(120)  # Every 2 minutes
+        await asyncio.sleep(60)  # Every 1 minute
 
 
 async def auto_delete_chat_loop():

@@ -209,7 +209,48 @@ async def imb_callback(request: Request):
                 logging.info(f"Deposit completed: order={order_id}, amount={transaction['amount']}, prev_status={transaction['status']}")
                 await process_referral_reward(transaction["user_id"], transaction["amount"])
     else:
-        await db.transactions.update_one({"order_id": order_id}, {"$set": {"status": "failed"}})
+        # User cancelled or payment genuinely failed. DO NOT auto-mark as failed here —
+        # IMB sometimes redirects with non-SUCCESS even when user still paying on UPI app.
+        # Actually verify with IMB check-order-status API before marking failed.
+        if order_id:
+            try:
+                import httpx as _httpx
+                async with _httpx.AsyncClient(timeout=15, verify=False) as client:
+                    resp = await client.post(
+                        f"{IMB_API_URL}/api/check-order-status",
+                        data={"user_token": IMB_API_TOKEN, "order_id": order_id},
+                        headers={"Content-Type": "application/x-www-form-urlencoded"}
+                    )
+                    import json as _json
+                    verify_data = _json.loads(resp.text)
+                    imb_result = verify_data.get("result", {})
+                    txn_status = (imb_result.get("txnStatus") or imb_result.get("status") or imb_result.get("order_status") or "").upper()
+                    logging.info(f"IMB non-success callback, actual status={txn_status} for {order_id}")
+                    if txn_status in ("SUCCESS", "COMPLETED"):
+                        # Actually succeeded, credit it
+                        transaction = await db.transactions.find_one({"order_id": order_id})
+                        if transaction and transaction["status"] != "completed":
+                            await db.users.update_one(
+                                {"_id": ObjectId(transaction["user_id"])},
+                                {"$inc": {"balance": transaction["amount"]}}
+                            )
+                            await db.transactions.update_one(
+                                {"order_id": order_id},
+                                {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc)}}
+                            )
+                            logging.info(f"Deposit completed via non-success callback verify: {order_id}")
+                            await process_referral_reward(transaction["user_id"], transaction["amount"])
+                            # Override redirect status so frontend shows success
+                            status = "success"
+                    # If IMB says pending/empty - keep transaction as pending (auto-verify loop will catch it later)
+                    # Only mark as failed if IMB explicitly says FAILURE/EXPIRED
+                    elif txn_status in ("FAILURE", "FAILED", "EXPIRED"):
+                        await db.transactions.update_one({"order_id": order_id, "status": "pending"}, {"$set": {"status": "failed"}})
+                        logging.info(f"Deposit marked failed (IMB confirmed): {order_id}")
+                    else:
+                        logging.info(f"Keeping deposit pending for {order_id}, IMB status: {txn_status}")
+            except Exception as e:
+                logging.error(f"IMB verify on non-success callback failed for {order_id}: {e} - keeping pending")
 
     return RedirectResponse(url=f"{frontend_url}/wallet?payment={status.lower()}&order_id={order_id}")
 
@@ -240,10 +281,16 @@ async def imb_webhook(request: Request):
             logging.info(f"Webhook deposit completed: order={order_id}, amount={transaction['amount']}")
             await process_referral_reward(transaction["user_id"], transaction["amount"])
     elif order_id:
-        # Only mark as failed if not already completed
-        transaction = await db.transactions.find_one({"order_id": order_id})
-        if transaction and transaction["status"] == "pending":
-            await db.transactions.update_one({"order_id": order_id}, {"$set": {"status": "failed"}})
+        # Only mark failed if IMB confirms via check-order-status
+        status_upper = str(status).upper()
+        if status_upper in ("FAILURE", "FAILED", "EXPIRED"):
+            await db.transactions.update_one(
+                {"order_id": order_id, "status": "pending"},
+                {"$set": {"status": "failed"}}
+            )
+            logging.info(f"Webhook marked failed: {order_id} (status={status})")
+        else:
+            logging.info(f"Webhook status={status} for {order_id} - keeping pending, auto-verify loop will confirm")
 
     return {"status": "ok"}
 
@@ -259,7 +306,7 @@ async def check_deposit_status(order_id: str, request: Request):
     if transaction["status"] == "completed":
         return {"status": "completed", "amount": transaction["amount"]}
 
-    # Also check IMB for failed transactions (might have been auto-expired)
+    # Check IMB for real status for pending/failed/expired
     try:
         import httpx as _httpx
         async with _httpx.AsyncClient(timeout=15, verify=False) as client:
@@ -274,7 +321,7 @@ async def check_deposit_status(order_id: str, request: Request):
                 import json as _json
                 verify_data = _json.loads(resp_text)
             except Exception:
-                return {"status": transaction["status"], "amount": transaction["amount"]}
+                return {"status": "pending", "amount": transaction["amount"]}
 
         imb_result = verify_data.get("result", {})
         txn_status = (imb_result.get("txnStatus") or imb_result.get("status") or imb_result.get("order_status") or "").upper()
@@ -289,13 +336,18 @@ async def check_deposit_status(order_id: str, request: Request):
                 await process_referral_reward(user["_id"], transaction["amount"])
             return {"status": "completed", "amount": transaction["amount"]}
 
+        # Only return "failed" if IMB explicitly says so. Otherwise keep pending.
         if txn_status in ("FAILURE", "FAILED", "EXPIRED"):
+            # Update DB status only if still pending (don't re-fail already failed)
+            if transaction["status"] == "pending":
+                await db.transactions.update_one({"order_id": order_id}, {"$set": {"status": "failed"}})
             return {"status": "failed", "amount": transaction["amount"]}
 
+        # IMB says PENDING or empty -> keep showing pending to user, let them finish paying
         return {"status": "pending", "amount": transaction["amount"]}
     except Exception as e:
         logging.error(f"IMB status check error: {e}")
-        return {"status": transaction["status"], "amount": transaction["amount"]}
+        return {"status": "pending", "amount": transaction["amount"]}
 
 
 @router.post("/wallet/withdraw")

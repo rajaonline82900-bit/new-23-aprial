@@ -805,6 +805,60 @@ async def auto_fetch_debug(request: Request):
     }
 
 
+@router.post("/admin/reverify-deposits")
+async def reverify_deposits(request: Request):
+    """Admin endpoint: recheck all pending/failed deposits against IMB and credit if actually paid."""
+    await get_admin_user(request)
+    import httpx as _httpx
+    from config import IMB_API_URL, IMB_API_TOKEN
+    from routes.wallet_routes import process_referral_reward
+
+    if not IMB_API_URL or not IMB_API_TOKEN:
+        return {"credited": 0, "checked": 0, "error": "IMB not configured"}
+
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=48)
+    deposits = await db.transactions.find(
+        {"type": "deposit", "status": {"$in": ["pending", "failed", "expired"]}, "created_at": {"$gt": cutoff}},
+        {"_id": 0}
+    ).to_list(500)
+
+    credited = 0
+    checked = 0
+    async with _httpx.AsyncClient(timeout=20, verify=False) as client:
+        for dep in deposits:
+            order_id = dep.get("order_id", "")
+            if not order_id:
+                continue
+            try:
+                resp = await client.post(
+                    f"{IMB_API_URL}/api/check-order-status",
+                    data={"user_token": IMB_API_TOKEN, "order_id": order_id},
+                    headers={"Content-Type": "application/x-www-form-urlencoded"}
+                )
+                checked += 1
+                verify_data = resp.json()
+                imb_result = verify_data.get("result", {})
+                txn_status = (imb_result.get("txnStatus") or imb_result.get("status") or "").upper()
+                if txn_status in ("COMPLETED", "SUCCESS"):
+                    fresh = await db.transactions.find_one({"order_id": order_id})
+                    if fresh and fresh.get("status") != "completed":
+                        await db.users.update_one(
+                            {"_id": ObjectId(dep["user_id"])},
+                            {"$inc": {"balance": dep["amount"]}}
+                        )
+                        await db.transactions.update_one(
+                            {"order_id": order_id},
+                            {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc), "reverified_by_admin": True}}
+                        )
+                        await process_referral_reward(dep["user_id"], dep["amount"])
+                        credited += 1
+                        logger.info(f"Admin re-verify CREDITED: {order_id} ₹{dep['amount']}")
+            except Exception as e:
+                logger.error(f"Re-verify error {order_id}: {e}")
+
+    return {"credited": credited, "checked": checked, "total_pending": len(deposits)}
+
+
 @router.post("/admin/results/push-external")
 async def push_results_external(request: Request):
     """Accept results pushed from external source (preview server cron)"""
