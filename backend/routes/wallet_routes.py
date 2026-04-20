@@ -92,16 +92,16 @@ async def create_deposit(deposit: DepositRequest, request: Request):
         raise HTTPException(status_code=400, detail="Maximum deposit ₹50000")
 
     order_id = f"DEP-{str(uuid.uuid4())[:8].upper()}"
-    # Use origin_url from the request body as the base for callback
-    frontend_url = deposit.origin_url.rstrip("/") if deposit.origin_url else ""
-    if not frontend_url:
-        frontend_url = os.environ.get("FRONTEND_URL", "").rstrip("/")
-    if not frontend_url:
+    # Callback URL must point to the actual domain user is on
+    origin = deposit.origin_url.rstrip("/") if deposit.origin_url else ""
+    if not origin:
+        origin = os.environ.get("FRONTEND_URL", "").rstrip("/")
+    if not origin:
         scheme = request.headers.get("x-forwarded-proto", "https")
         host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
-        frontend_url = f"{scheme}://{host}"
-    redirect_url = f"{frontend_url}/api/wallet/imb-callback"
-    logging.info(f"IMB redirect_url resolved to: {redirect_url}")
+        origin = f"{scheme}://{host}"
+    redirect_url = f"{origin}/api/wallet/imb-callback"
+    logging.info(f"IMB redirect_url: {redirect_url}, origin: {origin}")
 
     async with aiohttp.ClientSession() as session:
         form_params = {
@@ -131,6 +131,7 @@ async def create_deposit(deposit: DepositRequest, request: Request):
         "status": "pending",
         "order_id": order_id,
         "payment_url": payment_url,
+        "origin_url": origin,
         "created_at": datetime.now(timezone.utc)
     }
     await db.transactions.insert_one(transaction_doc)
@@ -146,11 +147,20 @@ async def imb_callback(request: Request):
     order_id = params.get("order_id", "")
     status = params.get("status", "")
 
-    frontend_url = os.environ.get("FRONTEND_URL", "")
-    if not frontend_url:
+    # Get the correct frontend URL for redirect
+    # Use transaction's origin_url first (where user started deposit from)
+    transaction_for_url = await db.transactions.find_one({"order_id": order_id}, {"origin_url": 1}) if order_id else None
+    if transaction_for_url and transaction_for_url.get("origin_url"):
+        frontend_url = transaction_for_url["origin_url"].rstrip("/")
+    else:
         scheme = request.headers.get("x-forwarded-proto", "https")
         host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
-        frontend_url = f"{scheme}://{host}"
+        if host:
+            frontend_url = f"{scheme}://{host}"
+        else:
+            frontend_url = os.environ.get("FRONTEND_URL", "https://matka11.online")
+    frontend_url = frontend_url.rstrip("/")
+    logging.info(f"IMB callback redirect to: {frontend_url}")
 
     if status == "SUCCESS" and order_id:
         verified = False
