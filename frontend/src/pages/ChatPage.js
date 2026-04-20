@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
-import { MessageCircle, Send, ArrowLeft, Image, Mic, Square, Check, CheckCheck } from 'lucide-react';
+import { MessageCircle, Send, ArrowLeft, Image, Mic, Square, Check, CheckCheck, Trash2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import FooterNav from '../components/FooterNav';
 
@@ -15,6 +15,7 @@ const ChatPage = () => {
   const [sending, setSending] = useState(false);
   const [recording, setRecording] = useState(false);
   const [recordTime, setRecordTime] = useState(0);
+  const [selectedMsg, setSelectedMsg] = useState(null);
   const bottomRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
@@ -107,6 +108,17 @@ const ChatPage = () => {
     }
   };
 
+  const deleteMessage = async (msgId) => {
+    try {
+      await axios.delete(`${API}/api/chat/message/${msgId}`, { headers });
+      setSelectedMsg(null);
+      fetchMessages();
+    } catch (err) {
+      console.error(err);
+      setSelectedMsg(null);
+    }
+  };
+
   const formatTime = (dateStr) => new Date(dateStr).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
   const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString('hi-IN', { day: 'numeric', month: 'short' });
   const formatRecordTime = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
@@ -144,7 +156,7 @@ const ChatPage = () => {
             <MessageCircle className="w-4 h-4 text-[#D4AF37]" />
           </div>
           <div>
-            <p className="text-white font-bold text-sm">MATKA 11 Support</p>
+            <p className="text-white font-bold text-sm tracking-wide">MATKA11 CASTUMER SUPPORT</p>
             <p className="text-green-400 text-[10px]">Online</p>
           </div>
         </div>
@@ -163,6 +175,12 @@ const ChatPage = () => {
           let showDateHeader = false;
           if (msgDate !== lastDate) { lastDate = msgDate; showDateHeader = true; }
           const isUser = msg.sender === 'user';
+          let pressTimer = null;
+          const handlePressStart = () => {
+            if (!isUser) return;
+            pressTimer = setTimeout(() => setSelectedMsg(msg), 500);
+          };
+          const handlePressEnd = () => { if (pressTimer) clearTimeout(pressTimer); };
           return (
             <React.Fragment key={msg.id}>
               {showDateHeader && (
@@ -171,7 +189,16 @@ const ChatPage = () => {
                 </div>
               )}
               <div className={`flex mb-2 ${isUser ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[75%] px-3 py-2 rounded-2xl ${isUser ? 'bg-[#D4AF37] text-black rounded-br-md' : 'bg-[#1E1E24] text-white rounded-bl-md border border-white/10'}`} data-testid={`chat-msg-${msg.id}`}>
+                <div
+                  onMouseDown={handlePressStart}
+                  onMouseUp={handlePressEnd}
+                  onMouseLeave={handlePressEnd}
+                  onTouchStart={handlePressStart}
+                  onTouchEnd={handlePressEnd}
+                  onContextMenu={(e) => { if (isUser) { e.preventDefault(); setSelectedMsg(msg); } }}
+                  className={`max-w-[75%] px-3 py-2 rounded-2xl select-none ${isUser ? 'bg-[#D4AF37] text-black rounded-br-md' : 'bg-[#1E1E24] text-white rounded-bl-md border border-white/10'} ${isUser ? 'cursor-pointer' : ''}`}
+                  data-testid={`chat-msg-${msg.id}`}
+                >
                   {renderMsgContent(msg)}
                   <div className={`flex items-center justify-end gap-0.5 mt-0.5 ${isUser ? 'text-black/50' : 'text-gray-400'}`}>
                     <span className="text-[9px]">{formatTime(msg.created_at)}</span>
@@ -224,6 +251,30 @@ const ChatPage = () => {
           </div>
         )}
       </div>
+      {selectedMsg && (
+        <div className="fixed inset-0 z-[60] bg-black/70 flex items-end sm:items-center justify-center p-4" onClick={() => setSelectedMsg(null)} data-testid="chat-delete-modal">
+          <div className="bg-[#141418] border border-white/10 rounded-2xl p-4 w-full max-w-sm" onClick={e => e.stopPropagation()} style={{margin: '0 auto'}}>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-white font-bold text-sm">Message Options</p>
+              <button onClick={() => setSelectedMsg(null)} className="text-gray-400 hover:text-white" data-testid="chat-delete-close">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="mb-4 p-3 bg-[#0A0A0C] rounded-lg border border-white/5">
+              <p className="text-gray-300 text-xs truncate">
+                {selectedMsg.msg_type === 'image' ? 'Photo' : selectedMsg.msg_type === 'voice' ? 'Voice message' : selectedMsg.message}
+              </p>
+            </div>
+            <button
+              onClick={() => deleteMessage(selectedMsg.id)}
+              className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all"
+              data-testid="chat-delete-confirm"
+            >
+              <Trash2 className="w-4 h-4" /> Delete Message
+            </button>
+          </div>
+        </div>
+      )}
       <FooterNav />
     </div>
   );

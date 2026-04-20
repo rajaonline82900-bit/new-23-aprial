@@ -153,6 +153,8 @@ async def start_auto_fetch():
     logger.info("Pending deposit expiry loop started (every 2 min)")
     asyncio.create_task(auto_verify_deposits_loop())
     logger.info("Auto-verify deposits loop started (every 2 min)")
+    asyncio.create_task(auto_delete_chat_loop())
+    logger.info("Chat auto-delete loop started (every 1 hour)")
 
 
 @app.on_event("shutdown")
@@ -214,6 +216,38 @@ async def auto_verify_deposits_loop():
             logger.error(f"Auto-verify loop error: {e}")
         
         await asyncio.sleep(120)  # Every 2 minutes
+
+
+async def auto_delete_chat_loop():
+    """Check settings every hour and delete chat messages older than configured hours."""
+    await asyncio.sleep(90)
+    while True:
+        try:
+            setting = await db.settings.find_one({"key": "chat_auto_delete"})
+            if setting and setting.get("enabled"):
+                hours = int(setting.get("hours", 24))
+                cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
+                # Gather attachment paths to cleanup
+                old_msgs = await db.chat_messages.find(
+                    {"created_at": {"$lt": cutoff}, "attachment_url": {"$ne": None}},
+                    {"attachment_url": 1}
+                ).to_list(5000)
+                for m in old_msgs:
+                    att = m.get("attachment_url", "")
+                    if att and att.startswith("/api/uploads/"):
+                        try:
+                            fname = att.replace("/api/uploads/", "")
+                            fpath = f"/app/backend/uploads/{fname}"
+                            if os.path.exists(fpath):
+                                os.remove(fpath)
+                        except Exception:
+                            pass
+                result = await db.chat_messages.delete_many({"created_at": {"$lt": cutoff}})
+                if result.deleted_count > 0:
+                    logger.info(f"Auto-delete chat: removed {result.deleted_count} messages older than {hours}h")
+        except Exception as e:
+            logger.error(f"Chat auto-delete loop error: {e}")
+        await asyncio.sleep(3600)  # Every 1 hour
 
 
 async def production_push_loop(prod_url):

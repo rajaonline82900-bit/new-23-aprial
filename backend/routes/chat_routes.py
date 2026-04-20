@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException, Request, UploadFile, File
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from bson import ObjectId
 import uuid
+import os
 
 from database import db
 from auth import get_current_user, get_admin_user
@@ -115,6 +116,110 @@ async def get_chat_messages_admin(user_id: str, request: Request):
         {"$set": {"read": True}}
     )
     return {"messages": messages}
+
+
+@router.delete("/chat/message/{message_id}")
+async def delete_user_message(message_id: str, request: Request):
+    """User can delete their own sent message."""
+    user = await get_current_user(request)
+    msg = await db.chat_messages.find_one({"id": message_id, "user_id": user["_id"], "sender": "user"})
+    if not msg:
+        raise HTTPException(status_code=404, detail="Message not found or not yours")
+    # Delete attachment file if any
+    att = msg.get("attachment_url", "")
+    if att and att.startswith("/api/uploads/"):
+        try:
+            fname = att.replace("/api/uploads/", "")
+            fpath = f"/app/backend/uploads/{fname}"
+            if os.path.exists(fpath):
+                os.remove(fpath)
+        except Exception:
+            pass
+    await db.chat_messages.delete_one({"id": message_id})
+    return {"message": "Deleted"}
+
+
+@router.delete("/admin/chat/message/{message_id}")
+async def admin_delete_message(message_id: str, request: Request):
+    """Admin can delete any message."""
+    await get_admin_user(request)
+    msg = await db.chat_messages.find_one({"id": message_id})
+    if not msg:
+        raise HTTPException(status_code=404, detail="Message not found")
+    att = msg.get("attachment_url", "")
+    if att and att.startswith("/api/uploads/"):
+        try:
+            fname = att.replace("/api/uploads/", "")
+            fpath = f"/app/backend/uploads/{fname}"
+            if os.path.exists(fpath):
+                os.remove(fpath)
+        except Exception:
+            pass
+    await db.chat_messages.delete_one({"id": message_id})
+    return {"message": "Deleted"}
+
+
+@router.delete("/admin/chat/user/{user_id}")
+async def admin_delete_user_chat(user_id: str, request: Request):
+    """Admin deletes all chats for a specific user."""
+    await get_admin_user(request)
+    # Cleanup attachments
+    msgs = await db.chat_messages.find({"user_id": user_id, "attachment_url": {"$ne": None}}, {"attachment_url": 1}).to_list(500)
+    for m in msgs:
+        att = m.get("attachment_url", "")
+        if att and att.startswith("/api/uploads/"):
+            try:
+                fname = att.replace("/api/uploads/", "")
+                fpath = f"/app/backend/uploads/{fname}"
+                if os.path.exists(fpath):
+                    os.remove(fpath)
+            except Exception:
+                pass
+    result = await db.chat_messages.delete_many({"user_id": user_id})
+    return {"message": f"Deleted {result.deleted_count} messages"}
+
+
+@router.delete("/admin/chat/clear-all")
+async def admin_clear_all_chats(request: Request):
+    """Admin deletes ALL chat messages across all users."""
+    await get_admin_user(request)
+    # Cleanup attachments
+    msgs = await db.chat_messages.find({"attachment_url": {"$ne": None}}, {"attachment_url": 1}).to_list(5000)
+    for m in msgs:
+        att = m.get("attachment_url", "")
+        if att and att.startswith("/api/uploads/"):
+            try:
+                fname = att.replace("/api/uploads/", "")
+                fpath = f"/app/backend/uploads/{fname}"
+                if os.path.exists(fpath):
+                    os.remove(fpath)
+            except Exception:
+                pass
+    result = await db.chat_messages.delete_many({})
+    return {"message": f"Deleted {result.deleted_count} messages"}
+
+
+@router.get("/admin/chat/auto-delete-setting")
+async def get_auto_delete_setting(request: Request):
+    await get_admin_user(request)
+    doc = await db.settings.find_one({"key": "chat_auto_delete"}, {"_id": 0})
+    return {"enabled": bool(doc.get("enabled", False)) if doc else False, "hours": int(doc.get("hours", 24)) if doc else 24}
+
+
+@router.post("/admin/chat/auto-delete-setting")
+async def set_auto_delete_setting(request: Request):
+    await get_admin_user(request)
+    body = await request.json()
+    enabled = bool(body.get("enabled", False))
+    hours = int(body.get("hours", 24))
+    if hours < 1:
+        hours = 1
+    await db.settings.update_one(
+        {"key": "chat_auto_delete"},
+        {"$set": {"enabled": enabled, "hours": hours, "updated_at": datetime.now(timezone.utc).isoformat()}},
+        upsert=True
+    )
+    return {"message": "Saved", "enabled": enabled, "hours": hours}
 
 
 @router.post("/admin/chat/reply/{user_id}")
