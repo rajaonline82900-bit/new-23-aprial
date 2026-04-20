@@ -41,7 +41,18 @@ Build a Satta Matka betting application supporting games like Delhi Bazaar, Shri
 ### Bug Fixes (2026-04-14)
 - Crossing bets now handled in manual result declaration (was only in auto-fetch)
 
+### Chat Redesign - WhatsApp Style + Auto-Delete (Completed 2026-04-20)
+- Header text updated to 'MATKA11 CASTUMER SUPPORT'
+- Single/double tick read receipts, timestamps, date separators (already present, retained)
+- User long-press / right-click on own message -> delete modal
+- Admin panel 'Chat' tab: Clear All button, per-user Clear Chat, per-message hover delete
+- Admin 'Auto-Delete' settings: enable toggle + hours input (default 24h)
+- Backend async loop `auto_delete_chat_loop` in server.py runs every 1 hour, removes chat_messages older than configured hours, cleans attachment files
+- New endpoints: DELETE /api/chat/message/{id}, DELETE /api/admin/chat/message/{id}, DELETE /api/admin/chat/user/{user_id}, DELETE /api/admin/chat/clear-all, GET/POST /api/admin/chat/auto-delete-setting
+- Tested: 17/17 backend + all frontend flows verified by testing agent (iteration_16.json)
+
 ## Pending / Backlog
+- P1: User must press "Deploy" on Emergent Deploy UI to push preview fixes to matka11.online
 - P1: Push notification real-world testing (needs real user to allow)
 - P2: Email notifications for transactions
 - P2: Referral earnings history section
@@ -50,3 +61,5 @@ Build a Satta Matka betting application supporting games like Delhi Bazaar, Shri
 - Jantri: GET /api/admin/jantri-report?game_id=&date=
 - Push: GET /api/push/stats, POST /api/push/test, POST /api/push/send_all
 - Admin: GET /api/admin/stats, /api/admin/users, /api/admin/today-new-users
+- Chat Delete: DELETE /api/chat/message/{id}, DELETE /api/admin/chat/clear-all, DELETE /api/admin/chat/user/{user_id}
+- Chat Auto-Delete Setting: GET/POST /api/admin/chat/auto-delete-setting
