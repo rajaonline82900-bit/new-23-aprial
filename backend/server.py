@@ -308,4 +308,4 @@ async def production_push_loop(prod_url):
         except Exception as e:
             logger.error(f"Prod push error: {e}")
 
-        await asyncio.sleep(180)
+        await asyncio.sleep(90)

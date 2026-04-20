@@ -1059,9 +1059,9 @@ async def auto_fetch_loop():
             await push_results_to_production(result.get("results_applied", []))
     except Exception as e:
         logger.error(f"Auto-fetch initial error: {e}")
-    # Then loop every 5 minutes
+    # Then loop every 2 minutes (faster so production gets results sooner)
     while config.auto_fetch_running:
-        await asyncio.sleep(300)
+        await asyncio.sleep(120)
         try:
             result = await fetch_matka_results()
             if result.get("total", 0) > 0:
