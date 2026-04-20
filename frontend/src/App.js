@@ -33,6 +33,7 @@ import ChatPage from "./pages/ChatPage";
 import LandingPage from "./pages/LandingPage";
 import SignupPage from "./pages/SignupPage";
 import AuthCallback from "./pages/AuthCallback";
+import ResultPopupListener from "./components/ResultPopupListener";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -221,6 +222,13 @@ function AppRoutes() {
   );
 }
 
+// Global overlays shown only to authenticated users
+const AuthedOverlays = () => {
+  const { user } = useAuth();
+  if (!user) return null;
+  return <ResultPopupListener />;
+};
+
 function App() {
   return (
     <BrowserRouter>
@@ -228,6 +236,7 @@ function App() {
         <LanguageProvider>
         <div className="App">
           <AppRoutes />
+          <AuthedOverlays />
           <Toaster 
             position="bottom-right"
             toastOptions={{

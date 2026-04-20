@@ -122,10 +122,12 @@ const DashboardPage = () => {
         if (window.subscribePush) window.subscribePush(reg);
       });
     } else if (Notification.permission === 'default') {
-      // Show banner to ask user to enable
-      const dismissed = localStorage.getItem('notif_banner_dismissed');
-      if (!dismissed) {
-        setShowNotifBanner(true);
+      // Show aggressive modal - re-show every 24 hours if not enabled
+      const lastSkipped = parseInt(localStorage.getItem('notif_banner_skipped_at') || '0', 10);
+      const hoursSinceSkip = (Date.now() - lastSkipped) / (1000 * 60 * 60);
+      if (hoursSinceSkip >= 24) {
+        // Delay 1.5s for better UX (let dashboard render first)
+        setTimeout(() => setShowNotifBanner(true), 1500);
       }
     }
   }, []);
@@ -263,20 +265,47 @@ const DashboardPage = () => {
 
           {/* Balance Card */}
           {showNotifBanner && (
-            <div className="mb-2 rounded-xl overflow-hidden bg-gradient-to-r from-blue-900/40 to-[#141418] border border-blue-500/30 p-3" data-testid="notification-enable-banner">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+            <div className="fixed inset-0 z-[150] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" data-testid="notification-enable-modal" style={{maxWidth: '480px', margin: '0 auto'}}>
+              <div
+                className="relative w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl"
+                style={{
+                  background: 'linear-gradient(135deg, #1a1410 0%, #241a12 50%, #1a1410 100%)',
+                  border: '2px solid #D4AF37',
+                  animation: 'popupEnter 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                }}
+              >
+                <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-[#D4AF37]/20 to-transparent pointer-events-none" />
+                <div className="relative p-6 text-center">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-[#FDE047] to-[#D4AF37] flex items-center justify-center shadow-[0_0_30px_rgba(212,175,55,0.5)]">
+                    <svg className="w-8 h-8 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    </svg>
                   </div>
-                  <p className="text-white text-xs">{t('enable_notif')}</p>
-                </div>
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  <button onClick={handleEnableNotifications} data-testid="enable-notifications-btn" className="px-3 py-1.5 rounded-lg bg-blue-500 text-white text-xs font-bold hover:bg-blue-600 transition-all">
-                    {t('enable')}
+                  <h2 className="text-white text-xl font-black mb-2">Notification चालू करो!</h2>
+                  <p className="text-gray-300 text-sm mb-1">हर रिजल्ट सबसे पहले पाओ</p>
+                  <p className="text-[#D4AF37] text-xs font-bold mb-5">Band app me bhi banner aayega</p>
+                  <ul className="text-left text-gray-400 text-xs space-y-2 mb-5 bg-black/30 rounded-xl p-3 border border-white/5">
+                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37]" /> रिजल्ट खुलते ही तुरंत notification</li>
+                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37]" /> Deposit/Withdraw updates</li>
+                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37]" /> Jeetne par 2x notification</li>
+                  </ul>
+                  <button
+                    onClick={handleEnableNotifications}
+                    data-testid="enable-notifications-btn"
+                    className="w-full py-3 rounded-xl font-black text-black text-sm tracking-wide transition-all active:scale-95"
+                    style={{
+                      background: 'linear-gradient(135deg, #FDE047 0%, #D4AF37 100%)',
+                      boxShadow: '0 4px 20px rgba(212,175,55,0.4)',
+                    }}
+                  >
+                    हाँ, Notification चालू करो
                   </button>
-                  <button onClick={dismissNotifBanner} className="p-1 text-gray-500 hover:text-white transition-all">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                  <button
+                    onClick={dismissNotifBanner}
+                    className="w-full mt-2 py-2 text-gray-500 text-xs hover:text-gray-300 transition-all"
+                    data-testid="dismiss-notifications-btn"
+                  >
+                    बाद में
                   </button>
                 </div>
               </div>
