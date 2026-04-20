@@ -22,6 +22,8 @@ import AdminSettingsTab from './admin/AdminSettingsTab';
 import AdminChatInbox from './admin/AdminChatInbox';
 import AdminJantriTab from './admin/AdminJantriTab';
 import AdminFundRequestsTab from './admin/AdminFundRequestsTab';
+import AdminWinnersTab from './admin/AdminWinnersTab';
+import AdminReferralsTab from './admin/AdminReferralsTab';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 const utcDate = (d) => { if (!d) return new Date(); const s = String(d); return new Date(s.endsWith('Z') ? s : s + 'Z'); };
@@ -175,6 +177,8 @@ const AdminPage = () => {
               { value: 'withdrawals', label: 'निकासी' },
               { value: 'deposits', label: 'जमा सूची' },
               { value: 'fund_requests', label: 'Fund Requests' },
+              { value: 'winners', label: 'Winners' },
+              { value: 'referrals', label: 'Referrals' },
               { value: 'users', label: 'यूजर्स' },
               { value: 'settings', label: 'सेटिंग्स' },
               { value: 'help', label: 'Chat' },
@@ -192,6 +196,8 @@ const AdminPage = () => {
           <TabsContent value="withdrawals"><AdminWithdrawalsTab /></TabsContent>
           <TabsContent value="deposits"><AdminDepositsTab /></TabsContent>
           <TabsContent value="fund_requests"><AdminFundRequestsTab /></TabsContent>
+          <TabsContent value="winners"><AdminWinnersTab games={games} /></TabsContent>
+          <TabsContent value="referrals"><AdminReferralsTab /></TabsContent>
           <TabsContent value="users"><AdminUsersTab /></TabsContent>
           <TabsContent value="settings"><AdminSettingsTab /></TabsContent>
           <TabsContent value="help"><AdminChatInbox API={API_URL} /></TabsContent>

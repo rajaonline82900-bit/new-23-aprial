@@ -666,6 +666,88 @@ async def update_settings(request: Request):
     return {"message": "Settings updated successfully"}
 
 
+
+
+# ===== Admin Winners =====
+
+@router.get("/admin/winners")
+async def get_admin_winners(request: Request, date: Optional[str] = None, game_id: str = "all", limit: int = 50):
+    await get_admin_user(request)
+    if not date:
+        date = datetime.now(IST).strftime("%Y-%m-%d")
+    query = {"status": "won"}
+    if date:
+        query["date"] = date
+    if game_id and game_id != "all":
+        query["game_id"] = game_id
+    
+    bets = await db.bets.find(query, {"_id": 0}).sort("won_amount", -1).limit(limit).to_list(limit)
+    
+    # Fetch user details
+    user_ids = list(set(b.get("user_id") for b in bets if b.get("user_id")))
+    users_list = await db.users.find({"_id": {"$in": [ObjectId(uid) for uid in user_ids]}}, {"name": 1, "phone": 1, "balance": 1}).to_list(500)
+    user_map = {str(u["_id"]): u for u in users_list}
+    
+    result = []
+    total_won = 0
+    for b in bets:
+        user = user_map.get(b.get("user_id"), {})
+        total_won += b.get("won_amount", 0)
+        result.append({
+            "user_name": user.get("name", "?"),
+            "user_phone": user.get("phone", ""),
+            "user_balance": user.get("balance", 0),
+            "game_id": b.get("game_id", ""),
+            "bet_type": b.get("bet_type", ""),
+            "number": b.get("number", ""),
+            "amount": b.get("amount", 0),
+            "won_amount": b.get("won_amount", 0),
+            "date": b.get("date", ""),
+        })
+    
+    return {"winners": result, "total": len(result), "total_won": total_won, "date": date}
+
+
+# ===== Admin Referrals =====
+
+@router.get("/admin/referrals")
+async def get_admin_referrals(request: Request, limit: int = 50):
+    await get_admin_user(request)
+    
+    # Find users who have referred_by set
+    referred_users = await db.users.find(
+        {"referred_by": {"$exists": True, "$nin": [None, ""]}},
+        {"_id": 0, "name": 1, "phone": 1, "email": 1, "referred_by": 1, "created_at": 1, "balance": 1}
+    ).sort("created_at", -1).limit(limit).to_list(limit)
+    
+    # Get referrer details
+    referrer_codes = list(set(u.get("referred_by") for u in referred_users if u.get("referred_by")))
+    referrers = await db.users.find(
+        {"referral_code": {"$in": referrer_codes}},
+        {"name": 1, "phone": 1, "referral_code": 1}
+    ).to_list(500)
+    referrer_map = {r["referral_code"]: r for r in referrers}
+    
+    result = []
+    for u in referred_users:
+        ref_code = u.get("referred_by", "")
+        referrer = referrer_map.get(ref_code, {})
+        result.append({
+            "user_name": u.get("name", "?"),
+            "user_phone": u.get("phone", ""),
+            "user_balance": u.get("balance", 0),
+            "referred_by_code": ref_code,
+            "referrer_name": referrer.get("name", "?"),
+            "referrer_phone": referrer.get("phone", ""),
+            "joined_at": u.get("created_at"),
+        })
+    
+    # Referral stats
+    total_referrals = await db.users.count_documents({"referred_by": {"$exists": True, "$nin": [None, ""]}})
+    
+    return {"referrals": result, "total": total_referrals}
+
+
 # ===== Help Messages =====
 
 @router.get("/help/messages")

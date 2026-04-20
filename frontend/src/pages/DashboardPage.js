@@ -16,7 +16,8 @@ import {
   Download,
   ArrowDownLeft,
   ArrowUpRight,
-  MessageCircle
+  Headphones,
+  Gift
 } from 'lucide-react';
 import { toast } from 'sonner';
 import FooterNav from '../components/FooterNav';
@@ -234,27 +235,29 @@ const DashboardPage = () => {
       <div className="fixed top-[52px] left-0 right-0 z-40 bg-[#0A0A0C]" style={{maxWidth: '480px', margin: '0 auto'}}>
         <div className="px-3 pt-2">
           {/* Branding Banner */}
-          <div className="mb-2 rounded-xl overflow-hidden bg-gradient-to-r from-[#1a1a2e] via-[#16213e] to-[#0f3460] border border-[#D4AF37]/30 shadow-lg shadow-[#D4AF37]/10" data-testid="branding-banner">
-            <div className="px-4 py-2.5 flex items-center justify-between">
+          {/* Refer & Earn Banner */}
+          <div className="mb-2 rounded-xl overflow-hidden bg-gradient-to-r from-[#1a1a2e] via-[#16213e] to-[#0f3460] border border-[#D4AF37]/30 shadow-lg shadow-[#D4AF37]/10" data-testid="refer-banner">
+            <div className="px-4 py-3 flex items-center justify-between">
               <div>
-                <p className="text-[#D4AF37] font-bold text-lg font-['Unbounded'] leading-tight">MATKA 11</p>
-                <p className="text-gray-400 text-[10px]">India's Trusted Matka Platform</p>
+                <p className="text-[#D4AF37] font-black text-base font-['Unbounded'] leading-tight">Refer करके पैसे कमाएं</p>
+                <p className="text-gray-300 text-xs mt-0.5">दोस्तों को भेजें, हर रेफर पर बोनस पाएं</p>
               </div>
-              <a
-                href="https://www.google.com/search?q=matka11.online"
-                target="_blank"
-                rel="noopener noreferrer"
-                data-testid="banner-search-link"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0A0A0C]/50 border border-white/10 hover:bg-[#0A0A0C] transition-all"
-              >
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
-                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
-                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                </svg>
-                <span className="text-white text-xs font-medium">www.matka11.online</span>
-              </a>
+              <div className="flex gap-2">
+                <Link to="/refer" data-testid="refer-banner-btn"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#D4AF37] hover:bg-[#FDE047] text-black font-bold text-xs transition-all">
+                  <Gift className="w-3.5 h-3.5" />
+                  Refer
+                </Link>
+                <button onClick={() => {
+                  const referCode = user?.referral_code || '';
+                  const text = `MATKA 11 - India's Trusted Matka Platform! Mera referral code use karo: ${referCode}. Download karo: https://matka11.online/signup?ref=${referCode}`;
+                  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+                }} data-testid="whatsapp-share-btn"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#25D366] hover:bg-[#20BD5A] text-white font-bold text-xs transition-all">
+                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492l4.625-1.475A11.93 11.93 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818c-2.168 0-4.177-.693-5.82-1.87l-.418-.249-2.738.874.728-2.66-.273-.432A9.78 9.78 0 012.182 12c0-5.423 4.395-9.818 9.818-9.818S21.818 6.577 21.818 12s-4.395 9.818-9.818 9.818z"/></svg>
+                  Share
+                </button>
+              </div>
             </div>
           </div>
 
@@ -332,7 +335,7 @@ const DashboardPage = () => {
               <Card className="bg-[#141418] border-white/10 hover:border-[#D4AF37]/50 transition-all cursor-pointer group">
                 <CardContent className="p-2.5 flex flex-col items-center gap-1 relative">
                   <div className="relative w-9 h-9 rounded-full bg-[#D4AF37]/10 flex items-center justify-center group-hover:bg-[#D4AF37]/20 transition-all">
-                    <MessageCircle className="w-4 h-4 text-[#D4AF37]" />
+                    <Headphones className="w-4 h-4 text-[#D4AF37]" />
                     {unreadChat > 0 && (
                       <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[8px] font-bold flex items-center justify-center" data-testid="chat-unread-badge">{unreadChat > 9 ? '9+' : unreadChat}</span>
                     )}
