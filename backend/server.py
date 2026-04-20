@@ -8,7 +8,8 @@ import os
 import logging
 import asyncio
 from pathlib import Path
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+from bson import ObjectId
 
 from database import db, client
 from auth import hash_password, verify_password
@@ -150,11 +151,69 @@ async def start_auto_fetch():
         logger.info(f"Production push cron started -> {prod_url}")
     asyncio.create_task(expire_pending_deposits_loop())
     logger.info("Pending deposit expiry loop started (every 2 min)")
+    asyncio.create_task(auto_verify_deposits_loop())
+    logger.info("Auto-verify deposits loop started (every 2 min)")
 
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
+
+
+async def auto_verify_deposits_loop():
+    """Check pending/expired deposits on IMB every 2 min and auto-credit if COMPLETED"""
+    import httpx as _httpx
+    imb_url = os.environ.get("IMB_API_URL", "")
+    imb_token = os.environ.get("IMB_API_TOKEN", "")
+    if not imb_url or not imb_token:
+        logger.warning("IMB credentials not set, auto-verify disabled")
+        return
+    
+    await asyncio.sleep(60)
+    
+    while True:
+        try:
+            # Find pending + expired deposits from last 24 hours
+            cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
+            pending_deposits = await db.transactions.find(
+                {"type": "deposit", "status": {"$in": ["pending", "expired"]}, "created_at": {"$gt": cutoff}},
+                {"_id": 0}
+            ).to_list(50)
+            
+            if pending_deposits:
+                logger.info(f"Auto-verify: checking {len(pending_deposits)} pending/expired deposits")
+                
+                async with _httpx.AsyncClient(timeout=15, verify=False) as client:
+                    for dep in pending_deposits:
+                        order_id = dep.get("order_id", "")
+                        if not order_id:
+                            continue
+                        try:
+                            resp = await client.post(
+                                f"{imb_url}/api/check-order-status",
+                                data={"user_token": imb_token, "order_id": order_id},
+                                headers={"Content-Type": "application/x-www-form-urlencoded"}
+                            )
+                            verify_data = resp.json()
+                            txn_status = (verify_data.get("result", {}).get("txnStatus") or "").upper()
+                            
+                            if txn_status in ("COMPLETED", "SUCCESS"):
+                                # Credit user
+                                await db.users.update_one(
+                                    {"_id": ObjectId(dep["user_id"])},
+                                    {"$inc": {"balance": dep["amount"]}}
+                                )
+                                await db.transactions.update_one(
+                                    {"order_id": order_id},
+                                    {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc), "auto_verified": True}}
+                                )
+                                logger.info(f"Auto-verify CREDITED: {order_id} ₹{dep['amount']} -> user {dep['user_id']}")
+                        except Exception as e:
+                            logger.error(f"Auto-verify error for {order_id}: {e}")
+        except Exception as e:
+            logger.error(f"Auto-verify loop error: {e}")
+        
+        await asyncio.sleep(120)  # Every 2 minutes
 
 
 async def production_push_loop(prod_url):
