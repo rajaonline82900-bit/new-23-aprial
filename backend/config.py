@@ -14,12 +14,21 @@ DVHOSTING_API_URL = os.environ.get("DVHOSTING_API_URL")
 # VAPID Keys
 VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "")
 VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "")
-# If VAPID_PRIVATE_KEY points to a PEM file path that exists, pywebpush accepts it directly.
-# Otherwise if a pem file exists alongside backend, prefer that for correctness.
+# If a PEM private key file exists alongside backend, prefer that and DERIVE matching public key
 import os as _os
 _pem_path = _os.path.join(_os.path.dirname(__file__), "vapid_private.txt")
 if _os.path.exists(_pem_path):
     VAPID_PRIVATE_KEY = _pem_path
+    # Derive public key from PEM so it ALWAYS matches
+    try:
+        from cryptography.hazmat.primitives.serialization import load_pem_private_key, Encoding, PublicFormat
+        import base64 as _b64
+        with open(_pem_path, "rb") as _f:
+            _priv = load_pem_private_key(_f.read(), password=None)
+        _pub_bytes = _priv.public_key().public_bytes(encoding=Encoding.X962, format=PublicFormat.UncompressedPoint)
+        VAPID_PUBLIC_KEY = _b64.urlsafe_b64encode(_pub_bytes).decode().rstrip("=")
+    except Exception as _e:
+        pass
 
 # Matka API
 MATKA_API_BASE = "https://matkawebhook.matka-api.online"

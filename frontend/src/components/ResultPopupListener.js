@@ -4,7 +4,7 @@ import { X, Trophy, Sparkles } from 'lucide-react';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 const LS_KEY = 'last_seen_result_ids';
-const POLL_MS = 20000;
+const POLL_MS = 10000;
 const AUTO_CLOSE_MS = 10000;
 
 const GAME_NAMES = {
