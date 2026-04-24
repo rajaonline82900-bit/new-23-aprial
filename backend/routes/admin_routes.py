@@ -927,13 +927,21 @@ async def push_results_external(request: Request):
 async def refresh_matka_token(group="delhi"):
     endpoint = "get-refresh-token-delhi" if group == "delhi" else "get-refresh-token"
     try:
-        async with httpx.AsyncClient(timeout=15, verify=False) as client:
+        async with httpx.AsyncClient(
+            timeout=20,
+            verify=False,
+            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
+        ) as client:
             resp = await client.post(
                 f"{MATKA_API_BASE}/{endpoint}",
                 data={"username": MATKA_API_USERNAME, "password": MATKA_API_PASSWORD}
             )
-            data = resp.json()
-            logger.info(f"Matka API [{group}] token response status={resp.status_code}: {str(data)[:200]}")
+            logger.info(f"Matka API [{group}] HTTP {resp.status_code}, len={len(resp.content)}, body={resp.text[:200]}")
+            try:
+                data = resp.json()
+            except Exception as je:
+                logger.error(f"Matka API [{group}] JSON parse err: {je}, raw={resp.text[:200]}")
+                return False
             token = data.get("refresh_token") or data.get("token") or data.get("api_token") or ""
             if token:
                 matka_api_tokens[group] = token
@@ -949,7 +957,8 @@ async def refresh_matka_token(group="delhi"):
 async def fetch_from_endpoint(client, endpoint, token, market_name, date_str):
     resp = await client.post(
         f"{MATKA_API_BASE}/{endpoint}",
-        data={"username": MATKA_API_USERNAME, "API_token": token, "markte_name": market_name, "date": date_str}
+        data={"username": MATKA_API_USERNAME, "API_token": token, "markte_name": market_name, "date": date_str},
+        headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
     )
     return resp.json()
 
@@ -1148,6 +1157,18 @@ async def expire_pending_deposits_loop():
 @router.post("/admin/results/auto-fetch")
 async def trigger_auto_fetch(request: Request):
     await get_admin_user(request)
+    result = await fetch_matka_results()
+    return result
+
+
+@router.post("/admin/results/auto-fetch-public")
+async def trigger_auto_fetch_public(request: Request):
+    """JWT-secret authenticated endpoint so prod can be triggered without admin login.
+    This allows preview to POKE prod to run its own auto-fetch. Useful as fallback
+    when preview itself cannot push or when prod should self-declare."""
+    body = await request.json()
+    if body.get("secret", "") != os.environ.get("JWT_SECRET", ""):
+        raise HTTPException(status_code=403, detail="Invalid secret")
     result = await fetch_matka_results()
     return result
 
