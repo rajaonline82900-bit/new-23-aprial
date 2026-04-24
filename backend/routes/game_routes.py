@@ -13,7 +13,12 @@ import uuid
 router = APIRouter()
 
 # Fixed display order
-GAME_ORDER = ["delhi_bazaar", "shri_ganesh", "faridabad", "ghaziabad", "gali", "disawar"]
+GAME_ORDER = [
+    # Gali/Disawar order (by time of day)
+    "delhi_bazaar", "shri_ganesh", "faridabad", "ghaziabad", "gali", "disawar",
+    # Kalyan order (by time of day)
+    "kalyan_morning", "milan_day", "rajdhani_day", "kalyan", "milan_night", "rajdhani_night", "main_bazar",
+]
 
 
 @router.get("/games")
@@ -45,6 +50,7 @@ async def get_games():
             "id": game_id,
             "name": game["name"],
             "name_hi": game["name_hi"],
+            "category": game.get("category", "gali_disawar"),
             "start_time": game.get("start_time", game.get("time", "")),
             "end_time": game.get("end_time", game.get("time", "")),
             "time": game.get("end_time", game.get("time", "")),

@@ -37,6 +37,7 @@ const DashboardPage = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showNotifBanner, setShowNotifBanner] = useState(false);
   const [unreadChat, setUnreadChat] = useState(0);
+  const [gameCategory, setGameCategory] = useState(() => localStorage.getItem('game_category') || 'gali_disawar');
   const gamesRef = useRef(null);
 
   // Scroll reveal animation for game cards
@@ -386,18 +387,45 @@ const DashboardPage = () => {
             </Link>
           </div>
 
-          {/* Games Header */}
-          <div className="flex items-center justify-between pb-2">
-            <h3 className="text-lg font-bold text-white font-['Unbounded']">{t('games')}</h3>
-            <Badge variant="outline" className="border-[#D4AF37]/50 text-[#D4AF37]">
-              {games.length} {t('available')}
-            </Badge>
+          {/* Games Header with Tabs */}
+          <div className="pb-2">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-lg font-bold text-white font-['Unbounded']">{t('games')}</h3>
+              <Badge variant="outline" className="border-[#D4AF37]/50 text-[#D4AF37]">
+                {games.filter(g => (g.category || 'gali_disawar') === gameCategory).length} {t('available')}
+              </Badge>
+            </div>
+            {/* Category Tabs */}
+            <div className="flex gap-2 p-1 bg-[#141418] rounded-xl border border-white/5" data-testid="dashboard-game-tabs">
+              <button
+                onClick={() => { setGameCategory('gali_disawar'); localStorage.setItem('game_category', 'gali_disawar'); }}
+                className={`flex-1 py-2 rounded-lg font-bold text-xs transition-all ${
+                  gameCategory === 'gali_disawar'
+                    ? 'bg-gradient-to-r from-[#D4AF37] to-[#FDE047] text-black shadow-lg'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+                data-testid="tab-gali-disawar"
+              >
+                GALI / DISAWAR
+              </button>
+              <button
+                onClick={() => { setGameCategory('kalyan'); localStorage.setItem('game_category', 'kalyan'); }}
+                className={`flex-1 py-2 rounded-lg font-bold text-xs transition-all ${
+                  gameCategory === 'kalyan'
+                    ? 'bg-gradient-to-r from-[#D4AF37] to-[#FDE047] text-black shadow-lg'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+                data-testid="tab-kalyan"
+              >
+                KALYAN
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Scrollable Games Section */}
-      <main className="px-3 pt-[370px] pb-24">
+      <main className="px-3 pt-[410px] pb-24">
         {loading ? (
           <div className="grid gap-4">
             {[1, 2, 3].map((i) => (
@@ -406,7 +434,7 @@ const DashboardPage = () => {
           </div>
         ) : (
           <div className="grid gap-3">
-            {games.map((game, index) => {
+            {games.filter(g => (g.category || 'gali_disawar') === gameCategory).map((game, index) => {
                 const gameStatus = getGameStatus(game);
                 const isDisabled = game.is_holiday || gameStatus.status !== 'open';
                 const CardWrapper = isDisabled ? 'div' : Link;
