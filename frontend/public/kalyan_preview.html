@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kalyan Preview</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&display=swap');
+</style></head>
+<body class="bg-[#0A0A0C] text-white" style="font-family: system-ui">
+
+<div class="max-w-[480px] mx-auto min-h-screen">
+  <!-- Header -->
+  <div class="bg-gradient-to-r from-[#D4AF37] to-[#B8941E] px-3 py-4 flex items-center gap-3 shadow-lg">
+    <svg class="w-6 h-6 text-black" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg>
+    <div class="flex-1">
+      <h1 class="text-black font-black text-lg uppercase tracking-wide">Kalyan Morning</h1>
+      <p class="text-black/70 text-xs">11:30 AM</p>
+    </div>
+    <div class="text-right">
+      <p class="text-black/70 text-[10px]">Balance</p>
+      <p class="text-black font-black text-sm">₹5,500</p>
+    </div>
+  </div>
+  <!-- Today result strip -->
+  <div class="bg-[#141418] border-b border-white/10 px-3 py-3">
+    <p class="text-gray-400 text-[10px] uppercase tracking-wide mb-1">Today's Result</p>
+    <p class="text-white font-black text-xl tracking-widest" style="font-family: monospace">123-65-456</p>
+  </div>
+  <!-- Bet Types Grid -->
+  <div class="p-3 space-y-3">
+    <p class="text-gray-400 text-xs uppercase tracking-wider">Game Chunein</p>
+    <div class="grid grid-cols-2 gap-3">
+
+      <div class="bg-gradient-to-br from-[#1a1410] to-[#241a12] border border-[#D4AF37]/30 rounded-2xl p-4">
+        <div class="flex flex-col items-center gap-2">
+          <div class="w-12 h-12 rounded-full bg-gradient-to-br from-[#FDE047] to-[#D4AF37] flex items-center justify-center shadow-lg">
+            <svg class="w-6 h-6 text-black" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5C3.89 3 3 3.89 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.11 21 19V5C21 3.89 20.1 3 19 3M16 16H13V13H16M11 11H8V8H11M16 11H13V8H16Z"/></svg>
+          </div>
+          <p class="text-white font-bold text-sm">Single Ank</p>
+          <p class="text-[#D4AF37] text-[10px] font-bold">1 × 9.5</p>
+        </div>
+      </div>
+
+      <div class="bg-gradient-to-br from-[#1a1410] to-[#241a12] border border-[#D4AF37]/30 rounded-2xl p-4">
+        <div class="flex flex-col items-center gap-2">
+          <div class="w-12 h-12 rounded-full bg-gradient-to-br from-[#FDE047] to-[#D4AF37] flex items-center justify-center shadow-lg">
+            <svg class="w-6 h-6 text-black" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5C3.89 3 3 3.89 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.11 21 19V5C21 3.89 20.1 3 19 3M9 9H7V7H9M17 17H15V15H17M9 17H7V15H9M17 9H15V7H17Z"/></svg>
+          </div>
+          <p class="text-white font-bold text-sm">Jodi</p>
+          <p class="text-[#D4AF37] text-[10px] font-bold">1 × 95</p>
+        </div>
+      </div>
+
+      <div class="bg-gradient-to-br from-[#1a1410] to-[#241a12] border border-[#D4AF37]/30 rounded-2xl p-4">
+        <div class="flex flex-col items-center gap-2">
+          <div class="w-12 h-12 rounded-full bg-gradient-to-br from-[#FDE047] to-[#D4AF37] flex items-center justify-center shadow-lg">
+            <svg class="w-6 h-6 text-black" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L4 12C3 13.3 3 15 4 16C5 17 6.6 17 8 16L12 13L16 16C17.3 17 19 17 20 16C21 15 21 13.3 20 12L12 2Z"/></svg>
+          </div>
+          <p class="text-white font-bold text-sm">Single Panna</p>
+          <p class="text-[#D4AF37] text-[10px] font-bold">1 × 140</p>
+        </div>
+      </div>
+
+      <div class="bg-gradient-to-br from-[#1a1410] to-[#241a12] border border-[#D4AF37]/30 rounded-2xl p-4">
+        <div class="flex flex-col items-center gap-2">
+          <div class="w-12 h-12 rounded-full bg-gradient-to-br from-[#FDE047] to-[#D4AF37] flex items-center justify-center shadow-lg">
+            <svg class="w-6 h-6 text-black" fill="currentColor" viewBox="0 0 24 24"><path d="M17 7H22V17H17V7M2 7H7V17H2V7M8 7H16V17H8V7Z"/></svg>
+          </div>
+          <p class="text-white font-bold text-sm">Double Panna</p>
+          <p class="text-[#D4AF37] text-[10px] font-bold">1 × 280</p>
+        </div>
+      </div>
+
+      <div class="bg-gradient-to-br from-[#1a1410] to-[#241a12] border border-[#D4AF37]/30 rounded-2xl p-4">
+        <div class="flex flex-col items-center gap-2">
+          <div class="w-12 h-12 rounded-full bg-gradient-to-br from-[#FDE047] to-[#D4AF37] flex items-center justify-center shadow-lg">
+            <svg class="w-6 h-6 text-black" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L1 12L12 22L23 12L12 2Z"/></svg>
+          </div>
+          <p class="text-white font-bold text-sm">Triple Panna</p>
+          <p class="text-[#D4AF37] text-[10px] font-bold">1 × 700</p>
+        </div>
+      </div>
+
+      <div class="bg-gradient-to-br from-[#1a1410] to-[#241a12] border border-[#D4AF37]/30 rounded-2xl p-4">
+        <div class="flex flex-col items-center gap-2">
+          <div class="w-12 h-12 rounded-full bg-gradient-to-br from-[#FDE047] to-[#D4AF37] flex items-center justify-center shadow-lg">
+            <svg class="w-6 h-6 text-black" fill="currentColor" viewBox="0 0 24 24"><path d="M6 2L2 22H22L18 2H6M12 6L15 16H9L12 6Z"/></svg>
+          </div>
+          <p class="text-white font-bold text-sm">Half Sangam</p>
+          <p class="text-[#D4AF37] text-[10px] font-bold">1 × 1000</p>
+        </div>
+      </div>
+
+      <div class="bg-gradient-to-br from-[#1a1410] to-[#241a12] border border-[#D4AF37]/30 rounded-2xl p-4 col-span-2">
+        <div class="flex flex-col items-center gap-2">
+          <div class="w-12 h-12 rounded-full bg-gradient-to-br from-[#FDE047] to-[#D4AF37] flex items-center justify-center shadow-lg">
+            <svg class="w-6 h-6 text-black" fill="currentColor" viewBox="0 0 24 24"><path d="M15,14C12.33,14 7,15.33 7,18V20H23V18C23,15.33 17.67,14 15,14M6,10V7H4V10H1V12H4V15H6V12H9V10M15,12A4,4 0 0,0 19,8A4,4 0 0,0 15,4A4,4 0 0,0 11,8A4,4 0 0,0 15,12Z"/></svg>
+          </div>
+          <p class="text-white font-bold text-sm">Full Sangam</p>
+          <p class="text-[#D4AF37] text-[10px] font-bold">1 × 10000</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body></html>
