@@ -580,6 +580,7 @@ async def create_game(game: GameCreate, request: Request):
 
     game_doc = {
         "game_id": game.game_id, "name": game.name, "name_hi": game.name_hi,
+        "category": game.category,
         "start_time": game.start_time, "end_time": game.end_time,
         "time": game.end_time, "display_time": game.display_time,
         "is_active": game.is_active, "created_at": datetime.now(timezone.utc)
@@ -606,6 +607,8 @@ async def update_game(game_id: str, game: GameUpdate, request: Request):
         update_data["name"] = game.name
     if game.name_hi is not None:
         update_data["name_hi"] = game.name_hi
+    if game.category is not None:
+        update_data["category"] = game.category
     if game.start_time is not None:
         update_data["start_time"] = game.start_time
     if game.end_time is not None:
@@ -632,6 +635,28 @@ async def delete_game(game_id: str, request: Request):
         raise HTTPException(status_code=404, detail="Game not found")
     await load_games()
     return {"message": "Game deleted successfully"}
+
+
+@router.post("/admin/games/seed-kalyan")
+async def seed_kalyan_games(request: Request):
+    """Insert default Kalyan games. Skips games that already exist."""
+    await get_admin_user(request)
+    inserted = 0
+    skipped = 0
+    for gid, gdata in DEFAULT_GAMES.items():
+        if gdata.get("category") != "kalyan":
+            continue
+        existing = await db.games.find_one({"game_id": gid})
+        if existing:
+            skipped += 1
+            # Ensure category field is set on existing games
+            await db.games.update_one({"game_id": gid}, {"$set": {"category": "kalyan"}})
+            continue
+        doc = {"game_id": gid, **gdata, "created_at": datetime.now(timezone.utc)}
+        await db.games.insert_one(doc)
+        inserted += 1
+    await load_games()
+    return {"message": f"{inserted} games added, {skipped} already present", "inserted": inserted, "skipped": skipped}
 
 
 # ===== Settings =====

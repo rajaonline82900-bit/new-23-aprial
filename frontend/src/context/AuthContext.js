@@ -23,9 +23,12 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuth = useCallback(async () => {
     try {
+      const stored = localStorage.getItem('matka11_token');
+      const headers = stored ? { Authorization: `Bearer ${stored}` } : {};
       const { data } = await axios.get(`${API_URL}/api/auth/me`, {
         withCredentials: true,
-        timeout: 10000
+        timeout: 10000,
+        headers,
       });
       setUser(data);
     } catch (error) {

@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { RotateCcw, CheckCircle2 } from 'lucide-react';
+import { RotateCcw, CheckCircle2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const API = process.env.REACT_APP_BACKEND_URL;
@@ -68,6 +68,21 @@ const AdminKalyanResultsTab = ({ games = [] }) => {
     }
   };
 
+  const deleteResult = async (gameId) => {
+    if (!window.confirm('Pura result delete karo? (Open + Close dono) Sabhi bets refund ho jayengi.')) return;
+    setLoading(true);
+    try {
+      const { data } = await axios.delete(`${API}/api/admin/kalyan/result?game_id=${gameId}&date=${date}`,
+        { withCredentials: true });
+      toast.success(`Deleted result & refunded ${data.reversed_count} bets`);
+      fetchResults();
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Fail');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (kalyanGames.length === 0) {
     return <div className="text-gray-400 text-center py-8">Koi Kalyan game nahi mila</div>;
   }
@@ -92,9 +107,17 @@ const AdminKalyanResultsTab = ({ games = [] }) => {
                     <h3 className="text-white font-bold text-base">{g.name}</h3>
                     <p className="text-gray-400 text-xs">{g.display_time}</p>
                   </div>
-                  <p className="text-[#D4AF37] font-mono text-lg">
-                    {r.open_panna || 'XXX'}-{r.jodi || (r.open_ank ? `${r.open_ank}*` : 'XX')}-{r.close_panna || 'XXX'}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-[#D4AF37] font-mono text-lg">
+                      {r.open_panna || 'XXX'}-{r.jodi || (r.open_ank ? `${r.open_ank}*` : 'XX')}-{r.close_panna || 'XXX'}
+                    </p>
+                    {(r.open_panna || r.close_panna) && (
+                      <Button size="sm" variant="ghost" onClick={() => deleteResult(g.id)} disabled={loading}
+                        className="text-red-400 hover:text-red-300 hover:bg-red-500/10 p-1.5 h-auto" title="Delete full result" data-testid={`admin-kalyan-delete-${g.id}`}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">

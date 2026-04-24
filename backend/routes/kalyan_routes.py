@@ -299,6 +299,34 @@ async def reverse_kalyan_result(request: Request):
     return {"message": f"Reversed {total_reversed} bets", "reversed_count": total_reversed}
 
 
+@router.delete("/admin/kalyan/result")
+async def delete_kalyan_result(request: Request, game_id: str, date: str):
+    """Delete the entire Kalyan result doc. Also reverses all bets first."""
+    await get_admin_user(request)
+    existing = await db.kalyan_results.find_one({"game_id": game_id, "date": date})
+    if not existing:
+        raise HTTPException(status_code=404, detail="No result found")
+
+    # Reverse all settled bets for both sessions (refund)
+    settled = await db.bets.find({
+        "game_id": game_id, "date": date,
+        "game_category": "kalyan",
+        "status": {"$in": ["won", "lost"]}
+    }, {"_id": 0}).to_list(10000)
+
+    for bet in settled:
+        refund = bet["amount"]
+        if bet.get("status") == "won":
+            payout = bet.get("payout", 0)
+            await db.users.update_one({"_id": ObjectId(bet["user_id"])}, {"$inc": {"balance": refund - payout}})
+        else:
+            await db.users.update_one({"_id": ObjectId(bet["user_id"])}, {"$inc": {"balance": refund}})
+        await db.bets.update_one({"id": bet["id"]}, {"$set": {"status": "reversed", "payout": 0, "reversed_at": datetime.now(timezone.utc).isoformat()}})
+
+    await db.kalyan_results.delete_one({"_id": existing["_id"]})
+    return {"message": f"Deleted result & reversed {len(settled)} bets", "reversed_count": len(settled)}
+
+
 @router.get("/kalyan/results/{game_id}")
 async def get_kalyan_results(game_id: str, limit: int = 30):
     """Get recent Kalyan results for a game."""

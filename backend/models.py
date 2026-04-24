@@ -102,6 +102,7 @@ class GameCreate(BaseModel):
     game_id: str
     name: str
     name_hi: str
+    category: str = "gali_disawar"
     start_time: str
     end_time: str
     display_time: str
@@ -110,6 +111,7 @@ class GameCreate(BaseModel):
 class GameUpdate(BaseModel):
     name: Optional[str] = None
     name_hi: Optional[str] = None
+    category: Optional[str] = None
     start_time: Optional[str] = None
     end_time: Optional[str] = None
     display_time: Optional[str] = None
