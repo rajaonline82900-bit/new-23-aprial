@@ -83,14 +83,9 @@ const AdminGamesTab = () => {
     <>
       <Card className="bg-[#141418] border-white/10">
         <CardHeader>
-          <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center justify-between">
             <CardTitle className="text-white font-['Unbounded'] flex items-center gap-2"><Settings className="w-5 h-5 text-[#D4AF37]" />गेम सेटिंग्स</CardTitle>
-            <div className="flex gap-2">
-              <Button onClick={handleSeedKalyan} disabled={seedingKalyan} variant="outline" className="border-[#D4AF37]/50 text-[#D4AF37] hover:bg-[#D4AF37]/10" data-testid="seed-kalyan-btn">
-                {seedingKalyan ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}Kalyan Seed
-              </Button>
-              <Button onClick={() => openGameForm()} className="bg-[#D4AF37] hover:bg-[#FDE047] text-black" data-testid="add-game-btn"><Plus className="w-4 h-4 mr-2" />नया गेम</Button>
-            </div>
+            <Button onClick={() => openGameForm()} className="bg-[#D4AF37] hover:bg-[#FDE047] text-black" data-testid="add-game-btn"><Plus className="w-4 h-4 mr-2" />नया गेम</Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -104,7 +99,6 @@ const AdminGamesTab = () => {
                   <div>
                     <div className="flex items-center gap-2">
                       <h4 className="text-lg font-semibold text-white">{game.name_hi}</h4>
-                      {game.category === 'kalyan' && <Badge className="bg-[#D4AF37]/20 text-[#D4AF37] text-[9px]">KALYAN</Badge>}
                       {game.is_active === false && <Badge className="bg-red-500/20 text-red-400">बंद</Badge>}
                     </div>
                     <p className="text-gray-400 text-sm">{game.name}</p>

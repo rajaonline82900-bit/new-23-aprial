@@ -172,7 +172,6 @@ const AdminPage = () => {
           <TabsList className="bg-[#141418] border border-white/10 mb-6 flex-wrap">
             {[
               { value: 'results', label: 'रिजल्ट घोषणा' },
-              { value: 'kalyan_results', label: 'Kalyan Result' },
               { value: 'jantri', label: 'जंतरी रिपोर्ट' },
               { value: 'bets', label: 'बेट रिपोर्ट' },
               { value: 'games', label: 'गेम सेटिंग्स' },
@@ -192,7 +191,6 @@ const AdminPage = () => {
             ))}
           </TabsList>
           <TabsContent value="results"><AdminResultsTab games={games} /></TabsContent>
-          <TabsContent value="kalyan_results"><AdminKalyanResultsTab games={games} /></TabsContent>
           <TabsContent value="jantri"><AdminJantriTab games={games} /></TabsContent>
           <TabsContent value="bets"><AdminBetsTab games={games} /></TabsContent>
           <TabsContent value="games"><AdminGamesTab /></TabsContent>
