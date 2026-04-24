@@ -16,6 +16,9 @@ const utcDate = (d) => { if (!d) return new Date(); const s = String(d); return 
 const AdminUsersTab = () => {
   const [users, setUsers] = useState([]);
   const [userSearch, setUserSearch] = useState('');
+  const [filterType, setFilterType] = useState('all'); // all | online | today | deposited | never_deposited
+  const [currentPage, setCurrentPage] = useState(1);
+  const USERS_PER_PAGE = 100;
   const [selectedUser, setSelectedUser] = useState(null);
   const [userModalOpen, setUserModalOpen] = useState(false);
   const [userDetailTab, setUserDetailTab] = useState('deposits');
@@ -30,7 +33,7 @@ const AdminUsersTab = () => {
 
   const fetchUsers = useCallback(async () => {
     try {
-      const { data } = await axios.get(`${API_URL}/api/admin/users?limit=500`, { withCredentials: true });
+      const { data } = await axios.get(`${API_URL}/api/admin/users?limit=100000`, { withCredentials: true });
       setUsers(data.users);
     } catch (error) {}
   }, []);
@@ -90,57 +93,151 @@ const AdminUsersTab = () => {
     <>
       <Card className="bg-[#141418] border-white/10">
         <CardHeader>
-          <CardTitle className="text-white font-['Unbounded']">सभी यूजर्स</CardTitle>
+          <CardTitle className="text-white font-['Unbounded']">सभी यूजर्स ({users.length})</CardTitle>
           <CardDescription className="text-gray-400">मोबाइल नंबर या नाम से सर्च करें</CardDescription>
           <div className="mt-3">
-            <Input type="text" placeholder="मोबाइल नंबर या नाम से सर्च करें..." value={userSearch} onChange={(e) => setUserSearch(e.target.value)}
+            <Input type="text" placeholder="मोबाइल नंबर या नाम से सर्च करें..." value={userSearch} onChange={(e) => { setUserSearch(e.target.value); setCurrentPage(1); }}
               data-testid="user-search-input" className="bg-[#0A0A0C] border-white/10 text-white placeholder:text-gray-400 focus:border-[#D4AF37]" />
+          </div>
+          {/* Filter Chips */}
+          <div className="flex flex-wrap gap-2 mt-3">
+            {[
+              { key: 'all', label: 'सभी' },
+              { key: 'online', label: 'ऑनलाइन' },
+              { key: 'today', label: 'आज आए' },
+              { key: 'deposited', label: 'Deposit किया' },
+              { key: 'never_deposited', label: 'कभी Deposit नहीं' },
+              { key: 'with_balance', label: 'Balance > 0' }
+            ].map(f => (
+              <button
+                key={f.key}
+                onClick={() => { setFilterType(f.key); setCurrentPage(1); }}
+                data-testid={`user-filter-${f.key}`}
+                className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
+                  filterType === f.key ? 'bg-[#D4AF37] text-black' : 'bg-[#0A0A0C] text-gray-400 border border-white/10 hover:text-white'
+                }`}
+              >{f.label}</button>
+            ))}
           </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {users.filter(u => {
-              if (!userSearch.trim()) return true;
-              const q = userSearch.trim().toLowerCase();
-              return (u.phone && u.phone.includes(q)) || (u.name && u.name.toLowerCase().includes(q)) || (u.email && u.email.toLowerCase().includes(q));
-            }).map((u, index) => (
-              <div key={index} onClick={() => openUserDetails(u)} className="flex items-center justify-between p-4 bg-[#0A0A0C] rounded-lg border border-white/5 cursor-pointer hover:border-[#D4AF37]/50 transition-all">
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <div className="w-10 h-10 rounded-full bg-[#D4AF37]/20 flex items-center justify-center">
-                      <span className="text-[#D4AF37] font-bold">{u.name?.charAt(0).toUpperCase()}</span>
+          {(() => {
+            const filtered = users.filter(u => {
+              // Search
+              if (userSearch.trim()) {
+                const q = userSearch.trim().toLowerCase();
+                const match = (u.phone && u.phone.includes(q)) || (u.name && u.name.toLowerCase().includes(q)) || (u.email && u.email.toLowerCase().includes(q));
+                if (!match) return false;
+              }
+              // Type filter
+              if (filterType === 'online') {
+                if (!u.last_seen) return false;
+                const seen = new Date(u.last_seen.endsWith?.('Z') ? u.last_seen : u.last_seen + 'Z').getTime();
+                return (Date.now() - seen) < 300000;
+              }
+              if (filterType === 'today') {
+                if (!u.created_at) return false;
+                const created = new Date(u.created_at.endsWith?.('Z') ? u.created_at : u.created_at + 'Z');
+                const now = new Date();
+                return created.toDateString() === now.toDateString();
+              }
+              if (filterType === 'deposited') return (u.total_deposited || 0) > 0;
+              if (filterType === 'never_deposited') return (u.total_deposited || 0) === 0;
+              if (filterType === 'with_balance') return (u.balance || 0) > 0;
+              return true;
+            });
+
+            const totalPages = Math.max(1, Math.ceil(filtered.length / USERS_PER_PAGE));
+            const safePage = Math.min(currentPage, totalPages);
+            const startIdx = (safePage - 1) * USERS_PER_PAGE;
+            const pageUsers = filtered.slice(startIdx, startIdx + USERS_PER_PAGE);
+
+            return (
+              <>
+                <p className="text-gray-400 text-xs mb-3" data-testid="user-count-display">
+                  कुल: {filtered.length} | पेज {safePage}/{totalPages} | दिखा रहे: {pageUsers.length}
+                </p>
+                <div className="space-y-3">
+                  {pageUsers.map((u, index) => (
+                    <div key={u._id || index} onClick={() => openUserDetails(u)} className="flex items-center justify-between p-4 bg-[#0A0A0C] rounded-lg border border-white/5 cursor-pointer hover:border-[#D4AF37]/50 transition-all">
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          <div className="w-10 h-10 rounded-full bg-[#D4AF37]/20 flex items-center justify-center">
+                            <span className="text-[#D4AF37] font-bold">{u.name?.charAt(0).toUpperCase()}</span>
+                          </div>
+                          {u.last_seen && (Date.now() - new Date(u.last_seen.endsWith('Z') ? u.last_seen : u.last_seen + 'Z').getTime()) < 300000 && (
+                            <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-[#0A0A0C]" title="ऑनलाइन"></div>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-white font-medium">{u.name}</p>
+                          <p className="text-gray-400 text-sm">{u.phone || u.email}</p>
+                          <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                            <p className="text-gray-400 text-xs">
+                              {u.created_at ? new Date(u.created_at.endsWith?.('Z') ? u.created_at : u.created_at + 'Z').toLocaleDateString('hi-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', year: 'numeric' }) : ''}
+                            </p>
+                            <span className={`text-xs ${u.last_seen && (Date.now() - new Date(u.last_seen.endsWith?.('Z') ? u.last_seen : u.last_seen + 'Z').getTime()) < 300000 ? 'text-green-400' : 'text-gray-400'}`}>
+                              {u.last_seen ? (
+                                (Date.now() - new Date(u.last_seen.endsWith?.('Z') ? u.last_seen : u.last_seen + 'Z').getTime()) < 300000
+                                  ? 'ऑनलाइन'
+                                  : (() => { const diff = Math.floor((Date.now() - new Date(u.last_seen.endsWith?.('Z') ? u.last_seen : u.last_seen + 'Z').getTime()) / 60000); if (diff < 60) return `${diff} मिनट पहले`; if (diff < 1440) return `${Math.floor(diff/60)} घंटे पहले`; return `${Math.floor(diff/1440)} दिन पहले`; })()
+                              ) : ''}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <Badge className={u.role === 'admin' ? 'bg-[#D4AF37]/20 text-[#D4AF37]' : 'bg-[#141418]0/20 text-gray-400'}>{u.role}</Badge>
+                          <p className="text-white font-semibold mt-1">₹{u.balance?.toFixed(2) || '0.00'}</p>
+                        </div>
+                        <Eye className="w-5 h-5 text-gray-400" />
+                      </div>
                     </div>
-                    {u.last_seen && (Date.now() - new Date(u.last_seen.endsWith('Z') ? u.last_seen : u.last_seen + 'Z').getTime()) < 300000 && (
-                      <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-[#0A0A0C]" title="ऑनलाइन"></div>
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-white font-medium">{u.name}</p>
-                    <p className="text-gray-400 text-sm">{u.phone || u.email}</p>
-                    <div className="flex flex-wrap items-center gap-2 mt-0.5">
-                      <p className="text-gray-400 text-xs">
-                        {u.created_at ? new Date(u.created_at.endsWith?.('Z') ? u.created_at : u.created_at + 'Z').toLocaleDateString('hi-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', year: 'numeric' }) : ''}
-                      </p>
-                      <span className={`text-xs ${u.last_seen && (Date.now() - new Date(u.last_seen.endsWith?.('Z') ? u.last_seen : u.last_seen + 'Z').getTime()) < 300000 ? 'text-green-400' : 'text-gray-400'}`}>
-                        {u.last_seen ? (
-                          (Date.now() - new Date(u.last_seen.endsWith?.('Z') ? u.last_seen : u.last_seen + 'Z').getTime()) < 300000
-                            ? 'ऑनलाइन'
-                            : (() => { const diff = Math.floor((Date.now() - new Date(u.last_seen.endsWith?.('Z') ? u.last_seen : u.last_seen + 'Z').getTime()) / 60000); if (diff < 60) return `${diff} मिनट पहले`; if (diff < 1440) return `${Math.floor(diff/60)} घंटे पहले`; return `${Math.floor(diff/1440)} दिन पहले`; })()
-                        ) : ''}
-                      </span>
-                    </div>
-                  </div>
+                  ))}
                 </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <Badge className={u.role === 'admin' ? 'bg-[#D4AF37]/20 text-[#D4AF37]' : 'bg-[#141418]0/20 text-gray-400'}>{u.role}</Badge>
-                    <p className="text-white font-semibold mt-1">₹{u.balance?.toFixed(2) || '0.00'}</p>
+
+                {/* Pagination controls */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-1 mt-4 flex-wrap" data-testid="user-pagination">
+                    <button
+                      onClick={() => setCurrentPage(Math.max(1, safePage - 1))}
+                      disabled={safePage === 1}
+                      className="px-3 py-1.5 rounded-lg bg-[#0A0A0C] border border-white/10 text-gray-300 text-sm disabled:opacity-40 hover:border-[#D4AF37]/50"
+                      data-testid="pagination-prev"
+                    >Prev</button>
+                    {(() => {
+                      const pages = [];
+                      const maxButtons = 5;
+                      let start = Math.max(1, safePage - 2);
+                      let end = Math.min(totalPages, start + maxButtons - 1);
+                      if (end - start < maxButtons - 1) start = Math.max(1, end - maxButtons + 1);
+                      if (start > 1) { pages.push(1); if (start > 2) pages.push('...'); }
+                      for (let i = start; i <= end; i++) pages.push(i);
+                      if (end < totalPages) { if (end < totalPages - 1) pages.push('...'); pages.push(totalPages); }
+                      return pages.map((p, i) => (
+                        p === '...' ? <span key={`d${i}`} className="px-2 text-gray-500">...</span> :
+                        <button
+                          key={p}
+                          onClick={() => setCurrentPage(p)}
+                          className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${
+                            safePage === p ? 'bg-[#D4AF37] text-black' : 'bg-[#0A0A0C] border border-white/10 text-gray-300 hover:border-[#D4AF37]/50'
+                          }`}
+                          data-testid={`pagination-page-${p}`}
+                        >{p}</button>
+                      ));
+                    })()}
+                    <button
+                      onClick={() => setCurrentPage(Math.min(totalPages, safePage + 1))}
+                      disabled={safePage === totalPages}
+                      className="px-3 py-1.5 rounded-lg bg-[#0A0A0C] border border-white/10 text-gray-300 text-sm disabled:opacity-40 hover:border-[#D4AF37]/50"
+                      data-testid="pagination-next"
+                    >Next</button>
                   </div>
-                  <Eye className="w-5 h-5 text-gray-400" />
-                </div>
-              </div>
-            ))}
-          </div>
+                )}
+              </>
+            );
+          })()}
         </CardContent>
       </Card>
 

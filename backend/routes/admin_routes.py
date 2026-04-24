@@ -30,9 +30,18 @@ logger = logging.getLogger(__name__)
 @router.get("/admin/users")
 async def get_all_users(request: Request, skip: int = 0, limit: int = 500):
     await get_admin_user(request)
-    users = await db.users.find({}, {"password_hash": 0}).skip(skip).limit(limit).to_list(limit)
+    users = await db.users.find({}, {"password_hash": 0}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    # Enrich with total_deposited for frontend filter
     for user in users:
         user["_id"] = str(user["_id"])
+        try:
+            agg = await db.transactions.aggregate([
+                {"$match": {"user_id": user["_id"], "type": "deposit", "status": "completed"}},
+                {"$group": {"_id": None, "total": {"$sum": "$amount"}}}
+            ]).to_list(1)
+            user["total_deposited"] = agg[0]["total"] if agg else 0
+        except Exception:
+            user["total_deposited"] = 0
     total = await db.users.count_documents({})
     return {"users": users, "total": total}
 
