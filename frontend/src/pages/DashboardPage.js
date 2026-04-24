@@ -38,7 +38,30 @@ const DashboardPage = () => {
   const [showNotifBanner, setShowNotifBanner] = useState(false);
   const [unreadChat, setUnreadChat] = useState(0);
   const [gameCategory, setGameCategory] = useState(() => localStorage.getItem('game_category') || 'gali_disawar');
+  const [kalyanResults, setKalyanResults] = useState({});
   const gamesRef = useRef(null);
+
+  // Fetch today's Kalyan results for the dashboard cards
+  useEffect(() => {
+    if (gameCategory !== 'kalyan') return;
+    const fetchKalyan = async () => {
+      try {
+        const kalyanGames = games.filter(g => g.category === 'kalyan');
+        const results = {};
+        await Promise.all(kalyanGames.map(async (g) => {
+          try {
+            const { data } = await axios.get(`${API_URL}/api/kalyan/today/${g.id}`, { withCredentials: true });
+            if (data.result) results[g.id] = data.result;
+          } catch (e) { /* ignore */ }
+        }));
+        setKalyanResults(results);
+      } catch (e) { console.error(e); }
+    };
+    fetchKalyan();
+    const int = setInterval(fetchKalyan, 30000);
+    return () => clearInterval(int);
+  }, [gameCategory, games]);
+
 
   // Scroll reveal animation for game cards
   useEffect(() => {
@@ -441,6 +464,83 @@ const DashboardPage = () => {
                 const cardProps = isDisabled 
                   ? { key: game.id, 'data-testid': `game-card-${game.id}` }
                   : { key: game.id, to: (game.category === 'kalyan' ? `/kalyan/${game.id}` : `/game/${game.id}`), 'data-testid': `game-card-${game.id}` };
+
+                // Kalyan - Anna Matka style card
+                if (game.category === 'kalyan') {
+                  const kr = kalyanResults[game.id] || {};
+                  const formatTime = (t) => {
+                    const [h, m] = (t || '00:00').split(':').map(Number);
+                    const ampm = h >= 12 ? 'PM' : 'AM';
+                    const h12 = h % 12 || 12;
+                    return `${h12}:${(m || 0).toString().padStart(2, '0')} ${ampm}`;
+                  };
+                  return (
+                    <CardWrapper {...cardProps}>
+                      <div
+                        className={`game-card-animate game-card-hidden rounded-2xl overflow-hidden shadow-lg border-2 transition-all ${isDisabled ? 'opacity-60' : ''}`}
+                        style={{ borderColor: '#D4AF37', animationDelay: `${index * 0.08}s` }}
+                      >
+                        {/* Orange header with game name + play button */}
+                        <div className="bg-gradient-to-r from-[#D4AF37] to-[#B8941E] px-4 py-3 flex items-center justify-between">
+                          <div className="w-8 h-8 flex items-center justify-center">
+                            <svg className="w-5 h-5 text-black" fill="currentColor" viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2m0 4h2v-2H3v2m0-8h2V7H3v2m4 4h14v-2H7v2m0 4h14v-2H7v2M7 7v2h14V7H7Z"/></svg>
+                          </div>
+                          <h3 className="text-white font-black text-base uppercase tracking-wide flex-1 text-center">
+                            {game.name}
+                          </h3>
+                          {game.is_holiday ? (
+                            <div className="w-10 h-10 rounded-full bg-orange-600 text-white flex items-center justify-center font-bold text-xs">H</div>
+                          ) : gameStatus.status === 'open' ? (
+                            <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center shadow-lg" data-testid={`play-btn-${game.id}`}>
+                              <svg className="w-4 h-4 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                            </div>
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-red-500/80 flex items-center justify-center">
+                              <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* White body */}
+                        <div className="bg-white px-4 py-3">
+                          <div className="flex justify-between text-xs text-gray-600 mb-2">
+                            <span>Open - {formatTime(game.start_time)}</span>
+                            <span>Close - {formatTime(game.end_time)}</span>
+                          </div>
+                          <div className="grid grid-cols-3 text-center">
+                            <div>
+                              <p className="text-green-600 font-bold text-base mb-1">Open</p>
+                              <p className="text-black font-black text-lg tracking-wider" style={{ fontFamily: 'monospace' }}>
+                                {kr.open_panna || 'XXX'}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-blue-500 font-bold text-base mb-1">Jodi</p>
+                              <p className="text-black font-black text-lg tracking-wider" style={{ fontFamily: 'monospace' }}>
+                                {kr.jodi || (kr.open_ank ? `${kr.open_ank}*` : '--')}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-red-500 font-bold text-base mb-1">Close</p>
+                              <p className="text-black font-black text-lg tracking-wider" style={{ fontFamily: 'monospace' }}>
+                                {kr.close_panna || 'XXX'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Status strip */}
+                        <div className={`py-2 text-center font-black text-sm text-white ${
+                          game.is_holiday ? 'bg-orange-500' : gameStatus.status === 'open' ? 'bg-green-600' : 'bg-red-600'
+                        }`}>
+                          {game.is_holiday ? 'HOLIDAY' : gameStatus.status === 'open' ? 'MARKET OPENED' : 'MARKET CLOSED'}
+                        </div>
+                      </div>
+                    </CardWrapper>
+                  );
+                }
+
+                // Gali/Disawar - existing compact card
                 return (
                   <CardWrapper {...cardProps}>
                     <Card 
