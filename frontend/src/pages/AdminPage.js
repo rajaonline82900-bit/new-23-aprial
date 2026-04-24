@@ -24,6 +24,7 @@ import AdminJantriTab from './admin/AdminJantriTab';
 import AdminFundRequestsTab from './admin/AdminFundRequestsTab';
 import AdminWinnersTab from './admin/AdminWinnersTab';
 import AdminReferralsTab from './admin/AdminReferralsTab';
+import AdminKalyanResultsTab from './admin/AdminKalyanResultsTab';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 const utcDate = (d) => { if (!d) return new Date(); const s = String(d); return new Date(s.endsWith('Z') ? s : s + 'Z'); };
@@ -171,6 +172,7 @@ const AdminPage = () => {
           <TabsList className="bg-[#141418] border border-white/10 mb-6 flex-wrap">
             {[
               { value: 'results', label: 'रिजल्ट घोषणा' },
+              { value: 'kalyan_results', label: 'Kalyan Result' },
               { value: 'jantri', label: 'जंतरी रिपोर्ट' },
               { value: 'bets', label: 'बेट रिपोर्ट' },
               { value: 'games', label: 'गेम सेटिंग्स' },
@@ -190,6 +192,7 @@ const AdminPage = () => {
             ))}
           </TabsList>
           <TabsContent value="results"><AdminResultsTab games={games} /></TabsContent>
+          <TabsContent value="kalyan_results"><AdminKalyanResultsTab games={games} /></TabsContent>
           <TabsContent value="jantri"><AdminJantriTab games={games} /></TabsContent>
           <TabsContent value="bets"><AdminBetsTab games={games} /></TabsContent>
           <TabsContent value="games"><AdminGamesTab /></TabsContent>

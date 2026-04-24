@@ -69,7 +69,15 @@ BET_TYPES = {
     "single": {"name": "Single", "name_hi": "एकल अंक", "multiplier": 10},
     "jodi": {"name": "Jodi", "name_hi": "जोड़ी", "multiplier": 100},
     "haruf_andar": {"name": "Haruf Andar", "name_hi": "हरूफ अंदर", "multiplier": 10},
-    "haruf_bahar": {"name": "Haruf Bahar", "name_hi": "हरूफ बाहर", "multiplier": 10}
+    "haruf_bahar": {"name": "Haruf Bahar", "name_hi": "हरूफ बाहर", "multiplier": 10},
+    # Kalyan bet types
+    "single_ank": {"name": "Single Ank", "name_hi": "सिंगल अंक", "multiplier": 9.5},
+    "kalyan_jodi": {"name": "Jodi", "name_hi": "जोड़ी", "multiplier": 95},
+    "single_panna": {"name": "Single Panna", "name_hi": "सिंगल पना", "multiplier": 140},
+    "double_panna": {"name": "Double Panna", "name_hi": "डबल पना", "multiplier": 280},
+    "triple_panna": {"name": "Triple Panna", "name_hi": "ट्रिपल पना", "multiplier": 700},
+    "half_sangam": {"name": "Half Sangam", "name_hi": "हाफ संगम", "multiplier": 1000},
+    "full_sangam": {"name": "Full Sangam", "name_hi": "फुल संगम", "multiplier": 10000},
 }
 
 # Deposit packages

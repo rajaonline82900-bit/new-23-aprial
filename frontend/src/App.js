@@ -18,6 +18,7 @@ import RegisterPage from "./pages/RegisterPage";
 import AdminLoginPage from "./pages/AdminLoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import GamePage from "./pages/GamePage";
+import KalyanGamePage from "./pages/KalyanGamePage";
 import WalletPage from "./pages/WalletPage";
 import BetsPage from "./pages/BetsPage";
 import ResultsPage from "./pages/ResultsPage";
@@ -113,6 +114,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <GamePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/kalyan/:gameId"
+        element={
+          <ProtectedRoute>
+            <KalyanGamePage />
           </ProtectedRoute>
         }
       />

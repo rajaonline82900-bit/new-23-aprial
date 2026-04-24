@@ -440,7 +440,7 @@ const DashboardPage = () => {
                 const CardWrapper = isDisabled ? 'div' : Link;
                 const cardProps = isDisabled 
                   ? { key: game.id, 'data-testid': `game-card-${game.id}` }
-                  : { key: game.id, to: `/game/${game.id}`, 'data-testid': `game-card-${game.id}` };
+                  : { key: game.id, to: (game.category === 'kalyan' ? `/kalyan/${game.id}` : `/game/${game.id}`), 'data-testid': `game-card-${game.id}` };
                 return (
                   <CardWrapper {...cardProps}>
                     <Card 

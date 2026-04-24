@@ -24,6 +24,7 @@ from routes.result_routes import router as result_router
 from routes.chat_routes import router as chat_router
 from routes.admin_routes import router as admin_router, auto_fetch_loop, expire_pending_deposits_loop
 from routes.notification_routes import router as notification_router
+from routes.kalyan_routes import router as kalyan_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -52,6 +53,7 @@ api_router.include_router(result_router)
 api_router.include_router(chat_router)
 api_router.include_router(admin_router)
 api_router.include_router(notification_router)
+api_router.include_router(kalyan_router)
 
 app.include_router(api_router)
 
