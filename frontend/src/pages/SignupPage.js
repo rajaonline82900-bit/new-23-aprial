@@ -21,7 +21,8 @@ const SignupPage = () => {
   const { refreshUser } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const refCode = searchParams.get('ref') || '';
+  const urlRefCode = searchParams.get('ref') || '';
+  const [refCode, setRefCode] = useState(urlRefCode);
 
   const handleSendOTP = async (e) => {
     e.preventDefault();
@@ -141,6 +142,23 @@ const SignupPage = () => {
                     className="bg-[#0A0A0C] border-white/10 text-white placeholder:text-gray-400 focus:border-[#D4AF37] focus:ring-[#D4AF37] flex-1"
                   />
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-gray-300">रेफरल कोड <span className="text-gray-500 text-xs">(optional)</span></Label>
+                <Input
+                  type="text"
+                  placeholder="दोस्त का रेफरल कोड"
+                  value={refCode}
+                  onChange={(e) => setRefCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10))}
+                  maxLength={10}
+                  data-testid="signup-referral-input"
+                  disabled={!!urlRefCode}
+                  className="bg-[#0A0A0C] border-white/10 text-white placeholder:text-gray-400 focus:border-[#D4AF37] focus:ring-[#D4AF37] uppercase"
+                />
+                {urlRefCode && (
+                  <p className="text-[#D4AF37] text-xs">लिंक से रेफरल कोड लागू है</p>
+                )}
               </div>
 
               <Button
