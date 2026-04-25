@@ -229,21 +229,15 @@ const DashboardPage = () => {
             </div>
             
             <div className="flex items-center gap-1.5">
-              <button
-                onClick={() => {
-                  if (window.deferredPrompt) {
-                    window.deferredPrompt.prompt();
-                    window.deferredPrompt.userChoice.then(() => { window.deferredPrompt = null; });
-                  } else {
-                    alert('ब्राउज़र मेनू में जाकर "Add to Home Screen" या "Install App" पर क्लिक करें।');
-                  }
-                }}
+              <a
+                href="/matka11.apk"
+                download="Matka11.apk"
                 data-testid="download-apk-button"
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#D4AF37] to-[#FDE047] text-black font-bold text-xs hover:scale-105 active:scale-95 transition-transform shadow-lg shadow-[#D4AF37]/20"
               >
                 <Download className="w-3.5 h-3.5" />
                 {t('download_app')}
-              </button>
+              </a>
               
               {user?.role === 'admin' && (
                 <Link to="/admin">
