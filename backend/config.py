@@ -101,4 +101,5 @@ SETTINGS_DEFAULTS = {
 GAMES = {}
 otp_store = {}
 matka_api_tokens = {"delhi": None, "general": None}
+matka_api_last_error = {"delhi": "", "general": ""}
 auto_fetch_running = False

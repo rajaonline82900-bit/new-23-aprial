@@ -13,7 +13,7 @@ from auth import get_admin_user, get_current_user
 from config import (
     GAMES, DEFAULT_GAMES, IST, SETTINGS_DEFAULTS,
     MARKET_TO_GAME, MATKA_API_BASE, MATKA_API_USERNAME, MATKA_API_PASSWORD,
-    matka_api_tokens
+    matka_api_tokens, matka_api_last_error
 )
 from helpers import get_games_dict, load_games, send_push_to_all
 from models import (
@@ -833,6 +833,7 @@ async def auto_fetch_debug(request: Request):
         "matka_password_set": bool(MATKA_API_PASSWORD),
         "matka_base": MATKA_API_BASE,
         "tokens": {k: (v[:10] + "..." if v else "EMPTY") for k, v in matka_api_tokens.items()},
+        "matka_errors": dict(matka_api_last_error),
         "auto_fetch_running": cfg.auto_fetch_running,
         "fetch_result": result,
         "errors": errors,
@@ -960,6 +961,7 @@ async def push_results_external(request: Request):
 
 async def refresh_matka_token(group="delhi"):
     endpoint = "get-refresh-token-delhi" if group == "delhi" else "get-refresh-token"
+    last_error = ""
     try:
         async with httpx.AsyncClient(
             timeout=20,
@@ -974,17 +976,24 @@ async def refresh_matka_token(group="delhi"):
             try:
                 data = resp.json()
             except Exception as je:
-                logger.error(f"Matka API [{group}] JSON parse err: {je}, raw={resp.text[:200]}")
+                last_error = f"JSON parse: {str(je)[:60]}, raw[0:80]={resp.text[:80]}"
+                logger.error(f"Matka API [{group}] {last_error}")
+                matka_api_last_error[group] = last_error
                 return False
             token = data.get("refresh_token") or data.get("token") or data.get("api_token") or ""
             if token:
                 matka_api_tokens[group] = token
+                matka_api_last_error[group] = ""
                 logger.info(f"Matka API [{group}] token refreshed: {token[:8]}...")
                 return True
             else:
-                logger.error(f"Matka API [{group}] no token in response: {data}")
+                last_error = f"no token: {str(data)[:120]}"
+                logger.error(f"Matka API [{group}] {last_error}")
+                matka_api_last_error[group] = last_error
     except Exception as e:
-        logger.error(f"Matka API [{group}] token refresh failed: {type(e).__name__}: {e}")
+        last_error = f"{type(e).__name__}: {str(e)[:120]}"
+        logger.error(f"Matka API [{group}] exception: {last_error}")
+        matka_api_last_error[group] = last_error
     return False
 
 
