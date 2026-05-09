@@ -1,0 +1,52 @@
+{
+  "summary": "Verified simplified signup/login UI (Google + OTP only, no password mode) and OTP backend flows. All 10 backend tests pass. Frontend signup OTP flow → /dashboard works; login OTP flow → /dashboard works. No forbidden password-mode testids remain. 'Emergent' word does NOT appear in user-visible text on signup or login pages (only inside auth.emergentagent.com URL string in code, which is required for OAuth redirect).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "passed_tests": [
+    "Backend POST /api/auth/google/session without session_id -> 400 'session_id required'",
+    "Backend POST /api/auth/google/session with invalid session_id -> 401 'Invalid session'",
+    "Backend POST /api/auth/otp/send valid -> 200; short phone -> 400",
+    "Backend POST /api/auth/otp/verify with correct OTP -> 200 phone_verified=true",
+    "Backend POST /api/auth/otp/complete-signup -> 200 returns token",
+    "Backend duplicate phone signup -> 400 'पहले से रजिस्टर्ड है'",
+    "Backend POST /api/auth/login-otp/send unregistered phone -> 400",
+    "Backend POST /api/auth/login-otp/send + verify for registered phone -> 200 with token",
+    "Backend POST /api/auth/admin/login admin@sattamatka.com/Admin@123 -> 200 role=admin",
+    "Backend admin login wrong password -> 401",
+    "Frontend /signup shows: signup-google-btn + otp-name-input + otp-phone-input + send-otp-button (all data-testids present)",
+    "Frontend /signup does NOT have testids signup-mode-otp / signup-mode-password / password-signup-btn / password-name-input",
+    "Frontend /login shows: login-google-btn + login-phone-input + login-send-otp-button",
+    "Frontend /login does NOT have password-mode testids",
+    "Frontend signup OTP flow: name+phone -> OTP step -> verified OTP -> /dashboard with success toast (अकाउंट बन गया!)",
+    "Frontend login OTP flow: phone -> OTP step -> verified OTP -> /dashboard with success toast (लॉगिन सफल!)",
+    "Frontend src grep: 'Emergent' literal appears ONLY inside 'auth.emergentagent.com' URL strings (code, not user-visible JSX text)",
+    "Visible body text on /signup and /login does not contain 'emergent' (case-insensitive)"
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_auth_otp_google.py",
+    "/app/test_reports/pytest/iteration17_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Note: Two separate google-session endpoints exist in auth_routes.py: /auth/google-session (line 95, used nowhere?) and /auth/google/session (line 499, used by AuthCallback.js). Consider deleting the unused one to avoid drift. Both behave similarly but only one is wired up.",
+    "Legacy endpoints /auth/register, /auth/login, /auth/register-mobile remain in backend but are no longer invoked by frontend. Per main agent note this is intentional for legacy users; consider deprecation comments.",
+    "auth_routes.py is ~555 lines - close to the 700-line guideline cap; consider splitting into auth_routes_password.py / auth_routes_otp.py / auth_routes_oauth.py if more endpoints land.",
+    "OTP store is in-memory dict (config.otp_store). Acceptable for single-worker deployment, but multi-worker uvicorn would lose OTPs across workers. Consider Redis if scaling."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_auth_otp_google.py"
+  ],
+  "success_rate": {"backend": "100% (10/10)", "frontend": "100% (all targeted flows verified)"},
+  "test_credentials": {
+    "admin": "admin@sattamatka.com / Admin@123 at /admin-login",
+    "test_user_signup_phone_used": "9878325593 (created live during signup flow test, registered as TestUser)"
+  },
+  "seed_data_creation": "Created TEST_OtpUser via OTP signup with rolling phone 98765XXXXX (epoch-based) for backend test, plus 9878325593 via UI signup; both phones now exist in users collection.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All targeted requirements pass. SignupPage.js and LoginPage.js are fully simplified to (Google + OTP) only. AuthCallback uses /api/auth/google/session which validates session_id. Backend test file at /app/backend/tests/test_auth_otp_google.py can be reused. To test Google OAuth callback end-to-end, would need real session_id from Emergent auth — backend endpoint correctness already verified with bad session_ids (400/401)."
+}
