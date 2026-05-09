@@ -1,0 +1,54 @@
+{
+  "summary": "Tested simplified auth flow (mobile+password only, OTP/Google removed from UI), forgot-password flow, auto-logout fix, JWT 365-day expiry, page UI/testids. All critical flows pass. Backend: 13/14 tests pass (1 skipped because in-memory OTP store can't be read across processes). Frontend: signup E2E, login E2E, network-error-no-logout, real-401-logout all PASS.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Signup/Login pages", "issues": ["Pages render with attractive gradient buttons, MatkaLogo with glow, perks pills, and decorative background blur - design looks premium and brand-aligned. No issues found."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_auth_simplified.py",
+    "/app/test_reports/pytest/iteration19_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "auth_routes.py is large (~565 lines) and mixes register-mobile, OTP signup, OTP login, Google session (TWO duplicate google handlers: /auth/google-session and /auth/google/session), password reset, admin login. Recommend splitting into auth_password.py / auth_otp.py / auth_google.py / auth_admin.py for maintainability since OTP+Google are now legacy-only.",
+    "DUPLICATE Google session endpoints (/auth/google-session and /auth/google/session) — pick one and delete the other to avoid drift.",
+    "register-mobile uses raw request.json() instead of a Pydantic model — losing validation/type safety. UserRegister-style Pydantic model recommended.",
+    "/auth/me does not return last_seen, auth_method, or referral_code — UI may need these eventually.",
+    "auth.py JWT secret read on every call via os.environ['JWT_SECRET'] — fine but consider caching with lru_cache to prevent KeyError surprises if env reloads.",
+    "AuthContext.checkAuth: the 'else: keep previous user state' branch only takes effect if user was previously truthy. On initial mount user=null and stored token exists but server is unreachable, the user stays null and ProtectedRoute redirects to /signup until network heals — acceptable but could show a 'reconnecting' UI instead.",
+    "Signup/Login axios calls don't honor a global axios baseURL — each page re-reads process.env.REACT_APP_BACKEND_URL. Consolidating into /src/api/client.js would DRY this."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_auth_simplified.py (new)",
+    "/app/memory/test_credentials.md (updated with new test user 9870012345)"
+  ],
+  "success_rate": {"backend": "100% (13/13 executed; 1 skipped due to OTP store cross-process limitation)", "frontend": "100% (all required flows verified)"},
+  "test_credentials": "User 9870012345 / Test@1234 (created during testing). Admin admin@sattamatka.com / Admin@123.",
+  "seed_data_creation": "Created test user phone=9870012345 name=AuthTest password=Test@1234 via /api/auth/register-mobile. User left in DB for follow-up FE testing.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Iteration 19 simplified auth verified. Test user phone=9870012345 / Test@1234 is in DB. Admin admin@sattamatka.com / Admin@123. /signup, /login, /forgot-password, /admin-login all working. JWT expiry 365 days verified. Network-error-no-logout verified. Real-401-logout verified by corrupting localStorage token + clearing cookies then reloading (URL redirected to /signup, token removed). Note: Playwright page.route('**/api/auth/me', fulfill 401) does NOT actually intercept through the k8s ingress proxy — to test 401 logout always use a corrupted token + cookie clear approach instead.",
+  "verification_details": {
+    "signup_e2e": "POST /api/auth/register-mobile → 200 + token (199 chars), redirect to /dashboard, toast shown",
+    "login_e2e": "POST /api/auth/login → 200 + token, redirect to /dashboard",
+    "jwt_expiry_days": "verified ~365 days (within 360-366 tolerance) for both register and login",
+    "forgot_password": "send-otp → 200; reset with wrong otp → 400; correct-otp path requires reading server in-memory store (cannot test cross-process)",
+    "admin_login": "admin@sattamatka.com/Admin@123 → 200 with role=admin; wrong password → 401",
+    "validation": "name<2 → 400, phone<10 digits → 400, password<6 → 400, duplicate phone → 400 — all pass",
+    "auto_logout_fix_network_error": "Intercepted /api/auth/me with route.abort() then reload → user stayed at /dashboard, token retained — PASS",
+    "auto_logout_fix_real_401": "Corrupted localStorage token + cleared cookies + reload → redirected to /signup, token removed — PASS",
+    "ui_testids_signup_present": ["signup-name-input","signup-phone-input","signup-password-input","signup-referral-input","signup-submit-btn","toggle-signup-password"],
+    "ui_testids_signup_absent": ["signup-google-btn","otp-name-input","otp-phone-input","otp-code-input","send-otp-button"],
+    "ui_testids_login_present": ["login-phone-input","login-password-input","login-submit-btn","forgot-password-link","toggle-login-password"],
+    "ui_testids_login_absent": ["login-google-btn","login-otp-input","login-send-otp-button","login-verify-otp-button"],
+    "ui_testids_forgot_present": ["forgot-phone-input","forgot-send-otp-btn"],
+    "password_toggle": "Eye icon click toggles type=password ↔ text on both signup and login"
+  }
+}

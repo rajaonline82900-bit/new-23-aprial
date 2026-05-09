@@ -33,6 +33,7 @@ import HelpPage from "./pages/HelpPage";
 import ChatPage from "./pages/ChatPage";
 import LandingPage from "./pages/LandingPage";
 import SignupPage from "./pages/SignupPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import AuthCallback from "./pages/AuthCallback";
 import ResultPopupListener from "./components/ResultPopupListener";
 
@@ -95,6 +96,14 @@ function AppRoutes() {
         }
       />
       <Route path="/auth/callback" element={<AuthCallback />} />
+      <Route
+        path="/forgot-password"
+        element={
+          <PublicRoute>
+            <ForgotPasswordPage />
+          </PublicRoute>
+        }
+      />
       <Route
         path="/admin-login"
         element={<AdminLoginPage />}

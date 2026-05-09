@@ -22,8 +22,8 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   const checkAuth = useCallback(async () => {
+    const stored = localStorage.getItem('matka11_token');
     try {
-      const stored = localStorage.getItem('matka11_token');
       const headers = stored ? { Authorization: `Bearer ${stored}` } : {};
       const { data } = await axios.get(`${API_URL}/api/auth/me`, {
         withCredentials: true,
@@ -32,16 +32,20 @@ export const AuthProvider = ({ children }) => {
       });
       setUser(data);
     } catch (error) {
+      // ONLY logout when server explicitly says token invalid (401).
+      // Network errors / timeouts must NOT auto-logout the user.
       if (error.response && error.response.status === 401) {
         localStorage.removeItem('matka11_token');
         setUser(false);
-      } else if (!user) {
+      } else if (!stored) {
+        // No saved token AND request failed -> user is genuinely not logged in
         setUser(false);
       }
+      // else: keep previous user state (avoid flicker / unwanted logout on flaky network)
     } finally {
       setLoading(false);
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (window.location.hash?.includes('session_id=')) {
