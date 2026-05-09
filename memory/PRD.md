@@ -75,6 +75,15 @@ Build a Satta Matka betting application supporting games like Delhi Bazaar, Shri
 - Each link has its own copy-to-clipboard button.
 - WhatsApp & generic share text now include both links along with referral URL.
 
+### Auth Final Simplification — Password-Only + Auto-Logout Fix (Completed 2026-05-09 v2)
+- **Signup**: Name + Mobile + Password ONLY. OTP/Google removed from UI.
+- **Login**: Mobile + Password ONLY. OTP/Google removed from UI.
+- **Forgot Password**: New /forgot-password page with OTP-based reset (uses existing /auth/password/send-otp + /auth/password/reset).
+- **Auto-logout fix**: AuthContext.checkAuth now keeps user logged in on network errors / timeouts. Only explicit 401 from server clears token & logs out. Verified end-to-end.
+- **JWT expiry**: 365 days (already configured in auth.py).
+- **Attractive design**: Gradient gold buttons, MatkaLogo with glow effect, perks pills (Instant Withdraw / 5% Refer Bonus / 24×7 Live), decorative blur backgrounds, password show/hide toggle, clean card with subtle gradient border.
+- Tested: 13/13 backend + all frontend E2E flows pass (iteration_19.json).
+
 ## Pending / Backlog
 - P1: User must press "Deploy" on Emergent Deploy UI to push preview fixes to matka11.online
 - P1: Push notification real-world testing (needs real user to allow)
