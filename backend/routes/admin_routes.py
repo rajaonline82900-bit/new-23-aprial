@@ -13,7 +13,8 @@ from auth import get_admin_user, get_current_user
 from config import (
     GAMES, DEFAULT_GAMES, IST, SETTINGS_DEFAULTS,
     MARKET_TO_GAME, MATKA_API_BASE, MATKA_API_USERNAME, MATKA_API_PASSWORD,
-    matka_api_tokens, matka_api_last_error
+    matka_api_tokens, matka_api_last_error,
+    NEW_MATKA_API_URL, NEW_MATKA_API_KEY, NEW_MATKA_DOMAIN_KEY, NEW_MATKA_DOMAIN
 )
 from helpers import get_games_dict, load_games, send_push_to_all
 from models import (
@@ -811,33 +812,33 @@ async def delete_help_message(message_id: str, request: Request):
 
 @router.get("/admin/auto-fetch-debug")
 async def auto_fetch_debug(request: Request):
-    """Debug endpoint - force refresh tokens and fetch"""
+    """Debug endpoint - directly call matkaapi.com and return raw response + match summary."""
     await get_admin_user(request)
     import config as cfg
-    errors = []
-    # Force refresh tokens
-    for group in ["delhi", "general"]:
-        matka_api_tokens[group] = ""  # Clear to force refresh
-        try:
-            success = await refresh_matka_token(group)
-            if not success:
-                errors.append(f"{group}: token refresh failed")
-        except Exception as e:
-            errors.append(f"{group}: {str(e)}")
-    
-    # Force fetch
-    result = await fetch_matka_results()
-    
-    return {
-        "matka_username": MATKA_API_USERNAME or "NOT SET",
-        "matka_password_set": bool(MATKA_API_PASSWORD),
-        "matka_base": MATKA_API_BASE,
-        "tokens": {k: (v[:10] + "..." if v else "EMPTY") for k, v in matka_api_tokens.items()},
-        "matka_errors": dict(matka_api_last_error),
+    debug_info = {
+        "api_url": NEW_MATKA_API_URL,
+        "api_key_set": bool(NEW_MATKA_API_KEY),
+        "domain_key_set": bool(NEW_MATKA_DOMAIN_KEY),
+        "domain": NEW_MATKA_DOMAIN,
         "auto_fetch_running": cfg.auto_fetch_running,
-        "fetch_result": result,
-        "errors": errors,
     }
+    raw_responses = {}
+    try:
+        async with httpx.AsyncClient(timeout=20, verify=False) as client:
+            for label, body in [("gali_all", {"gali": "all"}), ("market_all", {"market": "all"})]:
+                data, status_code, raw = await _matkaapi_post(client, body)
+                raw_responses[label] = {
+                    "http": status_code,
+                    "json": data if data else None,
+                    "raw": raw if not data else None,
+                }
+    except Exception as e:
+        raw_responses["error"] = f"{type(e).__name__}: {e}"
+
+    fetch_result = await fetch_matka_results()
+    debug_info["raw_responses"] = raw_responses
+    debug_info["fetch_result"] = fetch_result
+    return debug_info
 
 
 @router.post("/admin/reverify-deposits")
@@ -957,122 +958,111 @@ async def push_results_external(request: Request):
 
 
 
-# ===== Auto Result Fetch =====
+# ===== Auto Result Fetch (matkaapi.com) =====
 
-async def refresh_matka_token(group="delhi"):
-    endpoint = "get-refresh-token-delhi" if group == "delhi" else "get-refresh-token"
-    last_error = ""
+async def _matkaapi_post(client, body):
+    """POST to matkaapi.com market_api.php with auth keys merged in."""
+    payload = {
+        "domain": NEW_MATKA_DOMAIN,
+        "api_key": NEW_MATKA_API_KEY,
+        "domain_key": NEW_MATKA_DOMAIN_KEY,
+        **body,
+    }
+    resp = await client.post(NEW_MATKA_API_URL, json=payload)
     try:
-        async with httpx.AsyncClient(
-            timeout=20,
-            verify=False,
-            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
-        ) as client:
-            resp = await client.post(
-                f"{MATKA_API_BASE}/{endpoint}",
-                data={"username": MATKA_API_USERNAME, "password": MATKA_API_PASSWORD}
-            )
-            logger.info(f"Matka API [{group}] HTTP {resp.status_code}, len={len(resp.content)}, body={resp.text[:200]}")
-            try:
-                data = resp.json()
-            except Exception as je:
-                last_error = f"JSON parse: {str(je)[:60]}, raw[0:80]={resp.text[:80]}"
-                logger.error(f"Matka API [{group}] {last_error}")
-                matka_api_last_error[group] = last_error
-                return False
-            token = data.get("refresh_token") or data.get("token") or data.get("api_token") or ""
-            if token:
-                matka_api_tokens[group] = token
-                matka_api_last_error[group] = ""
-                logger.info(f"Matka API [{group}] token refreshed: {token[:8]}...")
-                return True
-            else:
-                last_error = f"no token: {str(data)[:120]}"
-                logger.error(f"Matka API [{group}] {last_error}")
-                matka_api_last_error[group] = last_error
-    except Exception as e:
-        last_error = f"{type(e).__name__}: {str(e)[:120]}"
-        logger.error(f"Matka API [{group}] exception: {last_error}")
-        matka_api_last_error[group] = last_error
-    return False
+        return resp.json(), resp.status_code, resp.text[:300]
+    except Exception:
+        return None, resp.status_code, resp.text[:300]
 
 
-async def fetch_from_endpoint(client, endpoint, token, market_name, date_str):
-    resp = await client.post(
-        f"{MATKA_API_BASE}/{endpoint}",
-        data={"username": MATKA_API_USERNAME, "API_token": token, "markte_name": market_name, "date": date_str},
-        headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
-    )
-    return resp.json()
+def _normalize_jodi(val):
+    """Accept '7', '07', '46' etc → return 2-digit jodi or None."""
+    if val is None:
+        return None
+    s = str(val).strip()
+    if not s.isdigit():
+        return None
+    if len(s) == 1:
+        s = "0" + s
+    if len(s) != 2:
+        return None
+    return s
 
 
 async def fetch_matka_results(date_str=None):
-    if not MATKA_API_USERNAME or not MATKA_API_PASSWORD:
-        logger.error(f"Matka API credentials missing: user={MATKA_API_USERNAME}")
-        return {"error": "Matka API credentials not configured"}
-
-    # Always try to refresh tokens if empty
-    for group in ["delhi", "general"]:
-        if not matka_api_tokens.get(group):
-            success = await refresh_matka_token(group)
-            if not success:
-                logger.error(f"Matka API [{group}] token refresh failed, retrying...")
-                await refresh_matka_token(group)
+    """Fetch results from matkaapi.com (POST market_api.php) and apply winners."""
+    if not NEW_MATKA_API_KEY or not NEW_MATKA_DOMAIN_KEY:
+        logger.error("matkaapi.com credentials missing (NEW_MATKA_API_KEY/NEW_MATKA_DOMAIN_KEY)")
+        return {"error": "matkaapi.com credentials not configured"}
 
     ist_now = datetime.now(IST)
     if not date_str:
         date_str = ist_now.strftime("%Y-%m-%d")
 
-    all_api_results = []
+    api_results = []  # list of {market_name, jodi, time}
+    api_errors = []
 
     try:
-        async with httpx.AsyncClient(timeout=15, verify=False) as client:
-            for group, endpoint in [("delhi", "market-data-delhi"), ("general", "market-data")]:
-                token = matka_api_tokens.get(group)
-                if not token:
-                    continue
-                try:
-                    data = await fetch_from_endpoint(client, endpoint, token, "", date_str)
-                    if not data.get("status"):
-                        if await refresh_matka_token(group):
-                            token = matka_api_tokens[group]
-                            data = await fetch_from_endpoint(client, endpoint, token, "", date_str)
-                    if data.get("status"):
-                        all_api_results += data.get("today_result", []) + data.get("old_result", [])
-                except Exception as e:
-                    logger.error(f"Matka API [{group}] fetch error: {e}")
+        async with httpx.AsyncClient(timeout=20, verify=False) as client:
+            # 1) Gali/Disawar family (covers GALI, DISAWER, FARIDABAD, GHAZIABAD, DELHI BAZAR, SHRI GANESH)
+            try:
+                data, status_code, raw = await _matkaapi_post(client, {"gali": "all"})
+                if data and data.get("status"):
+                    for r in (data.get("gali_result") or []):
+                        jodi = _normalize_jodi(r.get("new") or r.get("result") or r.get("jodi"))
+                        if jodi:
+                            api_results.append({
+                                "market_name": (r.get("game") or r.get("market") or "").upper().strip(),
+                                "jodi": jodi,
+                                "time": r.get("time", ""),
+                            })
+                else:
+                    api_errors.append(f"gali HTTP {status_code}: {(data or {}).get('message') or raw}")
+            except Exception as e:
+                api_errors.append(f"gali exception: {type(e).__name__}: {e}")
 
-            for group, endpoint in [("delhi", "market-data-delhi"), ("general", "market-data")]:
-                token = matka_api_tokens.get(group)
-                if not token:
-                    continue
-                try:
-                    data = await fetch_from_endpoint(client, endpoint, token, "DISAWER", date_str)
-                    if data.get("status"):
-                        all_api_results += data.get("today_result", []) + data.get("old_result", [])
-                except Exception:
-                    pass
+            # 2) General markets (in case some games appear there too)
+            try:
+                data, status_code, raw = await _matkaapi_post(client, {"market": "all"})
+                if data and data.get("status"):
+                    for r in (data.get("markets") or data.get("market_result") or []):
+                        # General markets sometimes have open+close. Build jodi as last digit of each.
+                        jodi = _normalize_jodi(r.get("jodi") or r.get("result") or r.get("new"))
+                        if not jodi:
+                            opn = str(r.get("open", "")).strip()
+                            cls = str(r.get("close", "")).strip()
+                            if opn.isdigit() and cls.isdigit():
+                                jodi = f"{opn[-1]}{cls[-1]}"
+                        if jodi:
+                            api_results.append({
+                                "market_name": (r.get("name") or r.get("market") or "").upper().strip(),
+                                "jodi": jodi,
+                                "time": r.get("time", ""),
+                            })
+                else:
+                    api_errors.append(f"market HTTP {status_code}: {(data or {}).get('message') or raw}")
+            except Exception as e:
+                api_errors.append(f"market exception: {type(e).__name__}: {e}")
 
         games_dict = await get_games_dict()
 
-        seen_keys = set()
-        unique_results = []
-        for r in all_api_results:
-            key = f"{r.get('market_name','').upper().strip()}|{r.get('aankdo_date','')}"
-            if key not in seen_keys:
-                seen_keys.add(key)
-                unique_results.append(r)
+        # Dedup by market_name (today's result only)
+        seen = set()
+        unique = []
+        for r in api_results:
+            mn = r["market_name"]
+            if mn and mn not in seen:
+                seen.add(mn)
+                unique.append(r)
 
         results_applied = []
         skipped_no_match = []
         skipped_existing = []
-        for r in unique_results:
-            market_name = r.get("market_name", "").upper().strip()
-            jodi = r.get("jodi", "").strip()
-            result_date = r.get("aankdo_date", "").strip()
 
-            if not jodi or not result_date or len(jodi) != 2 or not jodi.isdigit():
-                continue
+        for r in unique:
+            market_name = r["market_name"]
+            jodi = r["jodi"]
+            result_date = date_str
 
             game_id = MARKET_TO_GAME.get(market_name)
             if not game_id or game_id not in games_dict:
@@ -1121,16 +1111,24 @@ async def fetch_matka_results(date_str=None):
             await send_push_to_all(push_title, push_body, "/dashboard")
 
             results_applied.append({"game": game_id, "jodi": jodi, "date": result_date, "winners": len(all_winners)})
-            logger.info(f"Auto-result: {game_info['name_hi']} = {jodi} ({result_date}), Winners: {len(all_winners)}")
+            logger.info(f"matkaapi.com auto-result: {game_info['name_hi']} = {jodi} ({result_date}), Winners: {len(all_winners)}")
 
+        if api_errors:
+            logger.warning(f"matkaapi.com errors: {api_errors}")
         if skipped_existing:
-            logger.info(f"Auto-fetch skipped (already exist): {skipped_existing}")
+            logger.info(f"matkaapi.com skipped (already exist): {skipped_existing}")
         if skipped_no_match and len(results_applied) == 0:
-            logger.info(f"Auto-fetch no match for: {skipped_no_match[:10]}")
-        return {"results_applied": results_applied, "total": len(results_applied), "skipped_existing": len(skipped_existing), "api_results_count": len(unique_results)}
+            logger.info(f"matkaapi.com no match for: {skipped_no_match[:10]}")
+        return {
+            "results_applied": results_applied,
+            "total": len(results_applied),
+            "skipped_existing": len(skipped_existing),
+            "api_results_count": len(unique),
+            "errors": api_errors,
+        }
 
     except Exception as e:
-        logger.error(f"Matka API fetch error: {e}")
+        logger.error(f"matkaapi.com fetch error: {e}")
         return {"error": str(e)}
 
 
@@ -1155,7 +1153,7 @@ async def push_results_to_production(results_applied):
 async def auto_fetch_loop():
     import config
     config.auto_fetch_running = True
-    logger.info(f"Auto-result fetch loop started (username={MATKA_API_USERNAME}, base={MATKA_API_BASE})")
+    logger.info(f"Auto-result fetch loop started (matkaapi.com domain={NEW_MATKA_DOMAIN})")
     # First fetch immediately on startup
     try:
         result = await fetch_matka_results()

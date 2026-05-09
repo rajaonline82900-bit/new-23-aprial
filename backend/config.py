@@ -30,18 +30,29 @@ if _os.path.exists(_pem_path):
     except Exception as _e:
         pass
 
-# Matka API
+# Matka API (LEGACY - matka-api.online)
 MATKA_API_BASE = "https://matkawebhook.matka-api.online"
 MATKA_API_USERNAME = os.environ.get("MATKA_API_USERNAME", "")
 MATKA_API_PASSWORD = os.environ.get("MATKA_API_PASSWORD", "")
 
-# Market to Game ID mapping
+# New Matka API (matkaapi.com) - PRIMARY
+NEW_MATKA_API_URL = os.environ.get("NEW_MATKA_API_URL", "https://matkaapi.com/apis/market_api.php")
+NEW_MATKA_API_KEY = os.environ.get("NEW_MATKA_API_KEY", "")
+NEW_MATKA_DOMAIN_KEY = os.environ.get("NEW_MATKA_DOMAIN_KEY", "")
+NEW_MATKA_DOMAIN = os.environ.get("NEW_MATKA_DOMAIN", "matka11.online")
+
+# Market to Game ID mapping (handle name variations from APIs)
 MARKET_TO_GAME = {
     "DISAWER": "disawar",
+    "DISAWAR": "disawar",
     "DELHI BAZAR": "delhi_bazaar",
+    "DELHI BAZAAR": "delhi_bazaar",
     "SHRI GANESH": "shri_ganesh",
+    "SHREE GANESH": "shri_ganesh",
     "FARIDABAD": "faridabad",
     "GHAZIABAD": "ghaziabad",
+    "GAJIYABAD": "ghaziabad",
+    "GAZIABAD": "ghaziabad",
     "GALI": "gali",
 }
 

@@ -4,7 +4,7 @@ import axios from 'axios';
 import { Card, CardContent } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
-import { ArrowLeft, Gift, Copy, Users, IndianRupee, Share2 } from 'lucide-react';
+import { ArrowLeft, Gift, Copy, Users, IndianRupee, Share2, Smartphone, Globe } from 'lucide-react';
 import { toast } from 'sonner';
 import FooterNav from '../components/FooterNav';
 
@@ -36,9 +36,21 @@ const ReferPage = () => {
     }
   };
 
+  const APK_LINK = 'https://matka11.online/matka11.apk';
+  const WEB_LINK = 'www.matka11.online';
+
+  const copyText = (text, label) => {
+    try {
+      navigator.clipboard.writeText(text);
+      toast.success(`${label} कॉपी हो गया!`);
+    } catch (_) {
+      toast.error('कॉपी नहीं हो पाया');
+    }
+  };
+
   const shareCode = () => {
     const referralLink = `${window.location.origin}/signup?ref=${referralInfo?.code}`;
-    const text = `MATKA 11 पर खेलें और जीतें!\n\nइस लिंक से साइनअप करें:\n${referralLink}\n\nपहली जमा पर आपको 5% बोनस मिलेगा!`;
+    const text = `MATKA 11 पर खेलें और जीतें!\n\nइस लिंक से साइनअप करें:\n${referralLink}\n\n📱 App Download: ${APK_LINK}\n🌐 iPhone Website: ${WEB_LINK}\n\nपहली जमा पर आपको 5% बोनस मिलेगा!`;
     if (navigator.share) {
       navigator.share({ title: 'MATKA 11 - Refer & Earn', text, url: referralLink });
     } else {
@@ -49,7 +61,7 @@ const ReferPage = () => {
 
   const shareWhatsApp = () => {
     const referralLink = `${window.location.origin}/signup?ref=${referralInfo?.code}`;
-    const text = `MATKA 11 पर खेलें और जीतें! 🎯\n\nइस लिंक से साइनअप करें:\n${referralLink}\n\nपहली जमा पर आपको 5% बोनस मिलेगा! 💰`;
+    const text = `MATKA 11 पर खेलें और जीतें! 🎯\n\nइस लिंक से साइनअप करें:\n${referralLink}\n\n📱 App Download: ${APK_LINK}\n🌐 iPhone Website: ${WEB_LINK}\n\nपहली जमा पर आपको 5% बोनस मिलेगा! 💰`;
     const waUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
     window.open(waUrl, '_blank');
   };
@@ -149,6 +161,61 @@ const ReferPage = () => {
               <p className="text-gray-300 text-xs break-all" data-testid="referral-link">
                 {window.location.origin}/signup?ref={referralInfo?.code}
               </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* App Download & Website Links */}
+        <Card className="bg-[#141418] border-white/10">
+          <CardContent className="p-5 space-y-3">
+            <p className="text-white font-bold text-sm mb-1">App & Website Links</p>
+
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-lg bg-[#10B981]/20 flex items-center justify-center shrink-0">
+                <Smartphone className="w-5 h-5 text-[#10B981]" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-gray-400 text-[11px]">Android App Download</p>
+                <a
+                  href="https://matka11.online/matka11.apk"
+                  className="text-[#10B981] text-xs font-medium break-all hover:underline"
+                  data-testid="refer-apk-link"
+                >
+                  https://matka11.online/matka11.apk
+                </a>
+              </div>
+              <button
+                onClick={() => copyText('https://matka11.online/matka11.apk', 'App link')}
+                data-testid="copy-apk-link"
+                className="p-2 rounded-lg bg-[#10B981]/10 border border-[#10B981]/30 text-[#10B981] hover:bg-[#10B981]/20 transition-all shrink-0"
+                aria-label="copy apk link"
+              >
+                <Copy className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-lg bg-[#D4AF37]/20 flex items-center justify-center shrink-0">
+                <Globe className="w-5 h-5 text-[#D4AF37]" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-gray-400 text-[11px]">iPhone Website Link</p>
+                <a
+                  href="https://www.matka11.online"
+                  className="text-[#D4AF37] text-xs font-medium break-all hover:underline"
+                  data-testid="refer-web-link"
+                >
+                  www.matka11.online
+                </a>
+              </div>
+              <button
+                onClick={() => copyText('www.matka11.online', 'Website link')}
+                data-testid="copy-web-link"
+                className="p-2 rounded-lg bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/20 transition-all shrink-0"
+                aria-label="copy web link"
+              >
+                <Copy className="w-4 h-4" />
+              </button>
             </div>
           </CardContent>
         </Card>
