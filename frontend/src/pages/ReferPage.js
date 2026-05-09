@@ -40,12 +40,9 @@ const ReferPage = () => {
   const WEB_LINK = 'www.matka11.online';
 
   const copyText = (text, label) => {
-    try {
-      navigator.clipboard.writeText(text);
-      toast.success(`${label} कॉपी हो गया!`);
-    } catch (_) {
-      toast.error('कॉपी नहीं हो पाया');
-    }
+    Promise.resolve(navigator.clipboard?.writeText(text))
+      .then(() => toast.success(`${label} कॉपी हो गया!`))
+      .catch(() => toast.error('कॉपी नहीं हो पाया'));
   };
 
   const shareCode = () => {

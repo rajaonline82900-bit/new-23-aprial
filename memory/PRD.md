@@ -59,6 +59,22 @@ Build a Satta Matka betting application supporting games like Delhi Bazaar, Shri
 - 'Emergent' word does NOT appear anywhere in user-visible UI text.
 - Tested: 10/10 backend + all frontend OTP/Google endpoint flows verified (iteration_17.json).
 
+### Result API Migration to matkaapi.com (Completed 2026-05-09)
+- Replaced legacy matka-api.online with `https://matkaapi.com/apis/market_api.php`.
+- POST body: domain=matka11.online, api_key=*****, domain_key=***** + (gali=all | market=all).
+- New env vars: NEW_MATKA_API_URL, NEW_MATKA_API_KEY, NEW_MATKA_DOMAIN_KEY, NEW_MATKA_DOMAIN.
+- `fetch_matka_results` rewritten to call both gali and market endpoints, normalize jodi (00–99), apply winners + push notification.
+- Auto-fetch loop runs every 2 min (server.py scheduler unchanged).
+- MARKET_TO_GAME extended for spelling variations (DISAWAR/DISAWER, GAJIYABAD/GHAZIABAD, SHREE/SHRI GANESH, DELHI BAZAR/BAZAAR).
+- /api/admin/auto-fetch-debug now returns matkaapi.com raw responses for debugging.
+- IMPORTANT: Production server IP must be whitelisted on matkaapi.com dashboard, otherwise API returns "Update Your Ip".
+- Tested: 11/11 backend, all frontend regressions pass (iteration_18.json).
+
+### Refer & Earn — App + Website Links (Completed 2026-05-09)
+- Added new card on /refer with App download link `https://matka11.online/matka11.apk` (Android) and iPhone Website `www.matka11.online`.
+- Each link has its own copy-to-clipboard button.
+- WhatsApp & generic share text now include both links along with referral URL.
+
 ## Pending / Backlog
 - P1: User must press "Deploy" on Emergent Deploy UI to push preview fixes to matka11.online
 - P1: Push notification real-world testing (needs real user to allow)
