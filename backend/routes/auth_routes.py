@@ -37,6 +37,134 @@ async def send_sms_otp(phone: str, otp: str):
         return False
 
 
+@router.post("/auth/register-mobile")
+async def register_mobile(request: Request):
+    """Mobile + name + password signup (no OTP). Used for new users who pick password mode."""
+    body = await request.json()
+    name = (body.get("name") or "").strip()
+    phone = (body.get("phone") or "").strip()
+    password = body.get("password") or ""
+    referral_code = (body.get("referral_code") or "").strip().upper()
+
+    if not name or len(name) < 2:
+        raise HTTPException(status_code=400, detail="नाम कम से कम 2 अक्षर का चाहिए")
+    if not phone.isdigit() or len(phone) != 10:
+        raise HTTPException(status_code=400, detail="10 अंकों का मोबाइल नंबर डालें")
+    if len(password) < 6:
+        raise HTTPException(status_code=400, detail="पासवर्ड कम से कम 6 अक्षर का चाहिए")
+
+    existing = await db.users.find_one({"phone": phone})
+    if existing:
+        raise HTTPException(status_code=400, detail="यह मोबाइल नंबर पहले से रजिस्टर है। Login करें।")
+
+    user_doc = {
+        "name": name,
+        "phone": phone,
+        "password_hash": hash_password(password),
+        "role": "user",
+        "balance": 0.0,
+        "phone_verified": False,
+        "auth_method": "password",
+        "created_at": datetime.now(timezone.utc),
+    }
+
+    # Handle referral
+    if referral_code:
+        referrer = await db.users.find_one({"referral_code": referral_code})
+        if referrer:
+            user_doc["referred_by"] = str(referrer["_id"])
+
+    # Generate own referral code
+    user_doc["referral_code"] = f"M11{random.randint(100000, 999999)}"
+
+    result = await db.users.insert_one(user_doc)
+    user_id = str(result.inserted_id)
+
+    access_token = create_access_token(user_id, phone)
+    refresh_token = create_refresh_token(user_id)
+
+    resp = JSONResponse(content={
+        "id": user_id, "name": name, "phone": phone,
+        "role": "user", "balance": 0.0, "token": access_token
+    })
+    resp.set_cookie(key="access_token", value=access_token, httponly=True, secure=True, samesite="none", max_age=31536000, path="/")
+    resp.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=True, samesite="none", max_age=31536000, path="/")
+    return resp
+
+
+@router.post("/auth/google-session")
+async def google_auth_session(request: Request):
+    """Exchange Emergent Google Auth session_id for our JWT token. Creates user if not exists."""
+    body = await request.json()
+    session_id = body.get("session_id", "").strip()
+    if not session_id:
+        raise HTTPException(status_code=400, detail="session_id required")
+
+    # Call Emergent Auth to get user info
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            r = await client.get(
+                "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data",
+                headers={"X-Session-ID": session_id}
+            )
+            if r.status_code != 200:
+                raise HTTPException(status_code=401, detail="Google session invalid")
+            data = r.json()
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Emergent OAuth fetch error: {e}")
+        raise HTTPException(status_code=500, detail="Google auth verify failed")
+
+    email = (data.get("email") or "").lower().strip()
+    name = data.get("name") or "User"
+    picture = data.get("picture") or ""
+    if not email:
+        raise HTTPException(status_code=400, detail="Email missing in Google session")
+
+    user = await db.users.find_one({"email": email})
+    if user:
+        user_id = str(user["_id"])
+        # Ensure has referral_code
+        if not user.get("referral_code"):
+            await db.users.update_one(
+                {"_id": user["_id"]},
+                {"$set": {"referral_code": f"M11{random.randint(100000, 999999)}"}}
+            )
+    else:
+        # New user via Google
+        user_doc = {
+            "name": name,
+            "email": email,
+            "picture": picture,
+            "role": "user",
+            "balance": 0.0,
+            "auth_method": "google",
+            "referral_code": f"M11{random.randint(100000, 999999)}",
+            "created_at": datetime.now(timezone.utc),
+        }
+        result = await db.users.insert_one(user_doc)
+        user_id = str(result.inserted_id)
+        user = {**user_doc, "_id": result.inserted_id}
+
+    access_token = create_access_token(user_id, email)
+    refresh_token = create_refresh_token(user_id)
+
+    resp = JSONResponse(content={
+        "id": user_id,
+        "name": user.get("name", name),
+        "email": email,
+        "phone": user.get("phone"),
+        "role": user.get("role", "user"),
+        "balance": user.get("balance", 0.0),
+        "token": access_token,
+        "is_new": "phone" not in user or not user.get("phone"),
+    })
+    resp.set_cookie(key="access_token", value=access_token, httponly=True, secure=True, samesite="none", max_age=31536000, path="/")
+    resp.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=True, samesite="none", max_age=31536000, path="/")
+    return resp
+
+
 @router.post("/auth/register")
 async def register(user_data: UserRegister):
     email = user_data.email.lower()
