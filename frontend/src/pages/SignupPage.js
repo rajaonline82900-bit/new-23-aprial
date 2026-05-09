@@ -25,6 +25,12 @@ const SignupPage = () => {
   const [refCode, setRefCode] = useState(urlRefCode);
 
   const handleGoogleSignup = () => {
+    // Save referral code so AuthCallback can apply it after Google redirect
+    if (refCode) {
+      try { sessionStorage.setItem('matka11_pending_ref', refCode.toUpperCase()); } catch(_) {}
+    } else {
+      try { sessionStorage.removeItem('matka11_pending_ref'); } catch(_) {}
+    }
     // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
     const redirectUrl = window.location.origin + '/auth/callback';
     window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
@@ -115,6 +121,24 @@ const SignupPage = () => {
         <CardContent>
           {step === 'form' && (
             <>
+              {/* Referral code (applies to both Google and OTP signup) */}
+              <div className="mb-3">
+                <Label className="text-gray-300 text-xs">रेफरल कोड <span className="text-gray-500">(optional)</span></Label>
+                <Input
+                  type="text"
+                  placeholder="दोस्त का रेफरल कोड (Google या OTP दोनों पर लागू)"
+                  value={refCode}
+                  onChange={(e) => setRefCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10))}
+                  maxLength={10}
+                  data-testid="signup-referral-input-top"
+                  disabled={!!urlRefCode}
+                  className="mt-1 bg-[#0A0A0C] border-white/10 text-white placeholder:text-gray-500 focus:border-[#D4AF37] focus:ring-[#D4AF37] uppercase text-sm h-9"
+                />
+                {urlRefCode && (
+                  <p className="text-[#D4AF37] text-xs mt-1">लिंक से रेफरल कोड लागू है: {urlRefCode}</p>
+                )}
+              </div>
+
               {/* Google Auth Button - top */}
               <button
                 type="button"
@@ -171,23 +195,6 @@ const SignupPage = () => {
                     className="bg-[#0A0A0C] border-white/10 text-white placeholder:text-gray-400 focus:border-[#D4AF37] focus:ring-[#D4AF37] flex-1"
                   />
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-gray-300">रेफरल कोड <span className="text-gray-500 text-xs">(optional)</span></Label>
-                <Input
-                  type="text"
-                  placeholder="दोस्त का रेफरल कोड"
-                  value={refCode}
-                  onChange={(e) => setRefCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10))}
-                  maxLength={10}
-                  data-testid="signup-referral-input"
-                  disabled={!!urlRefCode}
-                  className="bg-[#0A0A0C] border-white/10 text-white placeholder:text-gray-400 focus:border-[#D4AF37] focus:ring-[#D4AF37] uppercase"
-                />
-                {urlRefCode && (
-                  <p className="text-[#D4AF37] text-xs">लिंक से रेफरल कोड लागू है</p>
-                )}
               </div>
 
               <Button

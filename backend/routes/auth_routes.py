@@ -500,6 +500,7 @@ async def password_reset(data: PasswordResetComplete):
 async def google_session(request: Request):
     body = await request.json()
     session_id = body.get("session_id")
+    referral_code = (body.get("referral_code") or "").strip().upper()
     if not session_id:
         raise HTTPException(status_code=400, detail="session_id required")
 
@@ -530,6 +531,15 @@ async def google_session(request: Request):
             "picture": google_data.get("picture"),
             "created_at": datetime.now(timezone.utc)
         }
+        # Apply referral code (only on new user creation)
+        if referral_code:
+            ref = await db.referrals.find_one({"code": referral_code})
+            if ref:
+                user_doc["referred_by"] = referral_code
+            else:
+                ref_user = await db.users.find_one({"referral_code": referral_code})
+                if ref_user:
+                    user_doc["referred_by"] = referral_code
         result = await db.users.insert_one(user_doc)
         user_id = str(result.inserted_id)
     else:

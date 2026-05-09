@@ -25,11 +25,13 @@ const AuthCallback = () => {
       }
 
       try {
+        const pendingRef = (() => { try { return sessionStorage.getItem('matka11_pending_ref') || ''; } catch (_) { return ''; } })();
         await axios.post(
           `${API_URL}/api/auth/google/session`,
-          { session_id: sessionId },
+          { session_id: sessionId, referral_code: pendingRef || undefined },
           { withCredentials: true }
         );
+        try { sessionStorage.removeItem('matka11_pending_ref'); } catch (_) {}
         toast.success('Google लॉगिन सफल!');
         await refreshUser();
         navigate('/dashboard', { replace: true });
