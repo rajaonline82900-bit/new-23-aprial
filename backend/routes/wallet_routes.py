@@ -105,13 +105,13 @@ async def create_deposit(deposit: DepositRequest, request: Request):
 
     async with aiohttp.ClientSession() as session:
         form_params = {
-            "customer_mobile": deposit.customer_mobile or "9999999999",
+            "customer_mobile": deposit.customer_mobile or user.get("phone") or "9999999999",
             "user_token": IMB_API_TOKEN,
             "amount": str(int(deposit.amount)),
             "order_id": order_id,
             "redirect_url": redirect_url,
             "remark1": user["_id"],
-            "remark2": user["email"],
+            "remark2": user.get("email") or user.get("phone") or user["_id"],
         }
 
         async with session.post(f"{IMB_API_URL}/api/create-order", data=form_params) as resp:

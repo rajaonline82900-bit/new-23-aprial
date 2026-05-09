@@ -46,7 +46,7 @@ async def subscribe_notifications(data: NotificationSubscribe, request: Request)
 
     subscription_doc = {
         "user_id": user["_id"],
-        "email": user["email"],
+        "email": user.get("email", ""),
         "telegram_chat_id": data.telegram_chat_id,
         "whatsapp_number": data.whatsapp_number,
         "subscribed_at": datetime.now(timezone.utc)

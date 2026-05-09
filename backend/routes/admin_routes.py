@@ -989,6 +989,39 @@ def _normalize_jodi(val):
     return s
 
 
+def _match_market_to_game(raw_name: str):
+    """Robust matcher: first try exact MARKET_TO_GAME map, then fall back to keyword
+    substring matching so 'DELHI GALI', 'GALI BAZAR', 'NEW DISAWER' etc all map correctly."""
+    if not raw_name:
+        return None
+    name = raw_name.upper().strip()
+    # Exact match
+    if name in MARKET_TO_GAME:
+        return MARKET_TO_GAME[name]
+    # Keyword fallback (order matters — longer/more specific keywords first)
+    keyword_map = [
+        ("DELHI BAZ", "delhi_bazaar"),     # delhi bazar / delhi bazaar
+        ("SHRI GANESH", "shri_ganesh"),
+        ("SHREE GANESH", "shri_ganesh"),
+        ("GANESH", "shri_ganesh"),
+        ("FARIDABAD", "faridabad"),
+        ("FARIDABA", "faridabad"),
+        ("GHAZIABAD", "ghaziabad"),
+        ("GAJIYABAD", "ghaziabad"),
+        ("GAZIABAD", "ghaziabad"),
+        ("GAZIABA", "ghaziabad"),
+        ("DISAWER", "disawar"),
+        ("DISAWAR", "disawar"),
+        ("DESAWAR", "disawar"),
+        ("DESAWER", "disawar"),
+        ("GALI", "gali"),                  # last so that "DELHI GALI" still maps to gali
+    ]
+    for kw, gid in keyword_map:
+        if kw in name:
+            return gid
+    return None
+
+
 async def fetch_matka_results(date_str=None):
     """Fetch results from matkaapi.com (POST market_api.php) and apply winners."""
     if not NEW_MATKA_API_KEY or not NEW_MATKA_DOMAIN_KEY:
@@ -1064,7 +1097,7 @@ async def fetch_matka_results(date_str=None):
             jodi = r["jodi"]
             result_date = date_str
 
-            game_id = MARKET_TO_GAME.get(market_name)
+            game_id = _match_market_to_game(market_name)
             if not game_id or game_id not in games_dict:
                 skipped_no_match.append(market_name)
                 continue
@@ -1118,11 +1151,15 @@ async def fetch_matka_results(date_str=None):
         if skipped_existing:
             logger.info(f"matkaapi.com skipped (already exist): {skipped_existing}")
         if skipped_no_match and len(results_applied) == 0:
-            logger.info(f"matkaapi.com no match for: {skipped_no_match[:10]}")
+            logger.info(f"matkaapi.com no match for: {skipped_no_match[:20]}")
+        # ALL market names seen from API (for debugging in admin debug endpoint)
+        all_market_names = [r["market_name"] for r in unique]
         return {
             "results_applied": results_applied,
             "total": len(results_applied),
             "skipped_existing": len(skipped_existing),
+            "skipped_no_match": skipped_no_match[:20],
+            "all_market_names_from_api": all_market_names[:30],
             "api_results_count": len(unique),
             "errors": api_errors,
         }
