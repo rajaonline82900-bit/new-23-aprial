@@ -51,11 +51,21 @@ Build a Satta Matka betting application supporting games like Delhi Bazaar, Shri
 - New endpoints: DELETE /api/chat/message/{id}, DELETE /api/admin/chat/message/{id}, DELETE /api/admin/chat/user/{user_id}, DELETE /api/admin/chat/clear-all, GET/POST /api/admin/chat/auto-delete-setting
 - Tested: 17/17 backend + all frontend flows verified by testing agent (iteration_16.json)
 
+### Auth Simplification + Google Login (Completed 2026-05-09)
+- Signup: 2 options only — (Continue with Google) + (Name + Mobile + OTP). Password mode removed from UI.
+- Login: 2 options only — (Continue with Google) + (Mobile + OTP).
+- Backend `/api/auth/google/session` exchanges Emergent session_id for JWT (creates user on first login).
+- `/auth/callback` route processes session_id from URL hash and redirects to /dashboard.
+- 'Emergent' word does NOT appear anywhere in user-visible UI text.
+- Tested: 10/10 backend + all frontend OTP/Google endpoint flows verified (iteration_17.json).
+
 ## Pending / Backlog
 - P1: User must press "Deploy" on Emergent Deploy UI to push preview fixes to matka11.online
 - P1: Push notification real-world testing (needs real user to allow)
 - P2: Email notifications for transactions
 - P2: Referral earnings history section
+- P2: Cleanup duplicate /auth/google-session route (only /auth/google/session is wired)
+- P2: Split auth_routes.py (~555 lines) into otp/oauth modules if more endpoints land
 
 ## Key API Endpoints
 - Jantri: GET /api/admin/jantri-report?game_id=&date=
