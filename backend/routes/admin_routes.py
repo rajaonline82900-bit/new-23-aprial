@@ -957,6 +957,131 @@ async def push_results_external(request: Request):
     return {"applied": applied, "total": len(applied)}
 
 
+@router.post("/results/webhook")
+@router.post("/results/webhook/{webhook_secret}")
+async def matkaapi_webhook(request: Request, webhook_secret: str = ""):
+    """Public webhook endpoint that matkaapi.com (or any external provider) can POST results to.
+    No IP whitelist needed — matkaapi.com pushes results to us instead of us pulling.
+
+    Setup: On matkaapi.com dashboard, set webhook URL to:
+        https://matka11.online/api/results/webhook/<RESULT_WEBHOOK_SECRET>
+
+    Accepts multiple JSON shapes (matkaapi.com may differ):
+      A) { "gali_result": [ {"game":"GALI","new":"46","time":"23:30"}, ... ] }
+      B) { "markets": [ {"name":"DELHI BAZAR","close":"7","time":"15:00"}, ... ] }
+      C) { "game":"GALI","new":"46" }   # single result push
+      D) form-data with same fields
+    """
+    expected_secret = os.environ.get("RESULT_WEBHOOK_SECRET", "")
+    # Validate secret (path param OR ?secret= OR header X-Webhook-Secret OR body.secret)
+    body = {}
+    try:
+        body = await request.json()
+    except Exception:
+        try:
+            form = await request.form()
+            body = dict(form)
+        except Exception:
+            body = {}
+
+    provided = (
+        webhook_secret
+        or request.query_params.get("secret", "")
+        or request.headers.get("X-Webhook-Secret", "")
+        or body.get("secret", "")
+    )
+    if expected_secret and provided != expected_secret:
+        raise HTTPException(status_code=403, detail="Invalid webhook secret")
+
+    # Build list of {market_name, jodi}
+    incoming = []
+
+    def _add(name, jodi):
+        from routes.admin_routes import _normalize_jodi as _nj  # safe self-import
+        nj = _normalize_jodi(jodi)
+        if name and nj:
+            incoming.append({"market_name": str(name).upper().strip(), "jodi": nj})
+
+    # Shape A: gali_result list
+    for r in (body.get("gali_result") or []):
+        _add(r.get("game") or r.get("market"), r.get("new") or r.get("result") or r.get("jodi"))
+
+    # Shape B: markets list (open+close)
+    for r in (body.get("markets") or body.get("market_result") or []):
+        jodi = r.get("jodi") or r.get("result") or r.get("new")
+        if not jodi:
+            opn = str(r.get("open", "")).strip()
+            cls = str(r.get("close", "")).strip()
+            if opn.isdigit() and cls.isdigit():
+                jodi = f"{opn[-1]}{cls[-1]}"
+        _add(r.get("name") or r.get("market"), jodi)
+
+    # Shape C/D: single result fields at top-level
+    if not incoming:
+        single_jodi = body.get("new") or body.get("jodi") or body.get("result")
+        single_name = body.get("game") or body.get("market") or body.get("name")
+        if single_jodi and single_name:
+            _add(single_name, single_jodi)
+
+    if not incoming:
+        return {"applied": 0, "received": 0, "hint": "No recognizable result fields. Expected one of: gali_result[], markets[], or top-level {game,new}."}
+
+    games_dict = await get_games_dict()
+    ist_now = datetime.now(IST)
+    result_date = ist_now.strftime("%Y-%m-%d")
+
+    applied = []
+    skipped_no_match = []
+    skipped_existing = []
+    for r in incoming:
+        market_name = r["market_name"]
+        jodi = r["jodi"]
+        game_id = _match_market_to_game(market_name)
+        if not game_id or game_id not in games_dict:
+            skipped_no_match.append(market_name)
+            continue
+        existing = await db.results.find_one({"game_id": game_id, "date": result_date})
+        if existing:
+            skipped_existing.append(f"{market_name}={jodi}")
+            continue
+
+        single_result = jodi[-1]
+        await db.results.insert_one({
+            "id": str(uuid.uuid4()), "game_id": game_id, "date": result_date,
+            "single_result": single_result, "jodi_result": jodi,
+            "declared_at": datetime.now(timezone.utc), "auto_declared": True
+        })
+
+        andar_digit = jodi[0]
+        bahar_digit = jodi[1]
+        winning_jodi = await db.bets.find({"game_id": game_id, "date": result_date, "bet_type": "jodi", "number": jodi, "status": "pending"}).to_list(1000)
+        winning_andar = await db.bets.find({"game_id": game_id, "date": result_date, "bet_type": "haruf_andar", "number": andar_digit, "status": "pending"}).to_list(1000)
+        winning_bahar = await db.bets.find({"game_id": game_id, "date": result_date, "bet_type": "haruf_bahar", "number": bahar_digit, "status": "pending"}).to_list(1000)
+        winning_crossing = []
+        for cb in await db.bets.find({"game_id": game_id, "date": result_date, "bet_type": "crossing", "status": "pending"}).to_list(1000):
+            cn = cb.get("number", "")
+            if len(cn) == 2 and ((cn[0] == andar_digit and cn[1] == bahar_digit) or (cn[0] == bahar_digit and cn[1] == andar_digit)):
+                winning_crossing.append(cb)
+
+        all_winners = winning_jodi + winning_andar + winning_bahar + winning_crossing
+        for bet in all_winners:
+            await db.users.update_one({"_id": ObjectId(bet["user_id"])}, {"$inc": {"balance": bet["potential_win"]}})
+            await db.bets.update_one({"id": bet["id"]}, {"$set": {"status": "won", "won_amount": bet["potential_win"]}})
+        await db.bets.update_many({"game_id": game_id, "date": result_date, "status": "pending"}, {"$set": {"status": "lost"}})
+
+        game_info = games_dict[game_id]
+        await send_push_to_all(f"{game_info['name_hi']} - रिजल्ट आ गया!", f"जोड़ी: {jodi} | सिंगल: {single_result}", "/dashboard")
+        applied.append({"game": game_id, "jodi": jodi, "winners": len(all_winners)})
+        logger.info(f"WEBHOOK result: {game_info['name_hi']} = {jodi} ({result_date}), Winners: {len(all_winners)}")
+
+    return {
+        "applied": len(applied), "received": len(incoming),
+        "results": applied,
+        "skipped_no_match": skipped_no_match,
+        "skipped_existing": skipped_existing,
+    }
+
+
 
 # ===== Auto Result Fetch (matkaapi.com) =====
 
