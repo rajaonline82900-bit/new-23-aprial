@@ -26,8 +26,33 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').then((reg) => {
       console.log('SW registered');
-      // Check for updates every 5 minutes
-      setInterval(() => reg.update(), 5 * 60 * 1000);
+
+      // Auto-update mechanism: when a NEW SW is found, activate it immediately.
+      // This ensures after every Deploy, app picks the new bundle without breaking
+      // and WITHOUT logging out the user (we never touch localStorage).
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        if (!newWorker) return;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            // New version installed — activate it
+            newWorker.postMessage({ type: 'SKIP_WAITING' });
+          }
+        });
+      });
+
+      // When the active SW changes (after skipWaiting), reload ONCE silently.
+      // Token in localStorage stays intact — user remains logged in.
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (refreshing) return;
+        refreshing = true;
+        window.location.reload();
+      });
+
+      // Check for updates every 60 seconds (more aggressive than 5 min)
+      setInterval(() => reg.update().catch(() => {}), 60 * 1000);
+
       // Auto-subscribe for push after login
       if (Notification.permission === 'granted') {
         subscribePush(reg);

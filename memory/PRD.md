@@ -84,6 +84,15 @@ Build a Satta Matka betting application supporting games like Delhi Bazaar, Shri
 - **Attractive design**: Gradient gold buttons, MatkaLogo with glow effect, perks pills (Instant Withdraw / 5% Refer Bonus / 24×7 Live), decorative blur backgrounds, password show/hide toggle, clean card with subtle gradient border.
 - Tested: 13/13 backend + all frontend E2E flows pass (iteration_19.json).
 
+### Critical Bug Fixes + PWA Improvements (Completed 2026-05-09 v3)
+- **Deposit scanner bug fix**: `wallet/deposit` and `notification_routes` were accessing `user["email"]` which doesn't exist for password-only signups → KeyError → scanner failed to load. Replaced with `user.get("email") or user.get("phone")`.
+- **Auto-result Gali matching**: Added robust keyword-based market name matcher (`_match_market_to_game`). Now handles variations like "DELHI GALI", "GALI BAZAR", "NEW DISAWER", "DESAWAR", "GAZIABA" etc. Verified all 6 games match correctly.
+- **Debug endpoint upgraded**: `/api/admin/auto-fetch-debug` now returns `all_market_names_from_api` and `skipped_no_match` so admin can see exact names sent by matkaapi.com.
+- **Beautiful Offline Page** (`/offline.html`): Gold-themed offline page with logo, Wi-Fi-off icon with ping animation, helpful tips, retry button, auto-reload on `online` event.
+- **Service Worker v9**: HTML/navigation never cached (so deploys always serve fresh JS path), API never cached, static assets cache-first, offline.html shown on navigation failure.
+- **Auto-update on deploy WITHOUT logout**: SW listens for `updatefound`, posts `SKIP_WAITING`, on `controllerchange` reloads page silently. localStorage token preserved → user stays logged in across deploys.
+- **Offline-resilient AuthContext**: User cache stored in localStorage. On network error with stored token, rehydrates user from cache instead of sending to /signup.
+
 ## Pending / Backlog
 - P1: User must press "Deploy" on Emergent Deploy UI to push preview fixes to matka11.online
 - P1: Push notification real-world testing (needs real user to allow)

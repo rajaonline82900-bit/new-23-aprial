@@ -1,104 +1,108 @@
-const CACHE_NAME = 'matka11-v7';
-const STATIC_ASSETS = ['/manifest.json'];
+// MATKA11 Service Worker
+// Strategy:
+// - HTML / navigation: ALWAYS network (never cache, so deploy ke baad fresh bundle path mile)
+// - On network failure for navigation: serve offline.html
+// - API: network-only (so stale data show na ho)
+// - Static assets (JS/CSS/images): cache-first with content-hash (CRA does hashing)
+// - Auto-update: skipWaiting + clients.claim, message channel for SKIP_WAITING
 
-// Install - cache essential assets
+const CACHE_NAME = 'matka11-v9';
+const OFFLINE_URL = '/offline.html';
+
+// Install: pre-cache offline page so it's available even on first run
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(STATIC_ASSETS))
+      .then((cache) => cache.addAll([OFFLINE_URL, '/manifest.json']))
       .then(() => self.skipWaiting())
   );
 });
 
-// Activate - clean old caches, take control
+// Activate: clean old caches and take control immediately
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then(keys => 
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+    caches.keys().then((keys) =>
+      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
     ).then(() => self.clients.claim())
   );
 });
 
-// Fetch - Network-first for API/navigation, cache-first for static
+// Allow client to trigger immediate activation of new SW
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
-  
-  // Skip non-http requests
-  if (!url.protocol.startsWith('http')) return;
 
-  // API calls: always network
+  // Skip non-http and non-GET requests
+  if (!url.protocol.startsWith('http')) return;
+  if (event.request.method !== 'GET') return;
+
+  // 1) API: network-only, NO caching, NO offline JSON spoof (frontend handles errors)
   if (url.pathname.startsWith('/api')) {
-    event.respondWith(fetch(event.request).catch(() => new Response('{"error":"offline"}', { headers: { 'Content-Type': 'application/json' } })));
-    return;
+    return; // let browser handle it natively
   }
 
-  // Navigation requests: network-first, fallback to cache
-  if (event.request.mode === 'navigate') {
+  // 2) Navigation requests (HTML page loads): network-first, fallback to offline.html
+  if (event.request.mode === 'navigate' || (event.request.headers.get('accept') || '').includes('text/html')) {
     event.respondWith(
-      fetch(event.request).catch(() => caches.match('/index.html'))
+      fetch(event.request, { cache: 'no-store' }).catch(() =>
+        caches.match(OFFLINE_URL).then((r) => r || new Response('Offline', { status: 503 }))
+      )
     );
     return;
   }
 
-  // Static assets: cache-first
-  event.respondWith(
-    caches.match(event.request).then(cached => cached || fetch(event.request).then(response => {
-      if (response.status === 200 && (url.pathname.endsWith('.js') || url.pathname.endsWith('.css') || url.pathname.endsWith('.png') || url.pathname.endsWith('.ico'))) {
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-      }
-      return response;
-    }))
-  );
-});
-
-// Push notification handler
-self.addEventListener('push', (event) => {
-  let data = { title: 'MATKA 11', body: 'नया अपडेट!', url: '/dashboard' };
-  
-  try {
-    if (event.data) {
-      const parsed = event.data.json();
-      data = { ...data, ...parsed };
-    }
-  } catch (e) {
-    try {
-      data.body = event.data.text();
-    } catch (e2) {}
+  // 3) Static assets (JS / CSS / images / fonts): cache-first
+  const isStatic = /\.(js|css|png|jpg|jpeg|gif|svg|webp|ico|woff2?|ttf)$/i.test(url.pathname);
+  if (isStatic) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        if (cached) return cached;
+        return fetch(event.request).then((response) => {
+          if (response && response.status === 200 && response.type === 'basic') {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)).catch(() => {});
+          }
+          return response;
+        }).catch(() => caches.match(OFFLINE_URL));
+      })
+    );
+    return;
   }
 
-  const options = {
-    body: data.body,
-    icon: '/logo192.png',
-    badge: '/logo192.png',
-    vibrate: [200, 100, 200],
-    data: { url: data.url || '/dashboard' },
-    requireInteraction: true,
-    tag: 'matka11-notification-' + Date.now(),
-    actions: [{ action: 'open', title: 'देखें' }]
-  };
-
-  event.waitUntil(
-    self.registration.showNotification(data.title, options)
-  );
+  // Default: network passthrough
+  event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
 });
 
-// Notification click handler
+// ===== Push notifications (existing) =====
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+  let data = {};
+  try { data = event.data.json(); } catch (e) { data = { title: 'MATKA 11', body: event.data.text() }; }
+  const title = data.title || 'MATKA 11';
+  const options = {
+    body: data.body || '',
+    icon: data.icon || '/icon-192.png',
+    badge: '/icon-192.png',
+    data: { url: data.url || '/dashboard' },
+    vibrate: [120, 60, 120],
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  
-  const url = event.notification.data?.url || '/dashboard';
-  
+  const url = event.notification.data?.url || '/';
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
-      for (const client of windowClients) {
-        if (client.url.includes(self.location.origin)) {
-          client.focus();
-          client.navigate(url);
-          return;
-        }
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((cs) => {
+      for (const c of cs) {
+        if ('focus' in c) { c.navigate(url); return c.focus(); }
       }
-      return clients.openWindow(url);
+      if (clients.openWindow) return clients.openWindow(url);
     })
   );
 });

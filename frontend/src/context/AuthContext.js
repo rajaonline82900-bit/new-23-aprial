@@ -31,21 +31,36 @@ export const AuthProvider = ({ children }) => {
         headers,
       });
       setUser(data);
+      // Cache user info so we can rehydrate offline / on flaky network
+      try { localStorage.setItem('matka11_user_cache', JSON.stringify(data)); } catch (_) {}
     } catch (error) {
       // ONLY logout when server explicitly says token invalid (401).
       // Network errors / timeouts must NOT auto-logout the user.
       if (error.response && error.response.status === 401) {
         localStorage.removeItem('matka11_token');
+        localStorage.removeItem('matka11_user_cache');
         setUser(false);
-      } else if (!stored) {
+      } else if (stored) {
+        // Token exists but server unreachable — rehydrate from last known good cache
+        try {
+          const cached = localStorage.getItem('matka11_user_cache');
+          if (cached) {
+            setUser(JSON.parse(cached));
+          } else if (!user) {
+            // No cache and no current user — keep loading-ish state but don't kick to /signup
+            setUser({ _offline: true });
+          }
+        } catch (_) {
+          if (!user) setUser({ _offline: true });
+        }
+      } else {
         // No saved token AND request failed -> user is genuinely not logged in
         setUser(false);
       }
-      // else: keep previous user state (avoid flicker / unwanted logout on flaky network)
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (window.location.hash?.includes('session_id=')) {
@@ -62,6 +77,7 @@ export const AuthProvider = ({ children }) => {
       console.error('Logout error:', error);
     }
     localStorage.removeItem('matka11_token');
+    localStorage.removeItem('matka11_user_cache');
     setUser(false);
   };
 
