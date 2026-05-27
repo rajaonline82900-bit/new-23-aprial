@@ -23,6 +23,13 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuth = useCallback(async () => {
     const stored = localStorage.getItem('matka11_token');
+    const cached = localStorage.getItem('matka11_user_cache');
+
+    // If we have cached user data, show it IMMEDIATELY so user never sees a flash of logged-out state
+    if (cached) {
+      try { setUser(JSON.parse(cached)); } catch (_) {}
+    }
+
     try {
       const headers = stored ? { Authorization: `Bearer ${stored}` } : {};
       const { data } = await axios.get(`${API_URL}/api/auth/me`, {
@@ -31,30 +38,19 @@ export const AuthProvider = ({ children }) => {
         headers,
       });
       setUser(data);
-      // Cache user info so we can rehydrate offline / on flaky network
       try { localStorage.setItem('matka11_user_cache', JSON.stringify(data)); } catch (_) {}
     } catch (error) {
-      // ONLY logout when server explicitly says token invalid (401).
-      // Network errors / timeouts must NOT auto-logout the user.
-      if (error.response && error.response.status === 401) {
-        localStorage.removeItem('matka11_token');
-        localStorage.removeItem('matka11_user_cache');
-        setUser(false);
+      // NEVER auto-logout. User can only log out manually via the logout button.
+      // - Network errors: keep cached user.
+      // - 401 (token expired/invalid): keep cached user so they don't lose their session.
+      //   They will be prompted to re-login only when they explicitly take an action that fails.
+      if (cached) {
+        try { setUser(JSON.parse(cached)); } catch (_) {}
       } else if (stored) {
-        // Token exists but server unreachable — rehydrate from last known good cache
-        try {
-          const cached = localStorage.getItem('matka11_user_cache');
-          if (cached) {
-            setUser(JSON.parse(cached));
-          } else if (!user) {
-            // No cache and no current user — keep loading-ish state but don't kick to /signup
-            setUser({ _offline: true });
-          }
-        } catch (_) {
-          if (!user) setUser({ _offline: true });
-        }
+        // Have token but no cache yet — keep a placeholder so ProtectedRoute doesn't kick them out
+        setUser({ _offline: true });
       } else {
-        // No saved token AND request failed -> user is genuinely not logged in
+        // Truly not logged in (no token, no cache)
         setUser(false);
       }
     } finally {
