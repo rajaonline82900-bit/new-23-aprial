@@ -1,7 +1,13 @@
 import os
 from datetime import timezone, timedelta
+from pathlib import Path
 
 IST = timezone(timedelta(hours=5, minutes=30))
+
+# Uploads directory (works on any deployment - preview, VPS, etc.)
+UPLOADS_DIR = Path(__file__).resolve().parent / "uploads"
+UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+UPLOADS_PATH = str(UPLOADS_DIR)
 
 # IMB Payment Gateway config
 IMB_API_TOKEN = os.environ.get("IMB_API_TOKEN", "")

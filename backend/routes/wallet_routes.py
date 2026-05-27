@@ -9,7 +9,7 @@ import aiohttp
 
 from database import db
 from auth import get_current_user
-from config import IST, IMB_API_TOKEN, IMB_API_URL
+from config import IST, IMB_API_TOKEN, IMB_API_URL, UPLOADS_PATH
 from models import DepositRequest, WithdrawRequest
 
 router = APIRouter()
@@ -418,7 +418,7 @@ async def upload_scanner(file: UploadFile = File(...), request: Request = None):
 
     ext = file.filename.split(".")[-1] if "." in file.filename else "png"
     filename = f"{uuid.uuid4()}.{ext}"
-    filepath = f"/app/backend/uploads/{filename}"
+    filepath = os.path.join(UPLOADS_PATH, filename)
 
     content = await file.read()
     if len(content) > 5 * 1024 * 1024:

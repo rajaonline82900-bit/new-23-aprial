@@ -57,8 +57,9 @@ api_router.include_router(kalyan_router)
 
 app.include_router(api_router)
 
-# Serve uploaded files
-app.mount("/api/uploads", StaticFiles(directory="/app/backend/uploads"), name="uploads")
+# Serve uploaded files (use relative path so it works on any deployment)
+from config import UPLOADS_PATH
+app.mount("/api/uploads", StaticFiles(directory=UPLOADS_PATH), name="uploads")
 
 
 @app.on_event("startup")
@@ -241,7 +242,7 @@ async def auto_delete_chat_loop():
                     if att and att.startswith("/api/uploads/"):
                         try:
                             fname = att.replace("/api/uploads/", "")
-                            fpath = f"/app/backend/uploads/{fname}"
+                            fpath = os.path.join(UPLOADS_PATH, fname)
                             if os.path.exists(fpath):
                                 os.remove(fpath)
                         except Exception:

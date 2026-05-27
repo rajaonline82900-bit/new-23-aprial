@@ -6,6 +6,7 @@ import os
 
 from database import db
 from auth import get_current_user, get_admin_user
+from config import UPLOADS_PATH
 from models import ChatMessageSend
 
 router = APIRouter()
@@ -64,7 +65,7 @@ async def upload_chat_file(file: UploadFile = File(...), request: Request = None
     if ext not in allowed:
         raise HTTPException(status_code=400, detail="File type not allowed")
     filename = f"chat_{uuid.uuid4()}.{ext}"
-    filepath = f"/app/backend/uploads/{filename}"
+    filepath = os.path.join(UPLOADS_PATH, filename)
     content = await file.read()
     if len(content) > 10 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="File too large (max 10MB)")
@@ -130,7 +131,7 @@ async def delete_user_message(message_id: str, request: Request):
     if att and att.startswith("/api/uploads/"):
         try:
             fname = att.replace("/api/uploads/", "")
-            fpath = f"/app/backend/uploads/{fname}"
+            fpath = os.path.join(UPLOADS_PATH, fname)
             if os.path.exists(fpath):
                 os.remove(fpath)
         except Exception:
@@ -150,7 +151,7 @@ async def admin_delete_message(message_id: str, request: Request):
     if att and att.startswith("/api/uploads/"):
         try:
             fname = att.replace("/api/uploads/", "")
-            fpath = f"/app/backend/uploads/{fname}"
+            fpath = os.path.join(UPLOADS_PATH, fname)
             if os.path.exists(fpath):
                 os.remove(fpath)
         except Exception:
@@ -170,7 +171,7 @@ async def admin_delete_user_chat(user_id: str, request: Request):
         if att and att.startswith("/api/uploads/"):
             try:
                 fname = att.replace("/api/uploads/", "")
-                fpath = f"/app/backend/uploads/{fname}"
+                fpath = os.path.join(UPLOADS_PATH, fname)
                 if os.path.exists(fpath):
                     os.remove(fpath)
             except Exception:
@@ -190,7 +191,7 @@ async def admin_clear_all_chats(request: Request):
         if att and att.startswith("/api/uploads/"):
             try:
                 fname = att.replace("/api/uploads/", "")
-                fpath = f"/app/backend/uploads/{fname}"
+                fpath = os.path.join(UPLOADS_PATH, fname)
                 if os.path.exists(fpath):
                     os.remove(fpath)
             except Exception:
