@@ -14,13 +14,16 @@ async def load_games():
     games_from_db = await db.games.find({}).to_list(100)
     if games_from_db:
         for g in games_from_db:
-            global_games[g["game_id"]] = {
-                "name": g["name"],
-                "name_hi": g["name_hi"],
+            game_id = g.get("game_id") or g.get("id")
+            if not game_id:
+                continue
+            global_games[game_id] = {
+                "name": g.get("name", game_id),
+                "name_hi": g.get("name_hi", g.get("name", game_id)),
                 "start_time": g.get("start_time", g.get("time", "00:00")),
                 "end_time": g.get("end_time", g.get("time", "00:00")),
                 "time": g.get("end_time", g.get("time", "00:00")),
-                "display_time": g["display_time"],
+                "display_time": g.get("display_time", g.get("time", "00:00")),
                 "category": g.get("category", "gali_disawar"),
                 "is_active": g.get("is_active", True)
             }
