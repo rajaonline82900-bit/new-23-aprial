@@ -24,25 +24,30 @@ root.render(
 // Register Service Worker for PWA
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
+    // FIRST: aggressively unregister any old service workers and clear stale caches.
+    // This is critical because old SWs holding stale code make the app feel slow.
+    navigator.serviceWorker.getRegistrations().then((regs) => {
+      regs.forEach((r) => {
+        // Only unregister if it's not pointing to our current /sw.js
+        if (!r.active || !r.active.scriptURL.endsWith('/sw.js')) {
+          r.unregister().catch(() => {});
+        }
+      });
+    }).catch(() => {});
+
     navigator.serviceWorker.register('/sw.js').then((reg) => {
       console.log('SW registered');
 
-      // Auto-update mechanism: when a NEW SW is found, activate it immediately.
-      // This ensures after every Deploy, app picks the new bundle without breaking
-      // and WITHOUT logging out the user (we never touch localStorage).
       reg.addEventListener('updatefound', () => {
         const newWorker = reg.installing;
         if (!newWorker) return;
         newWorker.addEventListener('statechange', () => {
           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            // New version installed — activate it
             newWorker.postMessage({ type: 'SKIP_WAITING' });
           }
         });
       });
 
-      // When the active SW changes (after skipWaiting), reload ONCE silently.
-      // Token in localStorage stays intact — user remains logged in.
       let refreshing = false;
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         if (refreshing) return;
@@ -50,10 +55,9 @@ if ('serviceWorker' in navigator) {
         window.location.reload();
       });
 
-      // Check for updates every 60 seconds (more aggressive than 5 min)
-      setInterval(() => reg.update().catch(() => {}), 60 * 1000);
+      // Check for updates every 5 minutes (was 60s — too aggressive, slowing things down)
+      setInterval(() => reg.update().catch(() => {}), 5 * 60 * 1000);
 
-      // Auto-subscribe for push after login
       if (Notification.permission === 'granted') {
         subscribePush(reg);
       }
