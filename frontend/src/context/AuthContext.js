@@ -66,7 +66,7 @@ export const AuthProvider = ({ children }) => {
     checkAuth();
   }, [checkAuth]);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       await axios.post(`${API_URL}/api/auth/logout`, {}, { withCredentials: true });
     } catch (error) {
@@ -75,11 +75,11 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('matka11_token');
     localStorage.removeItem('matka11_user_cache');
     setUser(false);
-  };
+  }, []);
 
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     await checkAuth();
-  };
+  }, [checkAuth]);
 
   return (
     <AuthContext.Provider value={{ user, loading, logout, refreshUser }}>
