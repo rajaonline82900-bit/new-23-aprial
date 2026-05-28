@@ -6,7 +6,7 @@
 // - Static assets (JS/CSS/images): cache-first with content-hash (CRA does hashing)
 // - Auto-update: skipWaiting + clients.claim, message channel for SKIP_WAITING
 
-const CACHE_NAME = 'matka11-v9';
+const CACHE_NAME = 'matka11-v11';
 const OFFLINE_URL = '/offline.html';
 
 // Install: pre-cache offline page so it's available even on first run
