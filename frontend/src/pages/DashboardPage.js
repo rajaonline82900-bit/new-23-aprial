@@ -120,9 +120,12 @@ const DashboardPage = () => {
   const fetchGames = async (showError = true) => {
     try {
       const { data } = await axios.get(`${API_URL}/api/games`, { withCredentials: true });
-      setGames(data.games);
+      if (data && Array.isArray(data.games)) {
+        setGames(data.games);
+      }
     } catch (error) {
-      if (showError) toast.error('गेम्स लोड नहीं हो पाए');
+      // Silent failure - don't show annoying toast. Auto-retry in 30s.
+      console.warn('Games fetch failed, will retry:', error.message);
     } finally {
       setLoading(false);
     }
