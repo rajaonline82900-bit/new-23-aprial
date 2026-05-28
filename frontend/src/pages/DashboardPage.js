@@ -340,18 +340,14 @@ const DashboardPage = () => {
                   <p className="text-xl font-bold text-white">₹{user?.balance?.toFixed(2) || '0.00'}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Link to="/wallet">
-                    <Button onClick={() => speak('जमा करें')} className="bg-[#10B981] hover:bg-[#059669] text-white font-bold flex items-center gap-1.5">
-                      <ArrowDownLeft className="w-4 h-4" />
-                      {t('deposit')}
-                    </Button>
-                  </Link>
-                  <Link to="/wallet?tab=withdraw">
-                    <Button onClick={() => speak('निकासी')} className="bg-red-600 hover:bg-red-700 text-white font-bold flex items-center gap-1.5">
-                      <ArrowUpRight className="w-4 h-4" />
-                      {t('withdraw')}
-                    </Button>
-                  </Link>
+                  <Button data-testid="deposit-btn" onClick={() => { speak('जमा करें'); navigate('/wallet'); }} className="bg-[#10B981] hover:bg-[#059669] text-white font-bold flex items-center gap-1.5">
+                    <ArrowDownLeft className="w-4 h-4" />
+                    {t('deposit')}
+                  </Button>
+                  <Button data-testid="withdraw-btn" onClick={() => { speak('निकासी'); navigate('/wallet?tab=withdraw'); }} className="bg-red-600 hover:bg-red-700 text-white font-bold flex items-center gap-1.5">
+                    <ArrowUpRight className="w-4 h-4" />
+                    {t('withdraw')}
+                  </Button>
                 </div>
               </div>
             </CardContent>
