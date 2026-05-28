@@ -21,47 +21,21 @@ root.render(
   </React.StrictMode>,
 );
 
-// Register Service Worker for PWA
+// Service Worker DISABLED — was causing navigation bugs (back button issue).
+// We aggressively unregister any existing service worker and clear all caches.
 if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then((regs) => {
+    regs.forEach((r) => r.unregister().catch(() => {}));
+  }).catch(() => {});
+  if (typeof caches !== 'undefined') {
+    caches.keys().then((keys) => {
+      keys.forEach((k) => caches.delete(k).catch(() => {}));
+    }).catch(() => {});
+  }
+  // Re-register sw.js once — but our new sw.js is a self-destruct script that
+  // cleans up old SWs and never intercepts requests.
   window.addEventListener('load', () => {
-    // FIRST: aggressively unregister any old service workers and clear stale caches.
-    // This is critical because old SWs holding stale code make the app feel slow.
-    navigator.serviceWorker.getRegistrations().then((regs) => {
-      regs.forEach((r) => {
-        // Only unregister if it's not pointing to our current /sw.js
-        if (!r.active || !r.active.scriptURL.endsWith('/sw.js')) {
-          r.unregister().catch(() => {});
-        }
-      });
-    }).catch(() => {});
-
-    navigator.serviceWorker.register('/sw.js').then((reg) => {
-      console.log('SW registered');
-
-      reg.addEventListener('updatefound', () => {
-        const newWorker = reg.installing;
-        if (!newWorker) return;
-        newWorker.addEventListener('statechange', () => {
-          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            newWorker.postMessage({ type: 'SKIP_WAITING' });
-          }
-        });
-      });
-
-      let refreshing = false;
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (refreshing) return;
-        refreshing = true;
-        window.location.reload();
-      });
-
-      // Check for updates every 5 minutes (was 60s — too aggressive, slowing things down)
-      setInterval(() => reg.update().catch(() => {}), 5 * 60 * 1000);
-
-      if (Notification.permission === 'granted') {
-        subscribePush(reg);
-      }
-    }).catch(() => {});
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
   });
 }
 
