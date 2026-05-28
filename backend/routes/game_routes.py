@@ -48,6 +48,7 @@ async def get_games():
 
         games_list.append({
             "id": game_id,
+            "game_id": game_id,
             "name": game["name"],
             "name_hi": game["name_hi"],
             "category": game.get("category", "gali_disawar"),
@@ -55,6 +56,7 @@ async def get_games():
             "end_time": game.get("end_time", game.get("time", "")),
             "time": game.get("end_time", game.get("time", "")),
             "display_time": game["display_time"],
+            "is_active": game.get("is_active", True),
             "is_holiday": is_holiday,
             "today_result": {"jodi": today_result["jodi_result"], "single": today_result["single_result"]} if today_result else None,
             "yesterday_result": {"jodi": yesterday_result["jodi_result"], "single": yesterday_result["single_result"]} if yesterday_result else None
