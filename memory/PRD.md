@@ -1,109 +1,69 @@
-# Satta Matka - MATKA 11 - Product Requirements Document
+# MATKA11 - Product Requirements Document
 
 ## Original Problem Statement
-Build a Satta Matka betting application supporting games like Delhi Bazaar, Shri Ganesh, Faridabad, Ghaziabad, Gali, and Disawar. Features include deposit/withdrawal, Jantri betting, Haruf betting, crossing, result history, bet history, PWA support, push notifications, Refer & Earn, real OTP Authentication, and a full Admin Panel.
+Migrate Matka11 satta app from Emergent preview environment to self-hosted Hostinger VPS at https://matka11.online with full feature parity and automatic result fetching from king.sattaapi.com.
 
-## Core Architecture
-- **Frontend**: React + Tailwind CSS + Shadcn UI (Dark Theme)
-- **Backend**: FastAPI + Motor (Async MongoDB)
-- **Auth**: Phone OTP + Admin email/password + JWT
-- **PWA**: Service Worker + Push Notifications (VAPID/pywebpush)
+## Tech Stack
+- Frontend: React 18 + Tailwind + shadcn/ui
+- Backend: FastAPI (Python)
+- Database: MongoDB (self-hosted on VPS)
+- Deployment: Hostinger VPS Ubuntu 22.04 (7GB RAM)
+- Web Server: Nginx + systemd-managed uvicorn
+- SSL: Let's Encrypt (Certbot)
+- Domain: matka11.online
 
-## Completed Features
+## Production Environment
+- VPS IP: 187.127.172.100
+- Live URL: https://matka11.online
+- Admin URL: https://matka11.online/admin-login
+- Backend Service: systemctl service `matka11`
+- Code Path: /var/www/new-23-aprial/
+- DB Name: matka11
 
-### Core App
-- Phone OTP login/registration, Game listing, Jantri/Haruf/Crossing betting
-- Wallet (Stripe deposits, UPI withdrawals), Result & Bet history
-- PWA, Refer & Earn, Dark theme
+## Test Credentials
+- Admin: admin@sattamatka.com / Admin@123
+- Test User: 9111222333 / Test@123
 
-### Admin Panel
-- Admin login, Stats dashboard, Result declaration (manual + auto-fetch)
-- User management, Wallet adjust/delete, Withdrawal approve/reject
-- Deposits, Game CRUD, Settings, Admin Chat with voice
-- Jantri results history & export
+## Integrations (All Live in Production)
+1. IMB Payment Gateway (Deposits) - https://secure-stage.imb.org.in
+2. DVHosting SMS - https://dvhosting.in/api/sendsms
+3. king.sattaapi.com - Auto Result (NEW) - https://king.sattaapi.com/wp-json/satta/v1/results
+4. VAPID Push Notifications
 
-### Push Notifications (Completed 2026-04-13)
-- Backend: VAPID, subscribe, send_all, test, stats endpoints
-- Frontend: Enable banner (user-gesture), subscribePush with auth token
-- Admin: Test Push, Send All, subscribed users count
-- Auto-push on result declaration (manual + auto-fetch)
+## Active Games (6)
+1. Delhi Bazaar - 3:00 PM
+2. Shri Ganesh - 4:30 PM
+3. Faridabad - 6:00 PM
+4. Ghaziabad - 8:30 PM
+5. Gali - 11:30 PM
+6. Disawar - 5:00 AM next day
 
-### Jantri Report / Bid History (Completed 2026-04-14)
-- New tab "जंतरी रिपोर्ट" in Admin Panel
-- Jodi (00-99): 10x10 grid showing bet amounts on each number
-- Andar Haruf (0-9): Row showing amounts per digit
-- Bahar Haruf (0-9): Row showing amounts per digit
-- Crossing bets display
-- Summary: Jantri(Jodi), Andar, Bahar, Loss (Max Payout), Profit, Total
-- Date picker + Game selector + Submit/Reset
-- Backend: /api/admin/jantri-report endpoint
+## Major Features Implemented
+- Phone+Password signup/login (no OTP)
+- JWT 1-year token (no auto-logout)
+- Wallet (IMB deposit, withdraw)
+- Game betting (Jodi, Single, Patti)
+- Admin panel (Games, Results, Bets, Jantri, Winners, Withdrawals, Chat)
+- AUTOMATIC RESULT FETCHING from king.sattaapi.com every 2 min
+- Push notifications
+- APK download /matka11.apk
 
-### Bug Fixes (2026-04-14)
-- Crossing bets now handled in manual result declaration (was only in auto-fetch)
+## Critical Fixes (Feb 2026)
+1. VPS migration from Emergent to Hostinger
+2. MongoDB index conflicts cleaned
+3. Hardcoded /app/backend/uploads -> relative UPLOADS_PATH
+4. Systemd WorkingDirectory fixed
+5. NAVIGATION BUG: <Link><Button> nesting -> onClick={navigate()}
+6. INFINITE API LOOP: refreshUser wrapped in useCallback
+7. SERVICE WORKER: self-destruct mode (no navigation interception)
+8. helpers.py KeyError defensive lookup
+9. king.sattaapi.com integration (replaces matkaapi.com)
+10. .env shell-escape: heredoc append
 
-### Chat Redesign - WhatsApp Style + Auto-Delete (Completed 2026-04-20)
-- Header text updated to 'MATKA11 CASTUMER SUPPORT'
-- Single/double tick read receipts, timestamps, date separators (already present, retained)
-- User long-press / right-click on own message -> delete modal
-- Admin panel 'Chat' tab: Clear All button, per-user Clear Chat, per-message hover delete
-- Admin 'Auto-Delete' settings: enable toggle + hours input (default 24h)
-- Backend async loop `auto_delete_chat_loop` in server.py runs every 1 hour, removes chat_messages older than configured hours, cleans attachment files
-- New endpoints: DELETE /api/chat/message/{id}, DELETE /api/admin/chat/message/{id}, DELETE /api/admin/chat/user/{user_id}, DELETE /api/admin/chat/clear-all, GET/POST /api/admin/chat/auto-delete-setting
-- Tested: 17/17 backend + all frontend flows verified by testing agent (iteration_16.json)
-
-### Auth Simplification + Google Login (Completed 2026-05-09)
-- Signup: 2 options only — (Continue with Google) + (Name + Mobile + OTP). Password mode removed from UI.
-- Login: 2 options only — (Continue with Google) + (Mobile + OTP).
-- Backend `/api/auth/google/session` exchanges Emergent session_id for JWT (creates user on first login).
-- `/auth/callback` route processes session_id from URL hash and redirects to /dashboard.
-- 'Emergent' word does NOT appear anywhere in user-visible UI text.
-- Tested: 10/10 backend + all frontend OTP/Google endpoint flows verified (iteration_17.json).
-
-### Result API Migration to matkaapi.com (Completed 2026-05-09)
-- Replaced legacy matka-api.online with `https://matkaapi.com/apis/market_api.php`.
-- POST body: domain=matka11.online, api_key=*****, domain_key=***** + (gali=all | market=all).
-- New env vars: NEW_MATKA_API_URL, NEW_MATKA_API_KEY, NEW_MATKA_DOMAIN_KEY, NEW_MATKA_DOMAIN.
-- `fetch_matka_results` rewritten to call both gali and market endpoints, normalize jodi (00–99), apply winners + push notification.
-- Auto-fetch loop runs every 2 min (server.py scheduler unchanged).
-- MARKET_TO_GAME extended for spelling variations (DISAWAR/DISAWER, GAJIYABAD/GHAZIABAD, SHREE/SHRI GANESH, DELHI BAZAR/BAZAAR).
-- /api/admin/auto-fetch-debug now returns matkaapi.com raw responses for debugging.
-- IMPORTANT: Production server IP must be whitelisted on matkaapi.com dashboard, otherwise API returns "Update Your Ip".
-- Tested: 11/11 backend, all frontend regressions pass (iteration_18.json).
-
-### Refer & Earn — App + Website Links (Completed 2026-05-09)
-- Added new card on /refer with App download link `https://matka11.online/matka11.apk` (Android) and iPhone Website `www.matka11.online`.
-- Each link has its own copy-to-clipboard button.
-- WhatsApp & generic share text now include both links along with referral URL.
-
-### Auth Final Simplification — Password-Only + Auto-Logout Fix (Completed 2026-05-09 v2)
-- **Signup**: Name + Mobile + Password ONLY. OTP/Google removed from UI.
-- **Login**: Mobile + Password ONLY. OTP/Google removed from UI.
-- **Forgot Password**: New /forgot-password page with OTP-based reset (uses existing /auth/password/send-otp + /auth/password/reset).
-- **Auto-logout fix**: AuthContext.checkAuth now keeps user logged in on network errors / timeouts. Only explicit 401 from server clears token & logs out. Verified end-to-end.
-- **JWT expiry**: 365 days (already configured in auth.py).
-- **Attractive design**: Gradient gold buttons, MatkaLogo with glow effect, perks pills (Instant Withdraw / 5% Refer Bonus / 24×7 Live), decorative blur backgrounds, password show/hide toggle, clean card with subtle gradient border.
-- Tested: 13/13 backend + all frontend E2E flows pass (iteration_19.json).
-
-### Critical Bug Fixes + PWA Improvements (Completed 2026-05-09 v3)
-- **Deposit scanner bug fix**: `wallet/deposit` and `notification_routes` were accessing `user["email"]` which doesn't exist for password-only signups → KeyError → scanner failed to load. Replaced with `user.get("email") or user.get("phone")`.
-- **Auto-result Gali matching**: Added robust keyword-based market name matcher (`_match_market_to_game`). Now handles variations like "DELHI GALI", "GALI BAZAR", "NEW DISAWER", "DESAWAR", "GAZIABA" etc. Verified all 6 games match correctly.
-- **Debug endpoint upgraded**: `/api/admin/auto-fetch-debug` now returns `all_market_names_from_api` and `skipped_no_match` so admin can see exact names sent by matkaapi.com.
-- **Beautiful Offline Page** (`/offline.html`): Gold-themed offline page with logo, Wi-Fi-off icon with ping animation, helpful tips, retry button, auto-reload on `online` event.
-- **Service Worker v9**: HTML/navigation never cached (so deploys always serve fresh JS path), API never cached, static assets cache-first, offline.html shown on navigation failure.
-- **Auto-update on deploy WITHOUT logout**: SW listens for `updatefound`, posts `SKIP_WAITING`, on `controllerchange` reloads page silently. localStorage token preserved → user stays logged in across deploys.
-- **Offline-resilient AuthContext**: User cache stored in localStorage. On network error with stored token, rehydrates user from cache instead of sending to /signup.
-
-## Pending / Backlog
-- P1: User must press "Deploy" on Emergent Deploy UI to push preview fixes to matka11.online
-- P1: Push notification real-world testing (needs real user to allow)
-- P2: Email notifications for transactions
-- P2: Referral earnings history section
-- P2: Cleanup duplicate /auth/google-session route (only /auth/google/session is wired)
-- P2: Split auth_routes.py (~555 lines) into otp/oauth modules if more endpoints land
-
-## Key API Endpoints
-- Jantri: GET /api/admin/jantri-report?game_id=&date=
-- Push: GET /api/push/stats, POST /api/push/test, POST /api/push/send_all
-- Admin: GET /api/admin/stats, /api/admin/users, /api/admin/today-new-users
-- Chat Delete: DELETE /api/chat/message/{id}, DELETE /api/admin/chat/clear-all, DELETE /api/admin/chat/user/{user_id}
-- Chat Auto-Delete Setting: GET/POST /api/admin/chat/auto-delete-setting
+## Backlog
+- P2: Stronger JWT_SECRET
+- P2: MongoDB backup cron
+- P2: Telegram admin alerts for deposits/withdraws
+- P3: Rate limiting on auth
+- P3: IMB stage -> production URL
+- P3: /api/health endpoint
