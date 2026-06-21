@@ -1148,59 +1148,43 @@ def _match_market_to_game(raw_name: str):
 
 
 async def fetch_matka_results(date_str=None):
-    """Fetch results from matkaapi.com (POST market_api.php) and apply winners."""
+    """Fetch results from king.sattaapi.com and apply winners."""
     if not NEW_MATKA_API_KEY or not NEW_MATKA_DOMAIN_KEY:
-        logger.error("matkaapi.com credentials missing (NEW_MATKA_API_KEY/NEW_MATKA_DOMAIN_KEY)")
-        return {"error": "matkaapi.com credentials not configured"}
+        logger.error("king.sattaapi.com credentials missing (NEW_MATKA_API_KEY/NEW_MATKA_DOMAIN_KEY)")
+        return {"error": "king.sattaapi.com credentials not configured"}
 
     ist_now = datetime.now(IST)
     if not date_str:
         date_str = ist_now.strftime("%Y-%m-%d")
 
-    api_results = []  # list of {market_name, jodi, time}
+    api_results = []
     api_errors = []
 
     try:
         async with httpx.AsyncClient(timeout=20, verify=False) as client:
-            # 1) Gali/Disawar family (covers GALI, DISAWER, FARIDABAD, GHAZIABAD, DELHI BAZAR, SHRI GANESH)
             try:
-                data, status_code, raw = await _matkaapi_post(client, {"gali": "all"})
-                if data and data.get("status"):
-                    for r in (data.get("gali_result") or []):
-                        jodi = _normalize_jodi(r.get("new") or r.get("result") or r.get("jodi"))
+                payload = {
+                    "api_key": NEW_MATKA_API_KEY,
+                    "domain_key": NEW_MATKA_DOMAIN_KEY,
+                    "domain": NEW_MATKA_DOMAIN,
+                }
+                resp = await client.post(NEW_MATKA_API_URL, json=payload)
+                data = resp.json()
+                status_code = resp.status_code
+                raw = resp.text[:300]
+                if data and data.get("results", {}).get("status"):
+                    for r in (data.get("results", {}).get("data") or []):
+                        jodi = _normalize_jodi(r.get("jodi") or r.get("result"))
                         if jodi:
                             api_results.append({
-                                "market_name": (r.get("game") or r.get("market") or "").upper().strip(),
+                                "market_name": (r.get("name") or "").upper().strip(),
                                 "jodi": jodi,
-                                "time": r.get("time", ""),
+                                "time": r.get("date", ""),
                             })
                 else:
-                    api_errors.append(f"gali HTTP {status_code}: {(data or {}).get('message') or raw}")
+                    api_errors.append(f"HTTP {status_code}: {(data or {}).get('message') or raw}")
             except Exception as e:
-                api_errors.append(f"gali exception: {type(e).__name__}: {e}")
-
-            # 2) General markets (in case some games appear there too)
-            try:
-                data, status_code, raw = await _matkaapi_post(client, {"market": "all"})
-                if data and data.get("status"):
-                    for r in (data.get("markets") or data.get("market_result") or []):
-                        # General markets sometimes have open+close. Build jodi as last digit of each.
-                        jodi = _normalize_jodi(r.get("jodi") or r.get("result") or r.get("new"))
-                        if not jodi:
-                            opn = str(r.get("open", "")).strip()
-                            cls = str(r.get("close", "")).strip()
-                            if opn.isdigit() and cls.isdigit():
-                                jodi = f"{opn[-1]}{cls[-1]}"
-                        if jodi:
-                            api_results.append({
-                                "market_name": (r.get("name") or r.get("market") or "").upper().strip(),
-                                "jodi": jodi,
-                                "time": r.get("time", ""),
-                            })
-                else:
-                    api_errors.append(f"market HTTP {status_code}: {(data or {}).get('message') or raw}")
-            except Exception as e:
-                api_errors.append(f"market exception: {type(e).__name__}: {e}")
+                api_errors.append(f"fetch exception: {type(e).__name__}: {e}")
 
         games_dict = await get_games_dict()
 
