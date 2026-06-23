@@ -232,16 +232,17 @@ const DashboardPage = () => {
             </div>
             
             <div className="flex items-center gap-1.5">
-              <a
-                href="/matka11.apk"
-                download="Matka11.apk"
-                data-testid="download-apk-button"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#D4AF37] to-[#FDE047] text-black font-bold text-xs hover:scale-105 active:scale-95 transition-transform shadow-lg shadow-[#D4AF37]/20"
+              {/* Balance + Points display (replaces Download App button) */}
+              <div
+                data-testid="header-balance"
+                className="flex flex-col items-end px-3 py-1 rounded-lg bg-gradient-to-r from-[#D4AF37]/15 to-[#FDE047]/10 border border-[#D4AF37]/40"
               >
-                <Download className="w-3.5 h-3.5" />
-                {t('download_app')}
-              </a>
-              
+                <span className="text-[9px] text-gray-400 uppercase tracking-wide leading-none">Points</span>
+                <span className="text-[#D4AF37] font-black text-sm leading-tight" data-testid="header-balance-value">
+                  ₹{user?.balance?.toFixed(2) || '0.00'}
+                </span>
+              </div>
+
               {user?.role === 'admin' && (
                 <Link to="/admin">
                   <button className="p-1.5 rounded-lg bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/20 transition-all" data-testid="admin-panel-btn">
@@ -254,37 +255,10 @@ const DashboardPage = () => {
         </div>
       </header>
 
-      {/* Main Content - Fixed Top Section */}
-      <div className="fixed top-[52px] left-0 right-0 z-40 bg-[#0A0A0C]" style={{maxWidth: '480px', margin: '0 auto'}}>
-        <div className="px-3 pt-2">
-          {/* Branding Banner */}
-          {/* Refer & Earn Banner */}
-          <div className="mb-2 rounded-xl overflow-hidden bg-gradient-to-r from-[#1a1a2e] via-[#16213e] to-[#0f3460] border border-[#D4AF37]/30 shadow-lg shadow-[#D4AF37]/10" data-testid="refer-banner">
-            <div className="px-4 py-3 flex items-center justify-between">
-              <div>
-                <p className="text-[#D4AF37] font-black text-base font-['Unbounded'] leading-tight">Refer करके पैसे कमाएं</p>
-                <p className="text-gray-300 text-xs mt-0.5">दोस्तों को भेजें, हर रेफर पर बोनस पाएं</p>
-              </div>
-              <div className="flex gap-2">
-                <Link to="/refer" data-testid="refer-banner-btn"
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#D4AF37] hover:bg-[#FDE047] text-black font-bold text-xs transition-all">
-                  <Gift className="w-3.5 h-3.5" />
-                  Refer
-                </Link>
-                <button onClick={() => {
-                  const referCode = user?.referral_code || '';
-                  const text = `MATKA 11 - India's Trusted Matka Platform! Mera referral code use karo: ${referCode}. Download karo: https://matka11.online/signup?ref=${referCode}`;
-                  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-                }} data-testid="whatsapp-share-btn"
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#25D366] hover:bg-[#20BD5A] text-white font-bold text-xs transition-all">
-                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492l4.625-1.475A11.93 11.93 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818c-2.168 0-4.177-.693-5.82-1.87l-.418-.249-2.738.874.728-2.66-.273-.432A9.78 9.78 0 012.182 12c0-5.423 4.395-9.818 9.818-9.818S21.818 6.577 21.818 12s-4.395 9.818-9.818 9.818z"/></svg>
-                  Share
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Balance Card */}
+      {/* Main Content - everything scrolls together */}
+      <div className="px-3 pt-[64px] pb-24" style={{maxWidth: '480px', margin: '0 auto'}}>
+        <div className="pt-2">
+          {/* Notification popup */}
           {showNotifBanner && (
             <div className="fixed inset-0 z-[150] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" data-testid="notification-enable-modal" style={{maxWidth: '480px', margin: '0 auto'}}>
               <div
@@ -332,26 +306,6 @@ const DashboardPage = () => {
               </div>
             </div>
           )}
-          <Card className="bg-gradient-to-br from-[#D4AF37]/10 to-[#141418] border-[#D4AF37]/20 mb-2">
-            <CardContent className="p-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-400 text-xs">{t('your_balance')}</p>
-                  <p className="text-xl font-bold text-white">₹{user?.balance?.toFixed(2) || '0.00'}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button data-testid="deposit-btn" onClick={() => { speak('जमा करें'); navigate('/wallet'); }} className="bg-[#10B981] hover:bg-[#059669] text-white font-bold flex items-center gap-1.5">
-                    <ArrowDownLeft className="w-4 h-4" />
-                    {t('deposit')}
-                  </Button>
-                  <Button data-testid="withdraw-btn" onClick={() => { speak('निकासी'); navigate('/wallet?tab=withdraw'); }} className="bg-red-600 hover:bg-red-700 text-white font-bold flex items-center gap-1.5">
-                    <ArrowUpRight className="w-4 h-4" />
-                    {t('withdraw')}
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Quick Actions */}
           <div className="grid grid-cols-4 gap-2 mb-2">
@@ -405,25 +359,22 @@ const DashboardPage = () => {
 
           {/* Games Header */}
           <div className="flex items-center justify-between pb-2">
-            <h3 className="text-lg font-bold text-white font-['Unbounded']">{t('games')}</h3>
-            <Badge variant="outline" className="border-[#D4AF37]/50 text-[#D4AF37]">
+            <h3 className="text-lg font-bold text-white font-['Unbounded']">Market</h3>
+            <Badge variant="outline" className="border-[#D4AF37]/50 text-[#D4AF37]" data-testid="games-count">
               {games.length} {t('available')}
             </Badge>
           </div>
-        </div>
-      </div>
 
-      {/* Scrollable Games Section */}
-      <main className="px-3 pt-[370px] pb-24">
-        {loading ? (
-          <div className="grid gap-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-24 bg-[#141418] rounded-xl animate-pulse" />
-            ))}
-          </div>
-        ) : (
-          <div className="grid gap-3">
-            {games.map((game, index) => {
+          {/* Games list (scrolls with page) */}
+          {loading ? (
+            <div className="grid gap-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-24 bg-[#141418] rounded-xl animate-pulse" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid gap-3">
+              {games.map((game, index) => {
                 const gameStatus = getGameStatus(game);
                 const isDisabled = game.is_holiday || gameStatus.status !== 'open';
                 const CardWrapper = isDisabled ? 'div' : Link;
@@ -506,19 +457,21 @@ const DashboardPage = () => {
                   );
                 }
 
-                // Gali/Disawar - existing compact card
+                // Gali/Disawar - compact card with circular play icon
+                const statusLabel = game.is_holiday ? 'Holiday' : (gameStatus.status === 'open' ? 'Running' : 'Close Market');
+                const statusColor = game.is_holiday ? 'text-orange-400' : (gameStatus.status === 'open' ? 'text-green-400' : 'text-red-400');
                 return (
                   <CardWrapper {...cardProps}>
                     <Card 
                       className={`game-card-animate game-card-hidden border-white/10 transition-all ${
                         isDisabled 
-                          ? 'bg-[#141418]/60 opacity-70 cursor-not-allowed' 
+                          ? 'bg-[#141418]/60 opacity-80 cursor-not-allowed' 
                           : 'bg-[#141418] hover:border-[#D4AF37]/50 cursor-pointer'
                       }`}
                       style={{ animationDelay: `${index * 0.08}s` }}
                     >
                       <CardContent className="p-3">
-                        {/* Row 1: Last Time | Game Name | Play/TimeOut */}
+                        {/* Row 1: Last Time | Game Name (centered) */}
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex-shrink-0">
                             <p className="text-gray-400 text-[8px] uppercase tracking-wide font-medium">Last Time</p>
@@ -531,41 +484,49 @@ const DashboardPage = () => {
                               })()}
                             </p>
                           </div>
-                          <h4 className="text-lg font-bold text-[#D4AF37] truncate px-2">{game.name_hi}</h4>
-                          {/* Play / Time Out / Holiday */}
-                          {game.is_holiday ? (
-                            <div className="px-4 py-2 rounded-xl bg-orange-500/20 border border-orange-500/40 text-orange-400 font-bold text-sm text-center whitespace-nowrap" data-testid={`holiday-btn-${game.id}`}>
-                              Holiday
-                            </div>
-                          ) : gameStatus.status === 'open' ? (
-                            <div className="px-5 py-2 rounded-xl bg-green-500 text-white font-bold text-sm text-center cursor-pointer whitespace-nowrap shadow-lg shadow-green-500/30" data-testid={`play-btn-${game.id}`} onClick={() => speak('प्ले')}>
-                              Play
-                            </div>
-                          ) : (
-                            <div className="px-3.5 py-2 rounded-xl bg-red-500/20 border border-red-500/40 text-red-400 font-bold text-sm text-center whitespace-nowrap" data-testid={`timeout-btn-${game.id}`} onClick={() => speak('टाइम आउट')}>
-                              Time Out
-                            </div>
-                          )}
+                          <h4 className="text-lg font-bold text-[#D4AF37] truncate px-2 flex-1 text-center">{game.name_hi}</h4>
+                          <div className="w-[60px] flex-shrink-0" /> {/* spacer to balance with left Last-Time block */}
                         </div>
-                        
-                        {/* Row 2: Yesterday (red bg, white text) | Today (green bg, white text + LIVE) */}
+
+                        {/* Row 2: Yesterday | Today | Round Play icon + label */}
                         <div className="flex items-center gap-2">
-                          {/* Yesterday - Red box */}
-                          <div className="text-center flex-1 py-2 rounded-lg bg-red-600 border border-red-500">
-                            <p className="text-white/70 text-[8px] uppercase tracking-wide font-medium leading-tight">Yesterday</p>
-                            <p className="text-white font-bold text-lg leading-tight">
+                          {/* Yesterday - Red box (smaller) */}
+                          <div className="text-center flex-1 py-1 rounded-md bg-red-600 border border-red-500" data-testid={`yesterday-result-${game.id}`}>
+                            <p className="text-white/70 text-[7px] uppercase tracking-wide font-medium leading-none">Yesterday</p>
+                            <p className="text-white font-bold text-sm leading-tight mt-0.5">
                               {game.yesterday_result?.jodi || '--'}
                             </p>
                           </div>
-                          {/* Today - Green box with LIVE blink */}
-                          <div className="text-center flex-1 py-2 rounded-lg bg-green-500/10 border border-green-500/30 relative">
-                            <div className="flex items-center justify-center gap-1">
-                              <p className="text-green-400 text-[8px] uppercase tracking-wide font-medium leading-tight">Today</p>
-                              <span className="live-blink text-[7px] font-bold text-red-500 uppercase tracking-wider">LIVE</span>
+                          {/* Today - Green box (smaller) with LIVE blink */}
+                          <div className="text-center flex-1 py-1 rounded-md bg-green-500/10 border border-green-500/30 relative" data-testid={`today-result-${game.id}`}>
+                            <div className="flex items-center justify-center gap-1 leading-none">
+                              <p className="text-green-400 text-[7px] uppercase tracking-wide font-medium">Today</p>
+                              <span className="live-blink text-[6px] font-bold text-red-500 uppercase tracking-wider">LIVE</span>
                             </div>
-                            <p className="text-green-400 font-bold text-lg leading-tight">
+                            <p className="text-green-400 font-bold text-sm leading-tight mt-0.5">
                               {game.today_result?.jodi || '--'}
                             </p>
+                          </div>
+                          {/* Round Play icon with status label */}
+                          <div className="flex flex-col items-center justify-center w-[60px] flex-shrink-0" data-testid={`play-status-${game.id}`}>
+                            {game.is_holiday ? (
+                              <div className="w-9 h-9 rounded-full bg-orange-500/20 border border-orange-500/50 flex items-center justify-center" data-testid={`holiday-btn-${game.id}`}>
+                                <span className="text-orange-400 font-black text-xs">H</span>
+                              </div>
+                            ) : gameStatus.status === 'open' ? (
+                              <div
+                                className="w-9 h-9 rounded-full bg-green-500 flex items-center justify-center shadow-lg shadow-green-500/40 cursor-pointer"
+                                onClick={() => speak('प्ले')}
+                                data-testid={`play-btn-${game.id}`}
+                              >
+                                <svg className="w-3.5 h-3.5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                              </div>
+                            ) : (
+                              <div className="w-9 h-9 rounded-full bg-red-500/20 border border-red-500/50 flex items-center justify-center" data-testid={`timeout-btn-${game.id}`} onClick={() => speak('टाइम आउट')}>
+                                <svg className="w-3 h-3 text-red-400" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                              </div>
+                            )}
+                            <span className={`text-[8px] font-bold mt-0.5 leading-none ${statusColor}`}>{statusLabel}</span>
                           </div>
                         </div>
                       </CardContent>
@@ -575,7 +536,8 @@ const DashboardPage = () => {
               })}
             </div>
           )}
-      </main>
+        </div>
+      </div>
       <SidebarMenu open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <FooterNav />
     </div>
