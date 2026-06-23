@@ -204,20 +204,20 @@ const DashboardPage = () => {
   };
 
   return (
-    <div className="min-h-screen app-shell relative overflow-hidden" style={{ background: 'linear-gradient(180deg, #FFF7E6 0%, #FFE8D6 50%, #FFD9C4 100%)' }}>
-      {/* Festive light background decorations */}
+    <div className="min-h-screen app-shell relative overflow-hidden" style={{ background: 'linear-gradient(180deg, #F5F0FF 0%, #FCE7F3 50%, #FDF2F8 100%)' }}>
+      {/* Royal background decorations */}
       <div className="fixed inset-0 -z-10 pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-gradient-to-br from-[#FFB800]/30 to-[#FF6B35]/20 rounded-full blur-[100px]" />
-        <div className="absolute top-[40%] right-0 w-[350px] h-[350px] bg-gradient-to-br from-[#FF1744]/15 to-[#FF6B35]/10 rounded-full blur-[80px]" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-br from-[#FFB800]/20 to-[#FFE082]/30 rounded-full blur-[90px]" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-gradient-to-br from-[#A855F7]/25 to-[#EC4899]/20 rounded-full blur-[100px]" />
+        <div className="absolute top-[40%] right-0 w-[350px] h-[350px] bg-gradient-to-br from-[#EC4899]/20 to-[#F472B6]/15 rounded-full blur-[80px]" />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-br from-[#8B5CF6]/20 to-[#A78BFA]/25 rounded-full blur-[90px]" />
       </div>
-      {/* Header - Vibrant gradient */}
+      {/* Header - Royal Purple to Pink gradient */}
       <header
-        className="fixed top-0 left-0 right-0 z-50 shadow-lg"
+        className="fixed top-0 left-0 right-0 z-50 shadow-xl"
         style={{
           maxWidth: '480px',
           margin: '0 auto',
-          background: 'linear-gradient(135deg, #C81D25 0%, #E63946 35%, #F77F00 70%, #FFB800 100%)',
+          background: 'linear-gradient(135deg, #4C1D95 0%, #7E22CE 30%, #C026D3 65%, #EC4899 100%)',
         }}
       >
         <div className="px-4 py-3">
@@ -234,17 +234,17 @@ const DashboardPage = () => {
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Premium Points Pill - white card on gradient header */}
+              {/* Premium Points Pill */}
               <div
                 data-testid="header-balance"
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white shadow-md border border-white/60"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white shadow-lg border border-white/60"
               >
-                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[#FFB800] to-[#FF8500] flex items-center justify-center shadow-inner">
+                <div className="w-5 h-5 rounded-full flex items-center justify-center shadow-inner" style={{ background: 'linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)' }}>
                   <Coins className="w-3 h-3 text-white" />
                 </div>
                 <div className="flex flex-col items-end leading-none">
-                  <span className="text-[8px] uppercase tracking-wider text-[#C81D25] font-bold leading-none">Points</span>
-                  <span className="text-xs font-black tabular-nums text-[#1a1a1a]" data-testid="header-balance-value">
+                  <span className="text-[8px] uppercase tracking-wider text-[#7E22CE] font-bold leading-none">Points</span>
+                  <span className="text-xs font-black tabular-nums text-[#1F0E3D]" data-testid="header-balance-value">
                     ₹{user?.balance?.toFixed(2) || '0.00'}
                   </span>
                 </div>
@@ -314,44 +314,44 @@ const DashboardPage = () => {
             </div>
           )}
 
-          {/* Quick Actions - white cards with gradient icons */}
+          {/* Quick Actions - white cards with vibrant gradient icons */}
           <div className="grid grid-cols-4 gap-2.5 mb-5">
             <Link to="/wallet" data-testid="wallet-link">
-              <div className="flex flex-col items-center justify-center gap-1.5 bg-white border border-[#FFB800]/30 rounded-2xl p-3 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all">
-                <div className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #FFB800 0%, #FF8500 100%)' }}>
+              <div className="flex flex-col items-center justify-center gap-1.5 bg-white border border-[#F59E0B]/30 rounded-2xl p-3 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all">
+                <div className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #FBBF24 0%, #F59E0B 50%, #D97706 100%)' }}>
                   <Wallet className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-[#1a1a1a] font-bold text-[10px] tracking-wide">{t('wallet')}</span>
+                <span className="text-[#1F0E3D] font-bold text-[10px] tracking-wide">{t('wallet')}</span>
               </div>
             </Link>
 
             <a href={telegramLink || '#'} target="_blank" rel="noopener noreferrer" data-testid="telegram-quick-link" onClick={(e) => { if (!telegramLink) e.preventDefault(); }}>
-              <div className="flex flex-col items-center justify-center gap-1.5 bg-white border border-[#0088cc]/30 rounded-2xl p-3 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all">
-                <div className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #29B6F6 0%, #0277BD 100%)' }}>
+              <div className="flex flex-col items-center justify-center gap-1.5 bg-white border border-[#06B6D4]/30 rounded-2xl p-3 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all">
+                <div className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #22D3EE 0%, #06B6D4 50%, #0891B2 100%)' }}>
                   <Send className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-[#1a1a1a] font-bold text-[10px] tracking-wide">{t('telegram')}</span>
+                <span className="text-[#1F0E3D] font-bold text-[10px] tracking-wide">{t('telegram')}</span>
               </div>
             </a>
 
             <Link to="/chat" data-testid="chat-quick-link">
               <div className="flex flex-col items-center justify-center gap-1.5 bg-white border border-[#10B981]/30 rounded-2xl p-3 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all relative">
-                <div className="relative w-11 h-11 rounded-2xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #34D399 0%, #059669 100%)' }}>
+                <div className="relative w-11 h-11 rounded-2xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #34D399 0%, #10B981 50%, #059669 100%)' }}>
                   <Headphones className="w-5 h-5 text-white" />
                   {unreadChat > 0 && (
                     <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[8px] font-bold flex items-center justify-center shadow-md border border-white" data-testid="chat-unread-badge">{unreadChat > 9 ? '9+' : unreadChat}</span>
                   )}
                 </div>
-                <span className="text-[#1a1a1a] font-bold text-[10px] tracking-wide">{t('chat')}</span>
+                <span className="text-[#1F0E3D] font-bold text-[10px] tracking-wide">{t('chat')}</span>
               </div>
             </Link>
 
             <Link to="/results" data-testid="results-link">
-              <div className="flex flex-col items-center justify-center gap-1.5 bg-white border border-purple-500/30 rounded-2xl p-3 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all">
-                <div className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #A78BFA 0%, #7C3AED 100%)' }}>
+              <div className="flex flex-col items-center justify-center gap-1.5 bg-white border border-[#EC4899]/30 rounded-2xl p-3 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all">
+                <div className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #F472B6 0%, #EC4899 50%, #DB2777 100%)' }}>
                   <Trophy className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-[#1a1a1a] font-bold text-[10px] tracking-wide">{t('results')}</span>
+                <span className="text-[#1F0E3D] font-bold text-[10px] tracking-wide">{t('results')}</span>
               </div>
             </Link>
           </div>
@@ -359,10 +359,10 @@ const DashboardPage = () => {
           {/* Section Header */}
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <span className="w-1.5 h-6 rounded-full" style={{ background: 'linear-gradient(180deg, #C81D25 0%, #FFB800 100%)' }}></span>
-              <h3 className="text-xl font-black text-[#1a1a1a] tracking-tight">Market</h3>
+              <span className="w-1.5 h-6 rounded-full" style={{ background: 'linear-gradient(180deg, #7E22CE 0%, #EC4899 100%)' }}></span>
+              <h3 className="text-xl font-black text-[#1F0E3D] tracking-tight">Market</h3>
             </div>
-            <span className="bg-white border border-[#C81D25]/20 text-[#C81D25] text-[11px] px-3 py-1 rounded-full font-bold tracking-wide shadow-sm" data-testid="games-count">
+            <span className="text-white text-[11px] px-3 py-1 rounded-full font-bold tracking-wide shadow-md" style={{ background: 'linear-gradient(135deg, #7E22CE 0%, #EC4899 100%)' }} data-testid="games-count">
               {games.length} Available
             </span>
           </div>
@@ -459,91 +459,114 @@ const DashboardPage = () => {
                   );
                 }
 
-                // Gali/Disawar - premium light card with gradient borders
+                // Royal-themed game card: Name left, Open/Close time top-right above Play button
                 const statusLabel = game.is_holiday ? 'Holiday' : (gameStatus.status === 'open' ? 'Running' : 'Closed');
-                const formattedTime = (() => {
-                  const [h, m] = (game.end_time || '00:00').split(':').map(Number);
+                const fmt = (timeStr) => {
+                  const [h, m] = (timeStr || '00:00').split(':').map(Number);
                   const ampm = h >= 12 ? 'PM' : 'AM';
                   const h12 = h % 12 || 12;
                   return `${h12}:${m.toString().padStart(2, '0')} ${ampm}`;
-                })();
+                };
+                const openTimeStr = fmt(game.start_time);
+                const closeTimeStr = fmt(game.end_time);
                 return (
                   <CardWrapper {...cardProps}>
                     <div
                       className={`game-card-animate game-card-hidden bg-white rounded-2xl p-3.5 shadow-md transition-all ${
                         isDisabled
                           ? 'border border-gray-200 opacity-90 cursor-not-allowed'
-                          : 'border border-[#FFB800]/30 hover:shadow-xl hover:-translate-y-0.5 active:scale-[0.99] cursor-pointer'
+                          : 'border-2 border-transparent bg-clip-padding hover:shadow-xl hover:-translate-y-0.5 active:scale-[0.99] cursor-pointer'
                       }`}
-                      style={{ animationDelay: `${index * 0.06}s` }}
+                      style={{
+                        animationDelay: `${index * 0.06}s`,
+                        backgroundImage: isDisabled ? undefined : 'linear-gradient(white, white), linear-gradient(135deg, #A855F7 0%, #EC4899 50%, #F59E0B 100%)',
+                        backgroundOrigin: isDisabled ? undefined : 'border-box',
+                        backgroundClip: isDisabled ? undefined : 'padding-box, border-box',
+                      }}
                     >
-                      {/* Top row: Last Time pill + Hindi Name centered */}
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full" style={{ background: 'linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%)', border: '1px solid rgba(255, 133, 0, 0.25)' }}>
-                          <svg className="w-3 h-3 text-[#FF8500]" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
-                          <span className="text-[10px] font-bold text-[#C81D25] tabular-nums leading-none">{formattedTime}</span>
-                        </div>
-                        <h4 className="text-base font-black tracking-tight truncate text-transparent bg-clip-text" style={{ backgroundImage: 'linear-gradient(135deg, #C81D25 0%, #F77F00 50%, #FFB800 100%)', fontFamily: 'Outfit, Noto Sans Devanagari, sans-serif' }}>{game.name_hi}</h4>
-                        <div className="w-[80px]" />
-                      </div>
+                      <div className="flex items-start gap-3">
+                        {/* LEFT: Game Name + Yesterday/Today */}
+                        <div className="flex-1 min-w-0">
+                          <h4
+                            className="text-lg font-black tracking-tight truncate text-transparent bg-clip-text mb-2"
+                            style={{ backgroundImage: 'linear-gradient(135deg, #4C1D95 0%, #7E22CE 30%, #C026D3 65%, #EC4899 100%)', fontFamily: 'Outfit, Noto Sans Devanagari, sans-serif' }}
+                            data-testid={`game-name-${game.id}`}
+                          >
+                            {game.name_hi}
+                          </h4>
 
-                      {/* Bottom row: Yesterday | Today | Status icon */}
-                      <div className="flex items-center gap-2">
-                        {/* Yesterday */}
-                        <div
-                          className="flex-1 rounded-xl py-1.5 px-2 flex flex-col items-center justify-center shadow-sm"
-                          style={{ background: 'linear-gradient(135deg, #FFCDD2 0%, #FFB3BA 100%)', border: '1px solid rgba(200, 29, 37, 0.25)' }}
-                          data-testid={`yesterday-result-${game.id}`}
-                        >
-                          <span className="text-[8px] uppercase tracking-widest text-[#C81D25] leading-none font-bold">Yesterday</span>
-                          <span className="text-[#C81D25] font-black text-base leading-tight tabular-nums mt-0.5" style={{ fontFamily: 'Outfit, monospace' }}>
-                            {game.yesterday_result?.jodi || '--'}
-                          </span>
-                        </div>
-
-                        {/* Today */}
-                        <div
-                          className="flex-1 rounded-xl py-1.5 px-2 flex flex-col items-center justify-center relative shadow-sm"
-                          style={{ background: 'linear-gradient(135deg, #C8E6C9 0%, #A5D6A7 100%)', border: '1px solid rgba(16, 185, 129, 0.3)' }}
-                          data-testid={`today-result-${game.id}`}
-                        >
-                          {gameStatus.status === 'open' && (
-                            <span className="absolute -top-1.5 right-1.5 bg-red-500 text-white text-[7px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider live-blink shadow-md leading-none">Live</span>
-                          )}
-                          <span className="text-[8px] uppercase tracking-widest text-[#1B5E20] leading-none font-bold">Today</span>
-                          <span className="text-[#1B5E20] font-black text-base leading-tight tabular-nums mt-0.5" style={{ fontFamily: 'Outfit, monospace' }}>
-                            {game.today_result?.jodi || '--'}
-                          </span>
-                        </div>
-
-                        {/* Status Icon */}
-                        <div className="flex flex-col items-center gap-1 w-[60px] flex-shrink-0" data-testid={`play-status-${game.id}`}>
-                          {game.is_holiday ? (
-                            <div className="w-10 h-10 rounded-full flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #FFB74D 0%, #F57C00 100%)' }} data-testid={`holiday-btn-${game.id}`}>
-                              <span className="text-white font-black text-sm">H</span>
-                            </div>
-                          ) : gameStatus.status === 'open' ? (
+                          <div className="flex gap-2">
+                            {/* Yesterday */}
                             <div
-                              className="w-10 h-10 rounded-full flex items-center justify-center shadow-lg cursor-pointer"
-                              style={{
-                                background: 'linear-gradient(135deg, #34D399 0%, #10B981 50%, #059669 100%)',
-                                boxShadow: '0 4px 16px rgba(16, 185, 129, 0.5), 0 0 0 3px rgba(16, 185, 129, 0.15)',
-                              }}
-                              onClick={() => speak('प्ले')}
-                              data-testid={`play-btn-${game.id}`}
+                              className="flex-1 rounded-xl py-1.5 px-2 flex flex-col items-center justify-center shadow-sm"
+                              style={{ background: 'linear-gradient(135deg, #FCE7F3 0%, #FBCFE8 100%)', border: '1px solid rgba(219, 39, 119, 0.25)' }}
+                              data-testid={`yesterday-result-${game.id}`}
                             >
-                              <Play className="w-4 h-4 text-white ml-0.5" fill="currentColor" />
+                              <span className="text-[8px] uppercase tracking-widest text-[#9D174D] leading-none font-bold">Yesterday</span>
+                              <span className="text-[#9D174D] font-black text-base leading-tight tabular-nums mt-0.5" style={{ fontFamily: 'Outfit, monospace' }}>
+                                {game.yesterday_result?.jodi || '--'}
+                              </span>
                             </div>
-                          ) : (
-                            <div className="w-10 h-10 rounded-full flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #EF5350 0%, #C62828 100%)' }} data-testid={`timeout-btn-${game.id}`} onClick={() => speak('टाइम आउट')}>
-                              <Pause className="w-3.5 h-3.5 text-white" fill="currentColor" />
+
+                            {/* Today */}
+                            <div
+                              className="flex-1 rounded-xl py-1.5 px-2 flex flex-col items-center justify-center relative shadow-sm"
+                              style={{ background: 'linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%)', border: '1px solid rgba(16, 185, 129, 0.3)' }}
+                              data-testid={`today-result-${game.id}`}
+                            >
+                              {gameStatus.status === 'open' && (
+                                <span className="absolute -top-1.5 right-1.5 bg-red-500 text-white text-[7px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider live-blink shadow-md leading-none">Live</span>
+                              )}
+                              <span className="text-[8px] uppercase tracking-widest text-[#065F46] leading-none font-bold">Today</span>
+                              <span className="text-[#065F46] font-black text-base leading-tight tabular-nums mt-0.5" style={{ fontFamily: 'Outfit, monospace' }}>
+                                {game.today_result?.jodi || '--'}
+                              </span>
                             </div>
-                          )}
-                          <span className={`text-[9px] font-black tracking-wide uppercase leading-none ${
-                            game.is_holiday ? 'text-[#F57C00]' : gameStatus.status === 'open' ? 'text-[#059669]' : 'text-[#C62828]'
-                          }`}>
-                            {statusLabel}
-                          </span>
+                          </div>
+                        </div>
+
+                        {/* RIGHT: Open/Close time pills + Play button + Status */}
+                        <div className="flex flex-col items-stretch gap-1 w-[82px] flex-shrink-0" data-testid={`play-status-${game.id}`}>
+                          {/* Open Time */}
+                          <div className="flex items-center justify-between px-2 py-0.5 rounded-md" style={{ background: 'linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%)', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
+                            <span className="text-[7px] uppercase tracking-wider text-[#1E40AF] font-black leading-none">Open</span>
+                            <span className="text-[9px] font-bold text-[#1E3A8A] tabular-nums leading-none">{openTimeStr}</span>
+                          </div>
+                          {/* Close Time */}
+                          <div className="flex items-center justify-between px-2 py-0.5 rounded-md" style={{ background: 'linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+                            <span className="text-[7px] uppercase tracking-wider text-[#991B1B] font-black leading-none">Close</span>
+                            <span className="text-[9px] font-bold text-[#7F1D1D] tabular-nums leading-none">{closeTimeStr}</span>
+                          </div>
+
+                          {/* Play / Pause / Holiday */}
+                          <div className="flex flex-col items-center mt-0.5">
+                            {game.is_holiday ? (
+                              <div className="w-10 h-10 rounded-full flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #FBBF24 0%, #D97706 100%)' }} data-testid={`holiday-btn-${game.id}`}>
+                                <span className="text-white font-black text-sm">H</span>
+                              </div>
+                            ) : gameStatus.status === 'open' ? (
+                              <div
+                                className="w-10 h-10 rounded-full flex items-center justify-center shadow-lg cursor-pointer"
+                                style={{
+                                  background: 'linear-gradient(135deg, #34D399 0%, #10B981 50%, #059669 100%)',
+                                  boxShadow: '0 4px 18px rgba(16, 185, 129, 0.55), 0 0 0 3px rgba(16, 185, 129, 0.18)',
+                                }}
+                                onClick={() => speak('प्ले')}
+                                data-testid={`play-btn-${game.id}`}
+                              >
+                                <Play className="w-4 h-4 text-white ml-0.5" fill="currentColor" />
+                              </div>
+                            ) : (
+                              <div className="w-10 h-10 rounded-full flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #F87171 0%, #DC2626 100%)' }} data-testid={`timeout-btn-${game.id}`} onClick={() => speak('टाइम आउट')}>
+                                <Pause className="w-3.5 h-3.5 text-white" fill="currentColor" />
+                              </div>
+                            )}
+                            <span className={`text-[9px] font-black tracking-wide uppercase leading-none mt-1 ${
+                              game.is_holiday ? 'text-[#D97706]' : gameStatus.status === 'open' ? 'text-[#059669]' : 'text-[#DC2626]'
+                            }`}>
+                              {statusLabel}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
