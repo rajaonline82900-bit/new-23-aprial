@@ -3,9 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../context/LanguageContext';
 import axios from 'axios';
-import { Card, CardContent } from '../components/ui/card';
-import { Button } from '../components/ui/button';
-import { Badge } from '../components/ui/badge';
 import MatkaLogo from '../components/MatkaLogo';
 import { 
   Wallet, 
@@ -13,11 +10,10 @@ import {
   Shield,
   Send,
   Menu,
-  Download,
-  ArrowDownLeft,
-  ArrowUpRight,
   Headphones,
-  Gift
+  Coins,
+  Play,
+  Pause
 } from 'lucide-react';
 import { toast } from 'sonner';
 import FooterNav from '../components/FooterNav';
@@ -216,36 +212,39 @@ const DashboardPage = () => {
         <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-purple-900/[0.06] rounded-full blur-[100px]" />
         <div className="absolute top-1/2 left-0 w-[300px] h-[300px] bg-blue-900/[0.04] rounded-full blur-[80px]" />
       </div>
-      {/* Header - Fixed */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#0A0A0C] border-b border-white/10" style={{maxWidth: '480px', margin: '0 auto'}}>
-        <div className="px-3 py-3">
+      {/* Header - Glass premium */}
+      <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-[#0A0A0C]/80 border-b border-white/5" style={{maxWidth: '480px', margin: '0 auto'}}>
+        <div className="px-4 py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <button
                 onClick={() => setSidebarOpen(true)}
                 data-testid="sidebar-toggle"
-                className="p-1.5 rounded-lg bg-[#141418] border border-white/10 text-gray-400 hover:text-white transition-all"
+                className="p-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/5 active:scale-95 transition-all"
               >
                 <Menu className="w-5 h-5" />
               </button>
               <MatkaLogo size="sm" />
             </div>
-            
-            <div className="flex items-center gap-1.5">
-              {/* Balance + Points display (replaces Download App button) */}
+
+            <div className="flex items-center gap-2">
+              {/* Premium Points Pill */}
               <div
                 data-testid="header-balance"
-                className="flex flex-col items-end px-3 py-1 rounded-lg bg-gradient-to-r from-[#D4AF37]/15 to-[#FDE047]/10 border border-[#D4AF37]/40"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/25 text-[#FDE047] shadow-[0_0_15px_rgba(212,175,55,0.1)]"
               >
-                <span className="text-[9px] text-gray-400 uppercase tracking-wide leading-none">Points</span>
-                <span className="text-[#D4AF37] font-black text-sm leading-tight" data-testid="header-balance-value">
-                  ₹{user?.balance?.toFixed(2) || '0.00'}
-                </span>
+                <Coins className="w-3.5 h-3.5" />
+                <div className="flex flex-col items-end leading-none">
+                  <span className="text-[8px] uppercase tracking-wider text-[#D4AF37]/70 leading-none">Points</span>
+                  <span className="text-xs font-bold tabular-nums" data-testid="header-balance-value">
+                    ₹{user?.balance?.toFixed(2) || '0.00'}
+                  </span>
+                </div>
               </div>
 
               {user?.role === 'admin' && (
                 <Link to="/admin">
-                  <button className="p-1.5 rounded-lg bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/20 transition-all" data-testid="admin-panel-btn">
+                  <button className="p-2 rounded-lg bg-[#D4AF37]/10 border border-[#D4AF37]/25 text-[#D4AF37] hover:bg-[#D4AF37]/20 active:scale-95 transition-all" data-testid="admin-panel-btn">
                     <Shield className="w-4 h-4" />
                   </button>
                 </Link>
@@ -308,66 +307,61 @@ const DashboardPage = () => {
           )}
 
           {/* Quick Actions */}
-          <div className="grid grid-cols-4 gap-2 mb-2">
+          <div className="grid grid-cols-4 gap-2.5 mb-5">
             <Link to="/wallet" data-testid="wallet-link">
-              <Card className="bg-[#141418] border-white/10 hover:border-[#D4AF37]/50 transition-all cursor-pointer group">
-                <CardContent className="p-2.5 flex flex-col items-center gap-1">
-                  <div className="w-9 h-9 rounded-full bg-[#D4AF37]/10 flex items-center justify-center group-hover:bg-[#D4AF37]/20 transition-all">
-                    <Wallet className="w-4 h-4 text-[#D4AF37]" />
-                  </div>
-                  <span className="text-white font-medium text-[10px]">{t('wallet')}</span>
-                </CardContent>
-              </Card>
+              <div className="flex flex-col items-center justify-center gap-1.5 bg-[#141418] border border-white/5 rounded-xl p-3 hover:bg-[#1C1C22] hover:border-[#D4AF37]/20 active:scale-95 transition-all">
+                <div className="w-10 h-10 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/15 flex items-center justify-center">
+                  <Wallet className="w-4 h-4 text-[#D4AF37]" />
+                </div>
+                <span className="text-gray-300 font-medium text-[10px] tracking-wide">{t('wallet')}</span>
+              </div>
             </Link>
 
             <a href={telegramLink || '#'} target="_blank" rel="noopener noreferrer" data-testid="telegram-quick-link" onClick={(e) => { if (!telegramLink) e.preventDefault(); }}>
-              <Card className="bg-[#141418] border-white/10 hover:border-[#0088cc]/50 transition-all cursor-pointer group">
-                <CardContent className="p-2.5 flex flex-col items-center gap-1">
-                  <div className="w-9 h-9 rounded-full bg-[#0088cc]/10 flex items-center justify-center group-hover:bg-[#0088cc]/20 transition-all">
-                    <Send className="w-4 h-4 text-[#0088cc]" />
-                  </div>
-                  <span className="text-white font-medium text-[10px]">{t('telegram')}</span>
-                </CardContent>
-              </Card>
+              <div className="flex flex-col items-center justify-center gap-1.5 bg-[#141418] border border-white/5 rounded-xl p-3 hover:bg-[#1C1C22] hover:border-[#0088cc]/30 active:scale-95 transition-all">
+                <div className="w-10 h-10 rounded-full bg-[#0088cc]/10 border border-[#0088cc]/15 flex items-center justify-center">
+                  <Send className="w-4 h-4 text-[#0088cc]" />
+                </div>
+                <span className="text-gray-300 font-medium text-[10px] tracking-wide">{t('telegram')}</span>
+              </div>
             </a>
-            
+
             <Link to="/chat" data-testid="chat-quick-link">
-              <Card className="bg-[#141418] border-white/10 hover:border-[#D4AF37]/50 transition-all cursor-pointer group">
-                <CardContent className="p-2.5 flex flex-col items-center gap-1 relative">
-                  <div className="relative w-9 h-9 rounded-full bg-[#D4AF37]/10 flex items-center justify-center group-hover:bg-[#D4AF37]/20 transition-all">
-                    <Headphones className="w-4 h-4 text-[#D4AF37]" />
-                    {unreadChat > 0 && (
-                      <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[8px] font-bold flex items-center justify-center" data-testid="chat-unread-badge">{unreadChat > 9 ? '9+' : unreadChat}</span>
-                    )}
-                  </div>
-                  <span className="text-white font-medium text-[10px]">{t('chat')}</span>
-                </CardContent>
-              </Card>
+              <div className="flex flex-col items-center justify-center gap-1.5 bg-[#141418] border border-white/5 rounded-xl p-3 hover:bg-[#1C1C22] hover:border-[#D4AF37]/20 active:scale-95 transition-all relative">
+                <div className="relative w-10 h-10 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/15 flex items-center justify-center">
+                  <Headphones className="w-4 h-4 text-[#D4AF37]" />
+                  {unreadChat > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[8px] font-bold flex items-center justify-center shadow-md" data-testid="chat-unread-badge">{unreadChat > 9 ? '9+' : unreadChat}</span>
+                  )}
+                </div>
+                <span className="text-gray-300 font-medium text-[10px] tracking-wide">{t('chat')}</span>
+              </div>
             </Link>
-            
+
             <Link to="/results" data-testid="results-link">
-              <Card className="bg-[#141418] border-white/10 hover:border-purple-500/50 transition-all cursor-pointer group">
-                <CardContent className="p-2.5 flex flex-col items-center gap-1">
-                  <div className="w-9 h-9 rounded-full bg-purple-500/10 flex items-center justify-center group-hover:bg-purple-500/20 transition-all">
-                    <Trophy className="w-4 h-4 text-purple-400" />
-                  </div>
-                  <span className="text-white font-medium text-[10px]">{t('results')}</span>
-                </CardContent>
-              </Card>
+              <div className="flex flex-col items-center justify-center gap-1.5 bg-[#141418] border border-white/5 rounded-xl p-3 hover:bg-[#1C1C22] hover:border-purple-500/30 active:scale-95 transition-all">
+                <div className="w-10 h-10 rounded-full bg-purple-500/10 border border-purple-500/15 flex items-center justify-center">
+                  <Trophy className="w-4 h-4 text-purple-400" />
+                </div>
+                <span className="text-gray-300 font-medium text-[10px] tracking-wide">{t('results')}</span>
+              </div>
             </Link>
           </div>
 
-          {/* Games Header */}
-          <div className="flex items-center justify-between pb-2">
-            <h3 className="text-lg font-bold text-white font-['Unbounded']">Market</h3>
-            <Badge variant="outline" className="border-[#D4AF37]/50 text-[#D4AF37]" data-testid="games-count">
-              {games.length} {t('available')}
-            </Badge>
+          {/* Section Header */}
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className="w-1 h-5 rounded-full bg-gradient-to-b from-[#FDE047] to-[#D4AF37]"></span>
+              <h3 className="text-lg font-bold text-white tracking-tight">Market</h3>
+            </div>
+            <span className="bg-white/5 border border-white/10 text-gray-300 text-[10px] px-2.5 py-1 rounded-md font-medium tracking-wide" data-testid="games-count">
+              {games.length} Available
+            </span>
           </div>
 
           {/* Games list (scrolls with page) */}
           {loading ? (
-            <div className="grid gap-4">
+            <div className="grid gap-3">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="h-24 bg-[#141418] rounded-xl animate-pulse" />
               ))}
@@ -457,80 +451,82 @@ const DashboardPage = () => {
                   );
                 }
 
-                // Gali/Disawar - compact card with circular play icon
-                const statusLabel = game.is_holiday ? 'Holiday' : (gameStatus.status === 'open' ? 'Running' : 'Close Market');
-                const statusColor = game.is_holiday ? 'text-orange-400' : (gameStatus.status === 'open' ? 'text-green-400' : 'text-red-400');
+                // Gali/Disawar - premium horizontal card
+                const statusLabel = game.is_holiday ? 'Holiday' : (gameStatus.status === 'open' ? 'Running' : 'Closed');
+                const formattedTime = (() => {
+                  const [h, m] = (game.end_time || '00:00').split(':').map(Number);
+                  const ampm = h >= 12 ? 'PM' : 'AM';
+                  const h12 = h % 12 || 12;
+                  return `${h12}:${m.toString().padStart(2, '0')} ${ampm}`;
+                })();
                 return (
                   <CardWrapper {...cardProps}>
-                    <Card 
-                      className={`game-card-animate game-card-hidden border-white/10 transition-all ${
-                        isDisabled 
-                          ? 'bg-[#141418]/60 opacity-80 cursor-not-allowed' 
-                          : 'bg-[#141418] hover:border-[#D4AF37]/50 cursor-pointer'
+                    <div
+                      className={`game-card-animate game-card-hidden bg-[#141418] border rounded-2xl p-3.5 transition-all ${
+                        isDisabled
+                          ? 'border-white/5 opacity-85 cursor-not-allowed'
+                          : 'border-white/5 hover:border-[#D4AF37]/30 hover:bg-[#1C1C22] active:scale-[0.99] cursor-pointer'
                       }`}
-                      style={{ animationDelay: `${index * 0.08}s` }}
+                      style={{ animationDelay: `${index * 0.06}s` }}
                     >
-                      <CardContent className="p-3">
-                        {/* Row 1: Last Time | Game Name (centered) */}
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex-shrink-0">
-                            <p className="text-gray-400 text-[8px] uppercase tracking-wide font-medium">Last Time</p>
-                            <p className="text-white font-bold text-sm leading-tight">
-                              {(() => {
-                                const [h, m] = (game.end_time || '00:00').split(':').map(Number);
-                                const ampm = h >= 12 ? 'PM' : 'AM';
-                                const h12 = h % 12 || 12;
-                                return `${h12}:${m.toString().padStart(2, '0')} ${ampm}`;
-                              })()}
-                            </p>
-                          </div>
-                          <h4 className="text-lg font-bold text-[#D4AF37] truncate px-2 flex-1 text-center">{game.name_hi}</h4>
-                          <div className="w-[60px] flex-shrink-0" /> {/* spacer to balance with left Last-Time block */}
+                      {/* Top row: Last Time pill (left) + Hindi Name (center) */}
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/5 border border-white/5">
+                          <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+                          <span className="text-[10px] font-medium text-gray-300 tabular-nums leading-none">{formattedTime}</span>
+                        </div>
+                        <h4 className="text-base font-bold text-[#FDE047] tracking-tight truncate" style={{ fontFamily: 'Outfit, Noto Sans Devanagari, sans-serif' }}>{game.name_hi}</h4>
+                        <div className="w-[80px]" /> {/* spacer */}
+                      </div>
+
+                      {/* Bottom row: Yesterday | Today | Status icon */}
+                      <div className="flex items-center gap-2">
+                        {/* Yesterday */}
+                        <div className="flex-1 bg-red-500/10 border border-red-500/20 rounded-lg py-1.5 px-2 flex flex-col items-center justify-center" data-testid={`yesterday-result-${game.id}`}>
+                          <span className="text-[8px] uppercase tracking-widest text-red-400/70 leading-none font-semibold">Yesterday</span>
+                          <span className="text-red-400 font-bold text-base leading-tight tabular-nums mt-0.5" style={{ fontFamily: 'Outfit, monospace' }}>
+                            {game.yesterday_result?.jodi || '--'}
+                          </span>
                         </div>
 
-                        {/* Row 2: Yesterday | Today | Round Play icon + label */}
-                        <div className="flex items-center gap-2">
-                          {/* Yesterday - Red box (smaller) */}
-                          <div className="text-center flex-1 py-1 rounded-md bg-red-600 border border-red-500" data-testid={`yesterday-result-${game.id}`}>
-                            <p className="text-white/70 text-[7px] uppercase tracking-wide font-medium leading-none">Yesterday</p>
-                            <p className="text-white font-bold text-sm leading-tight mt-0.5">
-                              {game.yesterday_result?.jodi || '--'}
-                            </p>
-                          </div>
-                          {/* Today - Green box (smaller) with LIVE blink */}
-                          <div className="text-center flex-1 py-1 rounded-md bg-green-500/10 border border-green-500/30 relative" data-testid={`today-result-${game.id}`}>
-                            <div className="flex items-center justify-center gap-1 leading-none">
-                              <p className="text-green-400 text-[7px] uppercase tracking-wide font-medium">Today</p>
-                              <span className="live-blink text-[6px] font-bold text-red-500 uppercase tracking-wider">LIVE</span>
-                            </div>
-                            <p className="text-green-400 font-bold text-sm leading-tight mt-0.5">
-                              {game.today_result?.jodi || '--'}
-                            </p>
-                          </div>
-                          {/* Round Play icon with status label */}
-                          <div className="flex flex-col items-center justify-center w-[60px] flex-shrink-0" data-testid={`play-status-${game.id}`}>
-                            {game.is_holiday ? (
-                              <div className="w-9 h-9 rounded-full bg-orange-500/20 border border-orange-500/50 flex items-center justify-center" data-testid={`holiday-btn-${game.id}`}>
-                                <span className="text-orange-400 font-black text-xs">H</span>
-                              </div>
-                            ) : gameStatus.status === 'open' ? (
-                              <div
-                                className="w-9 h-9 rounded-full bg-green-500 flex items-center justify-center shadow-lg shadow-green-500/40 cursor-pointer"
-                                onClick={() => speak('प्ले')}
-                                data-testid={`play-btn-${game.id}`}
-                              >
-                                <svg className="w-3.5 h-3.5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                              </div>
-                            ) : (
-                              <div className="w-9 h-9 rounded-full bg-red-500/20 border border-red-500/50 flex items-center justify-center" data-testid={`timeout-btn-${game.id}`} onClick={() => speak('टाइम आउट')}>
-                                <svg className="w-3 h-3 text-red-400" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-                              </div>
-                            )}
-                            <span className={`text-[8px] font-bold mt-0.5 leading-none ${statusColor}`}>{statusLabel}</span>
-                          </div>
+                        {/* Today */}
+                        <div className="flex-1 bg-green-500/10 border border-green-500/20 rounded-lg py-1.5 px-2 flex flex-col items-center justify-center relative" data-testid={`today-result-${game.id}`}>
+                          {gameStatus.status === 'open' && (
+                            <span className="absolute -top-1.5 right-1.5 bg-red-500 text-white text-[7px] font-bold px-1 py-0.5 rounded-sm uppercase tracking-wider live-blink shadow-md leading-none">Live</span>
+                          )}
+                          <span className="text-[8px] uppercase tracking-widest text-green-400/70 leading-none font-semibold">Today</span>
+                          <span className="text-green-400 font-bold text-base leading-tight tabular-nums mt-0.5" style={{ fontFamily: 'Outfit, monospace' }}>
+                            {game.today_result?.jodi || '--'}
+                          </span>
                         </div>
-                      </CardContent>
-                    </Card>
+
+                        {/* Status Icon */}
+                        <div className="flex flex-col items-center gap-1 w-[60px] flex-shrink-0" data-testid={`play-status-${game.id}`}>
+                          {game.is_holiday ? (
+                            <div className="w-10 h-10 rounded-full bg-orange-500/15 border border-orange-500/30 flex items-center justify-center" data-testid={`holiday-btn-${game.id}`}>
+                              <span className="text-orange-400 font-black text-sm">H</span>
+                            </div>
+                          ) : gameStatus.status === 'open' ? (
+                            <div
+                              className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-[0_0_18px_rgba(34,197,94,0.45)] cursor-pointer ring-2 ring-green-400/30"
+                              onClick={() => speak('प्ले')}
+                              data-testid={`play-btn-${game.id}`}
+                            >
+                              <Play className="w-4 h-4 text-white ml-0.5" fill="currentColor" />
+                            </div>
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-red-500/15 border border-red-500/30 flex items-center justify-center" data-testid={`timeout-btn-${game.id}`} onClick={() => speak('टाइम आउट')}>
+                              <Pause className="w-3.5 h-3.5 text-red-400" fill="currentColor" />
+                            </div>
+                          )}
+                          <span className={`text-[9px] font-bold tracking-wide uppercase leading-none ${
+                            game.is_holiday ? 'text-orange-400' : gameStatus.status === 'open' ? 'text-green-400' : 'text-red-400'
+                          }`}>
+                            {statusLabel}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </CardWrapper>
                 );
               })}
