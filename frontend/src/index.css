@@ -23,6 +23,98 @@ html, body, #root {
 
 #emergent-badge, [id*="emergent"], a[href*="emergent.sh"] { display: none !important; }
 
+/* ===== ROYAL PURPLE-PINK LIGHT THEME OVERRIDES ===== */
+/* Override dark backgrounds across the whole app to stay on-brand */
+body {
+  background: linear-gradient(180deg, #F5F0FF 0%, #FCE7F3 50%, #FDF2F8 100%) !important;
+  color: #1F0E3D;
+}
+
+/* Page-level dark backgrounds → light gradient */
+.bg-\[\#0A0A0C\],
+.bg-\[\#06060A\],
+.bg-\[\#0F0F14\],
+.bg-\[\#0F0F14\]\/95,
+.bg-\[\#06060A\]\/95,
+.bg-\[\#0A0A0C\]\/80,
+.bg-\[\#0A0A0C\]\/95 {
+  background: linear-gradient(180deg, #F5F0FF 0%, #FCE7F3 50%, #FDF2F8 100%) !important;
+}
+
+/* Card-level dark surfaces → white */
+.bg-\[\#141418\],
+.bg-\[\#141418\]\/60,
+.bg-\[\#141418\]\/80,
+.bg-\[\#1C1C22\],
+.bg-\[\#1a1a2e\],
+.bg-\[\#16213e\] {
+  background: #FFFFFF !important;
+  color: #1F0E3D !important;
+}
+
+/* Borders */
+.border-white\/10,
+.border-white\/5,
+.border-white\/20 {
+  border-color: rgba(168, 85, 247, 0.22) !important;
+}
+
+/* Gold/yellow accents → royal purple-pink */
+.text-\[\#D4AF37\] { color: #7E22CE !important; }
+.text-\[\#FDE047\] { color: #DB2777 !important; }
+.border-\[\#D4AF37\] { border-color: #A855F7 !important; }
+.border-\[\#D4AF37\]\/30,
+.border-\[\#D4AF37\]\/40,
+.border-\[\#D4AF37\]\/50 { border-color: rgba(168, 85, 247, 0.4) !important; }
+
+/* Common gray text for dark theme → readable on light */
+.text-gray-300 { color: #1F0E3D !important; }
+.text-gray-400 { color: #4B5563 !important; }
+.text-gray-500 { color: #6B7280 !important; }
+
+/* Inputs / form fields */
+input, textarea, select {
+  color: #1F0E3D;
+}
+
+/* Headings inside cards that previously assumed dark bg */
+.bg-white .text-white,
+.bg-\[\#141418\] .text-white {
+  color: #1F0E3D !important;
+}
+
+/* PRESERVE white text on intentionally-gradient surfaces (header / submit buttons / footer-active items) */
+header .text-white,
+nav .text-white,
+button[style*="linear-gradient"] .text-white,
+[style*="linear-gradient(135deg, #4C1D95"] *:not(.bg-white *) { color: #FFFFFF !important; }
+header * { color: #FFFFFF; }
+header .bg-white * { color: #1F0E3D !important; }
+header [data-testid="header-balance"] * { color: inherit !important; }
+
+/* Sidebar drawer should be light too if it uses #0F0F14 */
+[data-testid="sidebar-overlay"], aside { background: #FFFFFF !important; color: #1F0E3D !important; }
+
+/* Override dark gradient cards (e.g. wallet balance card, bets summary card) */
+[class*="from-[#D4AF37]/20"][class*="to-[#141418]"],
+[class*="from-[#D4AF37]/10"][class*="to-[#141418]"],
+[class*="from-[#141418]"][class*="to-[#0A0A0C]"] {
+  background: linear-gradient(135deg, #FAF5FF 0%, #FCE7F3 100%) !important;
+  border-color: rgba(168, 85, 247, 0.35) !important;
+}
+[class*="from-[#D4AF37]/20"][class*="to-[#141418]"] *,
+[class*="from-[#D4AF37]/10"][class*="to-[#141418]"] *,
+[class*="from-[#141418]"][class*="to-[#0A0A0C]"] * {
+  color: #1F0E3D !important;
+}
+
+/* Filter chips inside cards — replace dark active styling */
+.bg-\[\#D4AF37\] {
+  background: linear-gradient(135deg, #7E22CE 0%, #EC4899 100%) !important;
+  color: #FFFFFF !important;
+}
+.bg-\[\#D4AF37\] * { color: #FFFFFF !important; }
+
 @keyframes blink-warning {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.3; }
@@ -111,12 +203,16 @@ code {
   box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
 }
 
-/* Glass effect */
+/* Glass effect — light theme */
 .glass {
-  background: rgba(20, 20, 24, 0.8);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: #1F0E3D !important;
+  border-bottom: 1px solid rgba(168, 85, 247, 0.18) !important;
 }
+.glass h1, .glass h2, .glass h3, .glass h4, .glass span, .glass p { color: #1F0E3D !important; }
+.glass .text-white { color: #1F0E3D !important; }
 
 /* Number grid item */
 .number-item {
