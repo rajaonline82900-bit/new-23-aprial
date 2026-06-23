@@ -204,29 +204,31 @@ const DashboardPage = () => {
   };
 
   return (
-    <div className="min-h-screen app-shell relative overflow-hidden" style={{ background: 'linear-gradient(180deg, #F5F0FF 0%, #FCE7F3 50%, #FDF2F8 100%)' }}>
-      {/* Royal background decorations */}
+    <div className="min-h-screen app-shell relative overflow-hidden" style={{ background: 'linear-gradient(180deg, #0A0A14 0%, #14142B 50%, #0A0A14 100%)' }}>
+      {/* Premium gold ambient lighting */}
       <div className="fixed inset-0 -z-10 pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-gradient-to-br from-[#A855F7]/25 to-[#EC4899]/20 rounded-full blur-[100px]" />
-        <div className="absolute top-[40%] right-0 w-[350px] h-[350px] bg-gradient-to-br from-[#EC4899]/20 to-[#F472B6]/15 rounded-full blur-[80px]" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-br from-[#8B5CF6]/20 to-[#A78BFA]/25 rounded-full blur-[90px]" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-gradient-to-br from-[#D4AF37]/15 to-[#FFD700]/10 rounded-full blur-[120px]" />
+        <div className="absolute top-[40%] right-0 w-[350px] h-[350px] bg-gradient-to-br from-[#FFD700]/10 to-[#D4AF37]/5 rounded-full blur-[100px]" />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-br from-[#D4AF37]/12 to-[#B8860B]/8 rounded-full blur-[110px]" />
       </div>
-      {/* Header - Royal Purple to Pink gradient */}
+      {/* Header - Royal black with gold gradient bottom edge */}
       <header
         className="fixed top-0 left-0 right-0 z-50 shadow-xl"
         style={{
           maxWidth: '480px',
           margin: '0 auto',
-          background: 'linear-gradient(135deg, #4C1D95 0%, #7E22CE 30%, #C026D3 65%, #EC4899 100%)',
+          background: 'linear-gradient(180deg, #0A0A14 0%, #14142B 100%)',
+          borderBottom: '2px solid transparent',
+          borderImage: 'linear-gradient(90deg, transparent 0%, #D4AF37 50%, transparent 100%) 1',
         }}
       >
-        <div className="px-4 py-3">
+        <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(212, 175, 55, 0.25)' }}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setSidebarOpen(true)}
                 data-testid="sidebar-toggle"
-                className="p-2 rounded-lg text-white hover:bg-white/15 active:scale-95 transition-all"
+                className="p-2 rounded-lg text-[#FFD700] hover:bg-[#D4AF37]/10 active:scale-95 transition-all"
               >
                 <Menu className="w-5 h-5" />
               </button>
@@ -234,17 +236,22 @@ const DashboardPage = () => {
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Premium Points Pill */}
+              {/* Premium Gold Points Pill */}
               <div
                 data-testid="header-balance"
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white shadow-lg border border-white/60"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.12) 0%, rgba(212, 175, 55, 0.18) 100%)',
+                  border: '1px solid rgba(212, 175, 55, 0.5)',
+                  boxShadow: '0 0 18px rgba(212, 175, 55, 0.25), inset 0 1px 0 rgba(255, 215, 0, 0.15)',
+                }}
               >
-                <div className="w-5 h-5 rounded-full flex items-center justify-center shadow-inner" style={{ background: 'linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)' }}>
-                  <Coins className="w-3 h-3 text-white" />
+                <div className="w-5 h-5 rounded-full flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #FFD700 0%, #D4AF37 50%, #B8860B 100%)' }}>
+                  <Coins className="w-3 h-3 text-[#1A1A2E]" />
                 </div>
                 <div className="flex flex-col items-end leading-none">
-                  <span className="text-[8px] uppercase tracking-wider text-[#7E22CE] font-bold leading-none">Points</span>
-                  <span className="text-xs font-black tabular-nums text-[#1F0E3D]" data-testid="header-balance-value">
+                  <span className="text-[8px] uppercase tracking-wider text-[#D4AF37] font-bold leading-none">Points</span>
+                  <span className="text-xs font-black tabular-nums text-[#FFD700]" data-testid="header-balance-value">
                     ₹{user?.balance?.toFixed(2) || '0.00'}
                   </span>
                 </div>
@@ -252,7 +259,7 @@ const DashboardPage = () => {
 
               {user?.role === 'admin' && (
                 <Link to="/admin">
-                  <button className="p-2 rounded-lg bg-white/20 border border-white/30 text-white hover:bg-white/30 active:scale-95 transition-all" data-testid="admin-panel-btn">
+                  <button className="p-2 rounded-lg bg-[#D4AF37]/15 border border-[#D4AF37]/40 text-[#FFD700] hover:bg-[#D4AF37]/25 active:scale-95 transition-all" data-testid="admin-panel-btn">
                     <Shield className="w-4 h-4" />
                   </button>
                 </Link>
@@ -314,55 +321,59 @@ const DashboardPage = () => {
             </div>
           )}
 
-          {/* Quick Actions - white cards with vibrant gradient icons */}
+          {/* Quick Actions - dark cards with gold-bordered gradient icons */}
           <div className="grid grid-cols-4 gap-2.5 mb-5">
             <Link to="/wallet" data-testid="wallet-link">
-              <div className="flex flex-col items-center justify-center gap-1.5 bg-white border border-[#F59E0B]/30 rounded-2xl p-3 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all">
-                <div className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #FBBF24 0%, #F59E0B 50%, #D97706 100%)' }}>
-                  <Wallet className="w-5 h-5 text-white" />
+              <div className="flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3 active:scale-95 transition-all"
+                style={{ background: 'linear-gradient(135deg, #1A1A2E 0%, #16162A 100%)', border: '1px solid rgba(212, 175, 55, 0.25)', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}>
+                <div className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #FFD700 0%, #D4AF37 50%, #B8860B 100%)' }}>
+                  <Wallet className="w-5 h-5 text-[#1A1A2E]" />
                 </div>
-                <span className="text-[#1F0E3D] font-bold text-[10px] tracking-wide">{t('wallet')}</span>
+                <span className="text-[#FFD700] font-bold text-[10px] tracking-wide">{t('wallet')}</span>
               </div>
             </Link>
 
             <a href={telegramLink || '#'} target="_blank" rel="noopener noreferrer" data-testid="telegram-quick-link" onClick={(e) => { if (!telegramLink) e.preventDefault(); }}>
-              <div className="flex flex-col items-center justify-center gap-1.5 bg-white border border-[#06B6D4]/30 rounded-2xl p-3 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all">
-                <div className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #22D3EE 0%, #06B6D4 50%, #0891B2 100%)' }}>
+              <div className="flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3 active:scale-95 transition-all"
+                style={{ background: 'linear-gradient(135deg, #1A1A2E 0%, #16162A 100%)', border: '1px solid rgba(212, 175, 55, 0.25)', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}>
+                <div className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #38BDF8 0%, #0284C7 100%)' }}>
                   <Send className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-[#1F0E3D] font-bold text-[10px] tracking-wide">{t('telegram')}</span>
+                <span className="text-[#FFD700] font-bold text-[10px] tracking-wide">{t('telegram')}</span>
               </div>
             </a>
 
             <Link to="/chat" data-testid="chat-quick-link">
-              <div className="flex flex-col items-center justify-center gap-1.5 bg-white border border-[#10B981]/30 rounded-2xl p-3 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all relative">
-                <div className="relative w-11 h-11 rounded-2xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #34D399 0%, #10B981 50%, #059669 100%)' }}>
+              <div className="flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3 active:scale-95 transition-all relative"
+                style={{ background: 'linear-gradient(135deg, #1A1A2E 0%, #16162A 100%)', border: '1px solid rgba(212, 175, 55, 0.25)', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}>
+                <div className="relative w-11 h-11 rounded-2xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #34D399 0%, #059669 100%)' }}>
                   <Headphones className="w-5 h-5 text-white" />
                   {unreadChat > 0 && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[8px] font-bold flex items-center justify-center shadow-md border border-white" data-testid="chat-unread-badge">{unreadChat > 9 ? '9+' : unreadChat}</span>
+                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[8px] font-bold flex items-center justify-center shadow-md border border-[#1A1A2E]" data-testid="chat-unread-badge">{unreadChat > 9 ? '9+' : unreadChat}</span>
                   )}
                 </div>
-                <span className="text-[#1F0E3D] font-bold text-[10px] tracking-wide">{t('chat')}</span>
+                <span className="text-[#FFD700] font-bold text-[10px] tracking-wide">{t('chat')}</span>
               </div>
             </Link>
 
             <Link to="/results" data-testid="results-link">
-              <div className="flex flex-col items-center justify-center gap-1.5 bg-white border border-[#EC4899]/30 rounded-2xl p-3 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all">
-                <div className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #F472B6 0%, #EC4899 50%, #DB2777 100%)' }}>
+              <div className="flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3 active:scale-95 transition-all"
+                style={{ background: 'linear-gradient(135deg, #1A1A2E 0%, #16162A 100%)', border: '1px solid rgba(212, 175, 55, 0.25)', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}>
+                <div className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #FBBF24 0%, #DC2626 100%)' }}>
                   <Trophy className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-[#1F0E3D] font-bold text-[10px] tracking-wide">{t('results')}</span>
+                <span className="text-[#FFD700] font-bold text-[10px] tracking-wide">{t('results')}</span>
               </div>
             </Link>
           </div>
 
-          {/* Section Header */}
+          {/* Section Header - gold premium */}
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <span className="w-1.5 h-6 rounded-full" style={{ background: 'linear-gradient(180deg, #7E22CE 0%, #EC4899 100%)' }}></span>
-              <h3 className="text-xl font-black text-[#1F0E3D] tracking-tight">Market</h3>
+              <span className="w-1.5 h-6 rounded-full" style={{ background: 'linear-gradient(180deg, #FFD700 0%, #D4AF37 50%, #B8860B 100%)', boxShadow: '0 0 10px rgba(255, 215, 0, 0.5)' }}></span>
+              <h3 className="text-xl font-black tracking-tight" style={{ color: '#FFFFFF', textShadow: '0 0 16px rgba(212, 175, 55, 0.3)' }}>Market</h3>
             </div>
-            <span className="text-white text-[11px] px-3 py-1 rounded-full font-bold tracking-wide shadow-md" style={{ background: 'linear-gradient(135deg, #7E22CE 0%, #EC4899 100%)' }} data-testid="games-count">
+            <span className="text-[#1A1A2E] text-[11px] px-3 py-1 rounded-full font-black tracking-wide shadow-md" style={{ background: 'linear-gradient(135deg, #FFD700 0%, #D4AF37 100%)' }} data-testid="games-count">
               {games.length} Available
             </span>
           </div>
@@ -459,7 +470,7 @@ const DashboardPage = () => {
                   );
                 }
 
-                // Royal-themed game card: Name left, Open/Close time top-right above Play button
+                // Premium gold-themed game card
                 const statusLabel = game.is_holiday ? 'Holiday' : (gameStatus.status === 'open' ? 'Running' : 'Closed');
                 const fmt = (timeStr) => {
                   const [h, m] = (timeStr || '00:00').split(':').map(Number);
@@ -472,16 +483,14 @@ const DashboardPage = () => {
                 return (
                   <CardWrapper {...cardProps}>
                     <div
-                      className={`game-card-animate game-card-hidden bg-white rounded-2xl p-3.5 shadow-md transition-all ${
-                        isDisabled
-                          ? 'border border-gray-200 opacity-90 cursor-not-allowed'
-                          : 'border-2 border-transparent bg-clip-padding hover:shadow-xl hover:-translate-y-0.5 active:scale-[0.99] cursor-pointer'
+                      className={`game-card-animate game-card-hidden rounded-2xl p-3.5 transition-all ${
+                        isDisabled ? 'opacity-90 cursor-not-allowed' : 'active:scale-[0.99] cursor-pointer'
                       }`}
                       style={{
                         animationDelay: `${index * 0.06}s`,
-                        backgroundImage: isDisabled ? undefined : 'linear-gradient(white, white), linear-gradient(135deg, #A855F7 0%, #EC4899 50%, #F59E0B 100%)',
-                        backgroundOrigin: isDisabled ? undefined : 'border-box',
-                        backgroundClip: isDisabled ? undefined : 'padding-box, border-box',
+                        background: 'linear-gradient(135deg, #1A1A2E 0%, #16162A 100%)',
+                        border: '1px solid rgba(212, 175, 55, 0.4)',
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255, 215, 0, 0.08)',
                       }}
                     >
                       <div className="flex items-start gap-3">
@@ -489,7 +498,11 @@ const DashboardPage = () => {
                         <div className="flex-1 min-w-0">
                           <h4
                             className="text-lg font-black tracking-tight truncate text-transparent bg-clip-text mb-2"
-                            style={{ backgroundImage: 'linear-gradient(135deg, #4C1D95 0%, #7E22CE 30%, #C026D3 65%, #EC4899 100%)', fontFamily: 'Outfit, Noto Sans Devanagari, sans-serif' }}
+                            style={{
+                              backgroundImage: 'linear-gradient(135deg, #FFD700 0%, #FDE047 30%, #D4AF37 65%, #B8860B 100%)',
+                              fontFamily: 'Outfit, Noto Sans Devanagari, sans-serif',
+                              filter: 'drop-shadow(0 0 8px rgba(212, 175, 55, 0.3))',
+                            }}
                             data-testid={`game-name-${game.id}`}
                           >
                             {game.name_hi}
@@ -498,58 +511,66 @@ const DashboardPage = () => {
                           <div className="flex gap-2">
                             {/* Yesterday */}
                             <div
-                              className="flex-1 rounded-xl py-1.5 px-2 flex flex-col items-center justify-center shadow-sm"
-                              style={{ background: 'linear-gradient(135deg, #FCE7F3 0%, #FBCFE8 100%)', border: '1px solid rgba(219, 39, 119, 0.25)' }}
+                              className="flex-1 rounded-xl py-1.5 px-2 flex flex-col items-center justify-center"
+                              style={{
+                                background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.18) 0%, rgba(127, 29, 29, 0.25) 100%)',
+                                border: '1px solid rgba(248, 113, 113, 0.4)',
+                                boxShadow: 'inset 0 1px 0 rgba(248, 113, 113, 0.12)',
+                              }}
                               data-testid={`yesterday-result-${game.id}`}
                             >
-                              <span className="text-[8px] uppercase tracking-widest text-[#9D174D] leading-none font-bold">Yesterday</span>
-                              <span className="text-[#9D174D] font-black text-base leading-tight tabular-nums mt-0.5" style={{ fontFamily: 'Outfit, monospace' }}>
+                              <span className="text-[8px] uppercase tracking-widest text-[#FCA5A5] leading-none font-bold">Yesterday</span>
+                              <span className="text-[#FCA5A5] font-black text-base leading-tight tabular-nums mt-0.5" style={{ fontFamily: 'Outfit, monospace' }}>
                                 {game.yesterday_result?.jodi || '--'}
                               </span>
                             </div>
 
                             {/* Today */}
                             <div
-                              className="flex-1 rounded-xl py-1.5 px-2 flex flex-col items-center justify-center relative shadow-sm"
-                              style={{ background: 'linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%)', border: '1px solid rgba(16, 185, 129, 0.3)' }}
+                              className="flex-1 rounded-xl py-1.5 px-2 flex flex-col items-center justify-center relative"
+                              style={{
+                                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(6, 95, 70, 0.3) 100%)',
+                                border: '1px solid rgba(52, 211, 153, 0.45)',
+                                boxShadow: 'inset 0 1px 0 rgba(52, 211, 153, 0.12)',
+                              }}
                               data-testid={`today-result-${game.id}`}
                             >
                               {gameStatus.status === 'open' && (
-                                <span className="absolute -top-1.5 right-1.5 bg-red-500 text-white text-[7px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider live-blink shadow-md leading-none">Live</span>
+                                <span className="absolute -top-1.5 right-1.5 bg-red-500 text-white text-[7px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider live-blink shadow-md leading-none">Live</span>
                               )}
-                              <span className="text-[8px] uppercase tracking-widest text-[#065F46] leading-none font-bold">Today</span>
-                              <span className="text-[#065F46] font-black text-base leading-tight tabular-nums mt-0.5" style={{ fontFamily: 'Outfit, monospace' }}>
+                              <span className="text-[8px] uppercase tracking-widest text-[#6EE7B7] leading-none font-bold">Today</span>
+                              <span className="text-[#6EE7B7] font-black text-base leading-tight tabular-nums mt-0.5" style={{ fontFamily: 'Outfit, monospace' }}>
                                 {game.today_result?.jodi || '--'}
                               </span>
                             </div>
                           </div>
                         </div>
 
-                        {/* RIGHT: Open/Close time pills + Play button + Status */}
+                        {/* RIGHT: Open/Close pills + Play button + Status */}
                         <div className="flex flex-col items-stretch gap-1 w-[82px] flex-shrink-0" data-testid={`play-status-${game.id}`}>
-                          {/* Open Time */}
-                          <div className="flex items-center justify-between px-2 py-0.5 rounded-md" style={{ background: 'linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%)', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
-                            <span className="text-[7px] uppercase tracking-wider text-[#1E40AF] font-black leading-none">Open</span>
-                            <span className="text-[9px] font-bold text-[#1E3A8A] tabular-nums leading-none">{openTimeStr}</span>
+                          {/* Open Time pill */}
+                          <div className="flex items-center justify-between px-2 py-0.5 rounded-md" style={{ background: 'rgba(34, 197, 94, 0.18)', border: '1px solid rgba(74, 222, 128, 0.35)' }}>
+                            <span className="text-[7px] uppercase tracking-wider text-[#86EFAC] font-black leading-none">Open</span>
+                            <span className="text-[9px] font-bold text-[#86EFAC] tabular-nums leading-none">{openTimeStr}</span>
                           </div>
-                          {/* Close Time */}
-                          <div className="flex items-center justify-between px-2 py-0.5 rounded-md" style={{ background: 'linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
-                            <span className="text-[7px] uppercase tracking-wider text-[#991B1B] font-black leading-none">Close</span>
-                            <span className="text-[9px] font-bold text-[#7F1D1D] tabular-nums leading-none">{closeTimeStr}</span>
+                          {/* Close Time pill */}
+                          <div className="flex items-center justify-between px-2 py-0.5 rounded-md" style={{ background: 'rgba(239, 68, 68, 0.18)', border: '1px solid rgba(248, 113, 113, 0.35)' }}>
+                            <span className="text-[7px] uppercase tracking-wider text-[#FCA5A5] font-black leading-none">Close</span>
+                            <span className="text-[9px] font-bold text-[#FCA5A5] tabular-nums leading-none">{closeTimeStr}</span>
                           </div>
 
                           {/* Play / Pause / Holiday */}
                           <div className="flex flex-col items-center mt-0.5">
                             {game.is_holiday ? (
-                              <div className="w-10 h-10 rounded-full flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #FBBF24 0%, #D97706 100%)' }} data-testid={`holiday-btn-${game.id}`}>
+                              <div className="w-10 h-10 rounded-full flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #FBBF24 0%, #D97706 100%)', boxShadow: '0 4px 14px rgba(251, 191, 36, 0.4)' }} data-testid={`holiday-btn-${game.id}`}>
                                 <span className="text-white font-black text-sm">H</span>
                               </div>
                             ) : gameStatus.status === 'open' ? (
                               <div
-                                className="w-10 h-10 rounded-full flex items-center justify-center shadow-lg cursor-pointer"
+                                className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer"
                                 style={{
                                   background: 'linear-gradient(135deg, #34D399 0%, #10B981 50%, #059669 100%)',
-                                  boxShadow: '0 4px 18px rgba(16, 185, 129, 0.55), 0 0 0 3px rgba(16, 185, 129, 0.18)',
+                                  boxShadow: '0 4px 18px rgba(16, 185, 129, 0.65), 0 0 0 3px rgba(16, 185, 129, 0.2)',
                                 }}
                                 onClick={() => speak('प्ले')}
                                 data-testid={`play-btn-${game.id}`}
@@ -557,12 +578,12 @@ const DashboardPage = () => {
                                 <Play className="w-4 h-4 text-white ml-0.5" fill="currentColor" />
                               </div>
                             ) : (
-                              <div className="w-10 h-10 rounded-full flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #F87171 0%, #DC2626 100%)' }} data-testid={`timeout-btn-${game.id}`} onClick={() => speak('टाइम आउट')}>
+                              <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #F87171 0%, #DC2626 100%)', boxShadow: '0 4px 14px rgba(220, 38, 38, 0.45)' }} data-testid={`timeout-btn-${game.id}`} onClick={() => speak('टाइम आउट')}>
                                 <Pause className="w-3.5 h-3.5 text-white" fill="currentColor" />
                               </div>
                             )}
                             <span className={`text-[9px] font-black tracking-wide uppercase leading-none mt-1 ${
-                              game.is_holiday ? 'text-[#D97706]' : gameStatus.status === 'open' ? 'text-[#059669]' : 'text-[#DC2626]'
+                              game.is_holiday ? 'text-[#FBBF24]' : gameStatus.status === 'open' ? 'text-[#34D399]' : 'text-[#F87171]'
                             }`}>
                               {statusLabel}
                             </span>

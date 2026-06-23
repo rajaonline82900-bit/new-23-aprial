@@ -23,14 +23,14 @@ html, body, #root {
 
 #emergent-badge, [id*="emergent"], a[href*="emergent.sh"] { display: none !important; }
 
-/* ===== ROYAL PURPLE-PINK LIGHT THEME OVERRIDES ===== */
-/* Override dark backgrounds across the whole app to stay on-brand */
+/* ===== PREMIUM ROYAL GOLD DARK THEME ===== */
+/* Rich navy-black background with gold accents — text always crisp & readable */
 body {
-  background: linear-gradient(180deg, #F5F0FF 0%, #FCE7F3 50%, #FDF2F8 100%) !important;
-  color: #1F0E3D;
+  background: linear-gradient(180deg, #0A0A14 0%, #14142B 50%, #0A0A14 100%) !important;
+  color: #F5F5F7;
 }
 
-/* Page-level dark backgrounds → light gradient */
+/* Page-level dark backgrounds → premium navy-black */
 .bg-\[\#0A0A0C\],
 .bg-\[\#06060A\],
 .bg-\[\#0F0F14\],
@@ -38,82 +38,100 @@ body {
 .bg-\[\#06060A\]\/95,
 .bg-\[\#0A0A0C\]\/80,
 .bg-\[\#0A0A0C\]\/95 {
-  background: linear-gradient(180deg, #F5F0FF 0%, #FCE7F3 50%, #FDF2F8 100%) !important;
+  background: linear-gradient(180deg, #0A0A14 0%, #14142B 50%, #0A0A14 100%) !important;
+  color: #F5F5F7;
 }
 
-/* Card-level dark surfaces → white */
+/* Card-level dark surfaces — deep royal navy with subtle gold border */
 .bg-\[\#141418\],
 .bg-\[\#141418\]\/60,
 .bg-\[\#141418\]\/80,
-.bg-\[\#1C1C22\],
+.bg-\[\#1C1C22\] {
+  background: linear-gradient(135deg, #1A1A2E 0%, #16162A 100%) !important;
+  border-color: rgba(212, 175, 55, 0.18) !important;
+  color: #F5F5F7 !important;
+}
 .bg-\[\#1a1a2e\],
 .bg-\[\#16213e\] {
-  background: #FFFFFF !important;
-  color: #1F0E3D !important;
+  background: linear-gradient(135deg, #1A1A2E 0%, #2D2D5C 100%) !important;
+  color: #F5F5F7 !important;
 }
 
-/* Borders */
+/* Borders — gold-tinted */
 .border-white\/10,
 .border-white\/5,
 .border-white\/20 {
-  border-color: rgba(168, 85, 247, 0.22) !important;
+  border-color: rgba(212, 175, 55, 0.22) !important;
 }
 
-/* Gold/yellow accents → royal purple-pink */
-.text-\[\#D4AF37\] { color: #7E22CE !important; }
-.text-\[\#FDE047\] { color: #DB2777 !important; }
-.border-\[\#D4AF37\] { border-color: #A855F7 !important; }
+/* Gold/yellow accents — KEEP AS GOLD (this is the premium look) */
+.text-\[\#D4AF37\] { color: #FFD700 !important; }
+.text-\[\#FDE047\] { color: #FDE047 !important; }
+.border-\[\#D4AF37\] { border-color: #D4AF37 !important; }
 .border-\[\#D4AF37\]\/30,
 .border-\[\#D4AF37\]\/40,
-.border-\[\#D4AF37\]\/50 { border-color: rgba(168, 85, 247, 0.4) !important; }
+.border-\[\#D4AF37\]\/50 { border-color: rgba(212, 175, 55, 0.5) !important; }
 
-/* Common gray text for dark theme → readable on light */
-.text-gray-300 { color: #1F0E3D !important; }
-.text-gray-400 { color: #4B5563 !important; }
-.text-gray-500 { color: #6B7280 !important; }
+/* Text contrast — high readability on dark surfaces */
+.text-gray-300 { color: #E5E7EB !important; }
+.text-gray-400 { color: #D1D5DB !important; }
+.text-gray-500 { color: #9CA3AF !important; }
+.text-gray-600 { color: #D1D5DB !important; }
+.text-white { color: #FFFFFF !important; }
 
-/* Inputs / form fields */
+/* Force readable contrast on plain text inside cards */
+.bg-white { background: linear-gradient(135deg, #FFF8DC 0%, #FFFFFF 100%) !important; color: #1A1A2E !important; }
+.bg-white * { color: #1A1A2E; }
+.bg-white .text-white { color: #FFFFFF !important; }
+
+/* Dark theme inputs */
 input, textarea, select {
-  color: #1F0E3D;
+  color: #F5F5F7 !important;
+  background-color: rgba(20, 20, 46, 0.6) !important;
+  border-color: rgba(212, 175, 55, 0.3) !important;
 }
+input::placeholder, textarea::placeholder { color: #9CA3AF !important; }
 
-/* Headings inside cards that previously assumed dark bg */
-.bg-white .text-white,
-.bg-\[\#141418\] .text-white {
-  color: #1F0E3D !important;
+/* Glass effect — premium dark navy with gold accent */
+.glass {
+  background: rgba(10, 10, 20, 0.85) !important;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: #F5F5F7 !important;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.25) !important;
 }
+.glass h1, .glass h2, .glass h3, .glass h4 { color: #FFD700 !important; }
+.glass span, .glass p { color: #F5F5F7 !important; }
+.glass .text-white { color: #FFFFFF !important; }
 
-/* PRESERVE white text on intentionally-gradient surfaces (header / submit buttons / footer-active items) */
-header .text-white,
-nav .text-white,
-button[style*="linear-gradient"] .text-white,
-[style*="linear-gradient(135deg, #4C1D95"] *:not(.bg-white *) { color: #FFFFFF !important; }
-header * { color: #FFFFFF; }
-header .bg-white * { color: #1F0E3D !important; }
-header [data-testid="header-balance"] * { color: inherit !important; }
+/* Sidebar drawer */
+[data-testid="sidebar-overlay"], aside { background: linear-gradient(180deg, #0A0A14 0%, #14142B 100%) !important; color: #F5F5F7 !important; }
+aside *, [data-testid="sidebar-overlay"] * { color: #F5F5F7; }
 
-/* Sidebar drawer should be light too if it uses #0F0F14 */
-[data-testid="sidebar-overlay"], aside { background: #FFFFFF !important; color: #1F0E3D !important; }
-
-/* Override dark gradient cards (e.g. wallet balance card, bets summary card) */
+/* Override dark gradient cards (wallet balance card etc) — premium gold gradient */
 [class*="from-[#D4AF37]/20"][class*="to-[#141418]"],
 [class*="from-[#D4AF37]/10"][class*="to-[#141418]"],
 [class*="from-[#141418]"][class*="to-[#0A0A0C]"] {
-  background: linear-gradient(135deg, #FAF5FF 0%, #FCE7F3 100%) !important;
-  border-color: rgba(168, 85, 247, 0.35) !important;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.18) 0%, #1A1A2E 100%) !important;
+  border-color: rgba(212, 175, 55, 0.45) !important;
+  color: #F5F5F7 !important;
 }
 [class*="from-[#D4AF37]/20"][class*="to-[#141418]"] *,
 [class*="from-[#D4AF37]/10"][class*="to-[#141418]"] *,
 [class*="from-[#141418]"][class*="to-[#0A0A0C]"] * {
-  color: #1F0E3D !important;
+  color: #F5F5F7 !important;
+}
+[class*="from-[#D4AF37]/20"][class*="to-[#141418]"] .text-\[\#D4AF37\],
+[class*="from-[#D4AF37]/10"][class*="to-[#141418]"] .text-\[\#D4AF37\] {
+  color: #FFD700 !important;
 }
 
-/* Filter chips inside cards — replace dark active styling */
+/* Active state for filter chips — gold premium */
 .bg-\[\#D4AF37\] {
-  background: linear-gradient(135deg, #7E22CE 0%, #EC4899 100%) !important;
-  color: #FFFFFF !important;
+  background: linear-gradient(135deg, #FFD700 0%, #D4AF37 100%) !important;
+  color: #1A1A2E !important;
 }
-.bg-\[\#D4AF37\] * { color: #FFFFFF !important; }
+.bg-\[\#D4AF37\] * { color: #1A1A2E !important; }
 
 @keyframes blink-warning {
   0%, 100% { opacity: 1; }
