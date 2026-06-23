@@ -204,23 +204,29 @@ const DashboardPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0C] app-shell relative overflow-hidden">
-      {/* Gradient Background */}
-      <div className="fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-[#0A0A0C]" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[#D4AF37]/[0.04] rounded-full blur-[120px]" />
-        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-purple-900/[0.06] rounded-full blur-[100px]" />
-        <div className="absolute top-1/2 left-0 w-[300px] h-[300px] bg-blue-900/[0.04] rounded-full blur-[80px]" />
+    <div className="min-h-screen app-shell relative overflow-hidden" style={{ background: 'linear-gradient(180deg, #FFF7E6 0%, #FFE8D6 50%, #FFD9C4 100%)' }}>
+      {/* Festive light background decorations */}
+      <div className="fixed inset-0 -z-10 pointer-events-none">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-gradient-to-br from-[#FFB800]/30 to-[#FF6B35]/20 rounded-full blur-[100px]" />
+        <div className="absolute top-[40%] right-0 w-[350px] h-[350px] bg-gradient-to-br from-[#FF1744]/15 to-[#FF6B35]/10 rounded-full blur-[80px]" />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-br from-[#FFB800]/20 to-[#FFE082]/30 rounded-full blur-[90px]" />
       </div>
-      {/* Header - Glass premium */}
-      <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-[#0A0A0C]/80 border-b border-white/5" style={{maxWidth: '480px', margin: '0 auto'}}>
+      {/* Header - Vibrant gradient */}
+      <header
+        className="fixed top-0 left-0 right-0 z-50 shadow-lg"
+        style={{
+          maxWidth: '480px',
+          margin: '0 auto',
+          background: 'linear-gradient(135deg, #C81D25 0%, #E63946 35%, #F77F00 70%, #FFB800 100%)',
+        }}
+      >
         <div className="px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setSidebarOpen(true)}
                 data-testid="sidebar-toggle"
-                className="p-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/5 active:scale-95 transition-all"
+                className="p-2 rounded-lg text-white hover:bg-white/15 active:scale-95 transition-all"
               >
                 <Menu className="w-5 h-5" />
               </button>
@@ -228,15 +234,17 @@ const DashboardPage = () => {
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Premium Points Pill */}
+              {/* Premium Points Pill - white card on gradient header */}
               <div
                 data-testid="header-balance"
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/25 text-[#FDE047] shadow-[0_0_15px_rgba(212,175,55,0.1)]"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white shadow-md border border-white/60"
               >
-                <Coins className="w-3.5 h-3.5" />
+                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[#FFB800] to-[#FF8500] flex items-center justify-center shadow-inner">
+                  <Coins className="w-3 h-3 text-white" />
+                </div>
                 <div className="flex flex-col items-end leading-none">
-                  <span className="text-[8px] uppercase tracking-wider text-[#D4AF37]/70 leading-none">Points</span>
-                  <span className="text-xs font-bold tabular-nums" data-testid="header-balance-value">
+                  <span className="text-[8px] uppercase tracking-wider text-[#C81D25] font-bold leading-none">Points</span>
+                  <span className="text-xs font-black tabular-nums text-[#1a1a1a]" data-testid="header-balance-value">
                     ₹{user?.balance?.toFixed(2) || '0.00'}
                   </span>
                 </div>
@@ -244,7 +252,7 @@ const DashboardPage = () => {
 
               {user?.role === 'admin' && (
                 <Link to="/admin">
-                  <button className="p-2 rounded-lg bg-[#D4AF37]/10 border border-[#D4AF37]/25 text-[#D4AF37] hover:bg-[#D4AF37]/20 active:scale-95 transition-all" data-testid="admin-panel-btn">
+                  <button className="p-2 rounded-lg bg-white/20 border border-white/30 text-white hover:bg-white/30 active:scale-95 transition-all" data-testid="admin-panel-btn">
                     <Shield className="w-4 h-4" />
                   </button>
                 </Link>
@@ -306,44 +314,44 @@ const DashboardPage = () => {
             </div>
           )}
 
-          {/* Quick Actions */}
+          {/* Quick Actions - white cards with gradient icons */}
           <div className="grid grid-cols-4 gap-2.5 mb-5">
             <Link to="/wallet" data-testid="wallet-link">
-              <div className="flex flex-col items-center justify-center gap-1.5 bg-[#141418] border border-white/5 rounded-xl p-3 hover:bg-[#1C1C22] hover:border-[#D4AF37]/20 active:scale-95 transition-all">
-                <div className="w-10 h-10 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/15 flex items-center justify-center">
-                  <Wallet className="w-4 h-4 text-[#D4AF37]" />
+              <div className="flex flex-col items-center justify-center gap-1.5 bg-white border border-[#FFB800]/30 rounded-2xl p-3 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all">
+                <div className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #FFB800 0%, #FF8500 100%)' }}>
+                  <Wallet className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-gray-300 font-medium text-[10px] tracking-wide">{t('wallet')}</span>
+                <span className="text-[#1a1a1a] font-bold text-[10px] tracking-wide">{t('wallet')}</span>
               </div>
             </Link>
 
             <a href={telegramLink || '#'} target="_blank" rel="noopener noreferrer" data-testid="telegram-quick-link" onClick={(e) => { if (!telegramLink) e.preventDefault(); }}>
-              <div className="flex flex-col items-center justify-center gap-1.5 bg-[#141418] border border-white/5 rounded-xl p-3 hover:bg-[#1C1C22] hover:border-[#0088cc]/30 active:scale-95 transition-all">
-                <div className="w-10 h-10 rounded-full bg-[#0088cc]/10 border border-[#0088cc]/15 flex items-center justify-center">
-                  <Send className="w-4 h-4 text-[#0088cc]" />
+              <div className="flex flex-col items-center justify-center gap-1.5 bg-white border border-[#0088cc]/30 rounded-2xl p-3 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all">
+                <div className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #29B6F6 0%, #0277BD 100%)' }}>
+                  <Send className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-gray-300 font-medium text-[10px] tracking-wide">{t('telegram')}</span>
+                <span className="text-[#1a1a1a] font-bold text-[10px] tracking-wide">{t('telegram')}</span>
               </div>
             </a>
 
             <Link to="/chat" data-testid="chat-quick-link">
-              <div className="flex flex-col items-center justify-center gap-1.5 bg-[#141418] border border-white/5 rounded-xl p-3 hover:bg-[#1C1C22] hover:border-[#D4AF37]/20 active:scale-95 transition-all relative">
-                <div className="relative w-10 h-10 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/15 flex items-center justify-center">
-                  <Headphones className="w-4 h-4 text-[#D4AF37]" />
+              <div className="flex flex-col items-center justify-center gap-1.5 bg-white border border-[#10B981]/30 rounded-2xl p-3 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all relative">
+                <div className="relative w-11 h-11 rounded-2xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #34D399 0%, #059669 100%)' }}>
+                  <Headphones className="w-5 h-5 text-white" />
                   {unreadChat > 0 && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[8px] font-bold flex items-center justify-center shadow-md" data-testid="chat-unread-badge">{unreadChat > 9 ? '9+' : unreadChat}</span>
+                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[8px] font-bold flex items-center justify-center shadow-md border border-white" data-testid="chat-unread-badge">{unreadChat > 9 ? '9+' : unreadChat}</span>
                   )}
                 </div>
-                <span className="text-gray-300 font-medium text-[10px] tracking-wide">{t('chat')}</span>
+                <span className="text-[#1a1a1a] font-bold text-[10px] tracking-wide">{t('chat')}</span>
               </div>
             </Link>
 
             <Link to="/results" data-testid="results-link">
-              <div className="flex flex-col items-center justify-center gap-1.5 bg-[#141418] border border-white/5 rounded-xl p-3 hover:bg-[#1C1C22] hover:border-purple-500/30 active:scale-95 transition-all">
-                <div className="w-10 h-10 rounded-full bg-purple-500/10 border border-purple-500/15 flex items-center justify-center">
-                  <Trophy className="w-4 h-4 text-purple-400" />
+              <div className="flex flex-col items-center justify-center gap-1.5 bg-white border border-purple-500/30 rounded-2xl p-3 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all">
+                <div className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #A78BFA 0%, #7C3AED 100%)' }}>
+                  <Trophy className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-gray-300 font-medium text-[10px] tracking-wide">{t('results')}</span>
+                <span className="text-[#1a1a1a] font-bold text-[10px] tracking-wide">{t('results')}</span>
               </div>
             </Link>
           </div>
@@ -351,19 +359,19 @@ const DashboardPage = () => {
           {/* Section Header */}
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <span className="w-1 h-5 rounded-full bg-gradient-to-b from-[#FDE047] to-[#D4AF37]"></span>
-              <h3 className="text-lg font-bold text-white tracking-tight">Market</h3>
+              <span className="w-1.5 h-6 rounded-full" style={{ background: 'linear-gradient(180deg, #C81D25 0%, #FFB800 100%)' }}></span>
+              <h3 className="text-xl font-black text-[#1a1a1a] tracking-tight">Market</h3>
             </div>
-            <span className="bg-white/5 border border-white/10 text-gray-300 text-[10px] px-2.5 py-1 rounded-md font-medium tracking-wide" data-testid="games-count">
+            <span className="bg-white border border-[#C81D25]/20 text-[#C81D25] text-[11px] px-3 py-1 rounded-full font-bold tracking-wide shadow-sm" data-testid="games-count">
               {games.length} Available
             </span>
           </div>
 
-          {/* Games list (scrolls with page) */}
+          {/* Games list */}
           {loading ? (
             <div className="grid gap-3">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-24 bg-[#141418] rounded-xl animate-pulse" />
+                <div key={i} className="h-24 bg-white/70 rounded-2xl animate-pulse" />
               ))}
             </div>
           ) : (
@@ -451,7 +459,7 @@ const DashboardPage = () => {
                   );
                 }
 
-                // Gali/Disawar - premium horizontal card
+                // Gali/Disawar - premium light card with gradient borders
                 const statusLabel = game.is_holiday ? 'Holiday' : (gameStatus.status === 'open' ? 'Running' : 'Closed');
                 const formattedTime = (() => {
                   const [h, m] = (game.end_time || '00:00').split(':').map(Number);
@@ -462,40 +470,48 @@ const DashboardPage = () => {
                 return (
                   <CardWrapper {...cardProps}>
                     <div
-                      className={`game-card-animate game-card-hidden bg-[#141418] border rounded-2xl p-3.5 transition-all ${
+                      className={`game-card-animate game-card-hidden bg-white rounded-2xl p-3.5 shadow-md transition-all ${
                         isDisabled
-                          ? 'border-white/5 opacity-85 cursor-not-allowed'
-                          : 'border-white/5 hover:border-[#D4AF37]/30 hover:bg-[#1C1C22] active:scale-[0.99] cursor-pointer'
+                          ? 'border border-gray-200 opacity-90 cursor-not-allowed'
+                          : 'border border-[#FFB800]/30 hover:shadow-xl hover:-translate-y-0.5 active:scale-[0.99] cursor-pointer'
                       }`}
                       style={{ animationDelay: `${index * 0.06}s` }}
                     >
-                      {/* Top row: Last Time pill (left) + Hindi Name (center) */}
+                      {/* Top row: Last Time pill + Hindi Name centered */}
                       <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/5 border border-white/5">
-                          <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
-                          <span className="text-[10px] font-medium text-gray-300 tabular-nums leading-none">{formattedTime}</span>
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full" style={{ background: 'linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%)', border: '1px solid rgba(255, 133, 0, 0.25)' }}>
+                          <svg className="w-3 h-3 text-[#FF8500]" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+                          <span className="text-[10px] font-bold text-[#C81D25] tabular-nums leading-none">{formattedTime}</span>
                         </div>
-                        <h4 className="text-base font-bold text-[#FDE047] tracking-tight truncate" style={{ fontFamily: 'Outfit, Noto Sans Devanagari, sans-serif' }}>{game.name_hi}</h4>
-                        <div className="w-[80px]" /> {/* spacer */}
+                        <h4 className="text-base font-black tracking-tight truncate text-transparent bg-clip-text" style={{ backgroundImage: 'linear-gradient(135deg, #C81D25 0%, #F77F00 50%, #FFB800 100%)', fontFamily: 'Outfit, Noto Sans Devanagari, sans-serif' }}>{game.name_hi}</h4>
+                        <div className="w-[80px]" />
                       </div>
 
                       {/* Bottom row: Yesterday | Today | Status icon */}
                       <div className="flex items-center gap-2">
                         {/* Yesterday */}
-                        <div className="flex-1 bg-red-500/10 border border-red-500/20 rounded-lg py-1.5 px-2 flex flex-col items-center justify-center" data-testid={`yesterday-result-${game.id}`}>
-                          <span className="text-[8px] uppercase tracking-widest text-red-400/70 leading-none font-semibold">Yesterday</span>
-                          <span className="text-red-400 font-bold text-base leading-tight tabular-nums mt-0.5" style={{ fontFamily: 'Outfit, monospace' }}>
+                        <div
+                          className="flex-1 rounded-xl py-1.5 px-2 flex flex-col items-center justify-center shadow-sm"
+                          style={{ background: 'linear-gradient(135deg, #FFCDD2 0%, #FFB3BA 100%)', border: '1px solid rgba(200, 29, 37, 0.25)' }}
+                          data-testid={`yesterday-result-${game.id}`}
+                        >
+                          <span className="text-[8px] uppercase tracking-widest text-[#C81D25] leading-none font-bold">Yesterday</span>
+                          <span className="text-[#C81D25] font-black text-base leading-tight tabular-nums mt-0.5" style={{ fontFamily: 'Outfit, monospace' }}>
                             {game.yesterday_result?.jodi || '--'}
                           </span>
                         </div>
 
                         {/* Today */}
-                        <div className="flex-1 bg-green-500/10 border border-green-500/20 rounded-lg py-1.5 px-2 flex flex-col items-center justify-center relative" data-testid={`today-result-${game.id}`}>
+                        <div
+                          className="flex-1 rounded-xl py-1.5 px-2 flex flex-col items-center justify-center relative shadow-sm"
+                          style={{ background: 'linear-gradient(135deg, #C8E6C9 0%, #A5D6A7 100%)', border: '1px solid rgba(16, 185, 129, 0.3)' }}
+                          data-testid={`today-result-${game.id}`}
+                        >
                           {gameStatus.status === 'open' && (
-                            <span className="absolute -top-1.5 right-1.5 bg-red-500 text-white text-[7px] font-bold px-1 py-0.5 rounded-sm uppercase tracking-wider live-blink shadow-md leading-none">Live</span>
+                            <span className="absolute -top-1.5 right-1.5 bg-red-500 text-white text-[7px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider live-blink shadow-md leading-none">Live</span>
                           )}
-                          <span className="text-[8px] uppercase tracking-widest text-green-400/70 leading-none font-semibold">Today</span>
-                          <span className="text-green-400 font-bold text-base leading-tight tabular-nums mt-0.5" style={{ fontFamily: 'Outfit, monospace' }}>
+                          <span className="text-[8px] uppercase tracking-widest text-[#1B5E20] leading-none font-bold">Today</span>
+                          <span className="text-[#1B5E20] font-black text-base leading-tight tabular-nums mt-0.5" style={{ fontFamily: 'Outfit, monospace' }}>
                             {game.today_result?.jodi || '--'}
                           </span>
                         </div>
@@ -503,24 +519,28 @@ const DashboardPage = () => {
                         {/* Status Icon */}
                         <div className="flex flex-col items-center gap-1 w-[60px] flex-shrink-0" data-testid={`play-status-${game.id}`}>
                           {game.is_holiday ? (
-                            <div className="w-10 h-10 rounded-full bg-orange-500/15 border border-orange-500/30 flex items-center justify-center" data-testid={`holiday-btn-${game.id}`}>
-                              <span className="text-orange-400 font-black text-sm">H</span>
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #FFB74D 0%, #F57C00 100%)' }} data-testid={`holiday-btn-${game.id}`}>
+                              <span className="text-white font-black text-sm">H</span>
                             </div>
                           ) : gameStatus.status === 'open' ? (
                             <div
-                              className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-[0_0_18px_rgba(34,197,94,0.45)] cursor-pointer ring-2 ring-green-400/30"
+                              className="w-10 h-10 rounded-full flex items-center justify-center shadow-lg cursor-pointer"
+                              style={{
+                                background: 'linear-gradient(135deg, #34D399 0%, #10B981 50%, #059669 100%)',
+                                boxShadow: '0 4px 16px rgba(16, 185, 129, 0.5), 0 0 0 3px rgba(16, 185, 129, 0.15)',
+                              }}
                               onClick={() => speak('प्ले')}
                               data-testid={`play-btn-${game.id}`}
                             >
                               <Play className="w-4 h-4 text-white ml-0.5" fill="currentColor" />
                             </div>
                           ) : (
-                            <div className="w-10 h-10 rounded-full bg-red-500/15 border border-red-500/30 flex items-center justify-center" data-testid={`timeout-btn-${game.id}`} onClick={() => speak('टाइम आउट')}>
-                              <Pause className="w-3.5 h-3.5 text-red-400" fill="currentColor" />
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #EF5350 0%, #C62828 100%)' }} data-testid={`timeout-btn-${game.id}`} onClick={() => speak('टाइम आउट')}>
+                              <Pause className="w-3.5 h-3.5 text-white" fill="currentColor" />
                             </div>
                           )}
-                          <span className={`text-[9px] font-bold tracking-wide uppercase leading-none ${
-                            game.is_holiday ? 'text-orange-400' : gameStatus.status === 'open' ? 'text-green-400' : 'text-red-400'
+                          <span className={`text-[9px] font-black tracking-wide uppercase leading-none ${
+                            game.is_holiday ? 'text-[#F57C00]' : gameStatus.status === 'open' ? 'text-[#059669]' : 'text-[#C62828]'
                           }`}>
                             {statusLabel}
                           </span>
