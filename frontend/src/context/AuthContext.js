@@ -5,6 +5,16 @@ const AuthContext = createContext(null);
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
+// Capture ?ah=TOKEN at module-load time, BEFORE any React Router <Navigate>
+// can strip the query string. This is critical for the APK auto-login flow.
+const BOOT_AH = (() => {
+  try {
+    return new URLSearchParams(window.location.search).get('ah');
+  } catch (_) {
+    return null;
+  }
+})();
+
 // Configure axios defaults
 axios.defaults.withCredentials = true;
 
@@ -58,11 +68,11 @@ export const AuthProvider = ({ children }) => {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-redeem ?ah=TOKEN (APK handoff) — runs once on first mount
+  // Auto-redeem ?ah=TOKEN (APK handoff) — runs once on first mount.
+  // Uses BOOT_AH captured at module-load time, BEFORE React Router could strip the query.
   const redeemHandoff = useCallback(async () => {
     try {
-      const params = new URLSearchParams(window.location.search);
-      const handoff = params.get('ah');
+      const handoff = BOOT_AH;
       if (!handoff) return false;
       const { data } = await axios.post(
         `${API_URL}/api/auth/redeem-apk-handoff`,
@@ -77,11 +87,14 @@ export const AuthProvider = ({ children }) => {
         };
         try { localStorage.setItem('matka11_user_cache', JSON.stringify(cacheUser)); } catch (_) {}
         setUser(cacheUser);
-        // Strip ?ah= from URL so refresh doesn't re-attempt with consumed token
-        params.delete('ah');
-        const cleanQs = params.toString();
-        const cleanUrl = window.location.pathname + (cleanQs ? `?${cleanQs}` : '') + window.location.hash;
-        window.history.replaceState({}, '', cleanUrl);
+        // Strip ?ah= from current URL (token is consumed, prevent re-attempts on reload)
+        try {
+          const params = new URLSearchParams(window.location.search);
+          params.delete('ah');
+          const cleanQs = params.toString();
+          const cleanUrl = window.location.pathname + (cleanQs ? `?${cleanQs}` : '') + window.location.hash;
+          window.history.replaceState({}, '', cleanUrl);
+        } catch (_) {}
         return true;
       }
     } catch (e) {

@@ -1,0 +1,46 @@
+{
+  "summary": "Iter 24 retest of FEATURE 3c (APK auto-login via ?ah= query param) + regressions. All 4 test scenarios PASS. Module-load capture of BOOT_AH in AuthContext.js plus query-string-preserving Navigate in App.js successfully solves the React Router strip issue from iter 23. Backend 5/5 pytest cases pass. UI regressions (Yesterday/Today 6+6 boxes, MATKA logo, Telegram popup with Download button) all confirmed. Invalid handoff token handled gracefully (no crash, lands on /signup, no token in localStorage).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Console (dev-only)", "issues": ["Multiple React warnings: 'A props object containing a key prop is being spread into JSX' (originating from dev tooling wrappers — not user-visible, low priority)"]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_apk_handoff.py",
+    "/app/test_reports/pytest/apk_handoff_iter24.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "AuthContext.js module-load BOOT_AH capture is correct and robust — evaluates synchronously at JS import time before any React render. Cleanest possible fix for React-Router strip race.",
+    "App.js lines 237-238 preserve window.location.search via template-literal Navigate target — redundant but defensive (BOOT_AH already captured before this runs).",
+    "Minor: On failed redeem (invalid ?ah=), the bogus ?ah= remains in the URL (only success path strips it). If user hard-reloads, redeem re-attempts and fails again — harmless but adds unnecessary backend traffic. Consider always stripping ?ah= after first attempt regardless of outcome.",
+    "Note: BOOT_AH module-level constant means if user navigates client-side (without full reload) to another /?ah=NEW_TOKEN URL, the new token would NOT be redeemed. Acceptable since handoff is intended only for fresh APK launches."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100% (5/5 pytest)", "frontend": "100% (4/4 scenarios)"},
+  "test_credentials": "admin@sattamatka.com / Admin@123 (verified working)",
+  "seed_data_creation": "Used existing admin user. Generated fresh handoff tokens per test scenario as required (10-min TTL, in-memory).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "FEATURE 3c is now fully working end-to-end. Module-load BOOT_AH capture in /app/frontend/src/context/AuthContext.js is the canonical fix; do not refactor it into a useEffect or component-scope variable — React Router will strip the query before render. Backend handoff endpoints are in /app/backend/routes/auth_routes.py with 10-min in-memory TTL — restart of backend will invalidate active tokens. Pytest suite at /app/backend/tests/test_apk_handoff.py covers create-auth, redeem-success, replay-rejection, missing-token, bogus-token (5 tests, all pass).",
+  "verified_assertions": {
+    "auto_login_url_after_boot": "/dashboard",
+    "matka11_token_in_localStorage": "true (212-char JWT)",
+    "user_cache_in_localStorage": "true (admin role)",
+    "ah_query_param_stripped_on_success": true,
+    "matka_logo_visible": true,
+    "header_balance_visible": true,
+    "hard_reload_persists_session": true,
+    "yesterday_result_boxes_count": 6,
+    "today_result_boxes_count": 6,
+    "matka_logo_contains_MATKA": true,
+    "telegram_popup_shows_Download_MATKA_11_App_button": true,
+    "invalid_ah_no_crash": true,
+    "invalid_ah_lands_on_signup": true,
+    "invalid_ah_no_token_in_localStorage": true,
+    "invalid_ah_console_warning_present": "APK handoff redeem failed: 400 (acceptable)"
+  }
+}

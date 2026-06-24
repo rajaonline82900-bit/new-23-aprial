@@ -233,9 +233,9 @@ function AppRoutes() {
         }
       />
 
-      {/* Default Route */}
-      <Route path="/" element={<Navigate to="/signup" replace />} />
-      <Route path="*" element={<Navigate to="/signup" replace />} />
+      {/* Default Route — preserve query string (e.g. ?ah= for APK auto-login) */}
+      <Route path="/" element={<Navigate to={`/signup${window.location.search}`} replace />} />
+      <Route path="*" element={<Navigate to={`/signup${window.location.search}`} replace />} />
     </Routes>
   );
 }
