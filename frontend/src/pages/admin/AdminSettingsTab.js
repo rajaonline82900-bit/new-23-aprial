@@ -29,20 +29,52 @@ const AdminSettingsTab = () => {
   const [testingPush, setTestingPush] = useState(false);
 
   const fetchSettings = useCallback(async () => {
-    try {
-      const { data } = await axios.get(`${API_URL}/api/admin/settings`, { withCredentials: true });
-      setTelegramLink(data.telegram_link || ''); setWhatsappLink(data.whatsapp_link || '');
+    const applyData = (data) => {
+      if (!data || typeof data !== 'object') return;
+      setTelegramLink(data.telegram_link || '');
+      setWhatsappLink(data.whatsapp_link || '');
       setWhatsappNumber(data.whatsapp_number || '');
       setWithdrawalProofTelegram(data.withdrawal_proof_telegram || '');
-      setWithdrawalStartTime(data.withdrawal_start_time || ''); setWithdrawalEndTime(data.withdrawal_end_time || '');
-      setMinBetJodi(data.min_bet_jodi || 10); setMinBetHaruf(data.min_bet_haruf || 10); setMinBetCrossing(data.min_bet_crossing || 10);
-      setMinDeposit(data.min_deposit || 100); setMinWithdrawal(data.min_withdrawal || 100);
-    } catch (error) {}
-    // Fetch push stats
+      setWithdrawalStartTime(data.withdrawal_start_time || '');
+      setWithdrawalEndTime(data.withdrawal_end_time || '');
+      setMinBetJodi(data.min_bet_jodi ?? 10);
+      setMinBetHaruf(data.min_bet_haruf ?? 10);
+      setMinBetCrossing(data.min_bet_crossing ?? 10);
+      setMinDeposit(data.min_deposit ?? 100);
+      setMinWithdrawal(data.min_withdrawal ?? 100);
+    };
+    // Try admin endpoint first, with one retry if it fails (handles initial auth header race)
+    let loaded = false;
+    for (let attempt = 0; attempt < 2 && !loaded; attempt += 1) {
+      try {
+        const { data } = await axios.get(`${API_URL}/api/admin/settings`, { withCredentials: true });
+        applyData(data);
+        loaded = true;
+      } catch (err) {
+        if (attempt === 0) {
+          // brief wait for any auth header / cookie to settle
+          await new Promise((r) => setTimeout(r, 500));
+        } else {
+          console.error('admin/settings load failed:', err?.response?.status, err?.message);
+        }
+      }
+    }
+    // Fallback to public settings if admin endpoint never returned
+    if (!loaded) {
+      try {
+        const { data } = await axios.get(`${API_URL}/api/settings`);
+        applyData(data);
+      } catch (err) {
+        console.error('public /settings load failed:', err?.message);
+      }
+    }
+    // Push stats (non-blocking)
     try {
       const { data } = await axios.get(`${API_URL}/api/push/stats`, { withCredentials: true });
       setPushStats(data);
-    } catch (error) {}
+    } catch (err) {
+      console.error('push/stats load failed:', err?.message);
+    }
   }, []);
 
   useEffect(() => { fetchSettings(); }, [fetchSettings]);

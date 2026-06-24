@@ -1,0 +1,38 @@
+{
+  "summary": "Iteration 21 - Regression retest of AdminSettingsTab WhatsApp Number persistence bug (BUG 2 from iter 20) + 3 other bugs. ALL 4 BUGS PASS. The fetchSettings refactor (retry once with 500ms backoff + fallback to public /api/settings + console.error logging) successfully fixes the race condition. Fresh admin login now correctly populates the WhatsApp Number field, save persists, reload re-populates, public API reflects new value, and dashboard wa.me link uses digits-only number.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Dashboard Disawar card", "issues": ["Cosmetic only: text_content() concatenates as 'Open7:00 AMClose4:00 AMRunning' (no whitespace); visually OK due to CSS layout. Same minor issue noted in iter 20, low priority."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration20_bugfixes.py (reused from iter 20, not re-executed per main agent instruction)"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "AdminSettingsTab.js fetchSettings retry/fallback logic is solid and the race condition is resolved. Good use of console.error to surface load failures. Recommended next step: add a visible loading skeleton or 'Loading settings...' state in the JSX to prevent the admin from interacting with an empty form during the 500ms retry window (defense in depth).",
+    "handleSaveSettings still uses `parseInt(value) || 10` pattern which silently coerces 0/empty to 10. Consider Number.isFinite guard if admin needs to set 0 deliberately (low priority).",
+    "React console warning: 'A props object containing a \"key\" prop is being spread into JSX' in Link components — affects dev console hygiene; not user-facing but worth fixing.",
+    "React console warning: 'Cannot update a component (BrowserRouter) while rendering a different component (AdminLoginPage)' on login — points to a setState inside render or useEffect cleanup issue in AdminLoginPage.js; not blocking but should be fixed."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "skipped per main-agent instruction", "frontend": "100% (4/4 bugs verified pass)"},
+  "test_credentials": "Admin: admin@sattamatka.com / Admin@123. User: 9870012345 / Test@1234 (still active in DB).",
+  "seed_data_creation": "Updated whatsapp_number via admin UI to '+12025551234' (was '+919999999999' from iter 20). Public /api/settings now returns whatsapp_number='+12025551234'. Dashboard wa.me link confirmed 'https://wa.me/12025551234'.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "BUG 2 race condition is fully fixed. fetchSettings now retries once with 500ms backoff before falling back to public /api/settings. Errors are surfaced via console.error instead of being swallowed. The current whatsapp_number in DB is '+12025551234' (changed from '+919999999999' during this test run). If you need to test with a different value, login as admin and update via the Settings tab. Settings tab Hindi label exact match: 'सेटिंग्स' (NOT 'गेम सेटिंग्स'). Chart modal testids: history-month-select / history-year-select (not 'filter' suffix). Jantri Ghaziabad pill still shows 13 results.",
+  "verification_details": {
+    "BUG_2_whatsapp_PERSISTENCE_RETEST_PASS": "Step1 fresh admin login -> /admin. Step2 click 'सेटिंग्स' tab. Step3 read settings-whatsapp-number input value = '+919999999999' (loaded correctly via fetchSettings on fresh login — race condition resolved). Step4 changed value to '+12025551234' and clicked save-settings-button. Step5 page.goto(/admin) and re-clicked Settings tab -> input value = '+12025551234' (persists across re-mount). Step6 GET https://matka-numbers-bet.preview.emergentagent.com/api/settings returned whatsapp_number='+12025551234'. Step7 /dashboard whatsapp-quick-link href = 'https://wa.me/12025551234' (digits-only).",
+    "BUG_1_chart_modal_PASS": "Logged in as user 9870012345. Dashboard chart-btn-delhi_bazaar opens GameHistoryModal showing 17 rows. Filters present (history-month-select + history-year-select).",
+    "BUG_3_disawar_timing_PASS": "play-status-disawar text contains '7:00 AM' (Open) and '4:00 AM' (Close) and 'Running' — wrap-around timing working.",
+    "BUG_4_jantri_ghaziabad_PASS": "/jantri page, game-pill-ghaziabad click -> jantri-current-game='गाजियाबाद', jantri-result-count='13 results', 13 jantri-row-N rendered, first jodi 33."
+  },
+  "rca_of_the_original_issue": "Original race: AdminSettingsTab mounted and fired fetchSettings(GET /api/admin/settings) before the axios bearer-token (or httpOnly cookie auth context) was fully primed on the very first render after admin login. The 401 was swallowed by an empty catch block, leaving the form state at its initial empty strings. Admin then thought settings were unset and could overwrite saved values. Fix: retry once after a 500ms wait (covers the auth-priming gap), then fallback to the public /api/settings endpoint (which has the same whatsapp_number/telegram_link visible to non-admins), and log all failures with console.error so future regressions are visible in the browser console."
+}
