@@ -394,3 +394,10 @@ code {
   background-size: 200% auto;
   animation: textShimmer 3.5s linear infinite;
 }
+
+/* Popup pop-in animation (used by modals) */
+@keyframes popupEnter {
+  0% { opacity: 0; transform: scale(0.85) translateY(20px); }
+  60% { opacity: 1; transform: scale(1.02) translateY(-2px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}

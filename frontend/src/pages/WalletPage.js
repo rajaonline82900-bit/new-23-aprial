@@ -136,14 +136,17 @@ const WalletPage = () => {
     const payment = searchParams.get('payment');
     const orderId = searchParams.get('order_id');
     const tab = searchParams.get('tab');
+    const action = searchParams.get('action');
     if (payment === 'success' && orderId) {
       checkPaymentStatus(orderId);
     } else if (payment === 'failed') {
       toast.error('भुगतान विफल हो गया');
       window.history.replaceState({}, '', '/wallet');
     }
-    if (tab === 'withdraw') {
+    if (tab === 'withdraw' || action === 'withdraw') {
       setWithdrawOpen(true);
+    } else if (action === 'deposit') {
+      setDepositOpen(true);
     }
   }, [fetchWallet, refreshUser, searchParams, checkPaymentStatus]);
 

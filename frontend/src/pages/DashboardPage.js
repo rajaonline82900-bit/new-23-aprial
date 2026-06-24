@@ -1,40 +1,38 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useLang } from '../context/LanguageContext';
 import axios from 'axios';
 import MatkaLogo from '../components/MatkaLogo';
 import { 
   Wallet, 
-  Trophy, 
   Shield,
-  Send,
   Menu,
-  Headphones,
-  Coins,
   Play,
-  Pause
+  Pause,
+  HandCoins,
+  BanknoteArrowUp,
+  BarChart3
 } from 'lucide-react';
-import { toast } from 'sonner';
 import FooterNav from '../components/FooterNav';
 import { speak } from '../utils/voice';
 import SidebarMenu from '../components/SidebarMenu';
+import TelegramWelcomePopup from '../components/TelegramWelcomePopup';
+import GameHistoryModal from '../components/GameHistoryModal';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const DashboardPage = () => {
   const { user, logout, refreshUser } = useAuth();
-  const { t } = useLang();
   const navigate = useNavigate();
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [telegramLink, setTelegramLink] = useState('');
   const [whatsappLink, setWhatsappLink] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [showNotifBanner, setShowNotifBanner] = useState(false);
   const [unreadChat, setUnreadChat] = useState(0);
   const [gameCategory, setGameCategory] = useState(() => localStorage.getItem('game_category') || 'gali_disawar');
   const [kalyanResults, setKalyanResults] = useState({});
+  const [historyGame, setHistoryGame] = useState(null);
   const gamesRef = useRef(null);
 
   // Fetch today's Kalyan results for the dashboard cards
@@ -135,48 +133,15 @@ const DashboardPage = () => {
   };
 
 
-  // Request notification permission on dashboard load
+  // Subscribe to push notifications silently if permission already granted (no popup)
   useEffect(() => {
     if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
-    
     if (Notification.permission === 'granted') {
-      // Already granted - subscribe silently
       navigator.serviceWorker.ready.then((reg) => {
         if (window.subscribePush) window.subscribePush(reg);
       });
-    } else if (Notification.permission === 'default') {
-      // Show aggressive modal - re-show every 24 hours if not enabled
-      const lastSkipped = parseInt(localStorage.getItem('notif_banner_skipped_at') || '0', 10);
-      const hoursSinceSkip = (Date.now() - lastSkipped) / (1000 * 60 * 60);
-      if (hoursSinceSkip >= 24) {
-        // Delay 1.5s for better UX (let dashboard render first)
-        setTimeout(() => setShowNotifBanner(true), 1500);
-      }
     }
   }, []);
-
-  const handleEnableNotifications = async () => {
-    try {
-      const perm = await Notification.requestPermission();
-      if (perm === 'granted') {
-        const reg = await navigator.serviceWorker.ready;
-        if (window.subscribePush) await window.subscribePush(reg);
-        toast.success('Notifications चालू हो गई!');
-      } else {
-        toast.error('Notification permission deny हो गई');
-      }
-    } catch (e) {
-      console.error('Notification enable error:', e);
-      toast.error('Notification enable नहीं हो पाई');
-    }
-    setShowNotifBanner(false);
-    localStorage.setItem('notif_banner_dismissed', 'true');
-  };
-
-  const dismissNotifBanner = () => {
-    setShowNotifBanner(false);
-    localStorage.setItem('notif_banner_dismissed', 'true');
-  };
 
   const handleLogout = async () => {
     await logout();
@@ -204,13 +169,17 @@ const DashboardPage = () => {
   };
 
   return (
-    <div className="min-h-screen app-shell relative overflow-hidden" style={{ background: 'linear-gradient(180deg, #0A0A14 0%, #14142B 50%, #0A0A14 100%)' }}>
-      {/* Premium gold ambient lighting */}
+    <div className="min-h-screen app-shell relative overflow-hidden" style={{ background: 'linear-gradient(140deg, #0B0420 0%, #1A0B3D 25%, #2A1058 50%, #1A0B3D 75%, #0B0420 100%)' }}>
+      {/* Premium ambient lighting - cinematic gradients */}
       <div className="fixed inset-0 -z-10 pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-gradient-to-br from-[#D4AF37]/15 to-[#FFD700]/10 rounded-full blur-[120px]" />
-        <div className="absolute top-[40%] right-0 w-[350px] h-[350px] bg-gradient-to-br from-[#FFD700]/10 to-[#D4AF37]/5 rounded-full blur-[100px]" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-br from-[#D4AF37]/12 to-[#B8860B]/8 rounded-full blur-[110px]" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-gradient-to-br from-[#D4AF37]/20 to-[#FFD700]/10 rounded-full blur-[120px]" />
+        <div className="absolute top-[35%] right-0 w-[400px] h-[400px] bg-gradient-to-br from-[#8B5CF6]/18 to-[#A855F7]/10 rounded-full blur-[110px]" />
+        <div className="absolute bottom-0 left-0 w-[450px] h-[450px] bg-gradient-to-br from-[#06B6D4]/15 to-[#0EA5E9]/8 rounded-full blur-[120px]" />
+        <div className="absolute top-[60%] left-[30%] w-[300px] h-[300px] bg-gradient-to-br from-[#EC4899]/10 to-[#D4AF37]/5 rounded-full blur-[100px]" />
       </div>
+
+      {/* Welcome popup — shows once per fresh app open */}
+      <TelegramWelcomePopup telegramLink={telegramLink} />
       {/* Header - Royal black with gold gradient bottom edge */}
       <header
         className="fixed top-0 left-0 right-0 z-50 shadow-xl"
@@ -269,99 +238,64 @@ const DashboardPage = () => {
       {/* Main Content - everything scrolls together */}
       <div className="px-3 pt-[64px] pb-24" style={{maxWidth: '480px', margin: '0 auto'}}>
         <div className="pt-2">
-          {/* Notification popup */}
-          {showNotifBanner && (
-            <div className="fixed inset-0 z-[150] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" data-testid="notification-enable-modal" style={{maxWidth: '480px', margin: '0 auto'}}>
-              <div
-                className="relative w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl"
-                style={{
-                  background: 'linear-gradient(135deg, #1a1410 0%, #241a12 50%, #1a1410 100%)',
-                  border: '2px solid #D4AF37',
-                  animation: 'popupEnter 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                }}
-              >
-                <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-[#D4AF37]/20 to-transparent pointer-events-none" />
-                <div className="relative p-6 text-center">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-[#FDE047] to-[#D4AF37] flex items-center justify-center shadow-[0_0_30px_rgba(212,175,55,0.5)]">
-                    <svg className="w-8 h-8 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                    </svg>
-                  </div>
-                  <h2 className="text-white text-xl font-black mb-2">Notification चालू करो!</h2>
-                  <p className="text-gray-300 text-sm mb-1">हर रिजल्ट सबसे पहले पाओ</p>
-                  <p className="text-[#D4AF37] text-xs font-bold mb-5">Band app me bhi banner aayega</p>
-                  <ul className="text-left text-gray-400 text-xs space-y-2 mb-5 bg-black/30 rounded-xl p-3 border border-white/5">
-                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37]" /> रिजल्ट खुलते ही तुरंत notification</li>
-                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37]" /> Deposit/Withdraw updates</li>
-                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37]" /> Jeetne par 2x notification</li>
-                  </ul>
-                  <button
-                    onClick={handleEnableNotifications}
-                    data-testid="enable-notifications-btn"
-                    className="w-full py-3 rounded-xl font-black text-black text-sm tracking-wide transition-all active:scale-95"
-                    style={{
-                      background: 'linear-gradient(135deg, #FDE047 0%, #D4AF37 100%)',
-                      boxShadow: '0 4px 20px rgba(212,175,55,0.4)',
-                    }}
-                  >
-                    हाँ, Notification चालू करो
-                  </button>
-                  <button
-                    onClick={dismissNotifBanner}
-                    className="w-full mt-2 py-2 text-gray-500 text-xs hover:text-gray-300 transition-all"
-                    data-testid="dismiss-notifications-btn"
-                  >
-                    बाद में
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Quick Actions - dark cards with gold-bordered gradient icons */}
+          {/* Quick Actions - Deposit / Withdrawal / Telegram / WhatsApp */}
           <div className="grid grid-cols-4 gap-2.5 mb-5">
-            <Link to="/wallet" data-testid="wallet-link">
-              <div className="flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3 active:scale-95 transition-all"
-                style={{ background: 'linear-gradient(135deg, #1A1A2E 0%, #16162A 100%)', border: '1px solid rgba(212, 175, 55, 0.25)', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}>
-                <div className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #FFD700 0%, #D4AF37 50%, #B8860B 100%)' }}>
-                  <Wallet className="w-5 h-5 text-[#1A1A2E]" />
+            {/* DEPOSIT - hand depositing money */}
+            <Link to="/wallet?action=deposit" data-testid="deposit-quick-link">
+              <div className="flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3 active:scale-95 hover:scale-[1.02] transition-all"
+                style={{ background: 'linear-gradient(135deg, #1A1A2E 0%, #16162A 100%)', border: '1px solid rgba(212, 175, 55, 0.3)', boxShadow: '0 4px 18px rgba(0,0,0,0.45), 0 0 14px rgba(16, 185, 129, 0.1)' }}>
+                <div className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-md relative" style={{ background: 'linear-gradient(135deg, #34D399 0%, #10B981 50%, #047857 100%)', boxShadow: '0 4px 14px rgba(16, 185, 129, 0.55), inset 0 1px 0 rgba(255,255,255,0.2)' }}>
+                  <HandCoins className="w-6 h-6 text-white" strokeWidth={2.2} />
                 </div>
-                <span className="text-[#FFD700] font-bold text-[10px] tracking-wide">{t('wallet')}</span>
+                <span className="text-[#FFD700] font-bold text-[10px] tracking-wide">Deposit</span>
               </div>
             </Link>
 
-            <a href={telegramLink || '#'} target="_blank" rel="noopener noreferrer" data-testid="telegram-quick-link" onClick={(e) => { if (!telegramLink) e.preventDefault(); }}>
-              <div className="flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3 active:scale-95 transition-all"
-                style={{ background: 'linear-gradient(135deg, #1A1A2E 0%, #16162A 100%)', border: '1px solid rgba(212, 175, 55, 0.25)', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}>
-                <div className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #38BDF8 0%, #0284C7 100%)' }}>
-                  <Send className="w-5 h-5 text-white" />
+            {/* WITHDRAWAL - hand pulling banknotes */}
+            <Link to="/wallet?action=withdraw" data-testid="withdraw-quick-link">
+              <div className="flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3 active:scale-95 hover:scale-[1.02] transition-all"
+                style={{ background: 'linear-gradient(135deg, #1A1A2E 0%, #16162A 100%)', border: '1px solid rgba(212, 175, 55, 0.3)', boxShadow: '0 4px 18px rgba(0,0,0,0.45), 0 0 14px rgba(239, 68, 68, 0.12)' }}>
+                <div className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #FB923C 0%, #F97316 50%, #C2410C 100%)', boxShadow: '0 4px 14px rgba(249, 115, 22, 0.55), inset 0 1px 0 rgba(255,255,255,0.2)' }}>
+                  <BanknoteArrowUp className="w-6 h-6 text-white" strokeWidth={2.2} />
                 </div>
-                <span className="text-[#FFD700] font-bold text-[10px] tracking-wide">{t('telegram')}</span>
+                <span className="text-[#FFD700] font-bold text-[10px] tracking-wide">Withdraw</span>
+              </div>
+            </Link>
+
+            {/* TELEGRAM - authentic logo */}
+            <a href={telegramLink || '#'} target="_blank" rel="noopener noreferrer" data-testid="telegram-quick-link" onClick={(e) => { if (!telegramLink) e.preventDefault(); }}>
+              <div className="flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3 active:scale-95 hover:scale-[1.02] transition-all"
+                style={{ background: 'linear-gradient(135deg, #1A1A2E 0%, #16162A 100%)', border: '1px solid rgba(212, 175, 55, 0.3)', boxShadow: '0 4px 18px rgba(0,0,0,0.45), 0 0 14px rgba(42, 171, 238, 0.15)' }}>
+                <div className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #2AABEE 0%, #229ED9 100%)', boxShadow: '0 4px 14px rgba(42, 171, 238, 0.55), inset 0 1px 0 rgba(255,255,255,0.2)' }}>
+                  <svg viewBox="0 0 240 240" className="w-6 h-6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M186.054 71.196 158.5 200.952c-2.08 9.184-7.512 11.464-15.232 7.144l-42.064-31-20.296 19.528c-2.248 2.248-4.128 4.128-8.456 4.128l3.024-42.864 78.04-70.504c3.392-3.024-.736-4.704-5.272-1.68L52.74 138.504l-41.512-12.984c-9.024-2.816-9.184-9.024 1.88-13.36L174.5 60.876c7.512-2.816 14.08 1.68 11.554 10.32Z" fill="#FFFFFF" />
+                  </svg>
+                </div>
+                <span className="text-[#FFD700] font-bold text-[10px] tracking-wide">Telegram</span>
               </div>
             </a>
 
-            <Link to="/chat" data-testid="chat-quick-link">
-              <div className="flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3 active:scale-95 transition-all relative"
-                style={{ background: 'linear-gradient(135deg, #1A1A2E 0%, #16162A 100%)', border: '1px solid rgba(212, 175, 55, 0.25)', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}>
-                <div className="relative w-11 h-11 rounded-2xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #34D399 0%, #059669 100%)' }}>
-                  <Headphones className="w-5 h-5 text-white" />
+            {/* WHATSAPP - authentic logo */}
+            <a
+              href={whatsappLink || '#'}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="whatsapp-quick-link"
+              onClick={(e) => { if (!whatsappLink) e.preventDefault(); }}
+            >
+              <div className="flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3 active:scale-95 hover:scale-[1.02] transition-all relative"
+                style={{ background: 'linear-gradient(135deg, #1A1A2E 0%, #16162A 100%)', border: '1px solid rgba(212, 175, 55, 0.3)', boxShadow: '0 4px 18px rgba(0,0,0,0.45), 0 0 14px rgba(37, 211, 102, 0.15)' }}>
+                <div className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-md relative" style={{ background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)', boxShadow: '0 4px 14px rgba(37, 211, 102, 0.55), inset 0 1px 0 rgba(255,255,255,0.2)' }}>
+                  <svg viewBox="0 0 24 24" className="w-6 h-6" fill="#FFFFFF" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.297-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+                  </svg>
                   {unreadChat > 0 && (
                     <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[8px] font-bold flex items-center justify-center shadow-md border border-[#1A1A2E]" data-testid="chat-unread-badge">{unreadChat > 9 ? '9+' : unreadChat}</span>
                   )}
                 </div>
-                <span className="text-[#FFD700] font-bold text-[10px] tracking-wide">{t('chat')}</span>
+                <span className="text-[#FFD700] font-bold text-[10px] tracking-wide">WhatsApp</span>
               </div>
-            </Link>
-
-            <Link to="/results" data-testid="results-link">
-              <div className="flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3 active:scale-95 transition-all"
-                style={{ background: 'linear-gradient(135deg, #1A1A2E 0%, #16162A 100%)', border: '1px solid rgba(212, 175, 55, 0.25)', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}>
-                <div className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #FBBF24 0%, #DC2626 100%)' }}>
-                  <Trophy className="w-5 h-5 text-white" />
-                </div>
-                <span className="text-[#FFD700] font-bold text-[10px] tracking-wide">{t('results')}</span>
-              </div>
-            </Link>
+            </a>
           </div>
 
           {/* Section Header - gold premium */}
@@ -495,17 +429,37 @@ const DashboardPage = () => {
                       <div className="flex items-start gap-3">
                         {/* LEFT: Game Name + Yesterday/Today */}
                         <div className="flex-1 min-w-0">
-                          <h4
-                            className="text-lg font-black tracking-tight truncate text-transparent bg-clip-text mb-2"
-                            style={{
-                              backgroundImage: 'linear-gradient(135deg, #FFD700 0%, #FDE047 30%, #D4AF37 65%, #B8860B 100%)',
-                              fontFamily: 'Outfit, Noto Sans Devanagari, sans-serif',
-                              filter: 'drop-shadow(0 0 8px rgba(212, 175, 55, 0.3))',
-                            }}
-                            data-testid={`game-name-${game.id}`}
-                          >
-                            {game.name_hi}
-                          </h4>
+                          <div className="flex items-center gap-2 mb-2">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setHistoryGame(game);
+                              }}
+                              data-testid={`chart-btn-${game.id}`}
+                              aria-label={`${game.name_hi} result chart`}
+                              className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 active:scale-90 hover:scale-105 transition-transform"
+                              style={{
+                                background: 'linear-gradient(135deg, #FFD700 0%, #D4AF37 50%, #B8860B 100%)',
+                                boxShadow: '0 3px 12px rgba(212, 175, 55, 0.55), inset 0 1px 0 rgba(255,255,255,0.25)',
+                                border: '1.5px solid rgba(255, 215, 0, 0.7)',
+                              }}
+                            >
+                              <BarChart3 className="w-4 h-4 text-[#1A1A2E]" strokeWidth={2.8} />
+                            </button>
+                            <h4
+                              className="text-lg font-black tracking-tight truncate text-transparent bg-clip-text"
+                              style={{
+                                backgroundImage: 'linear-gradient(135deg, #FFD700 0%, #FDE047 30%, #D4AF37 65%, #B8860B 100%)',
+                                fontFamily: 'Outfit, Noto Sans Devanagari, sans-serif',
+                                filter: 'drop-shadow(0 0 8px rgba(212, 175, 55, 0.3))',
+                              }}
+                              data-testid={`game-name-${game.id}`}
+                            >
+                              {game.name_hi}
+                            </h4>
+                          </div>
 
                           <div className="flex gap-2">
                             {/* Yesterday - Premium Purple/Indigo with animated shift */}
@@ -569,8 +523,8 @@ const DashboardPage = () => {
                               <div
                                 className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer"
                                 style={{
-                                  background: 'linear-gradient(135deg, #34D399 0%, #10B981 50%, #059669 100%)',
-                                  boxShadow: '0 4px 18px rgba(16, 185, 129, 0.65), 0 0 0 3px rgba(16, 185, 129, 0.2)',
+                                  background: 'linear-gradient(135deg, #60A5FA 0%, #3B82F6 50%, #1D4ED8 100%)',
+                                  boxShadow: '0 4px 18px rgba(59, 130, 246, 0.7), 0 0 0 3px rgba(59, 130, 246, 0.22)',
                                 }}
                                 onClick={() => speak('प्ले')}
                                 data-testid={`play-btn-${game.id}`}
@@ -583,7 +537,7 @@ const DashboardPage = () => {
                               </div>
                             )}
                             <span className={`text-[9px] font-black tracking-wide uppercase leading-none mt-1 ${
-                              game.is_holiday ? 'text-[#FBBF24]' : gameStatus.status === 'open' ? 'text-[#34D399]' : 'text-[#F87171]'
+                              game.is_holiday ? 'text-[#FBBF24]' : gameStatus.status === 'open' ? 'text-[#60A5FA]' : 'text-[#F87171]'
                             }`}>
                               {statusLabel}
                             </span>
@@ -600,6 +554,9 @@ const DashboardPage = () => {
       </div>
       <SidebarMenu open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <FooterNav />
+      {historyGame && (
+        <GameHistoryModal game={historyGame} onClose={() => setHistoryGame(null)} />
+      )}
     </div>
   );
 };

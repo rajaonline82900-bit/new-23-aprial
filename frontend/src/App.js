@@ -5,9 +5,9 @@ import { LanguageProvider } from "./context/LanguageContext";
 import { Toaster } from "./components/ui/sonner";
 import "./index.css";
 
-// Simple Loader - classic gold spinner
+// Simple Loader - transparent overlay so background shows through
 const SplashScreen = () => (
-  <div className="min-h-screen bg-[#0A0A0C] flex items-center justify-center">
+  <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(140deg, #0B0420 0%, #1A0B3D 50%, #0B0420 100%)' }}>
     <div className="w-12 h-12 border-4 border-[#D4AF37] border-t-transparent rounded-full animate-spin" />
   </div>
 );

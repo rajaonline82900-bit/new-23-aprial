@@ -47,6 +47,10 @@ Migrate Matka11 satta app from Emergent preview environment to self-hosted Hosti
 - AUTOMATIC RESULT FETCHING from king.sattaapi.com every 2 min
 - Push notifications
 - APK download /matka11.apk
+- Premium Royal Gold UI theme with animated color shift gradients
+- Telegram Welcome Popup (every fresh app open, closable with X)
+- Quick Actions: Deposit / Withdraw / Telegram / WhatsApp (authentic logos)
+- Per-game Result History Chart Modal (last 30 days)
 
 ## Critical Fixes (Feb 2026)
 1. VPS migration from Emergent to Hostinger
