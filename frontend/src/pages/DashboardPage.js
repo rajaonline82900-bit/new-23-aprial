@@ -176,12 +176,10 @@ const DashboardPage = () => {
 
   return (
     <div className="min-h-screen app-shell relative overflow-hidden" style={{ background: 'linear-gradient(140deg, #0B0420 0%, #1A0B3D 25%, #2A1058 50%, #1A0B3D 75%, #0B0420 100%)' }}>
-      {/* Premium ambient lighting - cinematic gradients */}
+      {/* Lightweight ambient lighting — reduced from 4 huge blur layers to 2 small ones for mobile perf */}
       <div className="fixed inset-0 -z-10 pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-gradient-to-br from-[#D4AF37]/20 to-[#FFD700]/10 rounded-full blur-[120px]" />
-        <div className="absolute top-[35%] right-0 w-[400px] h-[400px] bg-gradient-to-br from-[#8B5CF6]/18 to-[#A855F7]/10 rounded-full blur-[110px]" />
-        <div className="absolute bottom-0 left-0 w-[450px] h-[450px] bg-gradient-to-br from-[#06B6D4]/15 to-[#0EA5E9]/8 rounded-full blur-[120px]" />
-        <div className="absolute top-[60%] left-[30%] w-[300px] h-[300px] bg-gradient-to-br from-[#EC4899]/10 to-[#D4AF37]/5 rounded-full blur-[100px]" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[320px] h-[320px] bg-gradient-to-br from-[#D4AF37]/18 to-[#FFD700]/8 rounded-full blur-[60px]" />
+        <div className="absolute bottom-0 right-0 w-[280px] h-[280px] bg-gradient-to-br from-[#8B5CF6]/15 to-[#A855F7]/6 rounded-full blur-[60px]" />
       </div>
 
       {/* Welcome popup — shows once per fresh app open */}
@@ -427,16 +425,17 @@ const DashboardPage = () => {
                 return (
                   <CardWrapper {...cardProps}>
                     <div
-                      className={`game-card-animate game-card-hidden rounded-2xl p-3.5 transition-all relative animate-gold-glow ${
+                      className={`game-card-animate game-card-hidden rounded-2xl p-3.5 transition-all relative ${
                         isDisabled ? 'opacity-90 cursor-not-allowed' : 'active:scale-[0.99] cursor-pointer'
                       }`}
                       style={{
-                        animationDelay: `${index * 0.06}s, ${index * 0.3}s`,
+                        animationDelay: `${index * 0.06}s`,
                         background: 'linear-gradient(135deg, #1A1A2E 0%, #16162A 100%)',
                         border: '2px solid transparent',
                         backgroundImage: 'linear-gradient(135deg, #1A1A2E 0%, #16162A 100%), linear-gradient(135deg, #FFD700 0%, #FDE047 30%, #D4AF37 65%, #B8860B 100%)',
                         backgroundOrigin: 'border-box',
                         backgroundClip: 'padding-box, border-box',
+                        boxShadow: '0 4px 16px rgba(0,0,0,0.45), 0 0 14px rgba(212, 175, 55, 0.15)',
                       }}
                     >
                       <div className="flex items-start gap-3">
