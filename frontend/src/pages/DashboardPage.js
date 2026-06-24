@@ -7,7 +7,8 @@ import {
   Wallet, 
   Shield,
   Menu,
-  Hourglass,
+  Play,
+  X,
   HandCoins,
   BanknoteArrowUp,
   BarChart3
@@ -533,116 +534,28 @@ const DashboardPage = () => {
                               </div>
                             ) : gameStatus.status === 'open' ? (
                               <div
-                                className="relative w-12 h-12 rounded-full flex items-center justify-center cursor-pointer animate-gold-glow hover:scale-110 active:scale-95 transition-transform"
+                                className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer animate-gold-glow"
                                 style={{
-                                  background:
-                                    'radial-gradient(circle at 30% 25%, #FFF6B8 0%, #FFE066 18%, #FFD700 38%, #D4AF37 65%, #8B6914 100%)',
-                                  boxShadow:
-                                    '0 8px 24px rgba(255, 215, 0, 0.7), 0 0 0 2px rgba(184, 134, 11, 0.55), 0 0 0 4px rgba(255, 215, 0, 0.35), inset 0 2px 1px rgba(255, 255, 255, 0.8), inset 0 -3px 6px rgba(120, 80, 0, 0.55)',
-                                  border: '2px solid rgba(255, 235, 130, 0.95)',
+                                  background: 'linear-gradient(135deg, #FFD700 0%, #FDE047 35%, #D4AF37 70%, #B8860B 100%)',
+                                  boxShadow: '0 4px 18px rgba(255, 215, 0, 0.6), 0 0 0 3px rgba(212, 175, 55, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.5)',
                                 }}
                                 onClick={() => speak('प्ले')}
                                 data-testid={`play-btn-${game.id}`}
                               >
-                                {/* Polished concentric ring (engraved coin look) */}
-                                <span
-                                  className="absolute inset-[5px] rounded-full pointer-events-none"
-                                  style={{
-                                    border: '1px dashed rgba(120, 80, 0, 0.45)',
-                                    boxShadow: 'inset 0 0 0 1px rgba(255, 255, 200, 0.35)',
-                                  }}
-                                />
-                                {/* Sparkle 1 */}
-                                <span
-                                  className="absolute pointer-events-none"
-                                  style={{
-                                    top: '4px',
-                                    left: '6px',
-                                    width: '6px',
-                                    height: '6px',
-                                    background:
-                                      'radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.3) 50%, transparent 80%)',
-                                    borderRadius: '50%',
-                                  }}
-                                />
-                                {/* Sparkle 2 */}
-                                <span
-                                  className="absolute pointer-events-none"
-                                  style={{
-                                    bottom: '6px',
-                                    right: '7px',
-                                    width: '4px',
-                                    height: '4px',
-                                    background:
-                                      'radial-gradient(circle, rgba(255,255,255,0.85) 0%, transparent 70%)',
-                                    borderRadius: '50%',
-                                  }}
-                                />
-                                {/* Custom polished play triangle */}
-                                <svg
-                                  className="relative"
-                                  width="20"
-                                  height="20"
-                                  viewBox="0 0 24 24"
-                                  style={{ marginLeft: '3px', filter: 'drop-shadow(0 1px 0 rgba(255,255,255,0.5)) drop-shadow(0 2px 2px rgba(0,0,0,0.4))' }}
-                                >
-                                  <defs>
-                                    <linearGradient id={`pg-${game.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
-                                      <stop offset="0%" stopColor="#3A1E00" />
-                                      <stop offset="55%" stopColor="#1A0F00" />
-                                      <stop offset="100%" stopColor="#000000" />
-                                    </linearGradient>
-                                  </defs>
-                                  <path
-                                    d="M7 4.5v15a1 1 0 001.555.832l11-7.5a1 1 0 000-1.664l-11-7.5A1 1 0 007 4.5z"
-                                    fill={`url(#pg-${game.id})`}
-                                    stroke="#0A0500"
-                                    strokeWidth="0.6"
-                                    strokeLinejoin="round"
-                                  />
-                                </svg>
+                                <Play className="w-4 h-4 text-[#1A0F00] ml-0.5" fill="#1A0F00" />
                               </div>
                             ) : (
                               <div
-                                className="relative w-12 h-12 rounded-full flex items-center justify-center cursor-pointer hover:scale-105 active:scale-95 transition-transform"
+                                className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer"
                                 style={{
-                                  background:
-                                    'radial-gradient(circle at 30% 25%, #FECDD3 0%, #FB7185 22%, #E11D48 55%, #9F1239 100%)',
-                                  boxShadow:
-                                    '0 8px 22px rgba(225, 29, 72, 0.6), 0 0 0 2px rgba(159, 18, 57, 0.5), 0 0 0 4px rgba(225, 29, 72, 0.2), inset 0 2px 1px rgba(255, 255, 255, 0.65), inset 0 -3px 6px rgba(110, 0, 30, 0.55)',
-                                  border: '2px solid rgba(254, 205, 211, 0.85)',
+                                  background: 'linear-gradient(135deg, #FFFFFF 0%, #F1F5F9 100%)',
+                                  boxShadow: '0 4px 14px rgba(220, 38, 38, 0.35), 0 0 0 3px rgba(220, 38, 38, 0.18)',
+                                  border: '2px solid #DC2626',
                                 }}
                                 data-testid={`timeout-btn-${game.id}`}
                                 onClick={() => speak('टाइम आउट')}
                               >
-                                {/* Concentric engraved ring */}
-                                <span
-                                  className="absolute inset-[5px] rounded-full pointer-events-none"
-                                  style={{
-                                    border: '1px dashed rgba(110, 0, 30, 0.45)',
-                                    boxShadow: 'inset 0 0 0 1px rgba(255, 220, 230, 0.35)',
-                                  }}
-                                />
-                                {/* Sparkle */}
-                                <span
-                                  className="absolute pointer-events-none"
-                                  style={{
-                                    top: '4px',
-                                    left: '6px',
-                                    width: '6px',
-                                    height: '6px',
-                                    background:
-                                      'radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.3) 50%, transparent 80%)',
-                                    borderRadius: '50%',
-                                  }}
-                                />
-                                <Hourglass
-                                  className="relative"
-                                  size={18}
-                                  strokeWidth={2.5}
-                                  color="#FFFFFF"
-                                  style={{ filter: 'drop-shadow(0 1px 0 rgba(255,255,255,0.4)) drop-shadow(0 2px 3px rgba(0,0,0,0.45))' }}
-                                />
+                                <X className="w-5 h-5 text-[#DC2626]" strokeWidth={3.5} />
                               </div>
                             )}
                             <span
