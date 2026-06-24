@@ -8,7 +8,7 @@ import {
   Shield,
   Menu,
   Play,
-  Pause,
+  Lock,
   HandCoins,
   BanknoteArrowUp,
   BarChart3
@@ -534,24 +534,77 @@ const DashboardPage = () => {
                               </div>
                             ) : gameStatus.status === 'open' ? (
                               <div
-                                className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer"
+                                className="relative w-11 h-11 rounded-full flex items-center justify-center cursor-pointer animate-gold-glow hover:scale-110 active:scale-95 transition-transform"
                                 style={{
-                                  background: 'linear-gradient(135deg, #60A5FA 0%, #3B82F6 50%, #1D4ED8 100%)',
-                                  boxShadow: '0 4px 18px rgba(59, 130, 246, 0.7), 0 0 0 3px rgba(59, 130, 246, 0.22)',
+                                  background: 'linear-gradient(135deg, #FFD700 0%, #FDE047 25%, #D4AF37 60%, #B8860B 100%)',
+                                  boxShadow: '0 6px 22px rgba(255, 215, 0, 0.65), 0 0 0 3px rgba(212, 175, 55, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.55), inset 0 -2px 4px rgba(120, 80, 0, 0.4)',
+                                  border: '1.5px solid rgba(255, 215, 0, 0.95)',
                                 }}
                                 onClick={() => speak('प्ले')}
                                 data-testid={`play-btn-${game.id}`}
                               >
-                                <Play className="w-4 h-4 text-white ml-0.5" fill="currentColor" />
+                                {/* Inner glossy top highlight */}
+                                <span
+                                  className="absolute inset-x-1 top-1 h-1/2 rounded-t-full pointer-events-none"
+                                  style={{
+                                    background:
+                                      'linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.1) 60%, transparent 100%)',
+                                  }}
+                                />
+                                <Play
+                                  className="w-[18px] h-[18px] ml-[2px] relative"
+                                  fill="#1A0F00"
+                                  stroke="#1A0F00"
+                                  strokeWidth={2}
+                                  style={{ filter: 'drop-shadow(0 1px 0 rgba(255,255,255,0.4))' }}
+                                />
                               </div>
                             ) : (
-                              <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #F87171 0%, #DC2626 100%)', boxShadow: '0 4px 14px rgba(220, 38, 38, 0.45)' }} data-testid={`timeout-btn-${game.id}`} onClick={() => speak('टाइम आउट')}>
-                                <Pause className="w-3.5 h-3.5 text-white" fill="currentColor" />
+                              <div
+                                className="relative w-11 h-11 rounded-full flex items-center justify-center cursor-pointer"
+                                style={{
+                                  background:
+                                    'linear-gradient(135deg, #FB7185 0%, #E11D48 50%, #9F1239 100%)',
+                                  boxShadow:
+                                    '0 6px 18px rgba(225, 29, 72, 0.55), 0 0 0 3px rgba(225, 29, 72, 0.18), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -2px 4px rgba(120, 0, 20, 0.45)',
+                                  border: '1.5px solid rgba(254, 205, 211, 0.55)',
+                                }}
+                                data-testid={`timeout-btn-${game.id}`}
+                                onClick={() => speak('टाइम आउट')}
+                              >
+                                {/* Glossy highlight */}
+                                <span
+                                  className="absolute inset-x-1 top-1 h-1/2 rounded-t-full pointer-events-none"
+                                  style={{
+                                    background:
+                                      'linear-gradient(180deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.05) 60%, transparent 100%)',
+                                  }}
+                                />
+                                <Lock
+                                  className="w-4 h-4 text-white relative"
+                                  strokeWidth={2.8}
+                                  style={{ filter: 'drop-shadow(0 1px 0 rgba(0,0,0,0.35))' }}
+                                />
                               </div>
                             )}
-                            <span className={`text-[9px] font-black tracking-wide uppercase leading-none mt-1 ${
-                              game.is_holiday ? 'text-[#FBBF24]' : gameStatus.status === 'open' ? 'text-[#60A5FA]' : 'text-[#F87171]'
-                            }`}>
+                            <span
+                              className={`text-[9px] font-black tracking-wide uppercase leading-none mt-1 ${
+                                game.is_holiday ? 'text-[#FBBF24]' : gameStatus.status === 'open' ? '' : 'text-[#FCA5A5]'
+                              }`}
+                              style={
+                                gameStatus.status === 'open' && !game.is_holiday
+                                  ? {
+                                      backgroundImage:
+                                        'linear-gradient(135deg, #FFD700 0%, #FDE047 50%, #D4AF37 100%)',
+                                      WebkitBackgroundClip: 'text',
+                                      backgroundClip: 'text',
+                                      color: 'transparent',
+                                      textShadow: '0 0 6px rgba(255, 215, 0, 0.35)',
+                                      filter: 'drop-shadow(0 0 4px rgba(255, 215, 0, 0.25))',
+                                    }
+                                  : undefined
+                              }
+                            >
                               {statusLabel}
                             </span>
                           </div>
