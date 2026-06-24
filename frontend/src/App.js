@@ -250,9 +250,9 @@ const AuthedOverlays = () => {
 };
 
 function App() {
-  // Run version check on app boot — if backend has newer build, force-reload to clear cached APK WebView bundle.
+  // Run version check on app boot — ALWAYS fires (no throttle) so cached APK WebView force-reloads to new bundle.
   React.useEffect(() => {
-    checkVersionAndMaybeReload();
+    checkVersionAndMaybeReload({ isBoot: true });
     const onFocus = () => checkVersionAndMaybeReload();
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);

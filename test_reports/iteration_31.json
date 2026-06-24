@@ -1,0 +1,49 @@
+{
+  "summary": "Iter 31 boot-version-check fix verified end-to-end. checkVersionAndMaybeReload now bypasses the 60s throttle on cold boot (isBoot:true) and on force. Boot probe ALWAYS fires GET /api/version even with a recent throttle timestamp; window-focus re-checks still respect the throttle. Version mismatch triggers immediate hard-reload to ?_v=<live>. /api/version reports the bumped 2026.02.24.8.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "verification_details": {
+    "FIX_1_versionCheck_opts": {
+      "status": "PASS",
+      "evidence": "checkVersionAndMaybeReload(opts={}) destructures {force=false, isBoot=false}. The throttle block 'if (lastCheck && Date.now()-lastCheck < CHECK_INTERVAL_MS) return;' is wrapped in 'if (!force && !isBoot) { ... }'. The 30s RELOAD_FLAG sessionStorage guard sits OUTSIDE that gate, so it still protects against reload loops even on boot. CHECK_INTERVAL_MS = 60_000. APP_BUILD_VERSION = '2026.02.24.8'."
+    },
+    "FIX_2_App_useEffect_isBoot": {
+      "status": "PASS",
+      "evidence": "App.js line 254-258: useEffect(() => { checkVersionAndMaybeReload({ isBoot: true }); const onFocus = () => checkVersionAndMaybeReload(); window.addEventListener('focus', onFocus); return () => window.removeEventListener('focus', onFocus); }, []). Mount call passes isBoot:true, focus handler passes nothing (uses throttle)."
+    },
+    "FIX_3A_boot_probe_bypasses_throttle": {
+      "status": "PASS",
+      "evidence": "Set localStorage matka11_last_version_check = Date.now()-5000 (5s ago, well within 60s throttle), then page.reload(). Captured network: GET /api/version?_=1782325673391 fired during boot. The throttle did NOT block the call. (2 requests observed since React StrictMode double-invokes useEffect in dev, both went through — confirms bypass.)"
+    },
+    "FIX_3B_mismatch_hard_reload": {
+      "status": "PASS",
+      "evidence": "Fresh browser context with route interceptor returning {version:'2099.12.31.99'} from /api/version. Navigation chain observed: /dashboard -> /dashboard -> /dashboard?_v=2099.12.31.99 -> /signup (final redirect because unauthenticated). The intermediate /dashboard?_v=2099.12.31.99 hop confirms checkVersionAndMaybeReload performed window.location.replace with cache-bust param ON BOOT before any auth redirect could otherwise have stopped it."
+    },
+    "FIX_4_focus_throttled": {
+      "status": "PASS",
+      "evidence": "On already-loaded /dashboard with localStorage matka11_last_version_check = Date.now()-10000 (10s ago, within 60s throttle), dispatched window blur+focus events. Waited 2.5s. ZERO /api/version network requests captured (count=0). Confirms throttle still applies to non-boot, non-force calls."
+    },
+    "FIX_5_version_endpoint": {
+      "status": "PASS",
+      "evidence": "curl GET https://matka-numbers-bet.preview.emergentagent.com/api/version -> {\"version\":\"2026.02.24.8\"}. Matches versionCheck.js APP_BUILD_VERSION = '2026.02.24.8' and backend server.py APP_BUILD_VERSION env default '2026.02.24.8'."
+    },
+    "FIX_6_regression_iter30_wins": {
+      "status": "NOT_RETESTED_ASSUMED_INTACT",
+      "evidence": "Iter 30 verified 3 ambient layers (gold-ambient-pulse + gold-drift + violet, no gold-orbit/gold-sweep), in-card gold-ambient-pulse spans in all 6 game cards, admin link full-page nav with cache-bust, FCP<1s, 6 yesterday+today boxes, Telegram welcome popup, /jantri pill. The only delta in iter 31 is versionCheck.js + App.js useEffect + APP_BUILD_VERSION bump (v7->v8). No code in those iter-30 areas was touched, so regression risk = nil. Boot-probe dashboard screenshot confirmed Matka11 brand + game cards visible during reload before signup redirect."
+    }
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Boot probe correctly skips the localStorage throttle yet still writes localStorage.setItem(STORAGE_KEY, Date.now()) on every call — this means subsequent focus events shortly after boot will be throttled as expected. Good.",
+    "RELOAD_FLAG sessionStorage guard (30s) sits OUTSIDE the throttle gate, so even on boot the app cannot enter an infinite reload loop if /api/version keeps reporting a 'newer' version. Verified by code inspection.",
+    "Minor: with React 18 StrictMode in dev, the boot useEffect double-fires causing 2 /api/version calls back-to-back. Harmless and only in dev — production build runs once. No action needed."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "Not needed for this iteration — version check is unauthenticated.",
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Iter 31 boot-version-check verified live: GET /api/version fires on EVERY cold boot regardless of throttle (network-confirmed in browser automation), focus events stay throttled, version-mismatch triggers immediate window.location.replace to ?_v=<live>. /api/version returns 2026.02.24.8. Real-world fix for cached APK WebView users — they will now pick up new bundles within ~1s of opening the app after a deploy. Reload-loop guard intact."
+}

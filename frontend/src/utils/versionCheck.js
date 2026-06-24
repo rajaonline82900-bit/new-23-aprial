@@ -1,7 +1,7 @@
 // Build version baked into the React bundle at build time.
 // MUST match (or be older than) the backend APP_BUILD_VERSION in server.py.
 // Bump this for every release so cached APK WebViews force-refresh.
-export const APP_BUILD_VERSION = '2026.02.24.7';
+export const APP_BUILD_VERSION = '2026.02.24.8';
 
 const STORAGE_KEY = 'matka11_last_version_check';
 const RELOAD_FLAG = 'matka11_version_reloaded';
@@ -9,20 +9,20 @@ const CHECK_INTERVAL_MS = 60 * 1000; // re-check at most every 60s
 
 /**
  * Detect mismatch between bundled APP_BUILD_VERSION and live /api/version.
- * If mismatch, aggressively clear caches and reload with cache-busting query.
- * Includes a guard so we never hot-loop on reload.
- * @param {Object} opts
- * @param {boolean} opts.force - bypass the 60s throttle (use on critical route entries like /admin)
+ * On every cold app boot, ALWAYS fires (no throttle) — crucial for cached APK WebView
+ * to immediately re-fetch new bundle. Throttle only applies to subsequent re-checks
+ * triggered by window focus events.
  */
 export async function checkVersionAndMaybeReload(opts = {}) {
-  const { force = false } = opts;
+  const { force = false, isBoot = false } = opts;
   try {
     // Prevent infinite reload loop: if we just reloaded, skip for 30s.
     const reloadedAt = parseInt(sessionStorage.getItem(RELOAD_FLAG) || '0', 10);
     if (reloadedAt && Date.now() - reloadedAt < 30 * 1000) return;
 
-    // Throttle network checks (skipped when force=true)
-    if (!force) {
+    // Boot checks + force checks bypass the throttle entirely.
+    // Only window-focus re-checks respect the 60s throttle (to avoid hammering /api/version).
+    if (!force && !isBoot) {
       const lastCheck = parseInt(localStorage.getItem(STORAGE_KEY) || '0', 10);
       if (lastCheck && Date.now() - lastCheck < CHECK_INTERVAL_MS) return;
     }
