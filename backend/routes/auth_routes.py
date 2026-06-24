@@ -562,3 +562,69 @@ async def google_session(request: Request):
     resp.set_cookie(key="access_token", value=access_token, httponly=True, secure=True, samesite="none", max_age=31536000, path="/")
     resp.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=True, samesite="none", max_age=31536000, path="/")
     return resp
+
+
+
+# ============== APK Handoff (web → app auto-login) ==============
+# In-memory store: { token: {user_id, email, phone, expires_at} }
+# 10 minute one-time-use tokens for handoff between website and APK.
+_apk_handoff_store: dict = {}
+
+
+def _purge_expired_handoffs():
+    now_ts = datetime.now(timezone.utc).timestamp()
+    expired = [t for t, v in _apk_handoff_store.items() if v.get("expires_at", 0) < now_ts]
+    for t in expired:
+        _apk_handoff_store.pop(t, None)
+
+
+@router.post("/auth/create-apk-handoff")
+async def create_apk_handoff(request: Request):
+    """Issue a one-time handoff token for the currently logged-in user.
+    The APK can redeem this token via /auth/redeem-apk-handoff to auto-login
+    without the user re-entering credentials.
+    """
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    _purge_expired_handoffs()
+    token = uuid.uuid4().hex
+    _apk_handoff_store[token] = {
+        "user_id": str(user["_id"]),
+        "email": user.get("email") or "",
+        "phone": user.get("phone") or "",
+        "expires_at": (datetime.now(timezone.utc) + timedelta(minutes=10)).timestamp(),
+    }
+    return {"handoff_token": token, "expires_in": 600}
+
+
+@router.post("/auth/redeem-apk-handoff")
+async def redeem_apk_handoff(payload: dict):
+    """Exchange a handoff token for a real JWT access token.
+    One-time use — the token is consumed on first redemption.
+    """
+    token = (payload or {}).get("handoff_token", "").strip()
+    if not token:
+        raise HTTPException(status_code=400, detail="handoff_token required")
+    _purge_expired_handoffs()
+    entry = _apk_handoff_store.pop(token, None)
+    if not entry:
+        raise HTTPException(status_code=400, detail="Invalid or expired handoff token")
+    user_id = entry["user_id"]
+    user = await db.users.find_one({"_id": ObjectId(user_id)})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    access_token = create_access_token(user_id, entry.get("email") or entry.get("phone") or "")
+    refresh_token = create_refresh_token(user_id)
+    resp = JSONResponse(content={
+        "access_token": access_token,
+        "id": user_id,
+        "name": user.get("name"),
+        "email": user.get("email"),
+        "phone": user.get("phone"),
+        "role": user.get("role", "user"),
+        "balance": user.get("balance", 0.0),
+    })
+    resp.set_cookie(key="access_token", value=access_token, httponly=True, secure=True, samesite="none", max_age=31536000, path="/")
+    resp.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=True, samesite="none", max_age=31536000, path="/")
+    return resp

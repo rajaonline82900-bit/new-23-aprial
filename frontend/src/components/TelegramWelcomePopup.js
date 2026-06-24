@@ -1,17 +1,26 @@
 import React, { useEffect, useState } from 'react';
-import { X } from 'lucide-react';
+import axios from 'axios';
+import { X, Download, Loader2 } from 'lucide-react';
+
+const API_URL = process.env.REACT_APP_BACKEND_URL;
+const APK_URL = `${API_URL}/api/uploads/matka11.apk`;
+// Android package name used by the WebView APK (for intent:// deep link).
+// This must match the APK's AndroidManifest package — kept conservative.
+const APK_PACKAGE = 'com.matka11.app';
 
 /**
- * Welcome popup that shows the Telegram channel join CTA every time the app
- * is freshly opened (i.e. once per page load / fresh app launch). It uses
- * sessionStorage so closing the popup remembers it for the current session
- * only — reopening the app shows it again.
+ * Welcome popup shown on every fresh app open.
+ * - Telegram CTA (Join channel)
+ * - Download APK CTA
+ * - When user is logged-in, also offers an "Auto-Login Link" so the APK
+ *   launches already signed-in (via /auth/create-apk-handoff token + ?ah= URL param).
  */
-const TelegramWelcomePopup = ({ telegramLink }) => {
+const TelegramWelcomePopup = ({ telegramLink, isLoggedIn = false }) => {
   const [open, setOpen] = useState(false);
+  const [creatingHandoff, setCreatingHandoff] = useState(false);
+  const [handoffData, setHandoffData] = useState(null); // { handoff_token, intent_url, web_url }
 
   useEffect(() => {
-    // Show after a short delay so the dashboard renders first
     const shown = sessionStorage.getItem('telegram_welcome_shown');
     if (!shown) {
       const t = setTimeout(() => setOpen(true), 800);
@@ -28,7 +37,38 @@ const TelegramWelcomePopup = ({ telegramLink }) => {
     if (telegramLink) {
       window.open(telegramLink, '_blank', 'noopener,noreferrer');
     }
-    handleClose();
+  };
+
+  const handleDownload = async () => {
+    // Start the APK download in a new tab/window so the user stays on the popup
+    window.open(APK_URL, '_blank', 'noopener');
+    // If logged in, also generate an auto-login handoff so they can be
+    // signed in automatically when they open the APK after install.
+    if (!isLoggedIn || creatingHandoff || handoffData) return;
+    try {
+      setCreatingHandoff(true);
+      const { data } = await axios.post(
+        `${API_URL}/api/auth/create-apk-handoff`,
+        {},
+        { withCredentials: true },
+      );
+      const token = data?.handoff_token;
+      if (token) {
+        const webUrl = `${window.location.origin}/?ah=${encodeURIComponent(token)}`;
+        // Android intent URL that opens the installed APK with the auto-login URL
+        const host = window.location.host;
+        const intentUrl = `intent://${host}/?ah=${encodeURIComponent(
+          token,
+        )}#Intent;scheme=https;package=${APK_PACKAGE};S.browser_fallback_url=${encodeURIComponent(
+          webUrl,
+        )};end`;
+        setHandoffData({ handoff_token: token, intent_url: intentUrl, web_url: webUrl });
+      }
+    } catch (e) {
+      console.warn('Could not create APK auto-login handoff:', e?.message);
+    } finally {
+      setCreatingHandoff(false);
+    }
   };
 
   if (!open) return null;
@@ -39,7 +79,7 @@ const TelegramWelcomePopup = ({ telegramLink }) => {
       data-testid="telegram-welcome-modal"
     >
       <div
-        className="relative w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl"
+        className="relative w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl max-h-[92vh] overflow-y-auto"
         style={{
           background: 'linear-gradient(135deg, #0F1A2E 0%, #1A2845 50%, #0B1426 100%)',
           border: '2px solid #38BDF8',
@@ -61,7 +101,7 @@ const TelegramWelcomePopup = ({ telegramLink }) => {
         <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[#38BDF8]/25 to-transparent pointer-events-none" />
 
         <div className="relative p-6 pt-7 text-center">
-          {/* Authentic Telegram logo */}
+          {/* Telegram logo */}
           <div
             className="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center"
             style={{
@@ -81,12 +121,12 @@ const TelegramWelcomePopup = ({ telegramLink }) => {
           <h2 className="text-white text-2xl font-black mb-1 tracking-tight" style={{ fontFamily: 'Outfit, sans-serif' }}>
             Join our Telegram!
           </h2>
-          <p className="text-[#7DD3FC] text-sm font-bold mb-5" style={{ fontFamily: 'Outfit, sans-serif' }}>
+          <p className="text-[#7DD3FC] text-sm font-bold mb-4" style={{ fontFamily: 'Outfit, sans-serif' }}>
             हमारे टेलीग्राम चैनल से जुड़ें
           </p>
 
           <div
-            className="rounded-2xl p-4 mb-5 text-left"
+            className="rounded-2xl p-4 mb-4 text-left"
             style={{
               background: 'rgba(8, 16, 32, 0.55)',
               border: '1px solid rgba(56, 189, 248, 0.3)',
@@ -103,10 +143,11 @@ const TelegramWelcomePopup = ({ telegramLink }) => {
             </p>
           </div>
 
+          {/* CTA: Join Telegram */}
           <button
             onClick={handleJoin}
             data-testid="telegram-welcome-join-btn"
-            className="w-full py-3.5 rounded-2xl font-black text-white text-base tracking-wide transition-all active:scale-95 flex items-center justify-center gap-2"
+            className="w-full py-3 rounded-2xl font-black text-white text-base tracking-wide transition-all active:scale-95 flex items-center justify-center gap-2 mb-3"
             style={{
               background: 'linear-gradient(135deg, #2AABEE 0%, #229ED9 100%)',
               boxShadow: '0 6px 22px rgba(42, 171, 238, 0.5), inset 0 1px 0 rgba(255,255,255,0.18)',
@@ -122,9 +163,55 @@ const TelegramWelcomePopup = ({ telegramLink }) => {
             Join Telegram Channel
           </button>
 
+          {/* CTA: Download MATKA 11 APK */}
+          <button
+            onClick={handleDownload}
+            data-testid="telegram-welcome-download-apk-btn"
+            disabled={creatingHandoff}
+            className="w-full py-3 rounded-2xl font-black text-[#1A0F00] text-base tracking-wide transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-70"
+            style={{
+              background: 'linear-gradient(135deg, #FFD700 0%, #FDE047 35%, #D4AF37 70%, #B8860B 100%)',
+              boxShadow: '0 6px 22px rgba(212, 175, 55, 0.55), inset 0 1px 0 rgba(255,255,255,0.45)',
+              fontFamily: 'Outfit, sans-serif',
+            }}
+          >
+            {creatingHandoff ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" strokeWidth={2.6} />}
+            Download MATKA 11 App
+          </button>
+
+          {/* Auto-login intent link (only shown if logged-in user has a handoff token) */}
+          {handoffData?.intent_url && (
+            <div
+              className="mt-3 rounded-xl p-3 text-left"
+              style={{
+                background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.12) 0%, rgba(212, 175, 55, 0.06) 100%)',
+                border: '1px solid rgba(212, 175, 55, 0.35)',
+              }}
+              data-testid="apk-autologin-block"
+            >
+              <p className="text-[11px] text-[#FDE047] font-bold leading-tight mb-2">
+                ✨ App install hone ke baad ye link dabaiye — auto-login ho jayega:
+              </p>
+              <a
+                href={handoffData.intent_url}
+                data-testid="apk-autologin-link"
+                className="inline-block w-full text-center py-2 rounded-lg font-black text-[12px] text-[#1A0F00]"
+                style={{
+                  background: 'linear-gradient(135deg, #FDE047 0%, #FFD700 100%)',
+                  boxShadow: '0 3px 12px rgba(212, 175, 55, 0.4)',
+                }}
+              >
+                Open MATKA 11 App with Auto-Login →
+              </a>
+              <p className="text-[10px] text-gray-400 mt-1.5 leading-tight">
+                Valid for 10 minutes. Works only on Android after installing the APK.
+              </p>
+            </div>
+          )}
+
           <button
             onClick={handleClose}
-            className="w-full mt-2 py-2 text-gray-400 text-xs hover:text-white transition-all"
+            className="w-full mt-3 py-2 text-gray-400 text-xs hover:text-white transition-all"
             data-testid="telegram-welcome-skip"
           >
             Maybe later

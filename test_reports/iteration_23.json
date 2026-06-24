@@ -1,0 +1,96 @@
+{
+  "summary": "Iteration 23 — verified REVERT1 (Yesterday+Today boxes restored), REVERT2 (MATKA wordmark restored), FEATURE3a (Download APK button + apk-autologin-block in welcome popup), FEATURE3b (all 4 backend handoff endpoint requirements PASSED via pytest). FEATURE3c FAILED — the auto-redeem of ?ah=TOKEN on app boot is broken because App.js route '/' synchronously Navigates to /signup, which strips the query string before AuthProvider's useEffect can read it. The redeem endpoint is never called and user is never auto-logged-in.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "FEATURE 3c — APK auto-login redeem on app boot via ?ah=TOKEN",
+        "issue": "Navigating to https://<host>/?ah=<token> does NOT auto-login the user. The /api/auth/redeem-apk-handoff endpoint is NEVER called by the SPA (verified via network capture). Root cause: /app/frontend/src/App.js line 237 — `<Route path=\"/\" element={<Navigate to=\"/signup\" replace />} />` performs a synchronous client-side redirect that drops the query string before AuthProvider's useEffect runs. By the time AuthContext.redeemHandoff() reads window.location.search, the ?ah= param has already been wiped, so params.get('ah') is null and the call returns false. User ends up at /signup (not /dashboard), with no matka11_token in localStorage.",
+        "affected_selectors": ["AuthContext.redeemHandoff", "App.js route /"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_results": {
+    "REVERT1_yesterday_today_boxes": {
+      "status": "PASS",
+      "yesterday_result_testid_count": 6,
+      "today_result_testid_count": 6,
+      "sample_yesterday_text": "YESTERDAY\\n84",
+      "sample_today_text": "LIVE\\nTODAY\\n--"
+    },
+    "REVERT2_matka_wordmark": {
+      "status": "PASS",
+      "matka_logo_text": "M\\nMATKA\\n11",
+      "contains_MATKA_substring": true
+    },
+    "FEATURE3a_download_apk_btn_and_autologin_block": {
+      "status": "PASS",
+      "popup_visible_after_sessionstorage_clear": true,
+      "download_apk_btn_present": true,
+      "download_apk_btn_label": "Download MATKA 11 App",
+      "new_tab_opened_on_click": true,
+      "apk_autologin_block_present_when_logged_in": true,
+      "apk_autologin_link_href_sample": "intent://matka-numbers-bet.preview.emergentagent.com/?ah=<token>#Intent;scheme=https;package=com.matka11.app;S.browser_fallback_url=...;end",
+      "href_starts_with_intent": true,
+      "href_contains_package_com_matka11_app": true,
+      "href_contains_ah_param": true
+    },
+    "FEATURE3b_backend_handoff_endpoints": {
+      "status": "PASS",
+      "pytest_summary": "5 passed in 1.42s",
+      "checks": {
+        "create_without_auth_returns_401": "PASS",
+        "create_with_valid_admin_bearer_returns_token_and_expires_in_600": "PASS",
+        "redeem_first_time_returns_access_token_id_role_balance_and_set_cookie": "PASS",
+        "second_redeem_of_same_token_returns_400_invalid_or_expired": "PASS",
+        "redeem_missing_or_bogus_token_returns_400": "PASS"
+      }
+    },
+    "FEATURE3c_auto_redeem_on_boot": {
+      "status": "FAIL",
+      "matka11_token_in_localStorage_after_navigation": false,
+      "ah_param_stripped_from_url": true,
+      "url_after_boot": "https://matka-numbers-bet.preview.emergentagent.com/signup",
+      "expected_landing": "/dashboard",
+      "network_calls_observed": [
+        "GET /api/auth/me -> 401",
+        "GET /api/auth/me -> 401",
+        "GET /api/auth/me -> 401"
+      ],
+      "redeem_endpoint_called_by_SPA": false,
+      "iv_persistence_after_reload": false
+    }
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_apk_handoff.py",
+    "/app/test_reports/pytest/apk_handoff.xml"
+  ],
+  "action_items": [
+    "FIX FEATURE 3c: AuthContext.redeemHandoff() runs too late because App.js synchronously redirects from '/' to '/signup' via <Navigate replace> which drops the query string. Options: (a) capture window.location.search into a module-level variable in AuthContext.js at module load time (before React mounts) and read from that variable inside redeemHandoff; (b) change the '/' route in App.js to render a small <HandoffGate /> component that defers redirection until AuthProvider has finished its boot (or that itself reads ?ah= and calls redeem); (c) make Navigate preserve query: <Navigate to={'/signup' + window.location.search} replace />, AND also do the same on any other catch-all redirect that runs before AuthProvider mounts. Recommended: option (a) — add `const BOOT_AH = new URLSearchParams(window.location.search).get('ah');` at top of AuthContext.js and have redeemHandoff use BOOT_AH instead of re-reading window.location.search.",
+    "After fix, also ensure the user lands on /dashboard after successful redeem (currently AuthContext sets user but the route may still resolve to /signup if redirect already happened). Use navigate('/dashboard', {replace:true}) inside the redeem-success branch, or rely on the user-based PrivateRoute re-evaluation."
+  ],
+  "critical_code_review_comments": [
+    "AuthContext.js redeemHandoff reads window.location.search inside useEffect — this is unreliable because React Router's top-level Navigate at '/' runs synchronously during the first render and strips the query string before useEffect fires. Capture ?ah at module-load time.",
+    "Backend _apk_handoff_store is process-memory. Acceptable for 10-min TTL as noted, but document that a backend restart between create+redeem invalidates tokens. Consider moving to Redis or MongoDB collection with TTL index for production.",
+    "TelegramWelcomePopup.js handleDownload() ignores axios errors silently (console.warn only). User won't see any visible cue if handoff creation fails — consider showing a toast/inline message so the user understands no auto-login link will appear.",
+    "Pre-existing React warning still present: 'A props object containing a \"key\" prop is being spread into JSX' for <Link> elements — unchanged from iter 22, not blocking but should be cleaned up."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_apk_handoff.py (new — 5 pytest cases for handoff endpoints)"
+  ],
+  "success_rate": {
+    "backend": "100% (5/5 pytest cases passed)",
+    "frontend": "75% (3/4 UI features verified; FEATURE 3c auto-redeem broken)"
+  },
+  "test_credentials": "User: 9870012345 / Test@1234 (login OK, returns {token: <jwt>}). Admin: admin@sattamatka.com / Admin@123 via POST /api/auth/admin/login (returns access_token).",
+  "seed_data_creation": "None.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "When E1 fixes FEATURE 3c, re-test by: (1) login user via API to get token, (2) POST /api/auth/create-apk-handoff with Bearer to get a fresh token, (3) open fresh browser context (clear cookies + localStorage), (4) navigate to https://<host>/?ah=<token>, (5) wait ~5s, (6) assert localStorage.getItem('matka11_token') is truthy, URL no longer has ?ah=, URL is /dashboard, (7) reload /dashboard without ?ah= and confirm still logged in. The backend handoff endpoints themselves are working fine (pytest verified). REVERT1, REVERT2, FEATURE3a were already verified PASS in this iteration and do not need re-test unless touched.",
+  "rca of the issue": "Race condition between React Router's synchronous Navigate at route '/' (App.js:237) and AuthProvider's asynchronous redeemHandoff inside useEffect. Reproduction: open fresh incognito → goto /?ah=<valid_token> → router immediately swaps URL to /signup (replace) which discards the ?ah= query string → AuthProvider.useEffect runs redeemHandoff → window.location.search === '' → params.get('ah') === null → redeemHandoff returns false without ever calling /api/auth/redeem-apk-handoff → checkAuth() runs → /api/auth/me 401 → user remains anonymous on /signup. Mitigation: read ?ah= at module-import time in AuthContext (before any React render / router redirect) and pass the captured value into redeemHandoff."
+}

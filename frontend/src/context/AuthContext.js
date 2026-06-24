@@ -58,13 +58,52 @@ export const AuthProvider = ({ children }) => {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Auto-redeem ?ah=TOKEN (APK handoff) — runs once on first mount
+  const redeemHandoff = useCallback(async () => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const handoff = params.get('ah');
+      if (!handoff) return false;
+      const { data } = await axios.post(
+        `${API_URL}/api/auth/redeem-apk-handoff`,
+        { handoff_token: handoff },
+        { withCredentials: true },
+      );
+      if (data?.access_token) {
+        localStorage.setItem('matka11_token', data.access_token);
+        const cacheUser = {
+          id: data.id, name: data.name, email: data.email,
+          phone: data.phone, role: data.role, balance: data.balance,
+        };
+        try { localStorage.setItem('matka11_user_cache', JSON.stringify(cacheUser)); } catch (_) {}
+        setUser(cacheUser);
+        // Strip ?ah= from URL so refresh doesn't re-attempt with consumed token
+        params.delete('ah');
+        const cleanQs = params.toString();
+        const cleanUrl = window.location.pathname + (cleanQs ? `?${cleanQs}` : '') + window.location.hash;
+        window.history.replaceState({}, '', cleanUrl);
+        return true;
+      }
+    } catch (e) {
+      console.warn('APK handoff redeem failed:', e?.response?.status, e?.message);
+    }
+    return false;
+  }, []);
+
   useEffect(() => {
     if (window.location.hash?.includes('session_id=')) {
       setLoading(false);
       return;
     }
-    checkAuth();
-  }, [checkAuth]);
+    (async () => {
+      const redeemed = await redeemHandoff();
+      if (redeemed) {
+        setLoading(false);
+        return;
+      }
+      checkAuth();
+    })();
+  }, [checkAuth, redeemHandoff]);
 
   const logout = useCallback(async () => {
     try {
