@@ -1,0 +1,37 @@
+{
+  "summary": "Iter 28 verification complete. All 5 fixes validated. (FIX 1) /app/deploy.sh exists, executable, passes `bash -n` syntax check, implements full detection cascade (systemd unit-files candidate loop -> awk grep matka -> ps -eo uvicorn/gunicorn/fastapi fallback), uses `set -e`, absolute REPO_DIR, runs nginx -t before reload, curls /api/version to verify. (FIX 2) DashboardPage.js lines 56-59 (kalyan) and 91-95 (games) both contain `if (document.visibilityState !== 'visible') return;` early-return guards inside 60000ms setInterval callbacks. (FIX 3) Zero 'A props object containing a key prop is being spread' warnings in browser console on /dashboard. Confirmed via grep: `<CardWrapper key={game.id} {...cardProps}>` at lines 356 and 432. (FIX 4) GET /api/version returns {\"version\":\"2026.02.24.4\"} matching versionCheck.js line 4 constant. (FIX 5 regression) Dashboard renders 6 yesterday + 6 today boxes, gold play buttons on RUNNING games, red X CLOSED buttons, Telegram welcome popup with Download MATKA 11 App button, /jantri page renders, admin date picker is custom shadcn (showing 'June 24th, 2026') accepting past dates, Result History modal opens with Jun/2026 default + ascending sort. Backend auth pytest suite 13/14 passed (1 skipped intentional). The only console warning observed is the pre-existing setState-in-render in AdminLoginPage flagged in iter 22 & 27 — per task note this is NOT a blocker.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_auth_simplified.py",
+    "/app/test_reports/pytest/pytest_iter28.xml"
+  ],
+  "action_items": [
+    "(Optional, pre-existing carry-over) setState-in-render warning still present in AdminLoginPage — not a blocker per main agent note, but worth fixing in a future cleanup pass to remove the React console error."
+  ],
+  "critical_code_review_comments": [
+    "deploy.sh is well-engineered: idempotent (git stash -q || true), set -e, three-tier service detection, nginx -t pre-check, post-deploy /api/version verification with troubleshooting hint via journalctl. Good DX.",
+    "Visibility-gating implementation is correct and follows the recommended pattern (early return inside setInterval). Combined with the existing visibilitychange listener it gives both pause-while-hidden and refresh-on-foreground. Solid perf win for backgrounded Android.",
+    "Key prop is now correctly hoisted above the spread on both <CardWrapper> sites (lines 356, 432). React 18+ key-spread warning eliminated.",
+    "APP_BUILD_VERSION env-driven with sensible default '2026.02.24.4' on backend line 61 and matching frontend constant — versionCheck mechanism wired correctly for APK auto-refresh.",
+    "DashboardPage.js is 607 lines — approaching the 700-line threshold. Consider splitting into <GameCardList />, <KalyanResultsRow />, <TelegramWelcomeModal /> sub-components in a future refactor for maintainability."
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "100%",
+    "frontend": "100%"
+  },
+  "test_credentials": "Admin: admin@sattamatka.com / Admin@123 (admin login uses /api/auth/admin/login endpoint, NOT /api/auth/login which is phone-based for end users)",
+  "seed_data_creation": "None. Used existing seeded admin and game data.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All iter 28 fixes verified working end-to-end on https://matka-numbers-bet.preview.emergentagent.com. Admin login endpoint is /api/auth/admin/login (returns 200 with token); end-user login is /api/auth/login and requires {phone,password} not {email,password}. /api/version returns 2026.02.24.4. deploy.sh should NOT be executed inside Emergent preview container — it's meant for the Hostinger VPS. The pre-existing setState-in-render warning in AdminLoginPage is the only persistent console issue and is explicitly waived by main agent.",
+  "rca of the issue": "N/A — verification iteration, all fixes pass."
+}

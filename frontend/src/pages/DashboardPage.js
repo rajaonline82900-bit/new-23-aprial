@@ -53,7 +53,10 @@ const DashboardPage = () => {
       } catch (e) { console.error(e); }
     };
     fetchKalyan();
-    const int = setInterval(fetchKalyan, 30000);
+    const int = setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+      fetchKalyan();
+    }, 60000);
     return () => clearInterval(int);
   }, [gameCategory, games]);
 
@@ -82,8 +85,11 @@ const DashboardPage = () => {
     refreshUser();
     fetchUnreadChat();
 
-    // Auto-refresh games every 60 seconds for live results (PWA/APK friendly, less battery drain)
+    // Auto-refresh games every 60 seconds — but ONLY when tab is visible.
+    // This eliminates background work when APK is backgrounded or screen off,
+    // a major battery + perf win on low-end Android devices.
     const interval = setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
       fetchGames(false);
       fetchUnreadChat();
     }, 60000);
@@ -334,8 +340,8 @@ const DashboardPage = () => {
                 const isDisabled = game.is_holiday || gameStatus.status !== 'open';
                 const CardWrapper = isDisabled ? 'div' : Link;
                 const cardProps = isDisabled 
-                  ? { key: game.id, 'data-testid': `game-card-${game.id}` }
-                  : { key: game.id, to: (game.category === 'kalyan' ? `/kalyan/${game.id}` : `/game/${game.id}`), 'data-testid': `game-card-${game.id}` };
+                  ? { 'data-testid': `game-card-${game.id}` }
+                  : { to: (game.category === 'kalyan' ? `/kalyan/${game.id}` : `/game/${game.id}`), 'data-testid': `game-card-${game.id}` };
 
                 // Kalyan - Anna Matka style card
                 if (game.category === 'kalyan') {
@@ -347,7 +353,7 @@ const DashboardPage = () => {
                     return `${h12}:${(m || 0).toString().padStart(2, '0')} ${ampm}`;
                   };
                   return (
-                    <CardWrapper {...cardProps}>
+                    <CardWrapper key={game.id} {...cardProps}>
                       <div
                         className={`game-card-animate game-card-hidden rounded-2xl overflow-hidden shadow-lg border-2 transition-all ${isDisabled ? 'opacity-60' : ''}`}
                         style={{ borderColor: '#D4AF37', animationDelay: `${index * 0.08}s` }}
@@ -423,7 +429,7 @@ const DashboardPage = () => {
                 const openTimeStr = fmt(game.start_time);
                 const closeTimeStr = fmt(game.end_time);
                 return (
-                  <CardWrapper {...cardProps}>
+                  <CardWrapper key={game.id} {...cardProps}>
                     <div
                       className={`game-card-animate game-card-hidden rounded-2xl p-3.5 transition-all relative ${
                         isDisabled ? 'opacity-90 cursor-not-allowed' : 'active:scale-[0.99] cursor-pointer'
