@@ -28,6 +28,7 @@ const DashboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [telegramLink, setTelegramLink] = useState('');
   const [whatsappLink, setWhatsappLink] = useState('');
+  const [whatsappNumber, setWhatsappNumber] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [unreadChat, setUnreadChat] = useState(0);
   const [gameCategory, setGameCategory] = useState(() => localStorage.getItem('game_category') || 'gali_disawar');
@@ -108,6 +109,7 @@ const DashboardPage = () => {
       const { data } = await axios.get(`${API_URL}/api/settings`, { withCredentials: true });
       setTelegramLink(data.telegram_link || '');
       setWhatsappLink(data.whatsapp_link || '');
+      setWhatsappNumber(data.whatsapp_number || '');
     } catch (error) {}
   };
 
@@ -160,8 +162,12 @@ const DashboardPage = () => {
     const startMinutes = startH * 60 + startM;
     const endMinutes = endH * 60 + endM;
 
-    // Between start_time and end_time → Play (open)
-    if (currentMinutes >= startMinutes && currentMinutes <= endMinutes) {
+    // Cross-midnight wrap-around (e.g., Disawar 07:00 -> 04:00 next day)
+    const isOpen = endMinutes < startMinutes
+      ? (currentMinutes >= startMinutes || currentMinutes <= endMinutes)
+      : (currentMinutes >= startMinutes && currentMinutes <= endMinutes);
+
+    if (isOpen) {
       return { status: 'open', label: 'Play', labelHi: 'खेलें' };
     }
     
@@ -276,12 +282,17 @@ const DashboardPage = () => {
             </a>
 
             {/* WHATSAPP - authentic logo */}
+            {(() => {
+              const cleanNum = (whatsappNumber || '').replace(/[^0-9]/g, '');
+              const waHref = cleanNum ? `https://wa.me/${cleanNum}` : (whatsappLink || '#');
+              const waDisabled = !cleanNum && !whatsappLink;
+              return (
             <a
-              href={whatsappLink || '#'}
+              href={waHref}
               target="_blank"
               rel="noopener noreferrer"
               data-testid="whatsapp-quick-link"
-              onClick={(e) => { if (!whatsappLink) e.preventDefault(); }}
+              onClick={(e) => { if (waDisabled) e.preventDefault(); }}
             >
               <div className="flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3 active:scale-95 hover:scale-[1.02] transition-all relative"
                 style={{ background: 'linear-gradient(135deg, #1A1A2E 0%, #16162A 100%)', border: '1px solid rgba(212, 175, 55, 0.3)', boxShadow: '0 4px 18px rgba(0,0,0,0.45), 0 0 14px rgba(37, 211, 102, 0.15)' }}>
@@ -296,6 +307,8 @@ const DashboardPage = () => {
                 <span className="text-[#FFD700] font-bold text-[10px] tracking-wide">WhatsApp</span>
               </div>
             </a>
+              );
+            })()}
           </div>
 
           {/* Section Header - gold premium */}

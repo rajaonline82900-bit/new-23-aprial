@@ -1,20 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../components/ui/select';
-import { 
-  ArrowLeft, 
+  ArrowLeft,
+  BarChart3,
+  Loader2,
+  ChevronDown,
   Trophy,
-  Calendar,
-  Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -22,241 +14,387 @@ import FooterNav from '../components/FooterNav';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
-const GAMES = [
-  { id: 'delhi_bazaar', name: 'दिल्ली बाजार', color: 'text-red-400' },
-  { id: 'shri_ganesh', name: 'श्री गणेश', color: 'text-orange-400' },
-  { id: 'faridabad', name: 'फरीदाबाद', color: 'text-yellow-400' },
-  { id: 'ghaziabad', name: 'गाजियाबाद', color: 'text-green-400' },
-  { id: 'gali', name: 'गली', color: 'text-blue-400' },
-  { id: 'disawar', name: 'दिसावर', color: 'text-purple-400' }
+const MONTHS = [
+  { value: 1, label: 'Jan' }, { value: 2, label: 'Feb' }, { value: 3, label: 'Mar' },
+  { value: 4, label: 'Apr' }, { value: 5, label: 'May' }, { value: 6, label: 'Jun' },
+  { value: 7, label: 'Jul' }, { value: 8, label: 'Aug' }, { value: 9, label: 'Sep' },
+  { value: 10, label: 'Oct' }, { value: 11, label: 'Nov' }, { value: 12, label: 'Dec' },
 ];
 
 const JantriPage = () => {
+  const now = new Date();
+  const [games, setGames] = useState([]);
+  const [selectedGameId, setSelectedGameId] = useState(null);
   const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedGame, setSelectedGame] = useState('all');
-  const [days, setDays] = useState(30);
+  const [loadingGames, setLoadingGames] = useState(true);
+  const [loadingResults, setLoadingResults] = useState(false);
+  const [month, setMonth] = useState('all');
+  const [year, setYear] = useState('all');
 
+  // Fetch games list (only gali_disawar category for now)
   useEffect(() => {
-    fetchResults();
-  }, [selectedGame, days]);
+    (async () => {
+      try {
+        const { data } = await axios.get(`${API_URL}/api/games`, { withCredentials: true });
+        const list = Array.isArray(data?.games) ? data.games : [];
+        // Show only standard (non-kalyan) games on the result chart page
+        const filtered = list.filter((g) => (g.category || 'gali_disawar') === 'gali_disawar');
+        setGames(filtered);
+        if (filtered.length > 0) setSelectedGameId(filtered[0].id);
+      } catch (e) {
+        toast.error('Games load नहीं हो पाई');
+      } finally {
+        setLoadingGames(false);
+      }
+    })();
+  }, []);
 
-  const fetchResults = async () => {
-    setLoading(true);
-    try {
-      const { data } = await axios.get(`${API_URL}/api/results`, {
-        params: { limit: days * 6 },
-        withCredentials: true
-      });
-      
-      // Group by date
-      const grouped = {};
-      data.results.forEach(result => {
-        const date = result.date;
-        if (!grouped[date]) {
-          grouped[date] = {};
+  // Fetch result history for the selected game
+  useEffect(() => {
+    if (!selectedGameId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoadingResults(true);
+        const { data } = await axios.get(
+          `${API_URL}/api/results/${selectedGameId}?limit=365`,
+          { withCredentials: true },
+        );
+        if (!cancelled) setResults(data?.results || []);
+      } catch (e) {
+        if (!cancelled) {
+          setResults([]);
+          toast.error('Result history load नहीं हो पाई');
         }
-        grouped[date][result.game_id] = {
-          single: result.single_result,
-          jodi: result.jodi_result
-        };
-      });
-      
-      // Convert to array
-      const resultArray = Object.entries(grouped)
-        .map(([date, games]) => ({ date, games }))
-        .sort((a, b) => b.date.localeCompare(a.date))
-        .slice(0, days);
-      
-      setResults(resultArray);
-    } catch (error) {
-      toast.error('जंत्री लोड नहीं हो पाई');
-    } finally {
-      setLoading(false);
+      } finally {
+        if (!cancelled) setLoadingResults(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedGameId]);
+
+  const yearOptions = useMemo(() => {
+    const years = new Set();
+    results.forEach((r) => {
+      if (r?.date) {
+        const y = parseInt(String(r.date).slice(0, 4), 10);
+        if (!Number.isNaN(y)) years.add(y);
+      }
+    });
+    [now.getFullYear(), now.getFullYear() - 1].forEach((y) => years.add(y));
+    return Array.from(years).sort((a, b) => b - a);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [results]);
+
+  const visible = useMemo(() => {
+    let arr = results.slice();
+    if (year !== 'all') {
+      arr = arr.filter((r) => String(r.date || '').startsWith(String(year)));
+    }
+    if (month !== 'all') {
+      const mm = String(month).padStart(2, '0');
+      arr = arr.filter((r) => String(r.date || '').slice(5, 7) === mm);
+    }
+    if (month === 'all' && year === 'all') {
+      arr = arr.slice(0, 30);
+    }
+    return arr;
+  }, [results, month, year]);
+
+  const fmtDate = (d) => {
+    if (!d) return { full: '--', weekday: '' };
+    try {
+      const dt = new Date(d);
+      const day = String(dt.getDate()).padStart(2, '0');
+      const mon = dt.toLocaleString('en-US', { month: 'short' });
+      const yr = dt.getFullYear();
+      const weekday = dt.toLocaleString('en-US', { weekday: 'short' });
+      return { full: `${day} ${mon} ${yr}`, weekday };
+    } catch {
+      return { full: String(d).slice(0, 10), weekday: '' };
     }
   };
 
-  const filteredGames = selectedGame === 'all' 
-    ? GAMES 
-    : GAMES.filter(g => g.id === selectedGame);
+  const selectedGame = games.find((g) => g.id === selectedGameId);
 
   return (
-    <div className="min-h-screen bg-[#0A0A0C] app-shell">
+    <div
+      className="min-h-screen app-shell relative overflow-hidden"
+      style={{ background: 'linear-gradient(140deg, #0B0420 0%, #1A0B3D 25%, #2A1058 50%, #1A0B3D 75%, #0B0420 100%)' }}
+    >
+      {/* ambient lights */}
+      <div className="fixed inset-0 -z-10 pointer-events-none">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[400px] h-[400px] bg-gradient-to-br from-[#D4AF37]/20 to-[#FFD700]/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 right-0 w-[350px] h-[350px] bg-gradient-to-br from-[#8B5CF6]/15 to-[#A855F7]/8 rounded-full blur-[110px]" />
+      </div>
+
       {/* Header */}
-      <header className="sticky top-0 z-50 glass border-b border-white/10">
-        <div className="px-3 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Link to="/dashboard">
-                <button className="p-2 rounded-lg bg-[#141418] border border-white/10 text-gray-400 hover:text-white transition-all">
-                  <ArrowLeft className="w-5 h-5" />
-                </button>
-              </Link>
-              <div className="flex items-center gap-2">
-                <Calendar className="w-6 h-6 text-[#D4AF37]" />
-                <h1 className="text-xl font-bold text-white font-['Unbounded']">जंत्री</h1>
+      <header
+        className="sticky top-0 z-40 shadow-xl"
+        style={{
+          background: 'linear-gradient(180deg, #0A0A14 0%, #14142B 100%)',
+          borderBottom: '1px solid rgba(212, 175, 55, 0.3)',
+        }}
+      >
+        <div className="px-3 py-3 max-w-[480px] mx-auto">
+          <div className="flex items-center gap-3">
+            <Link to="/dashboard">
+              <button
+                className="p-2 rounded-lg text-[#FFD700] hover:bg-[#D4AF37]/10 active:scale-95 transition-all"
+                data-testid="jantri-back-btn"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+            </Link>
+            <div className="flex items-center gap-2">
+              <div
+                className="w-9 h-9 rounded-xl flex items-center justify-center"
+                style={{ background: 'linear-gradient(135deg, #FFD700 0%, #D4AF37 50%, #B8860B 100%)' }}
+              >
+                <BarChart3 className="w-5 h-5 text-[#1A1A2E]" strokeWidth={2.5} />
               </div>
+              <h1
+                className="text-lg font-black tracking-tight"
+                style={{
+                  backgroundImage: 'linear-gradient(135deg, #FFD700 0%, #FDE047 50%, #D4AF37 100%)',
+                  WebkitBackgroundClip: 'text',
+                  backgroundClip: 'text',
+                  color: 'transparent',
+                  fontFamily: 'Outfit, sans-serif',
+                }}
+              >
+                Result History
+              </h1>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="px-3 py-4">
-        {/* Filters */}
-        <Card className="bg-[#141418] border-white/10 mb-6">
-          <CardContent className="p-4">
-            <div className="flex flex-wrap gap-4">
-              <div className="flex-1 min-w-[150px]">
-                <label className="text-gray-400 text-sm mb-2 block">गेम चुनें</label>
-                <Select value={selectedGame} onValueChange={setSelectedGame}>
-                  <SelectTrigger className="bg-[#0A0A0C] border-white/10 text-white">
-                    <SelectValue placeholder="सभी गेम्स" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-[#141418] border-white/10">
-                    <SelectItem value="all" className="text-white hover:bg-white/10">सभी गेम्स</SelectItem>
-                    {GAMES.map((game) => (
-                      <SelectItem key={game.id} value={game.id} className="text-white hover:bg-white/10">
-                        {game.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex-1 min-w-[150px]">
-                <label className="text-gray-400 text-sm mb-2 block">समय अवधि</label>
-                <Select value={String(days)} onValueChange={(v) => setDays(Number(v))}>
-                  <SelectTrigger className="bg-[#0A0A0C] border-white/10 text-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-[#141418] border-white/10">
-                    <SelectItem value="7" className="text-white hover:bg-white/10">7 दिन</SelectItem>
-                    <SelectItem value="15" className="text-white hover:bg-white/10">15 दिन</SelectItem>
-                    <SelectItem value="30" className="text-white hover:bg-white/10">30 दिन</SelectItem>
-                    <SelectItem value="60" className="text-white hover:bg-white/10">60 दिन</SelectItem>
-                  </SelectContent>
-                </Select>
+      <main className="px-3 py-4 max-w-[480px] mx-auto pb-24">
+        {/* Game pill selector */}
+        {loadingGames ? (
+          <div className="flex justify-center py-6">
+            <Loader2 className="w-6 h-6 animate-spin text-[#D4AF37]" />
+          </div>
+        ) : games.length === 0 ? (
+          <div className="text-center py-12 text-gray-400">
+            <Trophy className="w-12 h-12 mx-auto mb-3 text-gray-600" />
+            <p className="text-sm">No games available</p>
+          </div>
+        ) : (
+          <>
+            <div className="mb-4">
+              <label className="block text-[10px] uppercase tracking-widest font-bold text-[#D4AF37] mb-2">
+                Select Game
+              </label>
+              <div
+                className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1"
+                style={{ scrollbarWidth: 'thin' }}
+                data-testid="game-pill-list"
+              >
+                {games.map((g) => {
+                  const isActive = g.id === selectedGameId;
+                  return (
+                    <button
+                      key={g.id}
+                      onClick={() => setSelectedGameId(g.id)}
+                      data-testid={`game-pill-${g.id}`}
+                      className="shrink-0 px-3.5 py-2 rounded-full text-xs font-bold transition-all active:scale-95"
+                      style={
+                        isActive
+                          ? {
+                              background:
+                                'linear-gradient(135deg, #FFD700 0%, #D4AF37 50%, #B8860B 100%)',
+                              color: '#1A1A2E',
+                              boxShadow: '0 4px 14px rgba(212, 175, 55, 0.55)',
+                              fontFamily: 'Outfit, Noto Sans Devanagari, sans-serif',
+                            }
+                          : {
+                              background:
+                                'linear-gradient(135deg, #1F1F35 0%, #14142B 100%)',
+                              color: '#FFD700',
+                              border: '1px solid rgba(212, 175, 55, 0.35)',
+                              fontFamily: 'Outfit, Noto Sans Devanagari, sans-serif',
+                            }
+                      }
+                    >
+                      {g.name_hi || g.name}
+                    </button>
+                  );
+                })}
               </div>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Jantri Table */}
-        <Card className="bg-[#141418] border-white/10">
-          <CardHeader>
-            <CardTitle className="text-white font-['Unbounded'] flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-[#D4AF37]" />
-              रिजल्ट चार्ट
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="w-10 h-10 animate-spin text-[#D4AF37]" />
+            {/* Month / Year filters */}
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              <div>
+                <label className="block text-[9px] text-[#D4AF37] uppercase tracking-wider font-bold mb-1">
+                  Month
+                </label>
+                <div className="relative">
+                  <select
+                    value={month}
+                    onChange={(e) =>
+                      setMonth(e.target.value === 'all' ? 'all' : Number(e.target.value))
+                    }
+                    data-testid="jantri-month-select"
+                    className="w-full appearance-none rounded-xl px-3 py-2 pr-8 text-sm font-bold text-white outline-none transition-all"
+                    style={{
+                      background: 'linear-gradient(135deg, #1F1F35 0%, #14142B 100%)',
+                      border: '1px solid rgba(212, 175, 55, 0.4)',
+                    }}
+                  >
+                    <option value="all">All Months</option>
+                    {MONTHS.map((m) => (
+                      <option key={m.value} value={m.value}>
+                        {m.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-[#D4AF37] absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
               </div>
-            ) : results.length === 0 ? (
-              <div className="text-center py-12">
-                <Trophy className="w-16 h-16 text-gray-500 mx-auto mb-4" />
-                <p className="text-gray-400 text-lg">कोई रिजल्ट नहीं मिला</p>
+              <div>
+                <label className="block text-[9px] text-[#D4AF37] uppercase tracking-wider font-bold mb-1">
+                  Year
+                </label>
+                <div className="relative">
+                  <select
+                    value={year}
+                    onChange={(e) =>
+                      setYear(e.target.value === 'all' ? 'all' : Number(e.target.value))
+                    }
+                    data-testid="jantri-year-select"
+                    className="w-full appearance-none rounded-xl px-3 py-2 pr-8 text-sm font-bold text-white outline-none transition-all"
+                    style={{
+                      background: 'linear-gradient(135deg, #1F1F35 0%, #14142B 100%)',
+                      border: '1px solid rgba(212, 175, 55, 0.4)',
+                    }}
+                  >
+                    <option value="all">All Years</option>
+                    {yearOptions.map((y) => (
+                      <option key={y} value={y}>
+                        {y}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-[#D4AF37] absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+              </div>
+            </div>
+
+            {/* Selected game card header */}
+            <div
+              className="rounded-2xl px-4 py-3 mb-3 flex items-center justify-between"
+              style={{
+                background: 'linear-gradient(135deg, #1A1A2E 0%, #2A2240 100%)',
+                border: '1.5px solid rgba(212, 175, 55, 0.4)',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+              }}
+            >
+              <div className="min-w-0">
+                <p className="text-[10px] uppercase tracking-widest text-gray-400 font-bold">
+                  Showing
+                </p>
+                <h2
+                  className="text-lg font-black truncate"
+                  style={{
+                    backgroundImage:
+                      'linear-gradient(135deg, #FFD700 0%, #FDE047 50%, #D4AF37 100%)',
+                    WebkitBackgroundClip: 'text',
+                    backgroundClip: 'text',
+                    color: 'transparent',
+                    fontFamily: 'Outfit, Noto Sans Devanagari, sans-serif',
+                  }}
+                  data-testid="jantri-current-game"
+                >
+                  {selectedGame?.name_hi || selectedGame?.name || '--'}
+                </h2>
+              </div>
+              <span
+                className="text-[10px] uppercase tracking-wider font-black px-2.5 py-1 rounded-full"
+                style={{
+                  background: 'linear-gradient(135deg, #FFD700 0%, #D4AF37 100%)',
+                  color: '#1A1A2E',
+                }}
+                data-testid="jantri-result-count"
+              >
+                {visible.length} results
+              </span>
+            </div>
+
+            {/* Result list */}
+            {loadingResults ? (
+              <div className="flex flex-col items-center justify-center py-12 gap-3">
+                <Loader2 className="w-8 h-8 animate-spin text-[#D4AF37]" />
+                <span className="text-gray-400 text-xs">Loading history...</span>
+              </div>
+            ) : visible.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 gap-3">
+                <BarChart3 className="w-10 h-10 text-gray-600" />
+                <p className="text-gray-400 text-sm">No results for selected period</p>
+                <p className="text-gray-600 text-xs">Try a different month / year</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-white/10">
-                      <th className="text-left p-3 text-gray-400 font-medium sticky left-0 bg-[#141418]">
-                        तारीख
-                      </th>
-                      {filteredGames.map((game) => (
-                        <th key={game.id} className={`text-center p-3 font-medium min-w-[100px] ${game.color}`}>
-                          {game.name}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {results.map((row, index) => (
-                      <tr 
-                        key={index} 
-                        className="border-b border-white/5 hover:bg-white/5 transition-colors"
-                      >
-                        <td className="p-3 text-white font-medium sticky left-0 bg-[#141418]">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-gray-500" />
-                            {row.date}
-                          </div>
-                        </td>
-                        {filteredGames.map((game) => (
-                          <td key={game.id} className="text-center p-3">
-                            {row.games[game.id] ? (
-                              <div className="flex flex-col items-center gap-1">
-                                <span className="text-3xl font-bold text-[#D4AF37] font-['Unbounded']">
-                                  {row.games[game.id].jodi}
-                                </span>
-                              </div>
-                            ) : (
-                              <span className="text-gray-600 text-2xl">--</span>
-                            )}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="space-y-1.5" data-testid="jantri-results-list">
+                {visible.map((r, idx) => {
+                  const { full, weekday } = fmtDate(r.date);
+                  return (
+                    <div
+                      key={r.id || `${r.date}-${idx}`}
+                      data-testid={`jantri-row-${idx}`}
+                      className="rounded-xl px-3 py-2.5 flex items-center justify-between transition-all hover:scale-[1.01]"
+                      style={{
+                        background:
+                          'linear-gradient(90deg, rgba(212, 175, 55, 0.08) 0%, rgba(212, 175, 55, 0.03) 60%, rgba(212, 175, 55, 0.08) 100%)',
+                        border: '1px solid rgba(212, 175, 55, 0.22)',
+                        boxShadow: 'inset 0 1px 0 rgba(255, 215, 0, 0.06)',
+                      }}
+                    >
+                      <div className="flex flex-col leading-tight">
+                        <span
+                          className="text-sm text-white font-bold tabular-nums"
+                          style={{ fontFamily: 'Outfit, sans-serif' }}
+                        >
+                          {full}
+                        </span>
+                        {weekday && (
+                          <span className="text-[9px] text-gray-500 uppercase tracking-wider mt-0.5">
+                            {weekday}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[9px] uppercase tracking-wider text-gray-500 font-bold">
+                          Jodi
+                        </span>
+                        <span
+                          className="text-2xl font-black tabular-nums"
+                          style={{
+                            backgroundImage:
+                              'linear-gradient(135deg, #FFD700 0%, #FDE047 50%, #D4AF37 100%)',
+                            WebkitBackgroundClip: 'text',
+                            backgroundClip: 'text',
+                            color: 'transparent',
+                            fontFamily: 'Outfit, monospace',
+                            textShadow: '0 0 12px rgba(212, 175, 55, 0.3)',
+                            minWidth: '40px',
+                            textAlign: 'right',
+                          }}
+                          data-testid={`jantri-jodi-${idx}`}
+                        >
+                          {r.jodi_result || r.jodi || '--'}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
-          </CardContent>
-        </Card>
-
-        {/* Game Legend */}
-        <Card className="bg-[#141418] border-white/10 mt-6">
-          <CardContent className="p-4">
-            <p className="text-gray-400 text-sm mb-3">गेम्स टाइमिंग:</p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-              <div className="flex items-center gap-2 p-2 bg-[#0A0A0C] rounded-lg">
-                <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                <div>
-                  <p className="text-white text-sm">दिल्ली बाजार</p>
-                  <p className="text-gray-400 text-xs">3:00 PM</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 p-2 bg-[#0A0A0C] rounded-lg">
-                <div className="w-3 h-3 rounded-full bg-orange-400"></div>
-                <div>
-                  <p className="text-white text-sm">श्री गणेश</p>
-                  <p className="text-gray-400 text-xs">6:00 PM</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 p-2 bg-[#0A0A0C] rounded-lg">
-                <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-                <div>
-                  <p className="text-white text-sm">फरीदाबाद</p>
-                  <p className="text-gray-400 text-xs">6:15 PM</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 p-2 bg-[#0A0A0C] rounded-lg">
-                <div className="w-3 h-3 rounded-full bg-green-400"></div>
-                <div>
-                  <p className="text-white text-sm">गाजियाबाद</p>
-                  <p className="text-gray-400 text-xs">8:30 PM</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 p-2 bg-[#0A0A0C] rounded-lg">
-                <div className="w-3 h-3 rounded-full bg-blue-400"></div>
-                <div>
-                  <p className="text-white text-sm">गली</p>
-                  <p className="text-gray-400 text-xs">11:30 PM</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 p-2 bg-[#0A0A0C] rounded-lg">
-                <div className="w-3 h-3 rounded-full bg-purple-400"></div>
-                <div>
-                  <p className="text-white text-sm">दिसावर</p>
-                  <p className="text-gray-400 text-xs">5:00 AM</p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          </>
+        )}
       </main>
       <FooterNav />
     </div>

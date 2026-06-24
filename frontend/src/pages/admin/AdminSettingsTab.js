@@ -12,6 +12,7 @@ const API_URL = process.env.REACT_APP_BACKEND_URL;
 const AdminSettingsTab = () => {
   const [telegramLink, setTelegramLink] = useState('');
   const [whatsappLink, setWhatsappLink] = useState('');
+  const [whatsappNumber, setWhatsappNumber] = useState('');
   const [withdrawalProofTelegram, setWithdrawalProofTelegram] = useState('');
   const [withdrawalStartTime, setWithdrawalStartTime] = useState('');
   const [withdrawalEndTime, setWithdrawalEndTime] = useState('');
@@ -31,6 +32,7 @@ const AdminSettingsTab = () => {
     try {
       const { data } = await axios.get(`${API_URL}/api/admin/settings`, { withCredentials: true });
       setTelegramLink(data.telegram_link || ''); setWhatsappLink(data.whatsapp_link || '');
+      setWhatsappNumber(data.whatsapp_number || '');
       setWithdrawalProofTelegram(data.withdrawal_proof_telegram || '');
       setWithdrawalStartTime(data.withdrawal_start_time || ''); setWithdrawalEndTime(data.withdrawal_end_time || '');
       setMinBetJodi(data.min_bet_jodi || 10); setMinBetHaruf(data.min_bet_haruf || 10); setMinBetCrossing(data.min_bet_crossing || 10);
@@ -49,7 +51,7 @@ const AdminSettingsTab = () => {
     setSavingSettings(true);
     try {
       await axios.put(`${API_URL}/api/admin/settings`, {
-        telegram_link: telegramLink, whatsapp_link: whatsappLink, withdrawal_proof_telegram: withdrawalProofTelegram,
+        telegram_link: telegramLink, whatsapp_link: whatsappLink, whatsapp_number: whatsappNumber, withdrawal_proof_telegram: withdrawalProofTelegram,
         withdrawal_start_time: withdrawalStartTime, withdrawal_end_time: withdrawalEndTime,
         min_bet_jodi: parseInt(minBetJodi) || 10, min_bet_haruf: parseInt(minBetHaruf) || 10, min_bet_crossing: parseInt(minBetCrossing) || 10,
         min_deposit: parseInt(minDeposit) || 100, min_withdrawal: parseInt(minWithdrawal) || 100
@@ -103,6 +105,18 @@ const AdminSettingsTab = () => {
         <div>
           <Label className="text-gray-300 mb-2 block">WhatsApp Group Link</Label>
           <Input type="url" placeholder="https://chat.whatsapp.com/..." value={whatsappLink} onChange={(e) => setWhatsappLink(e.target.value)} data-testid="settings-whatsapp-link" className="bg-[#0A0A0C] border-white/10 text-white" />
+        </div>
+        <div>
+          <Label className="text-gray-300 mb-2 block">WhatsApp Contact Number (with country code)</Label>
+          <Input
+            type="tel"
+            placeholder="+91XXXXXXXXXX or +1XXXXXXXXXX"
+            value={whatsappNumber}
+            onChange={(e) => setWhatsappNumber(e.target.value)}
+            data-testid="settings-whatsapp-number"
+            className="bg-[#0A0A0C] border-white/10 text-white"
+          />
+          <p className="text-gray-500 text-xs mt-1">Country code zaroor add karein (e.g. +91 India, +1 USA, +971 UAE). Yeh number app me WhatsApp icon par tap karne par chat open karega.</p>
         </div>
         <div>
           <Label className="text-gray-300 mb-2 block">Withdrawal Proof Telegram Link</Label>

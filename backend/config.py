@@ -108,7 +108,7 @@ DEPOSIT_PACKAGES = {
 
 # Settings defaults
 SETTINGS_DEFAULTS = {
-    "telegram_link": "", "whatsapp_link": "", "withdrawal_proof_telegram": "",
+    "telegram_link": "", "whatsapp_link": "", "whatsapp_number": "", "withdrawal_proof_telegram": "",
     "withdrawal_start_time": "", "withdrawal_end_time": "",
     "min_bet_jodi": 10, "min_bet_haruf": 10, "min_bet_crossing": 10,
     "min_deposit": 100, "min_withdrawal": 100
