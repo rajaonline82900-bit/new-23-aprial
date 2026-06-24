@@ -1,7 +1,7 @@
 // Build version baked into the React bundle at build time.
 // MUST match (or be older than) the backend APP_BUILD_VERSION in server.py.
 // Bump this for every release so cached APK WebViews force-refresh.
-export const APP_BUILD_VERSION = '2026.02.24.6';
+export const APP_BUILD_VERSION = '2026.02.24.7';
 
 const STORAGE_KEY = 'matka11_last_version_check';
 const RELOAD_FLAG = 'matka11_version_reloaded';

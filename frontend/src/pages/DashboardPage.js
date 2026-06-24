@@ -164,23 +164,17 @@ const DashboardPage = () => {
 
   return (
     <div className="min-h-screen app-shell relative overflow-hidden" style={{ background: 'linear-gradient(140deg, #1A0A2E 0%, #2A1245 18%, #3D1C5A 35%, #4A2766 50%, #3D1C5A 65%, #2A1245 82%, #1A0A2E 100%)' }}>
-      {/* Premium gold animated ambient — multi-layer cinematic background.
-          All transforms / opacity = GPU-compositor only, smooth on mobile. */}
+      {/* Premium gold animated ambient — lightweight 3-layer cinematic background.
+          Removed expensive conic-rotate (was the perf hit). */}
       <div className="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
-        {/* Layer 1: Rotating large gold orbit halo */}
-        <div className="absolute top-[-150px] left-1/2 -translate-x-1/2 w-[520px] h-[520px] rounded-full blur-[70px] gold-orbit" style={{ background: 'conic-gradient(from 0deg, rgba(255,215,0,0.42) 0deg, rgba(212,175,55,0.22) 90deg, rgba(255,235,130,0.4) 180deg, rgba(184,134,11,0.2) 270deg, rgba(255,215,0,0.42) 360deg)' }} />
+        {/* Layer 1: Top center pulsing gold halo (opacity-only — cheapest animation) */}
+        <div className="absolute top-[-60px] left-1/2 -translate-x-1/2 w-[420px] h-[420px] rounded-full blur-[55px] gold-ambient-pulse" style={{ background: 'radial-gradient(circle, rgba(255,215,0,0.55) 0%, rgba(212,175,55,0.28) 45%, transparent 75%)' }} />
 
-        {/* Layer 2: Top center pulsing gold halo (opacity animation) */}
-        <div className="absolute top-[-60px] left-1/2 -translate-x-1/2 w-[420px] h-[420px] rounded-full blur-[60px] gold-ambient-pulse" style={{ background: 'radial-gradient(circle, rgba(255,215,0,0.55) 0%, rgba(212,175,55,0.28) 45%, transparent 75%)' }} />
+        {/* Layer 2: Mid-right drifting warm gold accent (transform-only) */}
+        <div className="absolute top-[28%] right-[-80px] w-[300px] h-[300px] rounded-full blur-[55px] gold-drift" style={{ background: 'radial-gradient(circle, rgba(255,215,0,0.38) 0%, rgba(184,134,11,0.2) 50%, transparent 80%)' }} />
 
-        {/* Layer 3: Mid-right drifting warm gold accent */}
-        <div className="absolute top-[28%] right-[-80px] w-[320px] h-[320px] rounded-full blur-[60px] gold-drift" style={{ background: 'radial-gradient(circle, rgba(255,215,0,0.38) 0%, rgba(184,134,11,0.2) 50%, transparent 80%)' }} />
-
-        {/* Layer 4: Bottom-left royal violet accent (static, for contrast) */}
-        <div className="absolute bottom-[-80px] left-[-60px] w-[340px] h-[340px] rounded-full blur-[70px]" style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.32) 0%, rgba(168,85,247,0.15) 50%, transparent 80%)' }} />
-
-        {/* Layer 5: Diagonal sweeping gold shimmer beam across the top */}
-        <div className="absolute top-[10%] left-0 w-[160%] h-[120px] blur-[40px] gold-sweep" style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(255,215,0,0.5) 35%, rgba(255,235,130,0.7) 50%, rgba(255,215,0,0.5) 65%, transparent 100%)' }} />
+        {/* Layer 3: Bottom-left royal violet accent (static) */}
+        <div className="absolute bottom-[-80px] left-[-60px] w-[300px] h-[300px] rounded-full blur-[60px]" style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.3) 0%, rgba(168,85,247,0.14) 50%, transparent 80%)' }} />
       </div>
 
       {/* Welcome popup — shows once per fresh app open */}
@@ -229,11 +223,21 @@ const DashboardPage = () => {
               </Link>
 
               {user?.role === 'admin' && (
-                <Link to="/admin">
+                <a
+                  href={`/admin?_t=${Date.now()}`}
+                  data-testid="admin-panel-link"
+                  onClick={(e) => {
+                    // Use a full-page navigation so the WebView/browser always
+                    // re-evaluates the SPA bundle (fixes "purana admin first
+                    // load, refresh par naya" cache bug).
+                    e.preventDefault();
+                    window.location.href = `/admin?_t=${Date.now()}`;
+                  }}
+                >
                   <button className="p-2 rounded-lg bg-[#D4AF37]/15 border border-[#D4AF37]/40 text-[#FFD700] hover:bg-[#D4AF37]/25 active:scale-95 transition-all" data-testid="admin-panel-btn">
                     <Shield className="w-4 h-4" />
                   </button>
-                </Link>
+                </a>
               )}
             </div>
           </div>
@@ -426,7 +430,7 @@ const DashboardPage = () => {
                 return (
                   <CardWrapper key={game.id} {...cardProps}>
                     <div
-                      className={`rounded-2xl p-3.5 transition-all relative ${
+                      className={`rounded-2xl p-3.5 transition-all relative overflow-hidden ${
                         isDisabled ? 'opacity-90 cursor-not-allowed' : 'active:scale-[0.99] cursor-pointer'
                       }`}
                       style={{
@@ -438,6 +442,14 @@ const DashboardPage = () => {
                         boxShadow: '0 4px 16px rgba(0,0,0,0.45), 0 0 14px rgba(212, 175, 55, 0.15)',
                       }}
                     >
+                      {/* Animated gold gradient inside card — opacity-only, GPU-cheap */}
+                      <span
+                        className="absolute inset-0 pointer-events-none rounded-2xl gold-ambient-pulse"
+                        style={{
+                          background: 'linear-gradient(120deg, transparent 0%, rgba(255, 215, 0, 0.05) 35%, rgba(255, 215, 0, 0.12) 50%, rgba(255, 215, 0, 0.05) 65%, transparent 100%)',
+                          mixBlendMode: 'screen',
+                        }}
+                      />
                       <div className="flex items-start gap-3">
                         {/* LEFT: Game Name + Yesterday/Today */}
                         <div className="flex-1 min-w-0">
