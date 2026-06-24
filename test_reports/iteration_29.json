@@ -1,0 +1,25 @@
+{
+  "summary": "Verified all 6 iter-29 fixes on EMERGENT preview env. FIX1 scroll animation fully removed (no game-card-animate/game-card-hidden classes in DOM, computed animation-name='none' on cards, no inline animationDelay). FIX2 gold gradient ambient lighting restored — exactly 3 layers under .fixed.inset-0.-z-10, first child has gold-ambient-pulse class with radial-gradient rgba(255,215,0,0.45) and blur(70px); body background is rich royal purple linear-gradient(140deg, #1A0A2E -> #4A2766 -> #1A0A2E). FIX3 versionCheck.js correctly accepts {force:true} opts and bypasses the 60s localStorage throttle while still respecting the 30s RELOAD_FLAG loop guard. FIX4 AdminPage.js imports checkVersionAndMaybeReload and calls it with {force:true} in first useEffect after admin role check — E2E verified by intercepting /api/version with 2099.12.31.99 and confirming hard-reload to /admin?_v=2099.12.31.99. FIX6 /api/version returns 2026.02.24.5 matching APP_BUILD_VERSION constant. FIX5 regression confirmed: 2 play-btn-* (running games gold buttons), 4 timeout-btn-* (closed games red X), Telegram welcome popup with Download MATKA 11 App button renders on dashboard.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "AdminLoginPage emits a React warning: 'Cannot update a component (BrowserRouter) while rendering a different component (AdminLoginPage)' — indicates a setState/navigate() being called during render rather than inside a useEffect. Not blocking but should be wrapped in useEffect to silence the warning."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "Admin: admin@sattamatka.com / Admin@123",
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Iter 29 verified all 3 user-reported fixes: scroll animation removed, gold gradient restored, admin force-version-check working. Backend /api/version returns 2026.02.24.5 matching frontend APP_BUILD_VERSION. Admin login redirects directly to /admin (not /dashboard) — keep this in mind. The browser computes rgba/hex differently than source code (rgba spaces normalized; hex converted to rgb) so be careful with string-match assertions on style values.",
+  "rca of the issue": "N/A — all fixes verified passing."
+}

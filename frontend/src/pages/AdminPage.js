@@ -11,6 +11,7 @@ import {
   ArrowDownLeft, ArrowUpRight, Coins, History, Loader2, Eye
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { checkVersionAndMaybeReload } from '../utils/versionCheck';
 
 import AdminResultsTab from './admin/AdminResultsTab';
 import AdminBetsTab from './admin/AdminBetsTab';
@@ -48,6 +49,9 @@ const AdminPage = () => {
 
   useEffect(() => {
     if (user?.role !== 'admin') { toast.error('Admin access required'); navigate('/dashboard'); return; }
+    // Force a fresh version check on admin entry — bypasses 60s throttle.
+    // If a newer bundle is live, this triggers a hard-reload before showing old admin UI.
+    checkVersionAndMaybeReload({ force: true });
     fetchData();
   }, [user, navigate]);
 

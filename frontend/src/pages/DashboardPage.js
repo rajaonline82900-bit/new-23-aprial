@@ -61,24 +61,6 @@ const DashboardPage = () => {
   }, [gameCategory, games]);
 
 
-  // Scroll reveal animation for game cards
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.remove('game-card-hidden');
-            entry.target.classList.add('game-card-visible');
-          }
-        });
-      },
-      { threshold: 0.1, rootMargin: '0px 0px -30px 0px' }
-    );
-    const cards = document.querySelectorAll('.game-card-animate');
-    cards.forEach((card) => observer.observe(card));
-    return () => cards.forEach((card) => observer.unobserve(card));
-  }, [games]);
-
   useEffect(() => {
     fetchGames();
     fetchSettings();
@@ -181,11 +163,15 @@ const DashboardPage = () => {
   };
 
   return (
-    <div className="min-h-screen app-shell relative overflow-hidden" style={{ background: 'linear-gradient(140deg, #0B0420 0%, #1A0B3D 25%, #2A1058 50%, #1A0B3D 75%, #0B0420 100%)' }}>
-      {/* Lightweight ambient lighting — 2 small static blurs + 1 cheap opacity-pulsing gold accent */}
+    <div className="min-h-screen app-shell relative overflow-hidden" style={{ background: 'linear-gradient(140deg, #1A0A2E 0%, #2A1245 18%, #3D1C5A 35%, #4A2766 50%, #3D1C5A 65%, #2A1245 82%, #1A0A2E 100%)' }}>
+      {/* Premium gold ambient lighting — visible gold pulse + accents */}
       <div className="fixed inset-0 -z-10 pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[320px] h-[320px] bg-gradient-to-br from-[#D4AF37]/18 to-[#FFD700]/8 rounded-full blur-[60px] gold-ambient-pulse" />
-        <div className="absolute bottom-0 right-0 w-[280px] h-[280px] bg-gradient-to-br from-[#8B5CF6]/15 to-[#A855F7]/6 rounded-full blur-[60px]" />
+        {/* Top-center pulsing gold halo */}
+        <div className="absolute top-[-80px] left-1/2 -translate-x-1/2 w-[420px] h-[420px] rounded-full blur-[70px] gold-ambient-pulse" style={{ background: 'radial-gradient(circle, rgba(255,215,0,0.45) 0%, rgba(212,175,55,0.25) 45%, transparent 75%)' }} />
+        {/* Middle-right warm gold accent */}
+        <div className="absolute top-[35%] right-[-60px] w-[300px] h-[300px] rounded-full blur-[60px]" style={{ background: 'radial-gradient(circle, rgba(255,215,0,0.32) 0%, rgba(184,134,11,0.18) 50%, transparent 80%)' }} />
+        {/* Bottom-left royal violet accent for contrast */}
+        <div className="absolute bottom-[-60px] left-[-40px] w-[320px] h-[320px] rounded-full blur-[70px]" style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.28) 0%, rgba(168,85,247,0.14) 50%, transparent 80%)' }} />
       </div>
 
       {/* Welcome popup — shows once per fresh app open */}
@@ -355,8 +341,8 @@ const DashboardPage = () => {
                   return (
                     <CardWrapper key={game.id} {...cardProps}>
                       <div
-                        className={`game-card-animate game-card-hidden rounded-2xl overflow-hidden shadow-lg border-2 transition-all ${isDisabled ? 'opacity-60' : ''}`}
-                        style={{ borderColor: '#D4AF37', animationDelay: `${index * 0.08}s` }}
+                        className={`rounded-2xl overflow-hidden shadow-lg border-2 transition-all ${isDisabled ? 'opacity-60' : ''}`}
+                        style={{ borderColor: '#D4AF37' }}
                       >
                         {/* Orange header with game name + play button */}
                         <div className="bg-gradient-to-r from-[#D4AF37] to-[#B8941E] px-4 py-3 flex items-center justify-between">
@@ -431,11 +417,10 @@ const DashboardPage = () => {
                 return (
                   <CardWrapper key={game.id} {...cardProps}>
                     <div
-                      className={`game-card-animate game-card-hidden rounded-2xl p-3.5 transition-all relative ${
+                      className={`rounded-2xl p-3.5 transition-all relative ${
                         isDisabled ? 'opacity-90 cursor-not-allowed' : 'active:scale-[0.99] cursor-pointer'
                       }`}
                       style={{
-                        animationDelay: `${index * 0.06}s`,
                         background: 'linear-gradient(135deg, #1A1A2E 0%, #16162A 100%)',
                         border: '2px solid transparent',
                         backgroundImage: 'linear-gradient(135deg, #1A1A2E 0%, #16162A 100%), linear-gradient(135deg, #FFD700 0%, #FDE047 30%, #D4AF37 65%, #B8860B 100%)',
