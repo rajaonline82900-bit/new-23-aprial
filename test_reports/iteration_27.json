@@ -1,0 +1,33 @@
+{
+  "summary": "Verified iter 27 fixes on EMERGENT preview env (https://matka-numbers-bet.preview.emergentagent.com). FIX1 gold-ambient-pulse animation restored & verified at runtime (goldAmbient 4.5s ease-in-out infinite, will-change:opacity, 320x320, blur(60px), respects prefers-reduced-motion). FIX2 dashboard polling literal 60000 confirmed in DashboardPage.js:89. FIX3 GET /api/version returns {version: '2026.02.24.3'} matching versionCheck.js:4. FIX4 admin Bets tab (बेट रिपोर्ट) date picker working: clicking past day (01 Jun) triggered GET /api/admin/bet-distribution?game_id=all&date=2026-06-01 (200, empty state rendered gracefully). FIX5 dashboard fixtures present: 6 yesterday-result-* + 6 today-result-* + MATKA wordmark + Telegram welcome popup with Download MATKA 11 App button. FIX6 perf: only 2 children in -z-10 ambient div (1 animated gold-ambient-pulse + 1 static purple); 2nd layer animation-name='none' as designed. Backend admin auth, bet-distribution, winners endpoints with ?date= param all return 200. NOTE: Server clock is 24-Jun-2026 (not 24-Feb as review request states); date-picker default shows '24 Jun' but functionality is identical.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/admin/results/status", "issue": "Endpoint hard-codes today's IST date and ignores ?date= query param (result_routes.py:147). AdminResultsTab uses it without a date — by design (declare today's results), so not a user-facing bug. Flagging for awareness if admin needs to view historical declaration status."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "console_warnings_observed": [
+    "React warning: 'Cannot update a component while rendering a different component' (setState in render) — pre-existing, not introduced this iteration",
+    "React warning: 'A props object containing a key prop is being spread into JSX' — pre-existing in some list rendering"
+  ],
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "All 6 iter-27 fixes correctly implemented at source and verified at runtime. No regressions detected.",
+    "Pre-existing React warnings (setState-in-render, key-spread) are noise but don't break functionality — main agent may clean up in a future iteration.",
+    "/api/admin/results/status silently ignores ?date= param — if admin ever needs historical declaration status it would need fixing, but current AdminResultsTab does not pass date so no live bug."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "admin@sattamatka.com / Admin@123 (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "iter 27 verified end-to-end. Backend /api/version=2026.02.24.3 matches frontend bundle (versionCheck.js:4). DashboardPage polling=60000ms. Gold ambient pulse runtime-verified (animationName=goldAmbient, duration=4.5s, will-change=opacity, prefers-reduced-motion→none). Admin date picker fetches /api/admin/bet-distribution & /api/admin/winners with ?date= correctly. User's VPS issue (purana data) was due to broken systemctl restart command typo (matka-backecd) — preview env has the fix.",
+  "rca of the issue": "User VPS still on old backend due to typo in their restart command. The bet-distribution/winners endpoints DO accept ?date= param and return historical data correctly. Confirmed by direct curl + Playwright e2e on preview env."
+}

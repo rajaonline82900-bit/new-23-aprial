@@ -82,11 +82,11 @@ const DashboardPage = () => {
     refreshUser();
     fetchUnreadChat();
 
-    // Auto-refresh games every 30 seconds for live results (especially PWA)
+    // Auto-refresh games every 60 seconds for live results (PWA/APK friendly, less battery drain)
     const interval = setInterval(() => {
       fetchGames(false);
       fetchUnreadChat();
-    }, 30000);
+    }, 60000);
 
     // Also refresh when app comes back to foreground (PWA tab switch)
     const handleVisibility = () => {
@@ -176,9 +176,9 @@ const DashboardPage = () => {
 
   return (
     <div className="min-h-screen app-shell relative overflow-hidden" style={{ background: 'linear-gradient(140deg, #0B0420 0%, #1A0B3D 25%, #2A1058 50%, #1A0B3D 75%, #0B0420 100%)' }}>
-      {/* Lightweight ambient lighting — reduced from 4 huge blur layers to 2 small ones for mobile perf */}
+      {/* Lightweight ambient lighting — 2 small static blurs + 1 cheap opacity-pulsing gold accent */}
       <div className="fixed inset-0 -z-10 pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[320px] h-[320px] bg-gradient-to-br from-[#D4AF37]/18 to-[#FFD700]/8 rounded-full blur-[60px]" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[320px] h-[320px] bg-gradient-to-br from-[#D4AF37]/18 to-[#FFD700]/8 rounded-full blur-[60px] gold-ambient-pulse" />
         <div className="absolute bottom-0 right-0 w-[280px] h-[280px] bg-gradient-to-br from-[#8B5CF6]/15 to-[#A855F7]/6 rounded-full blur-[60px]" />
       </div>
 

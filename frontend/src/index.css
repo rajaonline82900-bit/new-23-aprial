@@ -366,7 +366,21 @@ code {
   will-change: background-position;
 }
 @media (prefers-reduced-motion: reduce), (max-width: 480px) {
-  .animate-color-shift { animation: none; }
+  .animate-color-shift { animation: none; will-change: auto; }
+}
+
+/* Lightweight ambient gold pulse — single element opacity-only animation.
+   Cheap on GPU because it only animates opacity (compositor-only, no repaint). */
+@keyframes goldAmbient {
+  0%, 100% { opacity: 0.45; }
+  50%      { opacity: 0.85; }
+}
+.gold-ambient-pulse {
+  animation: goldAmbient 4.5s ease-in-out infinite;
+  will-change: opacity;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gold-ambient-pulse { animation: none; will-change: auto; }
 }
 
 /* Gold glow pulsing for premium accents */
