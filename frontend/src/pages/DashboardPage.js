@@ -475,38 +475,21 @@ const DashboardPage = () => {
                           </div>
 
                           <div className="flex gap-2">
-                            {/* Yesterday - Premium Purple/Indigo with animated shift */}
-                            <div
-                              className="flex-1 rounded-xl py-1.5 px-2 flex flex-col items-center justify-center animate-color-shift"
-                              style={{
-                                backgroundImage: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 25%, #A855F7 50%, #7C3AED 75%, #4F46E5 100%)',
-                                border: '1px solid rgba(196, 181, 253, 0.55)',
-                                boxShadow: 'inset 0 1px 0 rgba(221, 214, 254, 0.25), 0 4px 14px rgba(124, 58, 237, 0.3)',
-                              }}
-                              data-testid={`yesterday-result-${game.id}`}
-                            >
-                              <span className="text-[8px] uppercase tracking-widest text-white/90 leading-none font-bold drop-shadow">Yesterday</span>
-                              <span className="text-white font-black text-base leading-tight tabular-nums mt-0.5 drop-shadow-md" style={{ fontFamily: 'Outfit, monospace', textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}>
-                                {game.yesterday_result?.jodi || '--'}
-                              </span>
-                            </div>
-
                             {/* Today - Premium Cyan/Teal with animated shift */}
                             <div
-                              className="flex-1 rounded-xl py-1.5 px-2 flex flex-col items-center justify-center relative animate-color-shift"
+                              className="flex-1 rounded-xl py-1.5 px-3 flex items-center justify-between gap-3 relative animate-color-shift"
                               style={{
                                 backgroundImage: 'linear-gradient(135deg, #0EA5E9 0%, #06B6D4 25%, #14B8A6 50%, #0891B2 75%, #0284C7 100%)',
                                 border: '1px solid rgba(125, 211, 252, 0.6)',
                                 boxShadow: 'inset 0 1px 0 rgba(165, 243, 252, 0.25), 0 4px 14px rgba(6, 182, 212, 0.35)',
-                                animationDelay: '1.5s',
                               }}
                               data-testid={`today-result-${game.id}`}
                             >
                               {gameStatus.status === 'open' && (
                                 <span className="absolute -top-1.5 right-1.5 bg-red-500 text-white text-[7px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider live-blink shadow-md leading-none">Live</span>
                               )}
-                              <span className="text-[8px] uppercase tracking-widest text-white/90 leading-none font-bold drop-shadow">Today</span>
-                              <span className="text-white font-black text-base leading-tight tabular-nums mt-0.5 drop-shadow-md" style={{ fontFamily: 'Outfit, monospace', textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}>
+                              <span className="text-[9px] uppercase tracking-widest text-white/90 leading-none font-bold drop-shadow">Today</span>
+                              <span className="text-white font-black text-lg leading-tight tabular-nums drop-shadow-md" style={{ fontFamily: 'Outfit, monospace', textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}>
                                 {game.today_result?.jodi || '--'}
                               </span>
                             </div>

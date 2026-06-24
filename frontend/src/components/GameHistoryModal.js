@@ -21,8 +21,9 @@ const GameHistoryModal = ({ game, onClose }) => {
   const now = new Date();
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [month, setMonth] = useState('all'); // 'all' or 1-12
-  const [year, setYear] = useState('all'); // 'all' or YYYY
+  // Default: current month + current year
+  const [month, setMonth] = useState(now.getMonth() + 1);
+  const [year, setYear] = useState(now.getFullYear());
 
   // Pull full history (up to ~365 days) so we can client-side filter by month/year
   useEffect(() => {
@@ -60,7 +61,7 @@ const GameHistoryModal = ({ game, onClose }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [results]);
 
-  // Filter + slice (default = latest 30 entries)
+  // Filter + sort ascending by date (oldest → newest within selected period)
   const visible = useMemo(() => {
     let arr = results.slice();
     if (year !== 'all') {
@@ -70,8 +71,11 @@ const GameHistoryModal = ({ game, onClose }) => {
       const mm = String(month).padStart(2, '0');
       arr = arr.filter((r) => String(r.date || '').slice(5, 7) === mm);
     }
+    // Sort ascending: 1 Jun, 2 Jun, 3 Jun, ...
+    arr.sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
     if (month === 'all' && year === 'all') {
-      arr = arr.slice(0, 30);
+      // Show latest 30 in ascending order
+      arr = arr.slice(-30);
     }
     return arr;
   }, [results, month, year]);
@@ -221,7 +225,7 @@ const GameHistoryModal = ({ game, onClose }) => {
                   {visible.length} {visible.length === 1 ? 'result' : 'results'}
                 </span>
                 <span className="text-[10px] uppercase tracking-wider text-[#D4AF37] font-bold">
-                  Latest → Oldest
+                  Oldest → Latest
                 </span>
               </div>
               <div className="space-y-1.5">

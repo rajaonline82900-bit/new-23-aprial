@@ -28,8 +28,9 @@ const JantriPage = () => {
   const [results, setResults] = useState([]);
   const [loadingGames, setLoadingGames] = useState(true);
   const [loadingResults, setLoadingResults] = useState(false);
-  const [month, setMonth] = useState('all');
-  const [year, setYear] = useState('all');
+  // Default: current month + current year
+  const [month, setMonth] = useState(now.getMonth() + 1);
+  const [year, setYear] = useState(now.getFullYear());
 
   // Fetch games list (only gali_disawar category for now)
   useEffect(() => {
@@ -97,8 +98,10 @@ const JantriPage = () => {
       const mm = String(month).padStart(2, '0');
       arr = arr.filter((r) => String(r.date || '').slice(5, 7) === mm);
     }
+    // Ascending: 1 Jun, 2 Jun, 3 Jun, ...
+    arr.sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
     if (month === 'all' && year === 'all') {
-      arr = arr.slice(0, 30);
+      arr = arr.slice(-30);
     }
     return arr;
   }, [results, month, year]);

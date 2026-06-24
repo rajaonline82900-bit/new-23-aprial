@@ -1,0 +1,56 @@
+{
+  "summary": "Verified all 3 UI changes on MATKA 11. BUG1 (Yesterday box removed), BUG2 (M11 icon-only logo), BUG3a (Chart modal defaults to current month/year + ascending sort), BUG3b (Jantri page defaults to current month/year + ascending sort) — ALL PASSED.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_results": {
+    "BUG1_yesterday_box_removed": {
+      "status": "PASS",
+      "yesterday_testid_count_on_dashboard": 0,
+      "today_testid_count_on_dashboard": 6,
+      "word_Yesterday_in_dashboard": false
+    },
+    "BUG2_M11_icon_only_logo": {
+      "status": "PASS",
+      "logo_text": "M\n11",
+      "has_MATKA_substring": false,
+      "has_M_and_11": true,
+      "bounding_box_px": {"width": 36, "height": 36},
+      "data_testid_present": true
+    },
+    "BUG3a_chart_modal_defaults": {
+      "status": "PASS",
+      "month_select_default": "6 (June)",
+      "year_select_default": "2026",
+      "rows_shown": 2,
+      "dates_in_order": ["21 Jun 2026", "23 Jun 2026"],
+      "ascending": true,
+      "oldest_to_latest_label_visible": "Yes (rendered as uppercase 'OLDEST → LATEST' via CSS; test substring match was case-sensitive false-negative, label IS present)"
+    },
+    "BUG3b_jantri_page_defaults": {
+      "status": "PASS",
+      "month_select_default": "6 (June)",
+      "year_select_default": "2026",
+      "rows_shown": 2,
+      "dates_in_order": ["21 Jun 2026", "23 Jun 2026"],
+      "ascending": true
+    }
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "GameHistoryModal.js and JantriPage.js duplicate ~80 lines of identical sort/filter/render logic — consider extracting a shared <ResultHistoryList> component / hook to keep behavior in sync going forward.",
+    "Both pages use Date(d).toLocaleString in fmtDate; localeCompare on YYYY-MM-DD string for sorting is correct and stable — good.",
+    "Console warning observed: 'A props object containing a \"key\" prop is being spread into JSX' for <Link> elements — minor React warning, not blocking but should be cleaned up in a future iteration."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped per request)", "frontend": "100%"},
+  "test_credentials": "User: 9870012345 / Test@1234 — login worked. Welcome popup dismissed via sessionStorage.setItem('telegram_welcome_shown','1').",
+  "seed_data_creation": "None. Used existing Delhi Bazaar June 2026 results (21 Jun jodi=33, 23 Jun jodi=84) as referenced.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Iteration 22 confirmed: (1) yesterday-result-* testids fully removed from dashboard; (2) MatkaLogo is now icon-only 36x36 badge containing only 'M' + '11' (no MATKA wordmark) at data-testid='matka-logo'; (3) GameHistoryModal AND JantriPage both default month=current (6 in Jun 2026), year=current (2026), and sort ASC by date — verified rows are 21 Jun 2026 → 23 Jun 2026 in both views. No backend tested. Welcome popup may interfere — dismiss via sessionStorage."
+}
