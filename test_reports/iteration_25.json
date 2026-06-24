@@ -1,0 +1,31 @@
+{
+  "summary": "Validated the APK/WebView cache-bust version-check system end-to-end. All 6 sub-bugs PASS — backend /api/version endpoint, no-cache meta tags in index.html, on-boot frontend version probe, matching-version no-reload, mismatch force-reload with ?_v=<live>, and 60s localStorage throttle.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_version_endpoint.py",
+    "/app/test_reports/pytest/version_endpoint_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "versionCheck.js does NOT bypass throttle when the prior fetch failed (resp.ok=false silently returns after stamping localStorage). A flaky probe (Cloudflare hiccup) will throttle the next legit check for 60s. Consider only stamping STORAGE_KEY on successful response.",
+    "Reload-guard sessionStorage flag is per-tab; an APK WebView opens a single tab so it's fine, but if user opens the app and immediately closes/re-opens the tab within 30s the guard resets and may loop if backend still reports a newer version. Acceptable trade-off.",
+    "APP_BUILD_VERSION in /app/frontend/src/utils/versionCheck.js is baked at compile time. A release process MUST bump both this constant AND the backend env to take effect on already-installed APKs. Document this in README/release-checklist.",
+    "Consider adding cache-bust query (?_=ts) to the index.html GET too on the WebView side — relying solely on http-equiv meta is best-effort because many WebViews ignore HTML-level cache directives. Service worker / explicit cache-bust on initial GET would be more robust (not blocking, but a hardening note)."
+  ],
+  "updated_files": ["/app/backend/tests/test_version_endpoint.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "seed_data_creation": "none",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "test_credentials": "Not required — /api/version is public unauthenticated endpoint",
+  "context_for_next_testing_agent": "Version check tests live in /app/backend/tests/test_version_endpoint.py. Frontend behaviour was validated via Playwright with localStorage clearing between fresh-boot tests (throttle persists across reloads). To test mismatch force-reload, intercept the route with page.route('**/api/version*', ...) returning a future version like '2099.12.31.99'; verify final URL contains ?_v=2099.12.31.99. Always clear localStorage between tests since the 60s throttle key 'matka11_last_version_check' will short-circuit subsequent checks.",
+  "evidence": {
+    "version_endpoint": "GET /api/version -> 200 application/json {\"version\":\"2026.02.24.1\"}",
+    "index_meta_tags": "All 3 present: Cache-Control no-cache,no-store,must-revalidate; Pragma no-cache; Expires 0",
+    "boot_probe": "GET /api/version?_=1782312649464 with header Cache-Control: no-cache fired on app mount",
+    "matching_version_no_reload": "URL stayed at /signup (no ?_v= appended)",
+    "mismatch_force_reload": "After Playwright route returned {version:'2099.12.31.99'}, page navigated to /signup?_v=2099.12.31.99",
+    "throttle": "Second page reload within 4s -> zero additional /api/version requests (throttle window 60s honoured)"
+  }
+}

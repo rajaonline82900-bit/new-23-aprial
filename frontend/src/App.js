@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { LanguageProvider } from "./context/LanguageContext";
 import { Toaster } from "./components/ui/sonner";
+import { checkVersionAndMaybeReload } from "./utils/versionCheck";
 import "./index.css";
 
 // Simple Loader - transparent overlay so background shows through
@@ -249,6 +250,14 @@ const AuthedOverlays = () => {
 };
 
 function App() {
+  // Run version check on app boot — if backend has newer build, force-reload to clear cached APK WebView bundle.
+  React.useEffect(() => {
+    checkVersionAndMaybeReload();
+    const onFocus = () => checkVersionAndMaybeReload();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, []);
+
   return (
     <BrowserRouter>
       <AuthProvider>

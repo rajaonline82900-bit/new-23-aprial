@@ -55,6 +55,21 @@ api_router.include_router(admin_router)
 api_router.include_router(notification_router)
 api_router.include_router(kalyan_router)
 
+
+# Build version — bumped manually on every release so APK/WebView clients
+# can detect a new build and force-reload to clear stale cached bundles.
+APP_BUILD_VERSION = os.environ.get("APP_BUILD_VERSION", "2026.02.24.1")
+
+
+@api_router.get("/version")
+async def get_app_version():
+    """Public endpoint clients poll on boot to detect a new build.
+    The frontend bakes APP_BUILD_VERSION into its bundle; if the live value
+    differs, the client clears caches and force-reloads with a cache-bust query.
+    """
+    return {"version": APP_BUILD_VERSION}
+
+
 app.include_router(api_router)
 
 # Serve uploaded files (use relative path so it works on any deployment)
