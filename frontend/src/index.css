@@ -416,8 +416,18 @@ code {
   will-change: transform, opacity;
 }
 
+/* Card-internal gold sheen — sweeps horizontally across each game card. */
+@keyframes cardGoldSheen {
+  0%   { transform: translateX(-110%) translateZ(0); }
+  100% { transform: translateX(110%) translateZ(0); }
+}
+.card-gold-sheen {
+  animation: cardGoldSheen 5s linear infinite;
+  will-change: transform;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .gold-orbit, .gold-drift, .gold-sweep { animation: none; will-change: auto; }
+  .gold-orbit, .gold-drift, .gold-sweep, .card-gold-sheen { animation: none; will-change: auto; }
 }
 
 /* Gold glow pulsing for premium accents */

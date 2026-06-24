@@ -58,7 +58,7 @@ api_router.include_router(kalyan_router)
 
 # Build version — bumped manually on every release so APK/WebView clients
 # can detect a new build and force-reload to clear stale cached bundles.
-APP_BUILD_VERSION = os.environ.get("APP_BUILD_VERSION", "2026.02.24.8")
+APP_BUILD_VERSION = os.environ.get("APP_BUILD_VERSION", "2026.02.24.9")
 
 
 @api_router.get("/version")

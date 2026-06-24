@@ -1,0 +1,33 @@
+{
+  "summary": "Verified iter32 fixes for restored morning-style multi-layer gold ambient + card-gold-sheen + v9 bump. All 6 fixes (A-F) pass on /dashboard. 5 ambient layers present, gold-orbit has filter:none (perf-critical), card-gold-sheen sweeping on all 6 game cards, /api/version returns 2026.02.24.9, 0 JS errors during 5x rapid scroll.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "AdminLoginPage", "issues": ["React warning: 'Cannot update a component (BrowserRouter) while rendering a different component (AdminLoginPage)' — pre-existing setState-during-render bug; not blocking but should be cleaned up"]}
+    ]
+  },
+  "test_report_links": ["/app/test_reports/iter32_dashboard.png"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "DashboardPage.js is 622 lines — approaching 700-line split threshold. Consider extracting <GameCard kalyan> and <GameCard premium> into separate components for maintainability.",
+    "gold-orbit CSS animation-duration is 28s in index.css, but review_request stated 32s. Implementation is consistent (DashboardPage.js does not override it). Minor doc/spec drift, not a bug.",
+    "AdminLoginPage emits setState-in-render console warning — should be wrapped in useEffect / event handler."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "admin@sattamatka.com / Admin@123 (worked, logged in to /admin successfully)",
+  "seed_data_creation": "none",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Verified via JS-evaluation on https://matka-numbers-bet.preview.emergentagent.com/dashboard: (FIX A) ambient container .fixed.inset-0.-z-10.overflow-hidden has 5 children — layer0 gold-ambient-pulse w/ blur(40px) + goldAmbient anim, layer1 gold-orbit w/ filter:NONE + goldOrbit anim 28s linear infinite + transform-only rotate, layer2 gold-drift w/ blur(40px) + goldDrift, layer3 static violet w/ blur(45px) + NO animation, layer4 gold-sweep w/ blur(25px) + goldSweep. (FIX B) All 6 game-card-* elements contain .card-gold-sheen child with animation cardGoldSheen 5s linear infinite, mixBlendMode:screen, linear-gradient(105deg, ...rgba(255,215,0...)) — confirmed for delhi_bazaar, shri_ganesh, faridabad, ghaziabad, gali, disawar (gali_disawar category visible by default). (FIX C) gold-orbit computed filter:'none' confirmed — perf-critical no-blur-on-conic-rotate verified. (FIX D) GET /api/version → {'version':'2026.02.24.9'}. (FIX E) MATKA 11 logo, admin shield btn, 6 yesterday + 6 today result boxes, gold play/red X close icons all present. (FIX F) 0 JS errors during 5x rapid scroll. Screenshot confirms rich morning-style gold ambient with smooth card sweep visible. Only minor finding: React setState-in-render warning on AdminLoginPage (pre-existing).",
+  "verified_fixes": {
+    "FIX_A_5_layers_no_heavy_blur": "PASS",
+    "FIX_B_card_gold_sheen": "PASS (6/6 cards)",
+    "FIX_C_orbit_filter_none": "PASS",
+    "FIX_D_api_version_v9": "PASS",
+    "FIX_E_regression_iter31": "PASS",
+    "FIX_F_perf_smoke": "PASS (0 errors on 5x scroll)"
+  }
+}
