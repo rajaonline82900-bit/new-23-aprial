@@ -86,11 +86,11 @@ const SignupPage = () => {
         {/* Card */}
         <div className="relative">
           <div className="absolute -inset-px rounded-2xl blur-sm" style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #FDE047 100%)', opacity: 0.5 }} />
-          <div className="relative rounded-2xl bg-white border border-[#D4AF37]/20 p-6 shadow-[0_20px_60px_rgba(168,85,247,0.2)]">
+          <div className="relative rounded-2xl p-6" style={{ background: 'linear-gradient(135deg, #14142B 0%, #1A1A2E 100%)', border: '1px solid rgba(212, 175, 55, 0.4)', boxShadow: '0 20px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(212, 175, 55, 0.1)' }}>
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h2 className="text-[#FFD700] text-xl font-black font-['Unbounded']">नया अकाउंट</h2>
-                <p className="text-gray-500 text-xs mt-0.5">कुछ ही सेकंड में रजिस्टर करें</p>
+                <p className="text-gray-400 text-xs mt-0.5">कुछ ही सेकंड में रजिस्टर करें</p>
               </div>
               <span className="text-[10px] px-2 py-1 rounded-md text-white font-black border-0" style={{ background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)' }}>FREE</span>
             </div>
@@ -108,7 +108,7 @@ const SignupPage = () => {
                     onChange={(e) => setName(e.target.value)}
                     required
                     data-testid="signup-name-input"
-                    className="pl-10 h-11 bg-[#0A0A14] border-[#D4AF37]/30 text-[#FFD700] placeholder:text-gray-500 focus:border-[#FFD700] focus:ring-1 focus:ring-[#FFD700]/40"
+                    className="pl-10 h-11 text-white text-[#FFD700] placeholder:text-gray-500 focus:border-[#FFD700] focus:ring-1 focus:ring-[#FFD700]/40"
                   />
                 </div>
               </div>
@@ -128,7 +128,7 @@ const SignupPage = () => {
                       required
                       maxLength={10}
                       data-testid="signup-phone-input"
-                      className="pl-10 h-11 bg-[#0A0A14] border-[#D4AF37]/30 text-[#FFD700] placeholder:text-gray-500 focus:border-[#FFD700] focus:ring-1 focus:ring-[#FFD700]/40"
+                      className="pl-10 h-11 text-white text-[#FFD700] placeholder:text-gray-500 focus:border-[#FFD700] focus:ring-1 focus:ring-[#FFD700]/40"
                     />
                   </div>
                 </div>
@@ -147,7 +147,7 @@ const SignupPage = () => {
                     required
                     minLength={6}
                     data-testid="signup-password-input"
-                    className="pl-10 pr-10 h-11 bg-[#0A0A14] border-[#D4AF37]/30 text-[#FFD700] placeholder:text-gray-500 focus:border-[#FFD700] focus:ring-1 focus:ring-[#FFD700]/40"
+                    className="pl-10 pr-10 h-11 text-white text-[#FFD700] placeholder:text-gray-500 focus:border-[#FFD700] focus:ring-1 focus:ring-[#FFD700]/40"
                   />
                   <button
                     type="button"
@@ -171,7 +171,7 @@ const SignupPage = () => {
                   maxLength={10}
                   data-testid="signup-referral-input"
                   disabled={!!urlRefCode}
-                  className="h-11 bg-[#0A0A14] border-[#D4AF37]/30 text-[#FFD700] placeholder:text-gray-500 focus:border-[#FFD700] focus:ring-1 focus:ring-[#FFD700]/40 uppercase tracking-wide"
+                  className="h-11 text-white text-[#FFD700] placeholder:text-gray-500 focus:border-[#FFD700] focus:ring-1 focus:ring-[#FFD700]/40 uppercase tracking-wide"
                 />
                 {urlRefCode && (
                   <p className="text-[#FFD700] text-[11px] font-bold">लिंक से रेफरल कोड लागू है: {urlRefCode}</p>

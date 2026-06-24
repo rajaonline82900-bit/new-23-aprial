@@ -236,26 +236,23 @@ const DashboardPage = () => {
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Premium Gold Points Pill */}
-              <div
+              {/* Premium Gold Wallet Balance Pill - animated glow */}
+              <Link
+                to="/wallet"
                 data-testid="header-balance"
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full animate-gold-glow hover:scale-105 active:scale-95 transition-transform"
                 style={{
-                  background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.12) 0%, rgba(212, 175, 55, 0.18) 100%)',
-                  border: '1px solid rgba(212, 175, 55, 0.5)',
-                  boxShadow: '0 0 18px rgba(212, 175, 55, 0.25), inset 0 1px 0 rgba(255, 215, 0, 0.15)',
+                  background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.14) 0%, rgba(212, 175, 55, 0.22) 100%)',
+                  border: '1px solid rgba(212, 175, 55, 0.6)',
                 }}
               >
-                <div className="w-5 h-5 rounded-full flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #FFD700 0%, #D4AF37 50%, #B8860B 100%)' }}>
-                  <Coins className="w-3 h-3 text-[#1A1A2E]" />
+                <div className="w-6 h-6 rounded-full flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #FFD700 0%, #D4AF37 50%, #B8860B 100%)' }}>
+                  <Wallet className="w-3.5 h-3.5 text-[#1A1A2E]" strokeWidth={2.5} />
                 </div>
-                <div className="flex flex-col items-end leading-none">
-                  <span className="text-[8px] uppercase tracking-wider text-[#D4AF37] font-bold leading-none">Points</span>
-                  <span className="text-xs font-black tabular-nums text-[#FFD700]" data-testid="header-balance-value">
-                    ₹{user?.balance?.toFixed(2) || '0.00'}
-                  </span>
-                </div>
-              </div>
+                <span className="text-sm font-black tabular-nums text-[#FFD700] leading-none" data-testid="header-balance-value" style={{ textShadow: '0 0 8px rgba(255, 215, 0, 0.5)' }}>
+                  ₹{user?.balance?.toFixed(2) || '0.00'}
+                </span>
+              </Link>
 
               {user?.role === 'admin' && (
                 <Link to="/admin">
@@ -483,14 +480,16 @@ const DashboardPage = () => {
                 return (
                   <CardWrapper {...cardProps}>
                     <div
-                      className={`game-card-animate game-card-hidden rounded-2xl p-3.5 transition-all ${
+                      className={`game-card-animate game-card-hidden rounded-2xl p-3.5 transition-all relative animate-gold-glow ${
                         isDisabled ? 'opacity-90 cursor-not-allowed' : 'active:scale-[0.99] cursor-pointer'
                       }`}
                       style={{
-                        animationDelay: `${index * 0.06}s`,
+                        animationDelay: `${index * 0.06}s, ${index * 0.3}s`,
                         background: 'linear-gradient(135deg, #1A1A2E 0%, #16162A 100%)',
-                        border: '1px solid rgba(212, 175, 55, 0.4)',
-                        boxShadow: '0 4px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255, 215, 0, 0.08)',
+                        border: '2px solid transparent',
+                        backgroundImage: 'linear-gradient(135deg, #1A1A2E 0%, #16162A 100%), linear-gradient(135deg, #FFD700 0%, #FDE047 30%, #D4AF37 65%, #B8860B 100%)',
+                        backgroundOrigin: 'border-box',
+                        backgroundClip: 'padding-box, border-box',
                       }}
                     >
                       <div className="flex items-start gap-3">
@@ -509,37 +508,38 @@ const DashboardPage = () => {
                           </h4>
 
                           <div className="flex gap-2">
-                            {/* Yesterday */}
+                            {/* Yesterday - Premium Purple/Indigo with animated shift */}
                             <div
-                              className="flex-1 rounded-xl py-1.5 px-2 flex flex-col items-center justify-center"
+                              className="flex-1 rounded-xl py-1.5 px-2 flex flex-col items-center justify-center animate-color-shift"
                               style={{
-                                background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.18) 0%, rgba(127, 29, 29, 0.25) 100%)',
-                                border: '1px solid rgba(248, 113, 113, 0.4)',
-                                boxShadow: 'inset 0 1px 0 rgba(248, 113, 113, 0.12)',
+                                backgroundImage: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 25%, #A855F7 50%, #7C3AED 75%, #4F46E5 100%)',
+                                border: '1px solid rgba(196, 181, 253, 0.55)',
+                                boxShadow: 'inset 0 1px 0 rgba(221, 214, 254, 0.25), 0 4px 14px rgba(124, 58, 237, 0.3)',
                               }}
                               data-testid={`yesterday-result-${game.id}`}
                             >
-                              <span className="text-[8px] uppercase tracking-widest text-[#FCA5A5] leading-none font-bold">Yesterday</span>
-                              <span className="text-[#FCA5A5] font-black text-base leading-tight tabular-nums mt-0.5" style={{ fontFamily: 'Outfit, monospace' }}>
+                              <span className="text-[8px] uppercase tracking-widest text-white/90 leading-none font-bold drop-shadow">Yesterday</span>
+                              <span className="text-white font-black text-base leading-tight tabular-nums mt-0.5 drop-shadow-md" style={{ fontFamily: 'Outfit, monospace', textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}>
                                 {game.yesterday_result?.jodi || '--'}
                               </span>
                             </div>
 
-                            {/* Today */}
+                            {/* Today - Premium Cyan/Teal with animated shift */}
                             <div
-                              className="flex-1 rounded-xl py-1.5 px-2 flex flex-col items-center justify-center relative"
+                              className="flex-1 rounded-xl py-1.5 px-2 flex flex-col items-center justify-center relative animate-color-shift"
                               style={{
-                                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(6, 95, 70, 0.3) 100%)',
-                                border: '1px solid rgba(52, 211, 153, 0.45)',
-                                boxShadow: 'inset 0 1px 0 rgba(52, 211, 153, 0.12)',
+                                backgroundImage: 'linear-gradient(135deg, #0EA5E9 0%, #06B6D4 25%, #14B8A6 50%, #0891B2 75%, #0284C7 100%)',
+                                border: '1px solid rgba(125, 211, 252, 0.6)',
+                                boxShadow: 'inset 0 1px 0 rgba(165, 243, 252, 0.25), 0 4px 14px rgba(6, 182, 212, 0.35)',
+                                animationDelay: '1.5s',
                               }}
                               data-testid={`today-result-${game.id}`}
                             >
                               {gameStatus.status === 'open' && (
                                 <span className="absolute -top-1.5 right-1.5 bg-red-500 text-white text-[7px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider live-blink shadow-md leading-none">Live</span>
                               )}
-                              <span className="text-[8px] uppercase tracking-widest text-[#6EE7B7] leading-none font-bold">Today</span>
-                              <span className="text-[#6EE7B7] font-black text-base leading-tight tabular-nums mt-0.5" style={{ fontFamily: 'Outfit, monospace' }}>
+                              <span className="text-[8px] uppercase tracking-widest text-white/90 leading-none font-bold drop-shadow">Today</span>
+                              <span className="text-white font-black text-base leading-tight tabular-nums mt-0.5 drop-shadow-md" style={{ fontFamily: 'Outfit, monospace', textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}>
                                 {game.today_result?.jodi || '--'}
                               </span>
                             </div>

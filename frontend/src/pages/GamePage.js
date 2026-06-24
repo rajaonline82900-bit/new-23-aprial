@@ -21,7 +21,9 @@ import {
   History,
   Home,
   IndianRupee,
-  BarChart3
+  BarChart3,
+  CheckCircle2,
+  X
 } from 'lucide-react';
 import { speak } from '../utils/voice';
 import { toast } from 'sonner';
@@ -723,29 +725,30 @@ const GamePage = () => {
                   </p>
                 </div>
               )}
-              <p className="text-white font-bold text-base mb-2" data-testid="total-amount">{t('total')}: <span className="text-[#D4AF37]">₹ {totalAmount}</span></p>
+              <p className="text-white font-bold text-base mb-2" data-testid="total-amount">{t('total')}: <span className="text-[#FFD700]">₹ {totalAmount}</span></p>
               <div className="flex items-center gap-3">
                 <Button
                   onClick={() => { setJantriAmounts({}); setAndarAmounts({}); setBaharAmounts({}); setCrossDigits([]); setCrossAmount(''); setCrossWithJoda(false); }}
                   disabled={totalBetCount === 0}
                   data-testid="delete-all-bets-button"
-                  variant="outline"
-                  className="flex-1 h-12 border-white/20 text-white hover:bg-white/10 font-bold text-base disabled:opacity-30"
+                  className="flex-1 h-12 text-white font-black text-base disabled:opacity-30 border-0"
+                  style={{ background: 'linear-gradient(135deg, #F87171 0%, #DC2626 50%, #991B1B 100%)', boxShadow: '0 6px 20px rgba(220, 38, 38, 0.45)' }}
                 >
-                  {t('clear')}
+                  <X className="w-5 h-5 mr-1.5" /> {t('clear')}
                 </Button>
                 <Button
-                  onClick={() => { speak('प्ले'); handlePlaceBatchBets(); }}
+                  onClick={() => { speak('ओके'); handlePlaceBatchBets(); }}
                   disabled={placing || !bettingOpen || totalBetCount === 0}
                   data-testid="place-batch-bet-button"
-                  className="flex-1 h-12 bg-[#1a1a3e] hover:bg-[#252560] text-white font-bold text-base disabled:opacity-50"
+                  className="flex-1 h-12 text-white font-black text-base disabled:opacity-50 border-0"
+                  style={{ background: 'linear-gradient(135deg, #FFD700 0%, #D4AF37 50%, #B8860B 100%)', color: '#1A1A2E', boxShadow: '0 6px 20px rgba(212, 175, 55, 0.5)' }}
                 >
                 {!bettingOpen ? (
                   <span className="flex items-center gap-2"><Lock className="w-5 h-5" /> {t('closed')}</span>
                 ) : placing ? (
                   <span className="flex items-center gap-2"><Coins className="w-5 h-5 animate-spin" /> {t('placing')}</span>
                 ) : (
-                  t('play').toUpperCase()
+                  <span className="flex items-center gap-1.5"><CheckCircle2 className="w-5 h-5" /> OK</span>
                 )}
               </Button>
               </div>
