@@ -35,19 +35,20 @@ const DashboardPage = () => {
   const [kalyanResults, setKalyanResults] = useState({});
   const [historyGame, setHistoryGame] = useState(null);
   const [topWinners, setTopWinners] = useState([]);
-  const [winnerIndex, setWinnerIndex] = useState(0);
+  const [tickerVisible, setTickerVisible] = useState(true);
+  const tickerRef = useRef(null);
   const gamesRef = useRef(null);
 
-  // Rotate through top winners every 5 seconds. Uses one-shot CSS keyframe
-  // (animate-fade-in-up, 0.4s) that runs ONLY on key change → zero scroll
-  // impact between transitions.
+  // Pause marquee when scrolled off-screen → saves GPU on long lists below
   useEffect(() => {
-    if (topWinners.length < 2) return;
-    const t = setInterval(() => {
-      if (document.visibilityState !== 'visible') return;
-      setWinnerIndex((i) => (i + 1) % topWinners.length);
-    }, 5000);
-    return () => clearInterval(t);
+    const el = tickerRef.current;
+    if (!el || topWinners.length === 0) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => setTickerVisible(entry.isIntersecting),
+      { threshold: 0.01 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
   }, [topWinners.length]);
 
   // Fetch today's Kalyan results for the dashboard cards
@@ -126,10 +127,9 @@ const DashboardPage = () => {
 
   const fetchTopWinner = async () => {
     try {
-      const { data } = await axios.get(`${API_URL}/api/winners/top?limit=3`, { withCredentials: true });
+      const { data } = await axios.get(`${API_URL}/api/winners/top?limit=30`, { withCredentials: true });
       if (data && Array.isArray(data.winners) && data.winners.length > 0) {
         setTopWinners(data.winners);
-        setWinnerIndex(0);
       } else {
         setTopWinners([]);
       }
@@ -276,86 +276,91 @@ const DashboardPage = () => {
       {/* Main Content - everything scrolls together */}
       <div className="px-3 pt-[64px] pb-24" style={{maxWidth: '480px', margin: '0 auto'}}>
         <div className="pt-2">
-          {/* AAJ KA VIJETA - rotating top-3 winners card (no shadows, no keyframes
-              on scroll-time; only one-shot fade on rotation = scroll-safe) */}
+          {/* AAJ KE VIJETA - horizontal scrolling ticker showing ALL today's winners.
+              Single transform keyframe on inner track = GPU-composited, no
+              repaint. Pauses when card scrolls out of viewport. */}
           {topWinners.length > 0 && (() => {
-            const w = topWinners[winnerIndex] || topWinners[0];
+            const totalWon = topWinners.reduce((s, w) => s + (w.won_amount || 0), 0);
+            // Duplicate list so the translate(-50%) loop is seamless
+            const loop = [...topWinners, ...topWinners];
+            // Speed: ~3.2s per chip, scales with count → readable
+            const duration = Math.max(18, topWinners.length * 3.2);
             return (
               <div
-                className="rounded-2xl p-3 mb-4 relative overflow-hidden"
+                ref={tickerRef}
+                className="rounded-2xl mb-4 relative overflow-hidden"
                 style={{
                   background: 'linear-gradient(135deg, #1A1505 0%, #16162A 70%)',
                   border: '2px solid #D4AF37',
                   contain: 'content',
                 }}
-                data-testid="top-winner-card"
+                data-testid="winners-ticker"
               >
-                <div className="flex items-center gap-3">
-                  {/* Crown badge */}
-                  <div
-                    className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
-                    style={{
-                      background: 'linear-gradient(135deg, #FFD700 0%, #D4AF37 60%, #B8860B 100%)',
-                      border: '2px solid #FFD700',
-                    }}
-                  >
-                    <Crown className="w-6 h-6 text-[#1A0F00]" strokeWidth={2.5} fill="#1A0F00" />
-                  </div>
-
-                  {/* Winner info — keyed so it cleanly fades on rotation */}
-                  <div
-                    key={winnerIndex}
-                    className="flex-1 min-w-0 flex items-center gap-3 animate-fade-in-up"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <span
-                          className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full text-[#1A0F00]"
-                          style={{ background: 'linear-gradient(135deg, #FFD700 0%, #D4AF37 100%)' }}
-                        >
-                          आज का विजेता
-                        </span>
-                        <span className="text-[10px] text-[#86EFAC] font-bold truncate" data-testid="top-winner-game">
-                          {w.game_name_hi}
-                        </span>
-                      </div>
-                      <div className="text-[#FFD700] text-base font-black truncate" data-testid="top-winner-name" style={{ fontFamily: 'Outfit, Noto Sans Devanagari, sans-serif' }}>
-                        {w.name}
-                      </div>
+                {/* Header row */}
+                <div className="flex items-center justify-between px-3 pt-2.5 pb-1.5">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-7 h-7 rounded-full flex items-center justify-center"
+                      style={{
+                        background: 'linear-gradient(135deg, #FFD700 0%, #D4AF37 60%, #B8860B 100%)',
+                        border: '1.5px solid #FFD700',
+                      }}
+                    >
+                      <Crown className="w-4 h-4 text-[#1A0F00]" strokeWidth={2.5} fill="#1A0F00" />
                     </div>
-
-                    {/* Payout amount */}
-                    <div className="text-right flex-shrink-0">
-                      <div className="text-[8px] uppercase tracking-widest text-gray-400 font-black leading-none">जीते</div>
-                      <div
-                        className="text-xl font-black tabular-nums leading-tight mt-0.5"
-                        style={{ color: '#FFD700', fontFamily: 'Outfit, monospace' }}
-                        data-testid="top-winner-amount"
-                      >
-                        ₹{w.won_amount.toLocaleString('en-IN')}
-                      </div>
+                    <span
+                      className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full text-[#1A0F00]"
+                      style={{ background: 'linear-gradient(135deg, #FFD700 0%, #D4AF37 100%)' }}
+                    >
+                      आज के विजेता
+                    </span>
+                    <span className="text-[10px] text-gray-400 font-bold tabular-nums" data-testid="winners-count">
+                      {topWinners.length}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-[8px] uppercase tracking-widest text-gray-400 font-black leading-none">कुल जीत</div>
+                    <div className="text-sm font-black tabular-nums leading-tight" style={{ color: '#FFD700', fontFamily: 'Outfit, monospace' }} data-testid="winners-total">
+                      ₹{totalWon.toLocaleString('en-IN')}
                     </div>
                   </div>
                 </div>
 
-                {/* Rotation dots (only when 2+ winners) */}
-                {topWinners.length > 1 && (
-                  <div className="flex items-center justify-center gap-1.5 mt-2.5">
-                    {topWinners.map((_, idx) => (
-                      <span
+                {/* Ticker track */}
+                <div className="overflow-hidden pb-2.5">
+                  <div
+                    className="winners-ticker-track px-3"
+                    style={{
+                      animationDuration: `${duration}s`,
+                      animationPlayState: tickerVisible && document.visibilityState === 'visible' ? 'running' : 'paused',
+                    }}
+                  >
+                    {loop.map((w, idx) => (
+                      <div
                         key={idx}
-                        className="rounded-full"
+                        className="flex items-center gap-2 rounded-xl px-3 py-1.5 flex-shrink-0"
                         style={{
-                          width: idx === winnerIndex ? '14px' : '5px',
-                          height: '5px',
-                          background: idx === winnerIndex ? '#FFD700' : 'rgba(212, 175, 55, 0.35)',
-                          transition: 'width 0.3s ease, background 0.3s ease',
+                          background: 'rgba(212, 175, 55, 0.10)',
+                          border: '1px solid rgba(212, 175, 55, 0.35)',
                         }}
-                        data-testid={`winner-dot-${idx}`}
-                      />
+                        data-testid={idx < topWinners.length ? `winner-chip-${idx}` : undefined}
+                      >
+                        <Crown className="w-3.5 h-3.5 text-[#FFD700]" strokeWidth={2.5} fill="#FFD700" />
+                        <div className="flex flex-col leading-tight">
+                          <span className="text-[#FFD700] text-[12px] font-black whitespace-nowrap" style={{ fontFamily: 'Outfit, Noto Sans Devanagari, sans-serif' }}>
+                            {w.name}
+                          </span>
+                          <span className="text-[9px] text-[#86EFAC] font-bold whitespace-nowrap">
+                            {w.game_name_hi}
+                          </span>
+                        </div>
+                        <span className="text-white text-[13px] font-black tabular-nums whitespace-nowrap pl-1" style={{ fontFamily: 'Outfit, monospace' }}>
+                          ₹{(w.won_amount || 0).toLocaleString('en-IN')}
+                        </span>
+                      </div>
                     ))}
                   </div>
-                )}
+                </div>
               </div>
             );
           })()}

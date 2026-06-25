@@ -467,6 +467,24 @@ code {
   animation: textShimmer 3.5s linear infinite;
 }
 
+/* Winners Ticker — horizontal stock-ticker style scroll. Uses transform only
+   (GPU compositor, zero repaint). Pauses when card is off-screen via
+   IntersectionObserver toggling animation-play-state. */
+@keyframes winnersTicker {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-50%, 0, 0); }
+}
+.winners-ticker-track {
+  display: flex;
+  gap: 10px;
+  width: max-content;
+  animation: winnersTicker linear infinite;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .winners-ticker-track { animation: none; }
+}
+
 /* Popup pop-in animation (used by modals) */
 @keyframes popupEnter {
   0% { opacity: 0; transform: scale(0.85) translateY(20px); }

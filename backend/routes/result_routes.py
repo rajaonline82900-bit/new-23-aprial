@@ -262,10 +262,11 @@ async def reverse_bets(request: Request):
 
 
 @router.get("/winners/top")
-async def get_top_winners_public(limit: int = 3):
-    """Public endpoint: top winners of today (with yesterday fallback).
-    Returns full name + game + payout. Phone is intentionally NOT exposed
-    for privacy. Used by Dashboard hero rotating card."""
+async def get_top_winners_public(limit: int = 30):
+    """Public endpoint: ALL winners of today (with yesterday fallback).
+    Returns real first name + last-initial. Phone is intentionally NOT
+    exposed for privacy. Only real app users (db.bets table) are included.
+    Used by Dashboard winners ticker."""
     games_dict = await get_games_dict()
     today = datetime.now(IST).strftime("%Y-%m-%d")
     yesterday = (datetime.now(IST) - timedelta(days=1)).strftime("%Y-%m-%d")

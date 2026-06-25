@@ -70,13 +70,14 @@ Migrate Matka11 satta app from Emergent preview environment to self-hosted Hosti
     transition-all, text-shadow. Replaced with solid colors + single solid
     gold border + `contain: content` paint isolation per card. Look stays
     premium gold; APK scroll FPS recovered to ~60fps on low-end Android.
-12. AAJ KA VIJETA card (Feb 2026): Added rotating premium "Top Winners"
-    card at top of Dashboard. Backend exposes GET /api/winners/top?limit=N
-    returning top winners of today (fallback yesterday) with real first
-    name + last-name initial (e.g. "Rahul S."). Phone is NEVER exposed for
-    privacy. Card rotates through up to 3 winners every 5s with one-shot
-    fade keyframe (zero scroll-time paint cost). Animated dot indicator.
-    Pauses when tab is hidden. Builds trust + FOMO for new users.
+12. AAJ KE VIJETA Ticker (Feb 2026): Added horizontal stock-ticker style
+    marquee at top of Dashboard showing ALL today's winners. Backend
+    `GET /api/winners/top?limit=30` returns real first name + last initial
+    (e.g. "Rahul S."), phone NEVER exposed. Only actual app users from
+    db.bets table (no fakes). Card shows winner count + total payout sum.
+    Marquee uses single transform3d keyframe (GPU compositor only, zero
+    repaint). Pauses via IntersectionObserver when card scrolls off-screen
+    and when tab hidden. Honors prefers-reduced-motion.
 
 ## Backlog
 - P2: Stronger JWT_SECRET
