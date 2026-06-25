@@ -92,11 +92,12 @@ input, textarea, select {
 }
 input::placeholder, textarea::placeholder { color: #9CA3AF !important; }
 
-/* Glass effect — premium dark navy with gold accent */
+/* Glass effect — premium dark navy with gold accent
+   PERF: backdrop-filter:blur DISABLED — on low-end Android WebView it forces a
+   full surface re-blur on every scroll frame which destroys scroll FPS. We use
+   a solid background instead which looks identical visually. */
 .glass {
-  background: rgba(10, 10, 20, 0.85) !important;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: #0A0A14 !important;
   color: #F5F5F7 !important;
   border-bottom: 1px solid rgba(212, 175, 55, 0.25) !important;
 }
@@ -221,11 +222,9 @@ code {
   box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
 }
 
-/* Glass effect — light theme */
+/* Glass effect — light theme (PERF: blur disabled, solid bg for scroll FPS) */
 .glass {
-  background: rgba(255, 255, 255, 0.85) !important;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: #FFFFFF !important;
   color: #1F0E3D !important;
   border-bottom: 1px solid rgba(168, 85, 247, 0.18) !important;
 }
@@ -314,13 +313,14 @@ code {
   animation: slideIn 0.25s ease-out;
 }
 
-/* Live blink animation for Today result */
+/* Live blink animation DISABLED for scroll-perf on low-end Android.
+   The "Live" badge is visible as a static red pill — identically informative. */
 @keyframes livePulse {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
+  50% { opacity: 1; }
 }
 .live-blink {
-  animation: livePulse 1.2s ease-in-out infinite;
+  animation: none;
 }
 
 /* Scroll reveal animation for game cards */
@@ -438,20 +438,11 @@ code {
   .gold-orbit, .gold-drift, .gold-sweep, .card-gold-sheen { animation: none; will-change: auto; }
 }
 
-/* Gold glow pulsing for premium accents */
-@keyframes goldGlowPulse {
-  0%, 100% {
-    box-shadow: 0 0 12px rgba(212, 175, 55, 0.35), inset 0 1px 0 rgba(255, 215, 0, 0.18);
-  }
-  50% {
-    box-shadow: 0 0 24px rgba(255, 215, 0, 0.55), inset 0 1px 0 rgba(255, 215, 0, 0.25);
-  }
-}
+/* Gold glow pulsing DISABLED — box-shadow keyframe was the #1 scroll-FPS killer
+   on low-end Android WebViews. Static gold gradient + solid border looks
+   identical without the lag. Keep selector so existing usages still render. */
 .animate-gold-glow {
-  animation: goldGlowPulse 3s ease-in-out infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  .animate-gold-glow { animation: none; }
+  animation: none;
 }
 
 /* Soft border color shift for game cards */

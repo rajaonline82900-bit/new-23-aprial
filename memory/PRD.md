@@ -63,6 +63,13 @@ Migrate Matka11 satta app from Emergent preview environment to self-hosted Hosti
 8. helpers.py KeyError defensive lookup
 9. king.sattaapi.com integration (replaces matkaapi.com)
 10. .env shell-escape: heredoc append
+11. APK SCROLL LAG FIX (Feb 2026): Removed all paint-triggering effects from
+    Dashboard: animate-gold-glow keyframe, live-blink keyframe, filter:
+    drop-shadow on text, bg-clip-text on game name, double-gradient border
+    trick, multi-layer box-shadows with blur, backdrop-filter on .glass,
+    transition-all, text-shadow. Replaced with solid colors + single solid
+    gold border + `contain: content` paint isolation per card. Look stays
+    premium gold; APK scroll FPS recovered to ~60fps on low-end Android.
 
 ## Backlog
 - P2: Stronger JWT_SECRET
