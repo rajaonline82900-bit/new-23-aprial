@@ -55,7 +55,7 @@ async def process_referral_reward(user_id: str, deposit_amount: float):
         await db.transactions.insert_one({
             "id": str(uuid.uuid4()),
             "user_id": referrer_id,
-            "type": "deposit",
+            "type": "referral_bonus",
             "amount": bonus,
             "status": "completed",
             "reference_id": f"REFERRAL-{user_id[-6:]}",
