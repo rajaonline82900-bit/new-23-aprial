@@ -264,7 +264,8 @@ async def reverse_bets(request: Request):
 @router.get("/winners/top")
 async def get_top_winners_public(limit: int = 3):
     """Public endpoint: top winners of today (with yesterday fallback).
-    Masked names + masked phone for privacy. Used by Dashboard hero card."""
+    Returns full name + game + payout. Phone is intentionally NOT exposed
+    for privacy. Used by Dashboard hero rotating card."""
     games_dict = await get_games_dict()
     today = datetime.now(IST).strftime("%Y-%m-%d")
     yesterday = (datetime.now(IST) - timedelta(days=1)).strftime("%Y-%m-%d")
@@ -288,30 +289,26 @@ async def get_top_winners_public(limit: int = 3):
     user_ids = list({b["user_id"] for b in bets if b.get("user_id")})
     users = await db.users.find(
         {"_id": {"$in": [ObjectId(uid) for uid in user_ids]}},
-        {"name": 1, "phone": 1}
+        {"name": 1}
     ).to_list(len(user_ids))
     user_map = {str(u["_id"]): u for u in users}
 
-    def mask_name(name: str) -> str:
+    def display_name(name: str) -> str:
         if not name:
             return "Winner"
-        first = name.strip().split(" ")[0]
-        if len(first) <= 2:
-            return first + "***"
-        return first[:2].capitalize() + "*" * max(2, len(first) - 2)
-
-    def mask_phone(phone: str) -> str:
-        if not phone or len(phone) < 4:
-            return "****"
-        return "*" * (len(phone) - 2) + phone[-2:]
+        # Show full first name + initial of last name (e.g. "Rahul S.")
+        # Keeps it readable without revealing exact identity.
+        parts = [p for p in name.strip().split() if p]
+        if len(parts) == 1:
+            return parts[0]
+        return f"{parts[0]} {parts[-1][0].upper()}."
 
     winners = []
     for b in bets:
         user = user_map.get(b.get("user_id"), {})
         game = games_dict.get(b.get("game_id"), {})
         winners.append({
-            "name": mask_name(user.get("name", "")),
-            "phone": mask_phone(user.get("phone", "")),
+            "name": display_name(user.get("name", "")),
             "game_name_hi": game.get("name_hi") or game.get("name") or "—",
             "won_amount": int(b.get("won_amount", 0)),
         })
