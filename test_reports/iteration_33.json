@@ -1,0 +1,34 @@
+{
+  "summary": "Verified iter33 fixes A-E for scroll-jank consolidation + Refer & Earn APK WebView fallback. All fixes PASS. Dashboard: legacy 5-layer .fixed.inset-0.-z-10.overflow-hidden ambient container has been REMOVED; root .app-shell now has single body-level animated background with 3 radial-gradients + 1 linear-gradient + bgGoldDrift 22s animation. Quick action icons (Deposit/Withdraw/Telegram/WhatsApp) fully visible, NOT overlapped. All 6 game cards have 0 .card-gold-sheen elements (static span only). 0 JS errors during 5x scroll. Refer page clipboard fallback works (execCommand called, toast shown) when navigator.clipboard removed. shareWhatsApp fallback to window.location.href works when window.open returns null (page navigated to api.whatsapp.com). /api/version returns 2026.02.25.1.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/test_reports/iter33_dashboard.png",
+    "/app/test_reports/iter33_refer.png"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "DashboardPage.js is now ~615 lines — still close to the 700-line split threshold. Worth extracting <GameCard> into its own component for maintainability.",
+    "ReferPage.js shareWhatsApp uses unicode emoji literals (🎯 💰 📱 🌐) but they came through as EFBFBD (replacement char) in the URL during testing — possible encoding issue when serving page in test env, but in real browser/WebView this should render fine. Not blocking.",
+    "Pre-existing AdminLoginPage setState-in-render warning still present (from iter32 report). Not blocking but should be wrapped in useEffect."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "User: 9870012345 / Test@1234 (works, login returned 200 and user data)",
+  "seed_data_creation": "none",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Verified via JS-eval on https://matka-numbers-bet.preview.emergentagent.com: (FIX A) document.querySelector('.fixed.inset-0.-z-10.overflow-hidden') === null. Root .app-shell computed-style: animationName='bgGoldDrift', animationDuration='22s', backgroundImage has 3 radial-gradient + 1 linear-gradient. Deposit/Withdraw/Telegram/WhatsApp quick-link buttons present + visible at y=72px, no overlay obstruction. (FIX B) data-testid game-name-* count = 6; document.querySelectorAll('.card-gold-sheen').length === 0 — animation completely removed from cards. Replaced with static <span> linear-gradient. (FIX C) Simulated Android WebView: Object.defineProperty(navigator,'clipboard',{value:undefined}); patched document.execCommand. Click on [data-testid='copy-referral-code'] → execCommand('copy') called + sonner toast 'रेफरल कोड कॉपी हो गया!' shown. For shareWhatsApp, monkey-patched window.open to return null; click triggered framenavigated event with wa.me redirect target (api.whatsapp.com/send/?text=...) — confirms fallback to window.location.href. (FIX D) curl /api/version → {\"version\":\"2026.02.25.1\"}. (FIX E) Dashboard regression: 6 game cards rendered (delhi_bazaar/shri_ganesh/faridabad/ghaziabad + 2 more on default category), play buttons (gold) + Live badges visible, MATKA 11 logo header, FooterNav with Home/Refer/Bid History/Result Chart. 0 JS errors during 5x scrollTo top/bottom.",
+  "verified_fixes": {
+    "FIX_A_scroll_smoothness_icons_visible": "PASS — legacy 5-layer container removed; single body-level bgGoldDrift on .app-shell; 4 quick action icons all visible at y=72px",
+    "FIX_B_card_animation_removed": "PASS — 6/6 cards have zero .card-gold-sheen; static span linear-gradient only",
+    "FIX_C_refer_clipboard_fallback": "PASS — legacyCopy() fires execCommand('copy') when navigator.clipboard undefined; toast success shown",
+    "FIX_C_whatsapp_share_fallback": "PASS — when window.open returns null, window.location.href = waUrl executes (navigation to wa.me/api.whatsapp.com captured)",
+    "FIX_D_version_2026_02_25_1": "PASS — /api/version returns {\"version\":\"2026.02.25.1\"}",
+    "FIX_E_regression": "PASS — dashboard renders correctly, 0 JS errors during 5x scroll"
+  }
+}

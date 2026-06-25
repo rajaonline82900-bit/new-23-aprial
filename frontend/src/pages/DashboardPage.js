@@ -163,24 +163,21 @@ const DashboardPage = () => {
   };
 
   return (
-    <div className="min-h-screen app-shell relative overflow-hidden" style={{ background: 'linear-gradient(140deg, #1A0A2E 0%, #2A1245 18%, #3D1C5A 35%, #4A2766 50%, #3D1C5A 65%, #2A1245 82%, #1A0A2E 100%)' }}>
-      {/* Premium animated gold ambient — multi-layer, lightweight (no heavy blur). */}
-      <div className="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
-        {/* Layer 1: Top center pulsing gold halo (opacity-only — cheapest animation) */}
-        <div className="absolute top-[-60px] left-1/2 -translate-x-1/2 w-[420px] h-[420px] rounded-full blur-[40px] gold-ambient-pulse" style={{ background: 'radial-gradient(circle, rgba(255,215,0,0.55) 0%, rgba(212,175,55,0.28) 45%, transparent 75%)' }} />
-
-        {/* Layer 2: Slowly rotating gold orbit ring (transform-only, NO blur) */}
-        <div className="absolute top-[15%] left-1/2 -translate-x-1/2 w-[520px] h-[520px] rounded-full gold-orbit" style={{ background: 'conic-gradient(from 0deg, rgba(255,215,0,0.32) 0deg, transparent 60deg, rgba(255,235,130,0.28) 180deg, transparent 240deg, rgba(255,215,0,0.32) 360deg)', opacity: 0.55 }} />
-
-        {/* Layer 3: Mid-right drifting warm gold accent */}
-        <div className="absolute top-[28%] right-[-80px] w-[300px] h-[300px] rounded-full blur-[40px] gold-drift" style={{ background: 'radial-gradient(circle, rgba(255,215,0,0.38) 0%, rgba(184,134,11,0.2) 50%, transparent 80%)' }} />
-
-        {/* Layer 4: Bottom-left royal violet accent (static, contrast) */}
-        <div className="absolute bottom-[-80px] left-[-60px] w-[300px] h-[300px] rounded-full blur-[45px]" style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.3) 0%, rgba(168,85,247,0.14) 50%, transparent 80%)' }} />
-
-        {/* Layer 5: Diagonal sweeping gold shimmer beam */}
-        <div className="absolute top-[10%] left-0 w-[140%] h-[80px] blur-[25px] gold-sweep" style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(255,215,0,0.5) 35%, rgba(255,235,130,0.7) 50%, rgba(255,215,0,0.5) 65%, transparent 100%)' }} />
-      </div>
+    <div
+      className="min-h-screen app-shell relative overflow-hidden"
+      style={{
+        backgroundImage:
+          'radial-gradient(ellipse 60% 40% at 50% 8%, rgba(255,215,0,0.28) 0%, rgba(212,175,55,0.14) 40%, transparent 70%),' +
+          'radial-gradient(ellipse 40% 30% at 95% 45%, rgba(255,215,0,0.18) 0%, transparent 70%),' +
+          'radial-gradient(ellipse 50% 35% at 5% 95%, rgba(139,92,246,0.20) 0%, transparent 70%),' +
+          'linear-gradient(160deg, #0F0420 0%, #1A0B3D 35%, #2A1058 60%, #1A0B3D 85%, #0B0420 100%)',
+        backgroundSize: '200% 200%, 200% 200%, 200% 200%, 100% 100%',
+        backgroundPosition: '0% 0%, 100% 50%, 0% 100%, 0% 0%',
+        animation: 'bgGoldDrift 22s ease-in-out infinite alternate',
+      }}
+    >
+      {/* Background animation handled by parent div backgroundImage — no separate layers needed.
+          This eliminates compositor overhead from 5 absolute-positioned animated DIVs. */}
 
       {/* Welcome popup — shows once per fresh app open */}
       <TelegramWelcomePopup telegramLink={telegramLink} isLoggedIn={!!user} />
@@ -447,19 +444,14 @@ const DashboardPage = () => {
                         boxShadow: '0 4px 16px rgba(0,0,0,0.45), 0 0 14px rgba(212, 175, 55, 0.15)',
                       }}
                     >
-                      {/* Animated gold sheen sweeping across card — transform-only, GPU-cheap */}
+                      {/* Static subtle gold gleam inside card — no animation = zero scroll cost */}
                       <span
-                        className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl"
-                      >
-                        <span
-                          className="absolute top-0 left-0 h-full card-gold-sheen"
-                          style={{
-                            width: '60%',
-                            background: 'linear-gradient(105deg, transparent 0%, rgba(255, 215, 0, 0.08) 25%, rgba(255, 235, 130, 0.22) 50%, rgba(255, 215, 0, 0.08) 75%, transparent 100%)',
-                            mixBlendMode: 'screen',
-                          }}
-                        />
-                      </span>
+                        className="absolute inset-0 pointer-events-none rounded-2xl"
+                        style={{
+                          background: 'linear-gradient(105deg, transparent 0%, rgba(255, 215, 0, 0.06) 35%, rgba(255, 235, 130, 0.10) 50%, rgba(255, 215, 0, 0.06) 65%, transparent 100%)',
+                          mixBlendMode: 'screen',
+                        }}
+                      />
                       <div className="flex items-start gap-3">
                         {/* LEFT: Game Name + Yesterday/Today */}
                         <div className="flex-1 min-w-0">

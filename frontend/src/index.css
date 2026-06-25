@@ -416,6 +416,14 @@ code {
   will-change: transform, opacity;
 }
 
+/* Body-level slow gold drift — animates background-position so the radial gold
+   blobs gently shift. ONE animation on body element = zero compositor overhead
+   from multiple positioned layers. Smoothest possible approach. */
+@keyframes bgGoldDrift {
+  0%   { background-position: 0% 0%, 100% 50%, 0% 100%, 0% 0%; }
+  100% { background-position: 20% 10%, 80% 60%, 10% 90%, 0% 0%; }
+}
+
 /* Card-internal gold sheen — sweeps horizontally across each game card. */
 @keyframes cardGoldSheen {
   0%   { transform: translateX(-110%) translateZ(0); }

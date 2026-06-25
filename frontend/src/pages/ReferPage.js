@@ -29,10 +29,39 @@ const ReferPage = () => {
     }
   };
 
+  const copyToClipboard = (text) => {
+    // Robust copy: clipboard API → execCommand fallback for Android WebView APK.
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text).then(() => true).catch(() => false).then((ok) => ok || legacyCopy(text));
+    }
+    return Promise.resolve(legacyCopy(text));
+  };
+
+  const legacyCopy = (text) => {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      ta.style.top = '0';
+      ta.setAttribute('readonly', '');
+      document.body.appendChild(ta);
+      ta.select();
+      ta.setSelectionRange(0, ta.value.length);
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    } catch (_) {
+      return false;
+    }
+  };
+
   const copyCode = () => {
     if (referralInfo?.code) {
-      navigator.clipboard.writeText(referralInfo.code);
-      toast.success('रेफरल कोड कॉपी हो गया!');
+      copyToClipboard(referralInfo.code).then((ok) => {
+        if (ok) toast.success('रेफरल कोड कॉपी हो गया!');
+        else toast.error('कॉपी नहीं हुआ — manually copy karein');
+      });
     }
   };
 
@@ -40,19 +69,21 @@ const ReferPage = () => {
   const WEB_LINK = 'www.matka11.online';
 
   const copyText = (text, label) => {
-    Promise.resolve(navigator.clipboard?.writeText(text))
-      .then(() => toast.success(`${label} कॉपी हो गया!`))
-      .catch(() => toast.error('कॉपी नहीं हो पाया'));
+    copyToClipboard(text).then((ok) => {
+      if (ok) toast.success(`${label} कॉपी हो गया!`);
+      else toast.error('कॉपी नहीं हुआ');
+    });
   };
 
   const shareCode = () => {
     const referralLink = `${window.location.origin}/signup?ref=${referralInfo?.code}`;
     const text = `MATKA 11 पर खेलें और जीतें!\n\nइस लिंक से साइनअप करें:\n${referralLink}\n\n📱 App Download: ${APK_LINK}\n🌐 iPhone Website: ${WEB_LINK}\n\nपहली जमा पर आपको 5% बोनस मिलेगा!`;
     if (navigator.share) {
-      navigator.share({ title: 'MATKA 11 - Refer & Earn', text, url: referralLink });
+      navigator.share({ title: 'MATKA 11 - Refer & Earn', text, url: referralLink }).catch(() => {
+        copyToClipboard(text).then((ok) => toast[ok ? 'success' : 'error'](ok ? 'शेयर टेक्स्ट कॉपी हुआ!' : 'कॉपी नहीं हुआ'));
+      });
     } else {
-      navigator.clipboard.writeText(text);
-      toast.success('शेयर लिंक कॉपी हो गया!');
+      copyToClipboard(text).then((ok) => toast[ok ? 'success' : 'error'](ok ? 'शेयर लिंक कॉपी हो गया!' : 'कॉपी नहीं हुआ'));
     }
   };
 
@@ -60,7 +91,12 @@ const ReferPage = () => {
     const referralLink = `${window.location.origin}/signup?ref=${referralInfo?.code}`;
     const text = `MATKA 11 पर खेलें और जीतें! 🎯\n\nइस लिंक से साइनअप करें:\n${referralLink}\n\n📱 App Download: ${APK_LINK}\n🌐 iPhone Website: ${WEB_LINK}\n\nपहली जमा पर आपको 5% बोनस मिलेगा! 💰`;
     const waUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
-    window.open(waUrl, '_blank');
+    // Try window.open first (works in browsers); fallback to navigation for WebView APK.
+    const win = window.open(waUrl, '_blank', 'noopener,noreferrer');
+    if (!win) {
+      // window.open blocked (typical in Android WebView) — navigate the current page
+      window.location.href = waUrl;
+    }
   };
 
   const handleApply = async () => {
