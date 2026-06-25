@@ -35,6 +35,9 @@ const DashboardPage = () => {
   const [kalyanResults, setKalyanResults] = useState({});
   const [historyGame, setHistoryGame] = useState(null);
   const [topWinners, setTopWinners] = useState([]);
+  const [todayDeposits, setTodayDeposits] = useState([]);
+  const [todayWithdrawals, setTodayWithdrawals] = useState([]);
+  const [tickerTab, setTickerTab] = useState('winners'); // 'winners' | 'deposits' | 'withdrawals'
   const [tickerVisible, setTickerVisible] = useState(true);
   const tickerRef = useRef(null);
   const gamesRef = useRef(null);
@@ -42,14 +45,14 @@ const DashboardPage = () => {
   // Pause marquee when scrolled off-screen → saves GPU on long lists below
   useEffect(() => {
     const el = tickerRef.current;
-    if (!el || topWinners.length === 0) return;
+    if (!el) return;
     const obs = new IntersectionObserver(
       ([entry]) => setTickerVisible(entry.isIntersecting),
       { threshold: 0.01 }
     );
     obs.observe(el);
     return () => obs.disconnect();
-  }, [topWinners.length]);
+  }, []);
 
   // Fetch today's Kalyan results for the dashboard cards
   useEffect(() => {
@@ -127,14 +130,16 @@ const DashboardPage = () => {
 
   const fetchTopWinner = async () => {
     try {
-      const { data } = await axios.get(`${API_URL}/api/winners/top?limit=30`, { withCredentials: true });
-      if (data && Array.isArray(data.winners) && data.winners.length > 0) {
-        setTopWinners(data.winners);
-      } else {
-        setTopWinners([]);
-      }
+      const [w, d, wd] = await Promise.all([
+        axios.get(`${API_URL}/api/winners/top?limit=30`, { withCredentials: true }),
+        axios.get(`${API_URL}/api/transactions/today-deposits?limit=30`, { withCredentials: true }),
+        axios.get(`${API_URL}/api/transactions/today-withdrawals?limit=30`, { withCredentials: true }),
+      ]);
+      setTopWinners(Array.isArray(w.data?.winners) ? w.data.winners : []);
+      setTodayDeposits(Array.isArray(d.data?.entries) ? d.data.entries : []);
+      setTodayWithdrawals(Array.isArray(wd.data?.entries) ? wd.data.entries : []);
     } catch (e) {
-      setTopWinners([]);
+      // Silent — keep existing data on failure
     }
   };
 
@@ -276,15 +281,23 @@ const DashboardPage = () => {
       {/* Main Content - everything scrolls together */}
       <div className="px-3 pt-[64px] pb-24" style={{maxWidth: '480px', margin: '0 auto'}}>
         <div className="pt-2">
-          {/* AAJ KE VIJETA - horizontal scrolling ticker showing ALL today's winners.
-              Single transform keyframe on inner track = GPU-composited, no
-              repaint. Pauses when card scrolls out of viewport. */}
-          {topWinners.length > 0 && (() => {
-            const totalWon = topWinners.reduce((s, w) => s + (w.won_amount || 0), 0);
-            // Duplicate list so the translate(-50%) loop is seamless
-            const loop = [...topWinners, ...topWinners];
-            // Speed: ~3.2s per chip, scales with count → readable
-            const duration = Math.max(18, topWinners.length * 3.2);
+          {/* WINNERS / DEPOSITS / WITHDRAWALS TICKER — 3-tab card.
+              Single transform3d keyframe on the active list = GPU only, no
+              scroll-time repaint. Pauses when off-screen or tab hidden. */}
+          {(() => {
+            const TABS = [
+              { id: 'winners',     label: 'आज का विजेता',  data: topWinners,      countLabel: 'विजेता' },
+              { id: 'deposits',    label: 'Today Deposit',  data: todayDeposits,   countLabel: 'जमा' },
+              { id: 'withdrawals', label: 'Today Withdraw', data: todayWithdrawals, countLabel: 'निकासी' },
+            ];
+            const active = TABS.find(t => t.id === tickerTab) || TABS[0];
+            const list = active.data;
+            const hasAny = TABS.some(t => t.data.length > 0);
+            if (!hasAny) return null;
+
+            const loop = list.length > 0 ? [...list, ...list] : [];
+            const duration = Math.max(18, list.length * 3.2);
+
             return (
               <div
                 ref={tickerRef}
@@ -296,71 +309,94 @@ const DashboardPage = () => {
                 }}
                 data-testid="winners-ticker"
               >
-                {/* Header row */}
-                <div className="flex items-center justify-between px-3 pt-2.5 pb-1.5">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-7 h-7 rounded-full flex items-center justify-center"
-                      style={{
-                        background: 'linear-gradient(135deg, #FFD700 0%, #D4AF37 60%, #B8860B 100%)',
-                        border: '1.5px solid #FFD700',
-                      }}
-                    >
-                      <Crown className="w-4 h-4 text-[#1A0F00]" strokeWidth={2.5} fill="#1A0F00" />
-                    </div>
-                    <span
-                      className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full text-[#1A0F00]"
-                      style={{ background: 'linear-gradient(135deg, #FFD700 0%, #D4AF37 100%)' }}
-                    >
-                      आज के विजेता
-                    </span>
-                    <span className="text-[10px] text-gray-400 font-bold tabular-nums" data-testid="winners-count">
-                      {topWinners.length}
-                    </span>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-[8px] uppercase tracking-widest text-gray-400 font-black leading-none">कुल जीत</div>
-                    <div className="text-sm font-black tabular-nums leading-tight" style={{ color: '#FFD700', fontFamily: 'Outfit, monospace' }} data-testid="winners-total">
-                      ₹{totalWon.toLocaleString('en-IN')}
-                    </div>
-                  </div>
+                {/* Tab bar - 3 buttons in one row */}
+                <div className="flex items-stretch gap-1 p-2">
+                  {TABS.map((t) => {
+                    const isActive = t.id === tickerTab;
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => setTickerTab(t.id)}
+                        data-testid={`ticker-tab-${t.id}`}
+                        className="flex-1 rounded-lg py-1.5 px-1.5 flex flex-col items-center justify-center leading-tight active:scale-95"
+                        style={
+                          isActive
+                            ? {
+                                background: 'linear-gradient(135deg, #FFD700 0%, #D4AF37 60%, #B8860B 100%)',
+                                border: '1px solid #FFD700',
+                                color: '#1A0F00',
+                              }
+                            : {
+                                background: 'rgba(212, 175, 55, 0.08)',
+                                border: '1px solid rgba(212, 175, 55, 0.25)',
+                                color: '#FFD700',
+                              }
+                        }
+                      >
+                        <span className="text-[10px] font-black tracking-wide whitespace-nowrap">
+                          {t.label}
+                        </span>
+                        <span className={`text-[9px] font-bold mt-0.5 tabular-nums ${isActive ? 'text-[#1A0F00]/70' : 'text-gray-400'}`}>
+                          {t.data.length} {t.countLabel}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
 
-                {/* Ticker track */}
-                <div className="overflow-hidden pb-2.5">
-                  <div
-                    className="winners-ticker-track px-3"
-                    style={{
-                      animationDuration: `${duration}s`,
-                      animationPlayState: tickerVisible && document.visibilityState === 'visible' ? 'running' : 'paused',
-                    }}
-                  >
-                    {loop.map((w, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-center gap-2 rounded-xl px-3 py-1.5 flex-shrink-0"
-                        style={{
-                          background: 'rgba(212, 175, 55, 0.10)',
-                          border: '1px solid rgba(212, 175, 55, 0.35)',
-                        }}
-                        data-testid={idx < topWinners.length ? `winner-chip-${idx}` : undefined}
-                      >
-                        <Crown className="w-3.5 h-3.5 text-[#FFD700]" strokeWidth={2.5} fill="#FFD700" />
-                        <div className="flex flex-col leading-tight">
-                          <span className="text-[#FFD700] text-[12px] font-black whitespace-nowrap" style={{ fontFamily: 'Outfit, Noto Sans Devanagari, sans-serif' }}>
-                            {w.name}
-                          </span>
-                          <span className="text-[9px] text-[#86EFAC] font-bold whitespace-nowrap">
-                            {w.game_name_hi}
+                {/* Ticker track or empty-state hint */}
+                {list.length === 0 ? (
+                  <div className="px-3 pb-3 text-center text-[11px] text-gray-400 font-bold" data-testid="ticker-empty">
+                    अभी तक कोई {active.countLabel} नहीं
+                  </div>
+                ) : (
+                  <div className="overflow-hidden pb-2.5">
+                    <div
+                      key={tickerTab /* restart marquee on tab switch */}
+                      className="winners-ticker-track px-3"
+                      style={{
+                        animationDuration: `${duration}s`,
+                        animationPlayState: tickerVisible && document.visibilityState === 'visible' ? 'running' : 'paused',
+                      }}
+                    >
+                      {loop.map((w, idx) => (
+                        <div
+                          key={`${tickerTab}-${idx}`}
+                          className="flex items-center gap-2 rounded-xl px-3 py-1.5 flex-shrink-0"
+                          style={{
+                            background: 'rgba(212, 175, 55, 0.10)',
+                            border: '1px solid rgba(212, 175, 55, 0.35)',
+                          }}
+                          data-testid={idx < list.length ? `ticker-chip-${tickerTab}-${idx}` : undefined}
+                        >
+                          {tickerTab === 'winners' && <Crown className="w-3.5 h-3.5 text-[#FFD700]" strokeWidth={2.5} fill="#FFD700" />}
+                          {tickerTab === 'deposits' && <HandCoins className="w-3.5 h-3.5 text-[#34D399]" strokeWidth={2.5} />}
+                          {tickerTab === 'withdrawals' && <BanknoteArrowUp className="w-3.5 h-3.5 text-[#FB923C]" strokeWidth={2.5} />}
+                          <div className="flex flex-col leading-tight">
+                            <span className="text-[#FFD700] text-[12px] font-black whitespace-nowrap" style={{ fontFamily: 'Outfit, Noto Sans Devanagari, sans-serif' }}>
+                              {w.name}
+                            </span>
+                            {tickerTab === 'winners' && (
+                              <span className="text-[9px] text-[#86EFAC] font-bold whitespace-nowrap">
+                                {w.game_name_hi}
+                              </span>
+                            )}
+                          </div>
+                          <span
+                            className="text-white text-[13px] font-black tabular-nums whitespace-nowrap pl-1"
+                            style={{
+                              fontFamily: 'Outfit, monospace',
+                              color: tickerTab === 'withdrawals' ? '#FB923C' : (tickerTab === 'deposits' ? '#34D399' : '#FFFFFF'),
+                            }}
+                          >
+                            ₹{(w.won_amount ?? w.amount ?? 0).toLocaleString('en-IN')}
                           </span>
                         </div>
-                        <span className="text-white text-[13px] font-black tabular-nums whitespace-nowrap pl-1" style={{ fontFamily: 'Outfit, monospace' }}>
-                          ₹{(w.won_amount || 0).toLocaleString('en-IN')}
-                        </span>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             );
           })()}

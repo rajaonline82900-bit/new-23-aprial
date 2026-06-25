@@ -70,14 +70,16 @@ Migrate Matka11 satta app from Emergent preview environment to self-hosted Hosti
     transition-all, text-shadow. Replaced with solid colors + single solid
     gold border + `contain: content` paint isolation per card. Look stays
     premium gold; APK scroll FPS recovered to ~60fps on low-end Android.
-12. AAJ KE VIJETA Ticker (Feb 2026): Added horizontal stock-ticker style
-    marquee at top of Dashboard showing ALL today's winners. Backend
-    `GET /api/winners/top?limit=30` returns real first name + last initial
-    (e.g. "Rahul S."), phone NEVER exposed. Only actual app users from
-    db.bets table (no fakes). Card shows winner count + total payout sum.
-    Marquee uses single transform3d keyframe (GPU compositor only, zero
-    repaint). Pauses via IntersectionObserver when card scrolls off-screen
-    and when tab hidden. Honors prefers-reduced-motion.
+12. AAJ KE VIJETA Ticker (Feb 2026): Added 3-tab horizontal stock-ticker
+    at top of Dashboard — Vijeta / Today Deposit / Today Withdraw. Tabs:
+    - GET /api/winners/top?limit=30 → today's winners (name + game + amount)
+    - GET /api/transactions/today-deposits?limit=30 → today's completed deposits
+    - GET /api/transactions/today-withdrawals?limit=30 → today's approved+completed withdrawals
+    All return real first name + last-initial (e.g. "Rahul S."), phone NEVER
+    exposed. Only real app users (db.bets / db.transactions). Marquee uses
+    single transform3d keyframe (GPU compositor, zero scroll lag). Pauses
+    via IntersectionObserver off-screen and when tab hidden. Per-tab icon
+    (Crown/HandCoins/BanknoteArrowUp) + amount color cue (gold/green/orange).
 
 ## Backlog
 - P2: Stronger JWT_SECRET

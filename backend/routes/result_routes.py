@@ -314,3 +314,75 @@ async def get_top_winners_public(limit: int = 30):
             "won_amount": int(b.get("won_amount", 0)),
         })
     return {"winners": winners, "date": used_date}
+
+
+def _display_name(name: str) -> str:
+    """First name + last-initial. e.g. 'Rahul Sharma' -> 'Rahul S.'"""
+    if not name:
+        return "User"
+    parts = [p for p in name.strip().split() if p]
+    if len(parts) == 1:
+        return parts[0]
+    return f"{parts[0]} {parts[-1][0].upper()}."
+
+
+async def _today_transactions(tx_type: str, statuses: list, limit: int):
+    """Shared helper for today's deposits/withdrawals ticker.
+    Falls back to yesterday if today has zero entries."""
+    now_ist = datetime.now(IST)
+    today_start = now_ist.replace(hour=0, minute=0, second=0, microsecond=0)
+    yesterday_start = today_start - timedelta(days=1)
+
+    async def fetch(start, end):
+        cur = db.transactions.find(
+            {
+                "type": tx_type,
+                "status": {"$in": statuses},
+                "created_at": {"$gte": start, "$lt": end},
+            },
+            {"_id": 0, "user_id": 1, "amount": 1, "created_at": 1}
+        ).sort("amount", -1).limit(limit)
+        return await cur.to_list(limit)
+
+    txs = await fetch(today_start, today_start + timedelta(days=1))
+    used_date = today_start.strftime("%Y-%m-%d")
+    if not txs:
+        txs = await fetch(yesterday_start, today_start)
+        used_date = yesterday_start.strftime("%Y-%m-%d")
+
+    if not txs:
+        return {"entries": [], "date": used_date}
+
+    user_ids = list({t["user_id"] for t in txs if t.get("user_id")})
+    valid_ids = []
+    for uid in user_ids:
+        try:
+            valid_ids.append(ObjectId(uid))
+        except Exception:
+            pass
+
+    users = await db.users.find(
+        {"_id": {"$in": valid_ids}}, {"name": 1}
+    ).to_list(len(valid_ids))
+    user_map = {str(u["_id"]): u for u in users}
+
+    entries = []
+    for t in txs:
+        user = user_map.get(t.get("user_id"), {})
+        entries.append({
+            "name": _display_name(user.get("name", "")),
+            "amount": int(t.get("amount", 0)),
+        })
+    return {"entries": entries, "date": used_date}
+
+
+@router.get("/transactions/today-deposits")
+async def get_today_deposits_public(limit: int = 30):
+    """Public ticker: today's completed deposits with masked names."""
+    return await _today_transactions("deposit", ["completed"], limit)
+
+
+@router.get("/transactions/today-withdrawals")
+async def get_today_withdrawals_public(limit: int = 30):
+    """Public ticker: today's approved/completed withdrawals with masked names."""
+    return await _today_transactions("withdrawal", ["approved", "completed"], limit)
