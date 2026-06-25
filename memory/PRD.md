@@ -70,6 +70,11 @@ Migrate Matka11 satta app from Emergent preview environment to self-hosted Hosti
     transition-all, text-shadow. Replaced with solid colors + single solid
     gold border + `contain: content` paint isolation per card. Look stays
     premium gold; APK scroll FPS recovered to ~60fps on low-end Android.
+12. AAJ KA VIJETA card (Feb 2026): Added static premium "Top Winner" card
+    at top of Dashboard. Backend exposes GET /api/winners/top?limit=N which
+    returns masked top winners of today (fallback yesterday). Card shows
+    crown + masked name + game + payout in gold. Zero animations - fully
+    scroll-safe. Builds trust + FOMO for new users.
 
 ## Backlog
 - P2: Stronger JWT_SECRET

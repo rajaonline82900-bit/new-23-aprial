@@ -11,7 +11,8 @@ import {
   X,
   HandCoins,
   BanknoteArrowUp,
-  BarChart3
+  BarChart3,
+  Crown
 } from 'lucide-react';
 import FooterNav from '../components/FooterNav';
 import { speak } from '../utils/voice';
@@ -33,6 +34,7 @@ const DashboardPage = () => {
   const [gameCategory, setGameCategory] = useState(() => localStorage.getItem('game_category') || 'gali_disawar');
   const [kalyanResults, setKalyanResults] = useState({});
   const [historyGame, setHistoryGame] = useState(null);
+  const [topWinner, setTopWinner] = useState(null);
   const gamesRef = useRef(null);
 
   // Fetch today's Kalyan results for the dashboard cards
@@ -63,6 +65,7 @@ const DashboardPage = () => {
   useEffect(() => {
     fetchGames();
     fetchSettings();
+    fetchTopWinner();
     refreshUser();
     fetchUnreadChat();
 
@@ -75,18 +78,26 @@ const DashboardPage = () => {
       fetchUnreadChat();
     }, 60000);
 
+    // Refresh top winner less frequently (every 5 min) to save bandwidth
+    const winnerInt = setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+      fetchTopWinner();
+    }, 5 * 60 * 1000);
+
     // Also refresh when app comes back to foreground (PWA tab switch)
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
         fetchGames(false);
         refreshUser();
         fetchUnreadChat();
+        fetchTopWinner();
       }
     };
     document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
       clearInterval(interval);
+      clearInterval(winnerInt);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, [refreshUser]);
@@ -98,6 +109,19 @@ const DashboardPage = () => {
       setWhatsappLink(data.whatsapp_link || '');
       setWhatsappNumber(data.whatsapp_number || '');
     } catch (error) {}
+  };
+
+  const fetchTopWinner = async () => {
+    try {
+      const { data } = await axios.get(`${API_URL}/api/winners/top?limit=1`, { withCredentials: true });
+      if (data && Array.isArray(data.winners) && data.winners.length > 0) {
+        setTopWinner({ ...data.winners[0], date: data.date });
+      } else {
+        setTopWinner(null);
+      }
+    } catch (e) {
+      setTopWinner(null);
+    }
   };
 
   const fetchGames = async (showError = true) => {
@@ -238,6 +262,61 @@ const DashboardPage = () => {
       {/* Main Content - everything scrolls together */}
       <div className="px-3 pt-[64px] pb-24" style={{maxWidth: '480px', margin: '0 auto'}}>
         <div className="pt-2">
+          {/* AAJ KA VIJETA - static premium winner card (no animations, scroll-safe) */}
+          {topWinner && (
+            <div
+              className="rounded-2xl p-3 mb-4 flex items-center gap-3"
+              style={{
+                background: 'linear-gradient(135deg, #1A1505 0%, #16162A 70%)',
+                border: '2px solid #D4AF37',
+                contain: 'content',
+              }}
+              data-testid="top-winner-card"
+            >
+              {/* Crown badge */}
+              <div
+                className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
+                style={{
+                  background: 'linear-gradient(135deg, #FFD700 0%, #D4AF37 60%, #B8860B 100%)',
+                  border: '2px solid #FFD700',
+                }}
+              >
+                <Crown className="w-6 h-6 text-[#1A0F00]" strokeWidth={2.5} fill="#1A0F00" />
+              </div>
+
+              {/* Winner info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <span
+                    className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full text-[#1A0F00]"
+                    style={{ background: 'linear-gradient(135deg, #FFD700 0%, #D4AF37 100%)' }}
+                  >
+                    आज का विजेता
+                  </span>
+                  <span className="text-[10px] text-[#86EFAC] font-bold truncate" data-testid="top-winner-game">
+                    {topWinner.game_name_hi}
+                  </span>
+                </div>
+                <div className="text-white text-sm font-bold truncate" data-testid="top-winner-name">
+                  <span className="text-[#FFD700]">{topWinner.name}</span>
+                  <span className="text-gray-400 text-[11px] ml-1.5">({topWinner.phone})</span>
+                </div>
+              </div>
+
+              {/* Payout amount */}
+              <div className="text-right flex-shrink-0">
+                <div className="text-[8px] uppercase tracking-widest text-gray-400 font-black leading-none">जीते</div>
+                <div
+                  className="text-xl font-black tabular-nums leading-tight mt-0.5"
+                  style={{ color: '#FFD700', fontFamily: 'Outfit, monospace' }}
+                  data-testid="top-winner-amount"
+                >
+                  ₹{topWinner.won_amount.toLocaleString('en-IN')}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Quick Actions - Deposit / Withdrawal / Telegram / WhatsApp (lightweight, scroll-safe) */}
           <div className="grid grid-cols-4 gap-2.5 mb-5">
             {/* DEPOSIT */}
