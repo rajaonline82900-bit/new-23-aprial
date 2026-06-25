@@ -59,7 +59,7 @@ const AdminReferralsTab = () => {
                     <Badge className="bg-pink-500/20 text-pink-400 border-0 text-[10px]">Referred</Badge>
                   </div>
                 </div>
-                <div className="flex items-center justify-between text-xs text-gray-500 border-t border-white/5 pt-2">
+                <div className="flex items-center justify-between text-xs text-gray-500 border-t border-white/5 pt-2 mb-2">
                   <div>
                     <span>Referred by: </span>
                     <span className="text-[#D4AF37] font-medium">{r.referrer_name} ({r.referrer_phone})</span>
@@ -67,6 +67,21 @@ const AdminReferralsTab = () => {
                   <span>
                     {r.joined_at ? utcDate(r.joined_at).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric' }) : ''}
                   </span>
+                </div>
+                {/* Bonus status row */}
+                <div className="grid grid-cols-3 gap-2 mt-1 text-[11px]">
+                  <div className="rounded-md p-2 bg-blue-500/10 border border-blue-500/30">
+                    <p className="text-blue-300 font-bold leading-none">First Deposit</p>
+                    <p className="text-white font-black tabular-nums mt-1" data-testid={`refer-firstdep-${i}`}>₹{(r.first_deposit_amount || 0).toFixed(2)}</p>
+                  </div>
+                  <div className="rounded-md p-2 bg-amber-500/10 border border-amber-500/30">
+                    <p className="text-amber-300 font-bold leading-none">5% Bonus</p>
+                    <p className="text-[#FFD700] font-black tabular-nums mt-1" data-testid={`refer-bonus-${i}`}>₹{(r.bonus_amount || 0).toFixed(2)}</p>
+                  </div>
+                  <div className={`rounded-md p-2 border ${r.bonus_paid ? 'bg-emerald-500/15 border-emerald-500/40' : 'bg-gray-500/10 border-gray-500/30'}`}>
+                    <p className={`font-bold leading-none ${r.bonus_paid ? 'text-emerald-300' : 'text-gray-400'}`}>Status</p>
+                    <p className={`font-black mt-1 ${r.bonus_paid ? 'text-emerald-400' : 'text-gray-400'}`} data-testid={`refer-status-${i}`}>{r.bonus_paid ? '✓ Paid' : 'Pending'}</p>
+                  </div>
                 </div>
               </div>
             ))}

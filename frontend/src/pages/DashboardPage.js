@@ -171,9 +171,7 @@ const DashboardPage = () => {
           'radial-gradient(ellipse 40% 30% at 95% 45%, rgba(255,215,0,0.18) 0%, transparent 70%),' +
           'radial-gradient(ellipse 50% 35% at 5% 95%, rgba(139,92,246,0.20) 0%, transparent 70%),' +
           'linear-gradient(160deg, #0F0420 0%, #1A0B3D 35%, #2A1058 60%, #1A0B3D 85%, #0B0420 100%)',
-        backgroundSize: '200% 200%, 200% 200%, 200% 200%, 100% 100%',
-        backgroundPosition: '0% 0%, 100% 50%, 0% 100%, 0% 0%',
-        animation: 'bgGoldDrift 22s ease-in-out infinite alternate',
+        backgroundAttachment: 'fixed',
       }}
     >
       {/* Background animation handled by parent div backgroundImage — no separate layers needed.

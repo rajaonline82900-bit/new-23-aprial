@@ -767,14 +767,34 @@ async def get_admin_referrals(request: Request, limit: int = 50):
     for u in referred_users:
         ref_code = u.get("referred_by", "")
         referrer = referrer_map.get(ref_code, {})
+        # Fetch first completed deposit + whether bonus was paid
+        user_phone = u.get("phone", "")
+        user_in_db = await db.users.find_one(
+            {"phone": user_phone},
+            {"_id": 1, "referral_bonus_given": 1}
+        ) if user_phone else None
+        bonus_paid = bool(user_in_db and user_in_db.get("referral_bonus_given"))
+        bonus_amount = 0.0
+        first_deposit_amount = 0.0
+        if user_in_db:
+            first_dep = await db.transactions.find_one(
+                {"user_id": str(user_in_db["_id"]), "type": "deposit", "status": "completed"},
+                sort=[("created_at", 1)]
+            )
+            if first_dep:
+                first_deposit_amount = first_dep.get("amount", 0)
+                bonus_amount = round(first_deposit_amount * 0.05, 2)
         result.append({
             "user_name": u.get("name", "?"),
-            "user_phone": u.get("phone", ""),
+            "user_phone": user_phone,
             "user_balance": u.get("balance", 0),
             "referred_by_code": ref_code,
             "referrer_name": referrer.get("name", "?"),
             "referrer_phone": referrer.get("phone", ""),
             "joined_at": u.get("created_at"),
+            "bonus_paid": bonus_paid,
+            "bonus_amount": bonus_amount,
+            "first_deposit_amount": first_deposit_amount,
         })
     
     # Referral stats
