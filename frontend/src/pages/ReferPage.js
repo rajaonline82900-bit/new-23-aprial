@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 import { Card, CardContent } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
-import { ArrowLeft, Gift, Copy, Users, IndianRupee, Share2, Smartphone, Globe } from 'lucide-react';
+import { ArrowLeft, Gift, Copy, Users, IndianRupee, Share2, Smartphone, Globe, Crown } from 'lucide-react';
 import { toast } from 'sonner';
 import FooterNav from '../components/FooterNav';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const ReferPage = () => {
+  const { user } = useAuth();
   const [referralInfo, setReferralInfo] = useState(null);
   const [applyCode, setApplyCode] = useState('');
   const [loading, setLoading] = useState(true);
@@ -123,30 +125,69 @@ const ReferPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0C] pb-20 app-shell">
-      <header className="sticky top-0 z-50 glass border-b border-white/10">
+    <div
+      className="min-h-screen pb-20 app-shell relative overflow-hidden"
+      style={{
+        backgroundImage:
+          'radial-gradient(ellipse 60% 40% at 50% 8%, rgba(255,215,0,0.28) 0%, rgba(212,175,55,0.14) 40%, transparent 70%),' +
+          'radial-gradient(ellipse 40% 30% at 95% 45%, rgba(255,215,0,0.18) 0%, transparent 70%),' +
+          'radial-gradient(ellipse 50% 35% at 5% 95%, rgba(139,92,246,0.20) 0%, transparent 70%),' +
+          'linear-gradient(160deg, #0F0420 0%, #1A0B3D 35%, #2A1058 60%, #1A0B3D 85%, #0B0420 100%)',
+        backgroundSize: '200% 200%, 200% 200%, 200% 200%, 100% 100%',
+        animation: 'bgGoldDrift 22s ease-in-out infinite alternate',
+      }}
+    >
+      <header className="sticky top-0 z-50 border-b border-[#D4AF37]/30" style={{ background: 'rgba(15, 4, 32, 0.85)', backdropFilter: 'blur(12px)' }}>
         <div className="px-3 py-3 flex items-center gap-3">
           <Link to="/dashboard">
-            <button className="p-2 rounded-lg bg-[#141418] border border-white/10 text-gray-400 hover:text-white transition-all">
+            <button className="p-2 rounded-lg bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#FFD700] hover:bg-[#D4AF37]/20 transition-all">
               <ArrowLeft className="w-5 h-5" />
             </button>
           </Link>
-          <h1 className="text-xl font-bold text-white font-['Unbounded']">Refer & Earn</h1>
+          <h1 className="text-xl font-black font-['Unbounded']" style={{ backgroundImage: 'linear-gradient(135deg, #FFD700 0%, #FDE047 50%, #D4AF37 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>Refer & Earn</h1>
         </div>
       </header>
 
-      <main className="px-3 py-4 space-y-4">
-        {/* Hero Card */}
-        <Card className="bg-gradient-to-br from-[#D4AF37]/20 to-[#141418] border-[#D4AF37]/30">
-          <CardContent className="p-6 text-center">
-            <div className="w-16 h-16 rounded-full bg-[#D4AF37]/20 flex items-center justify-center mx-auto mb-4">
-              <Gift className="w-8 h-8 text-[#D4AF37]" />
+      <main className="px-3 py-4 space-y-4 relative">
+        {/* Premium Hero — user name + stats */}
+        <Card className="border-0 overflow-hidden" style={{ background: 'linear-gradient(135deg, #1F1638 0%, #14102A 100%)', border: '2px solid transparent', backgroundImage: 'linear-gradient(135deg, #1F1638 0%, #14102A 100%), linear-gradient(135deg, #FFD700 0%, #D4AF37 100%)', backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box', boxShadow: '0 8px 28px rgba(212, 175, 55, 0.25)' }}>
+          <CardContent className="p-5">
+            {/* User row */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-14 h-14 rounded-full flex items-center justify-center text-2xl font-black text-[#1A0F00]" style={{ background: 'linear-gradient(135deg, #FFD700 0%, #FDE047 35%, #D4AF37 70%, #B8860B 100%)', boxShadow: '0 4px 18px rgba(255, 215, 0, 0.55)' }}>
+                {(user?.name || 'U').charAt(0).toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] uppercase tracking-widest text-[#D4AF37] font-bold flex items-center gap-1"><Crown className="w-3 h-3" /> Welcome back</p>
+                <h2 className="text-white text-lg font-black truncate" data-testid="refer-user-name">{user?.name || 'User'}</h2>
+                <p className="text-gray-400 text-[11px]">{user?.phone || ''}</p>
+              </div>
             </div>
-            <h2 className="text-white text-xl font-bold mb-2">दोस्तों को बुलाएं, कमाई करें!</h2>
-            <p className="text-gray-400 text-sm">
-              अपना रेफरल लिंक शेयर करें। जब आपका दोस्त लिंक से साइनअप करके पहली जमा करेगा, 
-              आपको उसकी पहली जमा का <span className="text-[#D4AF37] font-bold">5% बोनस</span> मिलेगा!
-            </p>
+
+            {/* Stats grid */}
+            <div className="grid grid-cols-2 gap-2.5">
+              <div className="rounded-xl p-3 text-center" style={{ background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.18) 0%, rgba(14, 165, 233, 0.08) 100%)', border: '1px solid rgba(125, 211, 252, 0.35)' }}>
+                <Users className="w-5 h-5 text-[#7DD3FC] mx-auto mb-1" />
+                <p className="text-2xl font-black text-white tabular-nums" data-testid="refer-total-count">{referralInfo?.referred_count || 0}</p>
+                <p className="text-[10px] uppercase tracking-wider text-[#7DD3FC] font-bold mt-0.5">Total Referrals</p>
+              </div>
+              <div className="rounded-xl p-3 text-center" style={{ background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.18) 0%, rgba(5, 150, 105, 0.08) 100%)', border: '1px solid rgba(110, 231, 183, 0.35)' }}>
+                <IndianRupee className="w-5 h-5 text-[#6EE7B7] mx-auto mb-1" />
+                <p className="text-2xl font-black text-[#6EE7B7] tabular-nums" data-testid="refer-total-income">₹{(referralInfo?.total_earned || 0).toFixed(0)}</p>
+                <p className="text-[10px] uppercase tracking-wider text-[#6EE7B7] font-bold mt-0.5">Total Income</p>
+              </div>
+            </div>
+
+            {/* Earn-rate banner */}
+            <div className="mt-3 rounded-xl p-3 flex items-center gap-3" style={{ background: 'rgba(255, 215, 0, 0.08)', border: '1px dashed rgba(212, 175, 55, 0.5)' }}>
+              <div className="w-10 h-10 rounded-full bg-[#D4AF37]/20 flex items-center justify-center shrink-0">
+                <Gift className="w-5 h-5 text-[#FFD700]" />
+              </div>
+              <div>
+                <p className="text-white text-sm font-bold leading-tight">हर friend की पहली जमा पर <span className="text-[#FFD700]">5% बोनस</span></p>
+                <p className="text-gray-400 text-[11px] mt-0.5">Lifetime — कोई limit नहीं!</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -254,7 +295,7 @@ const ReferPage = () => {
         </Card>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 hidden">
           <Card className="bg-[#141418] border-white/10">
             <CardContent className="p-4 text-center">
               <Users className="w-6 h-6 text-blue-400 mx-auto mb-2" />
