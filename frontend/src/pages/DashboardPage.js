@@ -16,7 +16,6 @@ import {
 import FooterNav from '../components/FooterNav';
 import { speak } from '../utils/voice';
 import SidebarMenu from '../components/SidebarMenu';
-import TelegramWelcomePopup from '../components/TelegramWelcomePopup';
 import GameHistoryModal from '../components/GameHistoryModal';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -166,19 +165,12 @@ const DashboardPage = () => {
     <div
       className="min-h-screen app-shell relative overflow-hidden"
       style={{
-        backgroundImage:
-          'radial-gradient(ellipse 60% 40% at 50% 8%, rgba(255,215,0,0.28) 0%, rgba(212,175,55,0.14) 40%, transparent 70%),' +
-          'radial-gradient(ellipse 40% 30% at 95% 45%, rgba(255,215,0,0.18) 0%, transparent 70%),' +
-          'radial-gradient(ellipse 50% 35% at 5% 95%, rgba(139,92,246,0.20) 0%, transparent 70%),' +
-          'linear-gradient(160deg, #0F0420 0%, #1A0B3D 35%, #2A1058 60%, #1A0B3D 85%, #0B0420 100%)',
-        backgroundAttachment: 'fixed',
+        background: '#0F0420',
       }}
     >
       {/* Background animation handled by parent div backgroundImage — no separate layers needed.
           This eliminates compositor overhead from 5 absolute-positioned animated DIVs. */}
 
-      {/* Welcome popup — shows once per fresh app open */}
-      <TelegramWelcomePopup telegramLink={telegramLink} isLoggedIn={!!user} />
       {/* Header - Royal black with gold gradient bottom edge */}
       <header
         className="fixed top-0 left-0 right-0 z-50 shadow-xl"
@@ -442,14 +434,6 @@ const DashboardPage = () => {
                         boxShadow: '0 4px 16px rgba(0,0,0,0.45), 0 0 14px rgba(212, 175, 55, 0.15)',
                       }}
                     >
-                      {/* Static subtle gold gleam inside card — no animation = zero scroll cost */}
-                      <span
-                        className="absolute inset-0 pointer-events-none rounded-2xl"
-                        style={{
-                          background: 'linear-gradient(105deg, transparent 0%, rgba(255, 215, 0, 0.06) 35%, rgba(255, 235, 130, 0.10) 50%, rgba(255, 215, 0, 0.06) 65%, transparent 100%)',
-                          mixBlendMode: 'screen',
-                        }}
-                      />
                       <div className="flex items-start gap-3">
                         {/* LEFT: Game Name + Yesterday/Today */}
                         <div className="flex-1 min-w-0">
@@ -488,7 +472,7 @@ const DashboardPage = () => {
                           <div className="flex gap-2">
                             {/* Yesterday - Premium Purple/Indigo with animated shift */}
                             <div
-                              className="flex-1 rounded-xl py-1.5 px-2 flex flex-col items-center justify-center animate-color-shift"
+                              className="flex-1 rounded-xl py-1.5 px-2 flex flex-col items-center justify-center "
                               style={{
                                 backgroundImage: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 25%, #A855F7 50%, #7C3AED 75%, #4F46E5 100%)',
                                 border: '1px solid rgba(196, 181, 253, 0.55)',
@@ -504,7 +488,7 @@ const DashboardPage = () => {
 
                             {/* Today - Premium Cyan/Teal with animated shift */}
                             <div
-                              className="flex-1 rounded-xl py-1.5 px-2 flex flex-col items-center justify-center relative animate-color-shift"
+                              className="flex-1 rounded-xl py-1.5 px-2 flex flex-col items-center justify-center relative "
                               style={{
                                 backgroundImage: 'linear-gradient(135deg, #0EA5E9 0%, #06B6D4 25%, #14B8A6 50%, #0891B2 75%, #0284C7 100%)',
                                 border: '1px solid rgba(125, 211, 252, 0.6)',

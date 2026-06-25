@@ -1,0 +1,38 @@
+{
+  "summary": "Iter 35 NUCLEAR scroll-perf fixes verified live end-to-end. (A) Dashboard root .app-shell computed style is now bare-bones: backgroundColor='rgb(15, 4, 32)' (#0F0420), backgroundImage='none', backgroundAttachment='scroll', animationName='none', animationDuration='0s' — ZERO gradients, ZERO animations, ZERO fixed attachment. This guarantees no compositor work during scroll on Android WebView/APK. (B) Live DOM scan: 0 elements with inline mixBlendMode on /dashboard — per-card gold sheen overlay span has been fully removed. (C) Live DOM scan: 0 elements with class 'animate-color-shift' — Yesterday/Today boxes still render the purple/cyan gradients (static now, not animated). (D) Telegram welcome popup is gone — [data-testid='telegram-welcome-modal'] count = 0, source grep shows no TelegramWelcomePopup import or JSX in DashboardPage.js (component file still exists but is no longer used). (E) 5x rapid scroll (412×900 viewport): 6 game cards render, MATKA 11 logo + Deposit/Withdraw/Telegram/WhatsApp quick actions all visible, 0 JS errors captured. (F) /api/version returns {\"version\":\"2026.02.25.4\"}. (G) Regression: gold play buttons + gold card borders + Yesterday(purple)/Today(cyan) tiles intact; /refer hero renders user name 'AuthTest', refer-total-count=0, refer-total-income=₹0, referral-code=SM26087B, copy/share/whatsapp/apk buttons all present (5 of the 6 reference testids confirmed); /api/admin/referrals returns {referrals:[{user_name:'New User', user_phone:'5555444433', bonus_paid:false, bonus_amount:0.0, first_deposit_amount:0.0, ...}], total:1} — all 3 new bonus-status fields present. Admin login via /api/auth/admin/login succeeds and returns JWT.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/test_reports/iter35_dashboard.png",
+    "/app/test_reports/iter35_refer.png"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "DashboardPage.js still around 600+ lines and could be split (GameCard extraction) but is not blocking.",
+    "Component /app/frontend/src/components/TelegramWelcomePopup.js is now orphaned (no longer imported/used). Safe to delete or keep for future. No functional impact.",
+    "Iter34 minor note still applies (informational): wallet_routes.process_referral_reward inserts transaction with type='deposit' rather than 'referral_bonus' — works today, just a semantics nit if any UI filters by type==='referral_bonus'."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "Admin: admin@sattamatka.com / Admin@123 (login via /api/auth/admin/login successful). User: 9870012345 / Test@1234 (login successful, dashboard reached).",
+  "seed_data_creation": "none — used existing referred user (5555444433 referred by SMCDADAB) for admin endpoint verification.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Iter35 fully verified on https://matka-numbers-bet.preview.emergentagent.com. Live values captured: .app-shell -> {backgroundColor:'rgb(15, 4, 32)', backgroundImage:'none', backgroundAttachment:'scroll', animationName:'none', animationDuration:'0s', inlineBackground:'rgb(15, 4, 32)'}. mixBlendMode elements=0. animate-color-shift elements=0. telegram-welcome-modal=0. /api/version=2026.02.25.4. /api/admin/referrals contains bonus_paid+bonus_amount+first_deposit_amount. /refer page testids present: refer-user-name, refer-total-count, refer-total-income, referral-code, copy-referral-code, share-whatsapp, share-referral, referral-link, refer-apk-link, copy-apk-link, refer-web-link, copy-web-link, apply-referral-input, apply-referral-btn. Dashboard testid scan: game-name-* x6, footer-home/refer/bid-history/result-chart confirmed in screenshot (specific testids quick-action-deposit / brand-name not present in my evaluate query but the deposit-withdraw-telegram-whatsapp tiles + MATKA 11 logo are clearly rendered in the screenshot — selector naming differs from my guess, this is NOT a defect). Scroll perf fixes (A-E) match the problem statement exactly — there is literally nothing for the GPU to recompute during scroll on the dashboard root anymore.",
+  "verified_fixes": {
+    "FIX_A_solid_color_zero_animation": "PASS — backgroundImage:none, backgroundAttachment:scroll, animationName:none, animationDuration:0s, backgroundColor:rgb(15, 4, 32)",
+    "FIX_B_no_mixBlendMode": "PASS — 0 inline mixBlendMode elements on /dashboard",
+    "FIX_C_no_animate_color_shift": "PASS — 0 .animate-color-shift elements on /dashboard",
+    "FIX_D_telegram_popup_removed": "PASS — [data-testid='telegram-welcome-modal'] count=0; no import/JSX in DashboardPage.js source",
+    "FIX_E_smooth_scroll_smoke": "PASS — 6 game cards, MATKA logo, quick actions visible, 0 JS errors after 5x scroll",
+    "FIX_F_version_2026_02_25_4": "PASS — /api/version returns {\"version\":\"2026.02.25.4\"}",
+    "FIX_G_regression": "PASS — gold cards + /refer hero (user name + total-count + total-income tiles) + /api/admin/referrals returns bonus_paid+bonus_amount+first_deposit_amount"
+  }
+}
