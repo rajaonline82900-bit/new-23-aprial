@@ -260,15 +260,25 @@ const AviatorPage = () => {
     return () => clearInterval(id);
   }, [phase]);
 
-  /* ---------- WebSocket ---------- */
+  /* ---------- WebSocket with HTTP polling fallback ----------
+     On some VPS / Nginx setups the WSS upgrade can fail silently. We:
+     1. Always try WebSocket first (real-time, low latency).
+     2. ALSO start an HTTP poller as a safety net. While the WS is healthy
+        the poller is throttled to 2.5s; if WS goes >4s without a message
+        the poller speeds up to 600ms so the game keeps moving even if
+        WebSocket never works.
+  */
+  const lastWsMsgRef = useRef(Date.now());
+
   useEffect(() => {
     let closedManually = false;
     let retryDelay = 1000;
     function connect() {
       const ws = new WebSocket(WS_URL);
       wsRef.current = ws;
-      ws.onopen = () => { retryDelay = 1000; };
+      ws.onopen = () => { retryDelay = 1000; lastWsMsgRef.current = Date.now(); };
       ws.onmessage = (ev) => {
+        lastWsMsgRef.current = Date.now();
         try {
           const msg = JSON.parse(ev.data);
           handleWsMessage(msg);
@@ -282,6 +292,54 @@ const AviatorPage = () => {
     }
     connect();
     return () => { closedManually = true; try { wsRef.current?.close(); } catch (e) { /* ignore */ } };
+  }, []);
+
+  // HTTP polling safety net — keeps phase/multiplier in sync even when WS is dead.
+  useEffect(() => {
+    let alive = true;
+    let lastCrashRoundId = null;
+    const poll = async () => {
+      if (!alive) return;
+      try {
+        const { data } = await axios.get(`${API}/api/aviator/state`, { withCredentials: true });
+        if (data.state) {
+          const s = data.state;
+          setPhase((prev) => {
+            // When poller observes a phase change, mimic the same UI side-effects as WS.
+            if (prev !== s.phase) {
+              if (s.phase === 'betting') {
+                setCrashPoint(null);
+                setPanel1((p) => ({ ...p, bet: null }));
+                setPanel2((p) => ({ ...p, bet: null }));
+              } else if (s.phase === 'crashed') {
+                if (s.round_id && s.round_id !== lastCrashRoundId) {
+                  lastCrashRoundId = s.round_id;
+                  setHistory((h) => [{ round_id: s.round_id, crash_point: s.crash_point }, ...h].slice(0, 30));
+                  refreshUser();
+                }
+                if (s.crash_point) setCrashPoint(s.crash_point);
+              }
+            }
+            return s.phase;
+          });
+          setMultiplier(s.multiplier || 1.0);
+          if (s.phase === 'betting') setBettingRemaining(s.betting_remaining || 0);
+          if (s.phase === 'crashed' && s.crash_point) setCrashPoint(s.crash_point);
+        }
+        if (data.history && data.history.length > 0) {
+          setHistory((cur) => (cur.length === 0 ? data.history : cur));
+        }
+      } catch (e) { /* ignore network blips */ }
+    };
+    // Kick off immediately, then loop.
+    poll();
+    const id = setInterval(() => {
+      const sinceWs = Date.now() - lastWsMsgRef.current;
+      // If WS hasn't sent anything in >4s, poll fast; otherwise slow.
+      if (sinceWs > 4000) poll();
+      else if (sinceWs > 1500) poll(); // mild backup
+    }, 600);
+    return () => { alive = false; clearInterval(id); };
   }, []);
 
   const handleWsMessage = (msg) => {
