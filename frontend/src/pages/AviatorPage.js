@@ -2,13 +2,159 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { ArrowLeft, Plane, History, Wallet, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, History, Wallet, ChevronDown, ChevronUp, Volume2, VolumeX } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 const WS_URL = (API || '').replace(/^http/, 'ws') + '/api/aviator/ws';
 
 const QUICK_AMOUNTS = [10, 50, 100, 500, 1000];
+
+/* ------------ Red propeller plane (Aviator-style) ------------ */
+const PropellerPlane = ({ size = 72 }) => (
+  <svg viewBox="0 0 100 60" width={size} height={size * 0.6} xmlns="http://www.w3.org/2000/svg">
+    {/* propeller blur (front) */}
+    <ellipse cx="92" cy="30" rx="3.5" ry="14" fill="#7F1D1D" opacity="0.55" />
+    <line x1="92" y1="14" x2="92" y2="46" stroke="#FCA5A5" strokeWidth="1.2" />
+    {/* fuselage */}
+    <path
+      d="M 8 32 Q 5 28 10 25 L 70 23 Q 88 22 92 30 Q 88 38 70 37 L 28 38 Q 14 38 8 32 Z"
+      fill="#DC2626" stroke="#7F1D1D" strokeWidth="1"
+    />
+    {/* wing */}
+    <path d="M 38 24 L 56 8 L 64 8 L 50 24 Z" fill="#B91C1C" stroke="#7F1D1D" strokeWidth="0.8" />
+    {/* lower wing */}
+    <path d="M 38 36 L 52 50 L 60 50 L 50 36 Z" fill="#B91C1C" stroke="#7F1D1D" strokeWidth="0.8" />
+    {/* tail */}
+    <path d="M 8 32 L 0 18 L 10 22 Z" fill="#B91C1C" stroke="#7F1D1D" strokeWidth="0.8" />
+    <path d="M 8 32 L 0 46 L 10 38 Z" fill="#B91C1C" stroke="#7F1D1D" strokeWidth="0.8" />
+    {/* cockpit window */}
+    <path d="M 64 26 Q 70 24 74 28 L 74 31 L 64 31 Z" fill="#0A0A14" stroke="#7F1D1D" strokeWidth="0.5" />
+    {/* X marks (tail decals) */}
+    <text x="18" y="34" fontSize="6" fill="#FCA5A5" fontWeight="bold" fontFamily="sans-serif">X</text>
+    <text x="76" y="34" fontSize="6" fill="#FCA5A5" fontWeight="bold" fontFamily="sans-serif">X</text>
+  </svg>
+);
+
+/* ------------ Aviator-style audio (synthesized via Web Audio API) ------------ */
+function useAviatorSound(enabled) {
+  const ctxRef = useRef(null);
+  const ambientRef = useRef(null);
+
+  const getCtx = () => {
+    if (!enabled) return null;
+    if (!ctxRef.current) {
+      try {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        ctxRef.current = new AC();
+      } catch (e) { return null; }
+    }
+    return ctxRef.current;
+  };
+
+  const playTakeoff = () => {
+    const ctx = getCtx(); if (!ctx) return;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(120, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(420, ctx.currentTime + 0.7);
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + 0.1);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.9);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.9);
+  };
+
+  const startAmbient = () => {
+    const ctx = getCtx(); if (!ctx || ambientRef.current) return;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const lfo = ctx.createOscillator();
+    const lfoGain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.value = 220;
+    lfo.frequency.value = 6;
+    lfoGain.gain.value = 12;
+    lfo.connect(lfoGain).connect(osc.frequency);
+    gain.gain.value = 0.04;
+    osc.connect(gain).connect(ctx.destination);
+    osc.start();
+    lfo.start();
+    ambientRef.current = { osc, lfo, gain };
+  };
+
+  const stopAmbient = () => {
+    if (!ambientRef.current) return;
+    const { osc, lfo, gain } = ambientRef.current;
+    try {
+      const ctx = ctxRef.current;
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.2);
+      setTimeout(() => { try { osc.stop(); lfo.stop(); } catch (e) { /* node already stopped */ } }, 250);
+    } catch (e) { /* ramp failure ignored */ }
+    ambientRef.current = null;
+  };
+
+  const playCrash = () => {
+    const ctx = getCtx(); if (!ctx) return;
+    // White noise burst
+    const buf = ctx.createBuffer(1, ctx.sampleRate * 0.45, ctx.sampleRate);
+    const ch = buf.getChannelData(0);
+    for (let i = 0; i < ch.length; i++) ch[i] = (Math.random() * 2 - 1) * (1 - i / ch.length);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const gain = ctx.createGain();
+    gain.gain.value = 0.32;
+    src.connect(gain).connect(ctx.destination);
+    src.start();
+    // Low boom
+    const osc = ctx.createOscillator();
+    const og = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(110, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.5);
+    og.gain.setValueAtTime(0.35, ctx.currentTime);
+    og.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
+    osc.connect(og).connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.5);
+  };
+
+  const playCashout = () => {
+    const ctx = getCtx(); if (!ctx) return;
+    // Two-note ding (C5 → E5)
+    [523.25, 659.25].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      const t0 = ctx.currentTime + i * 0.12;
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(0.25, t0 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.5);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(t0);
+      osc.stop(t0 + 0.55);
+    });
+  };
+
+  const playBetTick = () => {
+    const ctx = getCtx(); if (!ctx) return;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.08);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.1);
+  };
+
+  return { playTakeoff, startAmbient, stopAmbient, playCrash, playCashout, playBetTick };
+}
 
 /* ------------ Single Bet Panel (Spribe-style stacked) ------------ */
 const BetPanel = ({
@@ -90,7 +236,6 @@ const BetPanel = ({
               style={{ background: '#2D2D40' }}
             >+</button>
           </div>
-          {/* 3 quick chips like Reddy66 (1000 / 2000 / 10000) — kept small (₹) */}
           <div className="grid grid-cols-3 gap-1">
             {[1000, 2000, 10000].map((v) => (
               <button
@@ -106,7 +251,6 @@ const BetPanel = ({
               </button>
             ))}
           </div>
-          {/* Auto-cashout (only when in auto mode) */}
           {mode === 'auto' && (
             <input
               type="number"
@@ -122,7 +266,6 @@ const BetPanel = ({
           )}
         </div>
 
-        {/* Action button — big square green/red CTA */}
         <div className="flex-1">
           {!currentBet ? (
             <button
@@ -201,6 +344,8 @@ const AviatorPage = () => {
   const [bettingRemaining, setBettingRemaining] = useState(0);
   const [showHistory, setShowHistory] = useState(false);
   const [myBetsList, setMyBetsList] = useState([]);
+  const [soundOn, setSoundOn] = useState(() => localStorage.getItem('aviator_sound') !== 'off');
+  const sound = useAviatorSound(soundOn);
 
   // Two bet panels (Spribe parity)
   const [panel1, setPanel1] = useState({ amount: 100, autoCashout: '', mode: 'bet', bet: null, placing: false, cashingOut: false });
@@ -274,19 +419,26 @@ const AviatorPage = () => {
     } else if (msg.type === 'flying_start') {
       setPhase('flying');
       setMultiplier(1.0);
+      sound.playTakeoff();
+      sound.startAmbient();
     } else if (msg.type === 'tick') {
       setMultiplier(msg.multiplier);
-      // auto-cashout in UI for both panels
       [setPanel1, setPanel2].forEach((set) =>
-        set((p) => (p.bet && !p.bet.cashed_out_at && p.bet.auto_cashout && msg.multiplier >= p.bet.auto_cashout)
-          ? { ...p, bet: { ...p.bet, cashed_out_at: p.bet.auto_cashout } }
-          : p)
+        set((p) => {
+          if (p.bet && !p.bet.cashed_out_at && p.bet.auto_cashout && msg.multiplier >= p.bet.auto_cashout) {
+            sound.playCashout();
+            return { ...p, bet: { ...p.bet, cashed_out_at: p.bet.auto_cashout } };
+          }
+          return p;
+        })
       );
     } else if (msg.type === 'crash') {
       setPhase('crashed');
       setCrashPoint(msg.crash_point);
       setMultiplier(msg.crash_point);
       setHistory((h) => [{ round_id: 'recent', crash_point: msg.crash_point }, ...h].slice(0, 30));
+      sound.stopAmbient();
+      sound.playCrash();
       refreshUser();
     }
   };
@@ -335,6 +487,7 @@ const AviatorPage = () => {
         ...s,
         bet: { round_id: data.round_id, amount: Number(p.amount), auto_cashout: body.auto_cashout || null, cashed_out_at: null },
       }));
+      sound.playBetTick();
       toast.success(`Bet ₹${p.amount} placed`);
       refreshUser();
     } catch (e) {
@@ -353,6 +506,7 @@ const AviatorPage = () => {
     try {
       const { data } = await axios.post(`${API}/api/aviator/cashout`, {}, { withCredentials: true });
       set((s) => ({ ...s, bet: { ...s.bet, cashed_out_at: data.multiplier } }));
+      sound.playCashout();
       toast.success(`Cashed out @ ${data.multiplier}x — ₹${data.won}`);
       refreshUser();
     } catch (e) {
@@ -393,9 +547,21 @@ const AviatorPage = () => {
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div className="flex-1 flex items-center justify-center gap-2">
-          <Plane className="w-5 h-5 text-[#DC2626]" strokeWidth={2.5} fill="#DC2626" />
-          <span className="text-[#DC2626] font-black text-lg tracking-widest" style={{ fontFamily: 'Outfit, sans-serif' }}>AVIATOR</span>
+          <PropellerPlane size={28} />
+          <span className="text-[#DC2626] font-black text-lg tracking-widest" style={{ fontFamily: 'Outfit, sans-serif', fontStyle: 'italic' }}>Aviator</span>
         </div>
+        <button
+          onClick={() => {
+            const next = !soundOn;
+            setSoundOn(next);
+            localStorage.setItem('aviator_sound', next ? 'on' : 'off');
+          }}
+          className="text-gray-300 active:scale-95"
+          data-testid="aviator-sound-toggle"
+          aria-label="Toggle sound"
+        >
+          {soundOn ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+        </button>
         <button onClick={openHistory} className="text-gray-300 active:scale-95" data-testid="aviator-history-btn">
           <History className="w-5 h-5" />
         </button>
@@ -535,7 +701,7 @@ const AviatorPage = () => {
               transform: 'translate(-50%, -50%) rotate(-25deg)',
             }}
           >
-            <Plane className="w-14 h-14 text-red-500" fill="#DC2626" strokeWidth={1.5} />
+            <PropellerPlane size={72} />
           </div>
         )}
 
@@ -594,6 +760,47 @@ const AviatorPage = () => {
           Add Second Bet
         </button>
       )}
+
+      {/* RECENT WINNERS — prominent green highlight strip with names + amounts */}
+      {(() => {
+        const winners = feedItems.filter((b) => b.won && b.won > 0).slice(0, 10);
+        if (winners.length === 0) return null;
+        return (
+          <div className="px-3 mt-4">
+            <div className="flex items-center justify-between mb-2 px-1">
+              <span className="text-[#86EFAC] text-xs font-black uppercase tracking-widest">🏆 Recent Winners</span>
+              <span className="text-gray-500 text-[10px]">{winners.length} jeete</span>
+            </div>
+            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1" data-testid="aviator-winners-strip">
+              {winners.map((w, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl flex-shrink-0"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.20) 0%, rgba(21, 128, 61, 0.10) 100%)',
+                    border: '1px solid rgba(34, 197, 94, 0.45)',
+                  }}
+                  data-testid={`aviator-winner-${i}`}
+                >
+                  <span
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-black text-white flex-shrink-0"
+                    style={{ background: ['#EF4444','#A855F7','#22D3EE','#FACC15','#34D399'][i % 5] }}
+                  >
+                    {w.name?.[0]?.toUpperCase() || 'P'}
+                  </span>
+                  <div className="leading-tight">
+                    <p className="text-white text-[12px] font-bold whitespace-nowrap">{w.name}</p>
+                    <p className="text-[#86EFAC] text-[13px] font-black tabular-nums whitespace-nowrap">
+                      +₹{Number(w.won).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      <span className="text-cyan-400 text-[10px] font-bold ml-1">@ {w.multiplier?.toFixed(2)}x</span>
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Community feed tabs */}
       <div className="px-3 mt-4">

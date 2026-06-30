@@ -106,29 +106,19 @@ Migrate Matka11 satta app from Emergent preview environment to self-hosted Hosti
     Equal-width grid, active = full gold gradient with black icon.
 17. AVIATOR IN-HOUSE CRASH GAME (Feb 2026): Spribe-style provably-fair
     crash game built from scratch in-house (no third-party dependency).
-    Backend (`routes/aviator_routes.py`):
-    - Single async round loop: betting (8s) → flying → pause (3s)
-    - Bustabit-style crash formula with **~33% house edge** (`HOUSE_EDGE_DIVISOR=3`)
-      giving exactly the user-requested **30% win chance** at typical 2x cashout
-      (verified by 5000-sample Monte Carlo: 33.6% instant crash, 32.9% reach 2x).
-    - SHA-256 commit/reveal seed scheme — players can verify each round
-    - WebSocket `/api/aviator/ws` broadcasts ticks every 100ms during flying
-    - REST: /api/aviator/{state,bet,cashout,active-bets,community-bets,my-bets}
-    - Atomic balance debit on bet, atomic credit on cashout
-    - Auto-cashout supported (1.01x–1000x)
-    - Min bet ₹5, max ₹5000
-    Frontend (`pages/AviatorPage.js`):
-    - Reddy66/Spribe pixel-style: red AVIATOR header + purple/red radial
-      viewport with diagonal sun-ray streaks
-    - **TWO stacked bet panels** (Spribe parity) — second toggleable
-    - Each panel: Bet/Auto mode tabs, –/+ stepper, 1000/2000/10000 chips,
-      big green "Bet" CTA → orange "Cash Out ₹X" during flying
-    - Smart CTA transitions: BET → CASHOUT → CASHED OUT (all 3 states)
-    - All Bets / Previous / Top community feed tabs (masked names like "r***l")
-    - Live bets count + total win sum + avatar stack
-    - Provably Fair footer
-    - WebSocket auto-reconnect with exponential backoff
-    Route: `/aviator` (protected). Dashboard Aviator tab navigates here.
+    Backend: bustabit formula with 33% house edge (~30% win at 2x cashout),
+    SHA-256 commit/reveal, WebSocket ticks, batch endpoints for community feed.
+    Frontend: Reddy66/Spribe pixel-style UI with 2 stacked bet panels, purple
+    radial viewport + sun-ray streaks, All Bets/Previous/Top tabs.
+18. AVIATOR POLISH (Feb 2026): Custom red propeller plane SVG (replaces
+    lucide Plane icon) in both header and viewport — looks like authentic
+    Aviator brand. Aviator-style sound effects synthesized via Web Audio
+    API (no external audio files needed): takeoff whoosh, ambient
+    propeller drone during flying, crash boom on round end, two-note ding
+    on cashout, bet placed tick. Sound toggle button in header (state
+    persisted in localStorage). Prominent "🏆 Recent Winners" strip
+    above community feed showing top 10 recent winners with name + amount
+    + multiplier in green-glow cards (horizontal scroll).
     - Black header bar with game name pill + BETS link + Back button
     - MARKET label + Rate (auto-changes per bet type)
     - OPEN/CLOSE session toggle with blue active border
