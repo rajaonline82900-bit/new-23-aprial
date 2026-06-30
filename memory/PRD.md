@@ -70,16 +70,23 @@ Migrate Matka11 satta app from Emergent preview environment to self-hosted Hosti
     transition-all, text-shadow. Replaced with solid colors + single solid
     gold border + `contain: content` paint isolation per card. Look stays
     premium gold; APK scroll FPS recovered to ~60fps on low-end Android.
-12. AAJ KE VIJETA Ticker (Feb 2026): Added 3-tab horizontal stock-ticker
-    at top of Dashboard — Vijeta / Today Deposit / Today Withdraw. Tabs:
-    - GET /api/winners/top?limit=30 → today's winners (name + game + amount)
-    - GET /api/transactions/today-deposits?limit=30 → today's completed deposits
-    - GET /api/transactions/today-withdrawals?limit=30 → today's approved+completed withdrawals
-    All return real first name + last-initial (e.g. "Rahul S."), phone NEVER
-    exposed. Only real app users (db.bets / db.transactions). Marquee uses
-    single transform3d keyframe (GPU compositor, zero scroll lag). Pauses
-    via IntersectionObserver off-screen and when tab hidden. Per-tab icon
-    (Crown/HandCoins/BanknoteArrowUp) + amount color cue (gold/green/orange).
+12. WINNERS/DEPOSITS/WITHDRAWALS TICKER (Feb 2026): Added 3-tab horizontal
+    stock-ticker at top of Dashboard — Vijeta / Today Deposit / Today
+    Withdraw. APIs:
+    - GET /api/winners/top?limit=30
+    - GET /api/transactions/today-deposits?limit=30
+    - GET /api/transactions/today-withdrawals?limit=30
+    All return real "First L." names, phone NEVER exposed. Only real app
+    users from db.bets / db.transactions. Marquee uses single transform3d
+    keyframe (GPU only, zero scroll lag). Pauses off-screen + when tab hidden.
+13. KALYAN GAMES EXPANSION (Feb 2026): Added 10 new Kalyan/Maharashtra games
+    to config.py (main_bazar_morning, shagun, sridevi, madhur_morning,
+    padmavathi, worli_morning, day_bombay, maharani, sunday_bazar) per
+    user-supplied screenshots. server.py now upserts new DEFAULT_GAMES
+    idempotently into existing DBs ($setOnInsert) so VPS deploy auto-adds
+    them. Dashboard now has "Gali Disawar | Kalyan" pill toggle in Market
+    header — games filtered by category, choice persisted in localStorage.
+    Admin Kalyan Results tab automatically lists all 16 Kalyan games.
 
 ## Backlog
 - P2: Stronger JWT_SECRET

@@ -17,7 +17,10 @@ GAME_ORDER = [
     # Gali/Disawar order (by time of day)
     "delhi_bazaar", "shri_ganesh", "faridabad", "ghaziabad", "gali", "disawar",
     # Kalyan order (by time of day)
-    "kalyan_morning", "milan_day", "rajdhani_day", "kalyan", "milan_night", "rajdhani_night", "main_bazar",
+    "kalyan_morning", "main_bazar_morning", "shagun", "sridevi",
+    "madhur_morning", "padmavathi", "worli_morning", "day_bombay",
+    "maharani", "sunday_bazar",
+    "milan_day", "rajdhani_day", "kalyan", "milan_night", "rajdhani_night", "main_bazar",
 ]
 
 

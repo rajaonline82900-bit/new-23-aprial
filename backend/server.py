@@ -102,6 +102,14 @@ async def startup_event():
                 {"game_id": game_id, "start_time": {"$exists": False}},
                 {"$set": {"start_time": game_data["start_time"], "end_time": game_data["end_time"]}}
             )
+        # Insert ANY new DEFAULT_GAMES added to config after initial seed
+        # (idempotent — only inserts if game_id doesn't yet exist).
+        for game_id, game_data in DEFAULT_GAMES.items():
+            await db.games.update_one(
+                {"game_id": game_id},
+                {"$setOnInsert": {"game_id": game_id, **game_data, "created_at": datetime.now(timezone.utc)}},
+                upsert=True
+            )
 
     await load_games()
 

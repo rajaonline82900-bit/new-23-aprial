@@ -468,15 +468,60 @@ const DashboardPage = () => {
             })()}
           </div>
 
-          {/* Section Header - gold premium (no text-shadow, no expensive paint) */}
+          {/* Section Header - Market + category toggle (Gali Disawar | Kalyan) */}
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <span className="w-1.5 h-6 rounded-full" style={{ background: 'linear-gradient(180deg, #FFD700 0%, #D4AF37 50%, #B8860B 100%)' }}></span>
               <h3 className="text-xl font-black tracking-tight" style={{ color: '#FFFFFF' }}>Market</h3>
             </div>
             <span className="text-[#1A1A2E] text-[11px] px-3 py-1 rounded-full font-black tracking-wide" style={{ background: 'linear-gradient(135deg, #FFD700 0%, #D4AF37 100%)' }} data-testid="games-count">
-              {games.length} Available
+              {games.filter(g => (g.category || 'gali_disawar') === gameCategory).length} Available
             </span>
+          </div>
+
+          {/* Category Toggle - Gali Disawar | Kalyan (sticky pill switcher) */}
+          <div
+            className="flex items-stretch gap-1 p-1 rounded-2xl mb-3"
+            style={{ background: '#16162A', border: '1px solid rgba(212, 175, 55, 0.3)' }}
+            data-testid="category-switcher"
+          >
+            {[
+              { id: 'gali_disawar', label: 'Gali Disawar', hi: 'गली दिसावर' },
+              { id: 'kalyan',       label: 'Kalyan',        hi: 'कल्याण' },
+            ].map((cat) => {
+              const isActive = gameCategory === cat.id;
+              const count = games.filter(g => (g.category || 'gali_disawar') === cat.id).length;
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => {
+                    setGameCategory(cat.id);
+                    localStorage.setItem('game_category', cat.id);
+                  }}
+                  data-testid={`category-btn-${cat.id}`}
+                  className="flex-1 rounded-xl py-2 px-2 flex flex-col items-center justify-center leading-tight active:scale-95"
+                  style={
+                    isActive
+                      ? {
+                          background: 'linear-gradient(135deg, #FFD700 0%, #D4AF37 60%, #B8860B 100%)',
+                          border: '1px solid #FFD700',
+                          color: '#1A0F00',
+                        }
+                      : {
+                          background: 'transparent',
+                          border: '1px solid transparent',
+                          color: '#FFD700',
+                        }
+                  }
+                >
+                  <span className="text-[13px] font-black tracking-wide">{cat.label}</span>
+                  <span className={`text-[9px] font-bold mt-0.5 tabular-nums ${isActive ? 'text-[#1A0F00]/70' : 'text-gray-400'}`}>
+                    {cat.hi} • {count} games
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
           {/* Games list */}
@@ -488,7 +533,7 @@ const DashboardPage = () => {
             </div>
           ) : (
             <div className="grid gap-3">
-              {games.map((game, index) => {
+              {games.filter(g => (g.category || 'gali_disawar') === gameCategory).map((game, index) => {
                 const gameStatus = getGameStatus(game);
                 const isDisabled = game.is_holiday || gameStatus.status !== 'open';
                 const CardWrapper = isDisabled ? 'div' : Link;
