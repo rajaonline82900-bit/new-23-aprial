@@ -135,7 +135,11 @@ const DashboardPage = () => {
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [unreadChat, setUnreadChat] = useState(0);
-  const [gameCategory, setGameCategory] = useState(() => localStorage.getItem('game_category') || 'gali_disawar');
+  const [gameCategory, setGameCategory] = useState(() => {
+    const saved = localStorage.getItem('game_category');
+    // 'kalyan' option was removed — coerce any stale value back to gali_disawar
+    return (saved === 'kalyan' || !saved) ? 'gali_disawar' : saved;
+  });
   const [kalyanResults, setKalyanResults] = useState({});
   const [historyGame, setHistoryGame] = useState(null);
   const [topWinners, setTopWinners] = useState([]);
@@ -583,9 +587,9 @@ const DashboardPage = () => {
             </span>
           </div>
 
-          {/* Category Toggle - Premium 3-pill switcher with per-tab color themes */}
+          {/* Category Toggle - Premium 2-pill switcher (Gali Disawar / Aviator) */}
           <div
-            className="grid grid-cols-3 gap-1.5 p-1 rounded-2xl mb-3"
+            className="grid grid-cols-2 gap-1.5 p-1 rounded-2xl mb-3"
             style={{
               background: 'linear-gradient(135deg, #0F0F1F 0%, #1A1A2E 100%)',
               border: '1px solid rgba(212, 175, 55, 0.25)',
@@ -604,18 +608,6 @@ const DashboardPage = () => {
                 inactiveBg: 'linear-gradient(135deg, rgba(212, 175, 55, 0.06) 0%, rgba(184, 134, 11, 0.03) 100%)',
                 inactiveBorder: 'rgba(212, 175, 55, 0.15)',
                 inactiveText: '#D4AF37',
-                inactiveSub: '#78716C',
-              },
-              {
-                id: 'kalyan', label: 'Kalyan', hi: 'कल्याण', Icon: KalyanIcon,
-                activeBg: 'linear-gradient(135deg, #B91C5C 0%, #8B1538 55%, #5C0D24 100%)',
-                activeBorder: '#EC4899',
-                activeText: '#FFFFFF',
-                activeSub: 'rgba(255,255,255,0.78)',
-                activeGlow: '0 4px 14px rgba(185, 28, 92, 0.45), inset 0 1px 0 rgba(255,255,255,0.18)',
-                inactiveBg: 'linear-gradient(135deg, rgba(185, 28, 92, 0.06) 0%, rgba(139, 21, 56, 0.03) 100%)',
-                inactiveBorder: 'rgba(236, 72, 153, 0.18)',
-                inactiveText: '#F9A8D4',
                 inactiveSub: '#78716C',
               },
               {

@@ -91,7 +91,6 @@ const AdminGamesTab = () => {
         <CardContent>
           {(() => {
             const galiGames = games.filter(g => (g.category || 'gali_disawar') !== 'kalyan');
-            const kalyanGames = games.filter(g => g.category === 'kalyan');
             const renderGameRow = (game, index) => (
               <div key={`${game.game_id}-${index}`} className={`flex items-center justify-between p-4 bg-[#0A0A0C] rounded-lg border ${game.is_active !== false ? 'border-white/10' : 'border-red-500/30 opacity-60'}`}>
                 <div className="flex items-center gap-4">
@@ -120,66 +119,10 @@ const AdminGamesTab = () => {
               </div>
             );
             return (
-              <div className="space-y-6">
-                {/* Gali / Disawar Section */}
-                <div data-testid="admin-games-section-gali">
-                  <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#D4AF37]/20">
-                    <h3 className="text-[#D4AF37] font-bold text-base flex items-center gap-2">
-                      <span className="inline-block w-2 h-2 rounded-full bg-[#D4AF37]" />
-                      Gali / Disawar Games
-                      <span className="text-gray-400 text-xs font-normal">({galiGames.length})</span>
-                    </h3>
-                    <Button
-                      size="sm"
-                      onClick={() => { setGameForm({ game_id: '', name: '', name_hi: '', category: 'gali_disawar', start_time: '', end_time: '', display_time: '', is_active: true }); setEditingGame(null); setGameFormOpen(true); }}
-                      data-testid="add-gali-game-btn"
-                      className="bg-[#D4AF37]/15 hover:bg-[#D4AF37]/25 border border-[#D4AF37]/40 text-[#D4AF37]"
-                    >
-                      <Plus className="w-3.5 h-3.5 mr-1" />Add Gali Game
-                    </Button>
-                  </div>
-                  <div className="space-y-3">
-                    {galiGames.length === 0
-                      ? <p className="text-gray-500 text-sm py-4 text-center">कोई Gali/Disawar game नहीं</p>
-                      : galiGames.map(renderGameRow)}
-                  </div>
-                </div>
-
-                {/* Kalyan Section */}
-                <div data-testid="admin-games-section-kalyan">
-                  <div className="flex items-center justify-between mb-3 pb-2 border-b border-pink-500/30 flex-wrap gap-2">
-                    <h3 className="text-pink-400 font-bold text-base flex items-center gap-2">
-                      <span className="inline-block w-2 h-2 rounded-full bg-pink-500" />
-                      Kalyan Games
-                      <span className="text-gray-400 text-xs font-normal">({kalyanGames.length})</span>
-                    </h3>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        onClick={handleSeedKalyan}
-                        disabled={seedingKalyan}
-                        data-testid="seed-kalyan-btn"
-                        className="bg-pink-500/15 hover:bg-pink-500/25 border border-pink-500/40 text-pink-300"
-                      >
-                        {seedingKalyan ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
-                        Seed Default
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => { setGameForm({ game_id: '', name: '', name_hi: '', category: 'kalyan', start_time: '', end_time: '', display_time: '', is_active: true }); setEditingGame(null); setGameFormOpen(true); }}
-                        data-testid="add-kalyan-game-btn"
-                        className="bg-pink-500/15 hover:bg-pink-500/25 border border-pink-500/40 text-pink-300"
-                      >
-                        <Plus className="w-3.5 h-3.5 mr-1" />Add Kalyan Game
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    {kalyanGames.length === 0
-                      ? <p className="text-gray-500 text-sm py-4 text-center">कोई Kalyan game नहीं — &apos;Seed Default&apos; दबाएं</p>
-                      : kalyanGames.map(renderGameRow)}
-                  </div>
-                </div>
+              <div className="space-y-3">
+                {galiGames.length === 0
+                  ? <p className="text-gray-500 text-sm py-4 text-center">कोई game नहीं</p>
+                  : galiGames.map(renderGameRow)}
               </div>
             );
           })()}
