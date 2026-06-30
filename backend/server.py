@@ -25,6 +25,7 @@ from routes.chat_routes import router as chat_router
 from routes.admin_routes import router as admin_router, auto_fetch_loop, expire_pending_deposits_loop
 from routes.notification_routes import router as notification_router
 from routes.kalyan_routes import router as kalyan_router
+from routes.aviator_routes import router as aviator_router, aviator_round_loop
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -54,6 +55,7 @@ api_router.include_router(chat_router)
 api_router.include_router(admin_router)
 api_router.include_router(notification_router)
 api_router.include_router(kalyan_router)
+api_router.include_router(aviator_router)
 
 
 # Build version — bumped manually on every release so APK/WebView clients
@@ -181,6 +183,8 @@ async def start_auto_fetch():
     logger.info("Auto-verify deposits loop started (every 2 min)")
     asyncio.create_task(auto_delete_chat_loop())
     logger.info("Chat auto-delete loop started (every 1 hour)")
+    asyncio.create_task(aviator_round_loop())
+    logger.info("Aviator round loop started")
 
 
 @app.on_event("shutdown")

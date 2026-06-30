@@ -492,17 +492,17 @@ const DashboardPage = () => {
             {[
               { id: 'gali_disawar', label: 'Gali Disawar', hi: 'गली दिसावर', Icon: Dices,  iconColor: '#FDE047' },
               { id: 'kalyan',       label: 'Kalyan',        hi: 'कल्याण',     Icon: Trophy, iconColor: '#F87171' },
-              { id: 'aviator',      label: 'Aviator',       hi: 'एविएटर',     Icon: Plane,  iconColor: '#67E8F9', soon: true },
+              { id: 'aviator',      label: 'Aviator',       hi: 'एविएटर',     Icon: Plane,  iconColor: '#67E8F9', isLink: true },
             ].map((cat) => {
               const isActive = gameCategory === cat.id;
-              const count = cat.soon ? 0 : games.filter(g => (g.category || 'gali_disawar') === cat.id).length;
+              const count = cat.isLink ? 0 : games.filter(g => (g.category || 'gali_disawar') === cat.id).length;
               return (
                 <button
                   key={cat.id}
                   type="button"
                   onClick={() => {
-                    if (cat.soon) {
-                      toast.info('Aviator jaldi aa raha hai!');
+                    if (cat.isLink) {
+                      navigate('/aviator');
                       return;
                     }
                     setGameCategory(cat.id);
@@ -531,7 +531,7 @@ const DashboardPage = () => {
                   />
                   <span className="text-[12px] font-black tracking-wide whitespace-nowrap">{cat.label}</span>
                   <span className={`text-[8px] font-bold mt-0.5 tabular-nums ${isActive ? 'text-[#1A0F00]/70' : 'text-gray-400'}`}>
-                    {cat.soon ? 'Coming Soon' : `${cat.hi} • ${count}`}
+                    {cat.isLink ? 'Play Now' : `${cat.hi} • ${count}`}
                   </span>
                 </button>
               );

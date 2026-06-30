@@ -20,6 +20,7 @@ import AdminLoginPage from "./pages/AdminLoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import GamePage from "./pages/GamePage";
 import KalyanGamePage from "./pages/KalyanGamePage";
+import AviatorPage from "./pages/AviatorPage";
 import WalletPage from "./pages/WalletPage";
 import BetsPage from "./pages/BetsPage";
 import ResultsPage from "./pages/ResultsPage";
@@ -132,6 +133,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <KalyanGamePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/aviator"
+        element={
+          <ProtectedRoute>
+            <AviatorPage />
           </ProtectedRoute>
         }
       />

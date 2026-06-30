@@ -102,9 +102,29 @@ Migrate Matka11 satta app from Emergent preview environment to self-hosted Hosti
     upgraded from 2 to 3 segmented pills with lucide icons:
     - Gali Disawar (Dices icon, yellow)
     - Kalyan (Trophy icon, red)
-    - Aviator (Plane icon, cyan) — placeholder, shows "Coming Soon" toast
-    Equal-width grid, active = full gold gradient with black icon, inactive
-    = transparent with colored icon. Tap on Aviator triggers Sonner toast.
+    - Aviator (Plane icon, cyan) → navigates to /aviator
+    Equal-width grid, active = full gold gradient with black icon.
+17. AVIATOR IN-HOUSE CRASH GAME (Feb 2026): Spribe-style provably-fair
+    crash game built from scratch in-house (no third-party dependency).
+    Backend (`routes/aviator_routes.py`):
+    - Single async round loop: betting (8s) → flying (until crash) → pause (3s)
+    - Bustabit-style crash formula: ~3% house edge, P(crash >= x) ≈ 0.97/x
+    - SHA-256 commit/reveal seed scheme — players can verify each round
+    - WebSocket `/api/aviator/ws` broadcasts ticks every 100ms during flying
+    - REST: /api/aviator/{state,bet,cashout,active-bets,my-bets}
+    - Atomic balance debit on bet, atomic credit on cashout
+    - Auto-cashout supported (1.01x–1000x)
+    - Min bet ₹5, max ₹5000
+    Frontend (`pages/AviatorPage.js`):
+    - Spribe-style dark UI: red plane, big neon multiplier, gold balance pill
+    - Recent crashes ticker (color-coded by multiplier)
+    - SVG plane trajectory curve, animated plane icon
+    - Bet panel with quick chips, auto-cashout input
+    - Smart CTA: BET (green) → CASH OUT (red, with live amount) → CASHED OUT
+    - WebSocket auto-reconnect with exponential backoff
+    - Live bets ticker
+    - My Bets history modal
+    Route: `/aviator` (protected). Dashboard Aviator tab navigates here.
     - Black header bar with game name pill + BETS link + Back button
     - MARKET label + Rate (auto-changes per bet type)
     - OPEN/CLOSE session toggle with blue active border
