@@ -89,6 +89,28 @@ Migrate Matka11 satta app from Emergent preview environment to self-hosted Hosti
     Admin Kalyan Results tab automatically lists all 16 Kalyan games.
     Month-end is_holiday flag is now restricted to gali_disawar category
     only — Kalyan games run every day (no HOLIDAY bar).
+14. KALYAN GAME PAGE REDDY66 REDESIGN (Feb 2026): Complete rewrite of
+    KalyanGamePage.js to match Reddy66 light-theme design:
+    - Black header bar with game name pill + BETS link + Back button
+    - MARKET label + Rate (auto-changes per bet type)
+    - OPEN/CLOSE session toggle with blue active border
+    - 5 bet-type tabs (SINGLE 9.5x / SINGLE PATTI 125x / DOUBLE PATTI 250x
+      / TRIPLE PATTI 900x / JODI 90x) with dice + spade icons
+    - Amount grid: ₹5 / ₹10 / ₹50 / ₹100 / ₹200 / ₹500 / ₹1000 / ₹5000
+    - Digit/Panna grids vary per type:
+      * SINGLE: 0-9 (4 col)
+      * SINGLE PATTI: panna of ank 0..9 (auto-computed valid pannas)
+      * DOUBLE PATTI: same grouping with double pannas
+      * TRIPLE PATTI: 000-999 triples (10 cells)
+      * JODI: 00-99 (4 col, 100 cells)
+    - Per-digit input with auto-fill from selected amount
+    - Selected Digits + Total Stake live display
+    - CLEAR ALL + SUBMIT BET sticky bottom bar
+    - BETS modal showing today's placed bets with status
+    Backend: New `/api/kalyan/bet/batch` endpoint accepts {bet_type, session,
+    amount, digits[]} for atomic multi-bet submission. Min bet lowered to ₹5.
+    CSS: Scoped overrides for [data-testid="kalyan-page"] reset global dark
+    theme to pure-white Reddy66 light theme without affecting other pages.
 
 ## Backlog
 - P2: Stronger JWT_SECRET

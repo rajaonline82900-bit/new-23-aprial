@@ -53,8 +53,8 @@ async def place_kalyan_bet(request: Request):
         raise HTTPException(status_code=400, detail="Invalid bet type")
     if session not in ("open", "close"):
         raise HTTPException(status_code=400, detail="Invalid session")
-    if amount < 10:
-        raise HTTPException(status_code=400, detail="Minimum bet is ₹10")
+    if amount < 5:
+        raise HTTPException(status_code=400, detail="Minimum bet is ₹5")
     if user.get("balance", 0) < amount:
         raise HTTPException(status_code=400, detail="Insufficient balance")
 
@@ -112,6 +112,93 @@ async def place_kalyan_bet(request: Request):
     await db.bets.insert_one(bet_doc)
 
     return {"message": "Bet placed", "bet_id": bet_doc["id"], "new_balance": user.get("balance", 0) - amount}
+
+
+@router.post("/kalyan/bet/batch")
+async def place_kalyan_bet_batch(request: Request):
+    """Place multiple Kalyan bets in one call. Body:
+    {
+      game_id, session, bet_type,
+      amount,                # per-digit amount
+      digits: ["00", "01", ...]
+    }
+    Atomic: validates total, deducts once, inserts all bets.
+    """
+    user = await get_current_user(request)
+    body = await request.json()
+
+    game_id = body.get("game_id")
+    bet_type = body.get("bet_type")
+    session = body.get("session", "open")
+    amount = float(body.get("amount", 0))
+    digits = body.get("digits") or []
+    bet_date = body.get("date") or datetime.now(IST).strftime("%Y-%m-%d")
+
+    if bet_type not in BET_TYPES:
+        raise HTTPException(status_code=400, detail="Invalid bet type")
+    if session not in ("open", "close"):
+        raise HTTPException(status_code=400, detail="Invalid session")
+    if amount < 5:
+        raise HTTPException(status_code=400, detail="Minimum bet is ₹5")
+    if not isinstance(digits, list) or len(digits) == 0:
+        raise HTTPException(status_code=400, detail="Select at least one digit")
+
+    total_stake = amount * len(digits)
+    if user.get("balance", 0) < total_stake:
+        raise HTTPException(status_code=400, detail="Insufficient balance")
+
+    games = await get_games_dict()
+    game = games.get(game_id)
+    if not game or game.get("category") != "kalyan":
+        raise HTTPException(status_code=400, detail="Invalid Kalyan game")
+
+    # Validate each digit per bet type
+    normalized = []
+    for raw in digits:
+        d = str(raw).strip()
+        if bet_type == "single_ank":
+            if not (d.isdigit() and len(d) == 1):
+                raise HTTPException(status_code=400, detail=f"Invalid single digit: {d}")
+        elif bet_type == "kalyan_jodi":
+            if not (d.isdigit() and len(d) == 2):
+                raise HTTPException(status_code=400, detail=f"Invalid jodi: {d}")
+        elif bet_type in ("single_panna", "double_panna", "triple_panna"):
+            if not (d.isdigit() and len(d) == 3):
+                raise HTTPException(status_code=400, detail=f"Invalid panna: {d}")
+            if categorize_panna(d) != bet_type:
+                raise HTTPException(status_code=400, detail=f"{d} is not a valid {bet_type}")
+        else:
+            raise HTTPException(status_code=400, detail=f"Batch not supported for {bet_type}")
+        normalized.append(d)
+
+    # Deduct total stake from balance
+    await db.users.update_one({"_id": ObjectId(user["_id"])}, {"$inc": {"balance": -total_stake}})
+
+    docs = []
+    now_iso = datetime.now(timezone.utc).isoformat()
+    for d in normalized:
+        docs.append({
+            "id": str(uuid.uuid4()),
+            "user_id": user["_id"],
+            "game_id": game_id,
+            "game_category": "kalyan",
+            "bet_type": bet_type,
+            "session": session,
+            "digit": d,
+            "amount": amount,
+            "date": bet_date,
+            "status": "pending",
+            "created_at": now_iso,
+        })
+    await db.bets.insert_many(docs)
+
+    return {
+        "message": f"{len(docs)} bets placed",
+        "count": len(docs),
+        "total_stake": total_stake,
+        "new_balance": user.get("balance", 0) - total_stake,
+    }
+
 
 
 @router.get("/kalyan/my-bets")

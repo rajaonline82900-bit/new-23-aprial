@@ -84,6 +84,28 @@ body {
 .bg-white * { color: #1A1A2E; }
 .bg-white .text-white { color: #FFFFFF !important; }
 
+/* ============================================================
+   KALYAN GAME PAGE — light Reddy66 theme.
+   Scoped overrides reset the dark/gold globals for [data-testid="kalyan-page"]
+   so the page can be pure-white with light inputs and proper text colors.
+   ============================================================ */
+[data-testid="kalyan-page"] { background: #FFFFFF !important; color: #000000 !important; }
+[data-testid="kalyan-page"] .text-gray-300,
+[data-testid="kalyan-page"] .text-gray-400,
+[data-testid="kalyan-page"] .text-gray-500,
+[data-testid="kalyan-page"] .text-gray-600 { color: #4B5563 !important; }
+[data-testid="kalyan-page"] input,
+[data-testid="kalyan-page"] textarea,
+[data-testid="kalyan-page"] select {
+  color: #000000 !important;
+  background-color: #FFFFFF !important;
+  border-color: #D1D5DB !important;
+}
+[data-testid="kalyan-page"] .border-white\/10,
+[data-testid="kalyan-page"] .border-white\/5,
+[data-testid="kalyan-page"] .border-white\/20 { border-color: #E5E7EB !important; }
+[data-testid="kalyan-page"] .border-gray-200 { border-color: #E5E7EB !important; }
+
 /* Dark theme inputs */
 input, textarea, select {
   color: #F5F5F7 !important;
