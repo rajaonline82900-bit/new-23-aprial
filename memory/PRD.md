@@ -90,7 +90,14 @@ Migrate Matka11 satta app from Emergent preview environment to self-hosted Hosti
     Month-end is_holiday flag is now restricted to gali_disawar category
     only — Kalyan games run every day (no HOLIDAY bar).
 14. KALYAN GAME PAGE REDDY66 REDESIGN (Feb 2026): Complete rewrite of
-    KalyanGamePage.js to match Reddy66 light-theme design:
+    KalyanGamePage.js to match Reddy66 light-theme design (full details
+    above).
+15. KALYAN DASHBOARD CARD REDESIGN (Feb 2026): Distinct Matka-themed card
+    for Kalyan category (dark navy + maroon gradient, red border with
+    diagonal red corner accent). Big iconic XXX-XX-XXX result line in
+    center (green open-panna, gold jodi, red close-panna). Live/Off pill
+    + Bidding On/Off label. Visually completely separate from Gali Disawar
+    gold cards so users immediately recognize which market they're on.
     - Black header bar with game name pill + BETS link + Back button
     - MARKET label + Rate (auto-changes per bet type)
     - OPEN/CLOSE session toggle with blue active border

@@ -541,7 +541,7 @@ const DashboardPage = () => {
                   ? { 'data-testid': `game-card-${game.id}` }
                   : { to: (game.category === 'kalyan' ? `/kalyan/${game.id}` : `/game/${game.id}`), 'data-testid': `game-card-${game.id}` };
 
-                // Kalyan - Anna Matka style card
+                // Kalyan — premium Matka-style card (distinct from gold Gali Disawar cards)
                 if (game.category === 'kalyan') {
                   const kr = kalyanResults[game.id] || {};
                   const formatTime = (t) => {
@@ -550,66 +550,146 @@ const DashboardPage = () => {
                     const h12 = h % 12 || 12;
                     return `${h12}:${(m || 0).toString().padStart(2, '0')} ${ampm}`;
                   };
+                  // Build the iconic Matka result line  XXX-XX-XXX
+                  const openP = kr.open_panna || '***';
+                  const jodi = kr.jodi || ((kr.open_ank && kr.close_ank) ? `${kr.open_ank}${kr.close_ank}` : '**');
+                  const closeP = kr.close_panna || '***';
+                  const isOpen = gameStatus.status === 'open';
+
                   return (
                     <CardWrapper key={game.id} {...cardProps}>
                       <div
-                        className={`rounded-2xl overflow-hidden border-2 ${isDisabled ? 'opacity-60' : ''}`}
-                        style={{ borderColor: '#D4AF37', contain: 'content' }}
+                        className={`rounded-2xl overflow-hidden relative ${isDisabled ? 'opacity-70' : 'active:scale-[0.99]'}`}
+                        style={{
+                          background: 'linear-gradient(135deg, #2A0A0A 0%, #14142B 60%, #1A1A2E 100%)',
+                          border: '2px solid #DC2626',
+                          contain: 'content',
+                        }}
                       >
-                        {/* Orange header with game name + play button */}
-                        <div className="bg-gradient-to-r from-[#D4AF37] to-[#B8941E] px-4 py-3 flex items-center justify-between">
-                          <div className="w-8 h-8 flex items-center justify-center">
-                            <svg className="w-5 h-5 text-black" fill="currentColor" viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2m0 4h2v-2H3v2m0-8h2V7H3v2m4 4h14v-2H7v2m0 4h14v-2H7v2M7 7v2h14V7H7Z"/></svg>
-                          </div>
-                          <h3 className="text-white font-black text-base uppercase tracking-wide flex-1 text-center">
+                        {/* Red corner accent stripe (top-right) — Matka brand signal */}
+                        <div
+                          className="absolute top-0 right-0 w-20 h-20"
+                          style={{
+                            background: 'linear-gradient(135deg, transparent 50%, #DC2626 50%)',
+                            pointerEvents: 'none',
+                          }}
+                        />
+
+                        {/* Top row: Chart button + game name + status pill */}
+                        <div className="flex items-center justify-between px-3 pt-3 relative">
+                          <button
+                            type="button"
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setHistoryGame(game); }}
+                            data-testid={`chart-btn-${game.id}`}
+                            aria-label={`${game.name} result chart`}
+                            className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 active:scale-90"
+                            style={{ background: 'rgba(220, 38, 38, 0.18)', border: '1.5px solid #DC2626' }}
+                          >
+                            <BarChart3 className="w-4 h-4 text-[#FCA5A5]" strokeWidth={2.8} />
+                          </button>
+
+                          <h3
+                            className="font-black text-base uppercase tracking-wider flex-1 text-center px-2 truncate"
+                            style={{ color: '#FCA5A5', fontFamily: 'Outfit, sans-serif', letterSpacing: '0.05em' }}
+                            data-testid={`kalyan-name-${game.id}`}
+                          >
                             {game.name}
                           </h3>
-                          {game.is_holiday ? (
-                            <div className="w-10 h-10 rounded-full bg-orange-600 text-white flex items-center justify-center font-bold text-xs">H</div>
-                          ) : gameStatus.status === 'open' ? (
-                            <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center" data-testid={`play-btn-${game.id}`}>
-                              <svg className="w-4 h-4 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                            </div>
-                          ) : (
-                            <div className="w-10 h-10 rounded-full bg-red-500/80 flex items-center justify-center">
-                              <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-                            </div>
-                          )}
+
+                          {/* Status pill (top right corner) */}
+                          <span
+                            className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded leading-none z-10 relative"
+                            style={{
+                              background: isOpen ? '#16A34A' : '#7F1D1D',
+                              color: '#FFFFFF',
+                            }}
+                          >
+                            {isOpen ? 'Live' : 'Off'}
+                          </span>
                         </div>
 
-                        {/* White body */}
-                        <div className="bg-white px-4 py-3">
-                          <div className="flex justify-between text-xs text-gray-600 mb-2">
-                            <span>Open - {formatTime(game.start_time)}</span>
-                            <span>Close - {formatTime(game.end_time)}</span>
-                          </div>
-                          <div className="grid grid-cols-3 text-center">
-                            <div>
-                              <p className="text-green-600 font-bold text-base mb-1">Open</p>
-                              <p className="text-black font-black text-lg tracking-wider" style={{ fontFamily: 'monospace' }}>
-                                {kr.open_panna || 'XXX'}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-blue-500 font-bold text-base mb-1">Jodi</p>
-                              <p className="text-black font-black text-lg tracking-wider" style={{ fontFamily: 'monospace' }}>
-                                {kr.jodi || (kr.open_ank ? `${kr.open_ank}*` : '--')}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-red-500 font-bold text-base mb-1">Close</p>
-                              <p className="text-black font-black text-lg tracking-wider" style={{ fontFamily: 'monospace' }}>
-                                {kr.close_panna || 'XXX'}
-                              </p>
-                            </div>
-                          </div>
+                        {/* Big Matka result line — iconic XXX-XX-XXX */}
+                        <div className="px-3 py-3 flex items-center justify-center gap-1.5">
+                          <span
+                            className="font-black tabular-nums tracking-wider"
+                            style={{
+                              fontFamily: 'Outfit, monospace',
+                              fontSize: '1.6rem',
+                              color: '#34D399',
+                              lineHeight: 1,
+                            }}
+                            data-testid={`kalyan-open-${game.id}`}
+                          >
+                            {openP}
+                          </span>
+                          <span className="text-[#FCA5A5] font-black text-2xl leading-none">-</span>
+                          <span
+                            className="font-black tabular-nums"
+                            style={{
+                              fontFamily: 'Outfit, monospace',
+                              fontSize: '1.7rem',
+                              color: '#FFD700',
+                              lineHeight: 1,
+                            }}
+                            data-testid={`kalyan-jodi-${game.id}`}
+                          >
+                            {jodi}
+                          </span>
+                          <span className="text-[#FCA5A5] font-black text-2xl leading-none">-</span>
+                          <span
+                            className="font-black tabular-nums tracking-wider"
+                            style={{
+                              fontFamily: 'Outfit, monospace',
+                              fontSize: '1.6rem',
+                              color: '#F87171',
+                              lineHeight: 1,
+                            }}
+                            data-testid={`kalyan-close-${game.id}`}
+                          >
+                            {closeP}
+                          </span>
                         </div>
 
-                        {/* Status strip */}
-                        <div className={`py-2 text-center font-black text-sm text-white ${
-                          game.is_holiday ? 'bg-orange-500' : gameStatus.status === 'open' ? 'bg-green-600' : 'bg-red-600'
-                        }`}>
-                          {game.is_holiday ? 'HOLIDAY' : gameStatus.status === 'open' ? 'MARKET OPENED' : 'MARKET CLOSED'}
+                        {/* Bottom row: time chips + Play button */}
+                        <div
+                          className="flex items-center justify-between px-3 py-2.5"
+                          style={{
+                            background: 'rgba(220, 38, 38, 0.08)',
+                            borderTop: '1px solid rgba(220, 38, 38, 0.3)',
+                          }}
+                        >
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-[9px] uppercase tracking-widest font-bold leading-none" style={{ color: '#86EFAC' }}>
+                              Open • {formatTime(game.start_time)}
+                            </span>
+                            <span className="text-[9px] uppercase tracking-widest font-bold leading-none" style={{ color: '#FCA5A5' }}>
+                              Close • {formatTime(game.end_time)}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="text-[10px] font-black uppercase tracking-widest leading-none"
+                              style={{ color: isOpen ? '#86EFAC' : '#FCA5A5' }}
+                            >
+                              {isOpen ? 'Bidding On' : 'Bidding Off'}
+                            </span>
+                            <div
+                              className="w-10 h-10 rounded-full flex items-center justify-center"
+                              style={
+                                isOpen
+                                  ? { background: 'linear-gradient(135deg, #DC2626 0%, #991B1B 100%)', border: '2px solid #FCA5A5' }
+                                  : { background: '#1F2937', border: '2px solid #4B5563' }
+                              }
+                              data-testid={`kalyan-play-${game.id}`}
+                            >
+                              {isOpen ? (
+                                <Play className="w-4 h-4 text-white ml-0.5" fill="#FFFFFF" />
+                              ) : (
+                                <X className="w-5 h-5 text-gray-400" strokeWidth={3} />
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </CardWrapper>
