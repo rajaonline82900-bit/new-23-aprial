@@ -36,16 +36,10 @@ CRASH_PAUSE = 3.0           # seconds shown after crash
 TICK_INTERVAL = 0.2          # broadcast WS ticks every 200ms — perf-friendly
                              # on low-end Android WebView (was 100ms, caused
                              # excessive React re-renders & jank).
-GROWTH_RATE = 0.06          # multiplier(t) = e^(GROWTH_RATE * t) - 1
-                             # Multiplier starts at 0.00x at takeoff and grows.
-                             # At t=0:  e^0 - 1 = 0
-                             # At t≈12s: ~1.0 (break-even)
-                             # At t≈30s: ~5.0
-INSTANT_CRASH_PROBABILITY = 0.30  # 30% rounds crash before reaching 1.0x —
-                                  # i.e. plane explodes early in 0.00x → 1.00x
-                                  # range, all bets lose unless cashed below 1.
-HOUSE_EDGE_DIVISOR = 3      # legacy — kept for unused code path; new instant-
-                            # crash uses INSTANT_CRASH_PROBABILITY directly.
+GROWTH_RATE = 0.06          # multiplier(t) = e^(GROWTH_RATE * t)
+HOUSE_EDGE_DIVISOR = 3      # ~33% house edge — every 3rd round is instant 1.00x.
+                            # This gives P(crash >= 2x) ≈ 33% i.e. ~30% win
+                            # rate for typical 2x cashout play (per user spec).
 MIN_BET = 5.0
 MAX_BET = 5000.0
 MAX_AUTO_CASHOUT = 1000.0
@@ -58,7 +52,7 @@ class RoundState:
         self.round_id: str = ""
         self.phase: str = "idle"       # "betting" | "flying" | "crashed"
         self.start_ts: float = 0.0     # epoch when current phase started
-        self.crash_point: float = 0.0
+        self.crash_point: float = 1.0
         self.server_seed: str = ""
         self.seed_hash: str = ""
         # Active bets in current round: { user_id: {amount, auto_cashout, cashed_out_at, won} }
@@ -75,14 +69,14 @@ class RoundState:
             "betting_duration": BETTING_DURATION,
         }
         if self.phase == "flying":
-            d["multiplier"] = round(max(0.0, math.exp(GROWTH_RATE * elapsed) - 1.0), 2)
+            d["multiplier"] = round(math.exp(GROWTH_RATE * elapsed), 2)
         elif self.phase == "crashed":
             d["multiplier"] = self.crash_point
             d["crash_point"] = self.crash_point
             if reveal_seed:
                 d["server_seed"] = self.server_seed
         elif self.phase == "betting":
-            d["multiplier"] = 0.00
+            d["multiplier"] = 1.00
             d["betting_remaining"] = round(max(0.0, BETTING_DURATION - elapsed), 2)
         return d
 
@@ -125,29 +119,13 @@ async def _broadcast(payload: dict):
 
 # ---------- Crash point (bustabit-style) ----------
 def _gen_crash(server_seed: str) -> float:
-    """Generates the crash point for a round. Returns a value in [0.00, ~99.0].
-
-    New behaviour (per user spec):
-      * Multiplier starts at 0.00x at takeoff (formula: e^(rt) - 1).
-      * 30% of rounds crash BEFORE reaching 1.0x (i.e. crash_point in
-        [0.00, 1.00)) — these are the "instant crash" early-explode rounds
-        where players who waited too long get nothing.
-      * 70% of rounds crash AT or ABOVE 1.0x, following a heavy-tailed
-        distribution similar to bustabit, so big-multiplier rounds occur.
-    """
     h = hashlib.sha256(server_seed.encode()).hexdigest()
-    # Bucket A: instant-crash decision (deterministic, provably-fair)
-    bucket = int(h[:8], 16) / 0xFFFFFFFF  # uniform in [0, 1]
-    if bucket < INSTANT_CRASH_PROBABILITY:
-        # Crash anywhere in [0.00, 1.00). Skewed toward lower values so most
-        # instant-crashes are visibly early (0.05x – 0.7x).
-        early_seed = int(h[8:16], 16) / 0xFFFFFFFF
-        early = early_seed ** 1.6  # bias toward 0
-        return round(early * 0.99, 2)  # never exactly 1.00 in this branch
-    # Bucket B: normal flight — crash point in [1.00, ~99.0]
-    h_int = int(h[16:29], 16)
+    h_int = int(h[:13], 16)
+    if h_int % HOUSE_EDGE_DIVISOR == 0:
+        return 1.00
     e = 2 ** 52
-    val = (100 * e - h_int) / (e - h_int) / 100  # bustabit formula
+    # bustabit formula  →  max(1.00, (100e - h)/(e - h) / 100)
+    val = (100 * e - h_int) / (e - h_int) / 100
     return max(1.00, round(val, 2))
 
 # ---------- Round loop ----------
@@ -229,7 +207,7 @@ async def aviator_round_loop():
             _state.start_ts = time.time()
             await _broadcast({"type": "flying_start", "state": _state.to_public()})
 
-            crash_time = math.log(_state.crash_point + 1.0) / GROWTH_RATE
+            crash_time = math.log(_state.crash_point) / GROWTH_RATE if _state.crash_point > 1.0 else 0.0
 
             elapsed = 0.0
             while elapsed < crash_time:
@@ -237,7 +215,7 @@ async def aviator_round_loop():
                 elapsed = time.time() - _state.start_ts
                 if elapsed >= crash_time:
                     break
-                current = round(max(0.0, math.exp(GROWTH_RATE * elapsed) - 1.0), 2)
+                current = round(math.exp(GROWTH_RATE * elapsed), 2)
                 # Process auto-cashouts
                 for uid, b in list(_state.bets.items()):
                     if (not b.get("cashed_out_at")) and b.get("auto_cashout") and current >= b["auto_cashout"]:
@@ -281,7 +259,7 @@ async def aviator_watchdog():
     logger = logging.getLogger(__name__)
     await asyncio.sleep(10)  # let the main loop establish state first
     MAX_BETTING = BETTING_DURATION + 15.0
-    MAX_FLYING = (math.log(100.0) / GROWTH_RATE) + 20.0  # ~97s (handles ≤99x crash)
+    MAX_FLYING = (math.log(99) / GROWTH_RATE) + 20.0  # ~96s
     MAX_CRASHED = CRASH_PAUSE + 10.0
     while True:
         try:
@@ -477,7 +455,7 @@ async def cashout(request: Request):
         raise HTTPException(400, "Already cashed out")
 
     elapsed = time.time() - _state.start_ts
-    current = round(max(0.0, math.exp(GROWTH_RATE * elapsed) - 1.0), 2)
+    current = round(math.exp(GROWTH_RATE * elapsed), 2)
     # Safety: never above crash point
     if current >= _state.crash_point:
         raise HTTPException(400, "Too late — already crashed")
