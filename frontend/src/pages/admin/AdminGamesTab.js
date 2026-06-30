@@ -220,12 +220,22 @@ const AdminGamesTab = () => {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label className="text-gray-300 mb-2 block">Start Time (24hr)</Label>
+                <Label className="text-gray-300 mb-2 block">
+                  {gameForm.category === 'kalyan' ? 'Open Time (24hr)' : 'Start Time (24hr)'}
+                </Label>
                 <Input type="time" value={gameForm.start_time} onChange={(e) => setGameForm({...gameForm, start_time: e.target.value})} data-testid="game-start-time-input" className="bg-[#0A0A0C] border-white/10 text-white" />
+                {gameForm.category === 'kalyan' && (
+                  <p className="text-gray-500 text-[10px] mt-1">कब Open panna declare hoga</p>
+                )}
               </div>
               <div>
-                <Label className="text-gray-300 mb-2 block">End Time (24hr)</Label>
+                <Label className="text-gray-300 mb-2 block">
+                  {gameForm.category === 'kalyan' ? 'Close Time (24hr)' : 'End Time (24hr)'}
+                </Label>
                 <Input type="time" value={gameForm.end_time} onChange={(e) => setGameForm({...gameForm, end_time: e.target.value})} data-testid="game-end-time-input" className="bg-[#0A0A0C] border-white/10 text-white" />
+                {gameForm.category === 'kalyan' && (
+                  <p className="text-gray-500 text-[10px] mt-1">कब Close panna declare hoga</p>
+                )}
               </div>
             </div>
             <div>

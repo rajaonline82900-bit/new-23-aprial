@@ -170,16 +170,24 @@ Migrate Matka11 satta app from Emergent preview environment to self-hosted Hosti
      receive loop now only `receive_text()`s. Frequent broadcasts keep
      the connection warm naturally.
 - **Admin panel: Kalyan section separation**:
-  - New tab **"कल्याण रिजल्ट"** (renders `AdminKalyanResultsTab`) with
-    Open/Close panna declaration, delete-result and reverse buttons per
-    Kalyan game.
+  - New tab **"कल्याण रिजल्ट"** (renders `AdminKalyanResultsTab`).
   - "रिजल्ट घोषणा" renamed to **"गली रिजल्ट"** and filtered to only
-    show non-Kalyan games (today-results card + declare-result dropdown).
-  - **"गेम सेटिंग्स"** tab split visually into two sections:
-    * **Gali / Disawar Games** (gold accent) + "Add Gali Game" button
-    * **Kalyan Games** (pink accent) + "Seed Default" + "Add Kalyan Game"
-      buttons
-  Each section pre-fills the create-game form with the matching category.
+    show non-Kalyan games.
+  - **"गेम सेटिंग्स"** tab split visually into two sections
+    (Gali/Disawar + Kalyan) each with its own Add button. Kalyan also has
+    "Seed Default" button.
+- **Kalyan result entry — critical bug fix**: Earlier code keyed React
+  state and result lookup on `g.id` which is undefined on API responses
+  (the actual field is `game_id`). All cards shared the same form state,
+  so typing in one input replicated to ALL inputs and clicking declare
+  sent `game_id=undefined`. Switched all references to `g.game_id`.
+- **Kalyan result UI now 3-column**: OPEN | **JODI (auto)** | CLOSE.
+  The middle JODI cell shows `open_ank + close_ank` automatically (in
+  gold gradient when computed) — no manual entry needed.
+- **Kalyan game time labels**: In the game create/edit dialog, when
+  category=`kalyan`, the time fields are labeled "Open Time (24hr)" and
+  "Close Time (24hr)" with helper text "कब Open/Close panna declare
+  hoga". For Gali/Disawar they remain "Start Time" / "End Time".
 
 ## Backlog
 - P0: Tell user to "Save to Github" → on VPS run `bash /var/www/new-23-aprial/deploy.sh`
