@@ -73,49 +73,49 @@ const KalyanIcon = ({ size = 26, active = false }) => (
   </svg>
 );
 
-// Aviator — Stylish plane with motion streak + chevron
+// Aviator — Stylish red plane with motion streak + chevron (LIVE/Real Available)
 const AviatorIcon = ({ size = 26, active = false }) => (
   <svg width={size} height={size} viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <linearGradient id="planeG" x1="0%" y1="100%" x2="100%" y2="0%">
-        <stop offset="0%" stopColor={active ? '#1A0F00' : '#67E8F9'} />
-        <stop offset="100%" stopColor={active ? '#1A0F00' : '#06B6D4'} />
+        <stop offset="0%" stopColor={active ? '#1A0F00' : '#FCA5A5'} />
+        <stop offset="100%" stopColor={active ? '#1A0F00' : '#DC2626'} />
       </linearGradient>
     </defs>
     {/* Motion streak */}
     <path
       d="M 4 32 Q 14 30 22 22"
-      stroke={active ? '#1A0F00' : '#0891B2'}
+      stroke={active ? '#1A0F00' : '#B91C1C'}
       strokeWidth="2"
       fill="none"
       strokeLinecap="round"
-      opacity="0.65"
+      opacity="0.7"
     />
     <path
       d="M 6 36 Q 12 34 18 30"
-      stroke={active ? '#1A0F00' : '#22D3EE'}
+      stroke={active ? '#1A0F00' : '#EF4444'}
       strokeWidth="1.5"
       fill="none"
       strokeLinecap="round"
-      opacity="0.4"
+      opacity="0.45"
     />
     {/* Plane body — pointing up-right */}
     <g transform="translate(20 18) rotate(-30)">
       <path
         d="M -10 0 L 10 -2 L 14 0 L 10 2 L -10 0 Z"
         fill="url(#planeG)"
-        stroke={active ? '#1A0F00' : '#0E7490'}
+        stroke={active ? '#1A0F00' : '#7F1D1D'}
         strokeWidth="0.8"
       />
       {/* wing */}
-      <path d="M -2 -1 L 4 -7 L 8 -7 L 2 -1 Z" fill={active ? '#1A0F00' : '#0891B2'} stroke={active ? '#1A0F00' : '#0E7490'} strokeWidth="0.6" />
-      <path d="M -2 1 L 4 7 L 8 7 L 2 1 Z" fill={active ? '#1A0F00' : '#0891B2'} stroke={active ? '#1A0F00' : '#0E7490'} strokeWidth="0.6" />
+      <path d="M -2 -1 L 4 -7 L 8 -7 L 2 -1 Z" fill={active ? '#1A0F00' : '#B91C1C'} stroke={active ? '#1A0F00' : '#7F1D1D'} strokeWidth="0.6" />
+      <path d="M -2 1 L 4 7 L 8 7 L 2 1 Z" fill={active ? '#1A0F00' : '#B91C1C'} stroke={active ? '#1A0F00' : '#7F1D1D'} strokeWidth="0.6" />
       {/* tail */}
-      <path d="M -10 0 L -13 -3 L -10 -1 Z" fill={active ? '#1A0F00' : '#155E75'} />
-      <path d="M -10 0 L -13 3 L -10 1 Z" fill={active ? '#1A0F00' : '#155E75'} />
+      <path d="M -10 0 L -13 -3 L -10 -1 Z" fill={active ? '#1A0F00' : '#7F1D1D'} />
+      <path d="M -10 0 L -13 3 L -10 1 Z" fill={active ? '#1A0F00' : '#7F1D1D'} />
     </g>
     {/* Up-arrow sparkle (top-right) */}
-    <path d="M 32 6 L 35 10 L 32 9 L 32 13 L 30 13 L 30 9 L 28 10 Z" fill={active ? '#1A0F00' : '#67E8F9'} opacity="0.85" />
+    <path d="M 32 6 L 35 10 L 32 9 L 32 13 L 30 13 L 30 9 L 28 10 Z" fill={active ? '#1A0F00' : '#FCA5A5'} opacity="0.9" />
   </svg>
 );
 import FooterNav from '../components/FooterNav';
@@ -596,6 +596,7 @@ const DashboardPage = () => {
             ].map((cat) => {
               const isActive = gameCategory === cat.id;
               const count = cat.isLink ? 0 : games.filter(g => (g.category || 'gali_disawar') === cat.id).length;
+              const isAviator = cat.id === 'aviator';
               return (
                 <button
                   key={cat.id}
@@ -611,7 +612,14 @@ const DashboardPage = () => {
                   data-testid={`category-btn-${cat.id}`}
                   className="rounded-xl py-2 px-1 flex flex-col items-center justify-center leading-tight active:scale-95 relative"
                   style={
-                    isActive
+                    isAviator
+                      ? {
+                          background: 'linear-gradient(135deg, #7F1D1D 0%, #DC2626 55%, #B91C1C 100%)',
+                          border: '1px solid #EF4444',
+                          color: '#FFFFFF',
+                          boxShadow: '0 0 0 1px rgba(220, 38, 38, 0.4) inset',
+                        }
+                      : isActive
                       ? {
                           background: 'linear-gradient(135deg, #FFD700 0%, #D4AF37 60%, #B8860B 100%)',
                           border: '1px solid #FFD700',
@@ -624,10 +632,42 @@ const DashboardPage = () => {
                         }
                   }
                 >
-                  <cat.Icon size={28} active={isActive} />
-                  <span className="text-[12px] font-black tracking-wide whitespace-nowrap mt-0.5">{cat.label}</span>
-                  <span className={`text-[8px] font-bold mt-0.5 tabular-nums ${isActive ? 'text-[#1A0F00]/70' : 'text-gray-400'}`}>
-                    {cat.isLink ? 'Play Now' : `${cat.hi} • ${count}`}
+                  {/* Aviator LIVE badge (top-right corner) */}
+                  {isAviator && (
+                    <span
+                      className="absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full text-[8px] font-black tracking-wider flex items-center gap-0.5"
+                      style={{
+                        background: '#FEF2F2',
+                        color: '#B91C1C',
+                        border: '1px solid #FCA5A5',
+                      }}
+                      data-testid="aviator-live-badge"
+                    >
+                      <span
+                        className="w-1.5 h-1.5 rounded-full"
+                        style={{ background: '#DC2626', boxShadow: '0 0 4px #DC2626' }}
+                      />
+                      LIVE
+                    </span>
+                  )}
+                  <cat.Icon size={28} active={isAviator ? false : isActive} />
+                  <span
+                    className="text-[12px] font-black tracking-wide whitespace-nowrap mt-0.5"
+                    style={isAviator ? { color: '#FFFFFF', textShadow: '0 1px 2px rgba(0,0,0,0.4)' } : undefined}
+                  >
+                    {cat.label}
+                  </span>
+                  <span
+                    className="text-[8px] font-bold mt-0.5 tabular-nums"
+                    style={
+                      isAviator
+                        ? { color: '#FECACA' }
+                        : isActive
+                        ? { color: 'rgba(26,15,0,0.7)' }
+                        : { color: '#9CA3AF' }
+                    }
+                  >
+                    {cat.isLink ? 'Real Available' : `${cat.hi} • ${count}`}
                   </span>
                 </button>
               );

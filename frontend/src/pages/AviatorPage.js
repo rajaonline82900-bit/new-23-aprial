@@ -516,17 +516,9 @@ const AviatorPage = () => {
         {/* Multiplier overlay */}
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
           {phase === 'betting' && (
-            <>
-              <p className="text-gray-300 text-sm font-bold uppercase tracking-widest mb-2">Next Round In</p>
-              <p
-                className="font-black tabular-nums"
-                style={{ color: '#FFD700', fontSize: '3.5rem', lineHeight: 1, fontFamily: 'Outfit, monospace' }}
-                data-testid="aviator-countdown"
-              >
-                {bettingRemaining.toFixed(1)}s
-              </p>
-              <p className="text-gray-300 text-xs mt-2 font-semibold">Place your bet now</p>
-            </>
+            <p className="text-gray-300 text-xs font-bold uppercase tracking-widest" style={{ position: 'absolute', top: '24%' }}>
+              Place your bet — Plane taking off soon
+            </p>
           )}
           {phase === 'flying' && (
             <p
@@ -550,6 +542,46 @@ const AviatorPage = () => {
             </>
           )}
         </div>
+
+        {/* Static grounded plane during betting phase (bottom-left, level on runway) */}
+        {phase === 'betting' && (
+          <div
+            className="absolute pointer-events-none"
+            style={{ left: '10%', bottom: '14%' }}
+            data-testid="aviator-grounded-plane"
+          >
+            <PropellerPlane size={72} />
+          </div>
+        )}
+
+        {/* Red progress bar (fills over 10s during betting phase) */}
+        {phase === 'betting' && (
+          <div
+            className="absolute"
+            style={{
+              left: '6%',
+              right: '6%',
+              bottom: '9%',
+              height: '6px',
+              background: 'rgba(255, 255, 255, 0.08)',
+              borderRadius: '3px',
+              overflow: 'hidden',
+              border: '1px solid rgba(220, 38, 38, 0.35)',
+            }}
+            data-testid="aviator-progress-track"
+          >
+            <div
+              data-testid="aviator-progress-fill"
+              style={{
+                height: '100%',
+                width: `${Math.min(100, Math.max(0, ((10 - bettingRemaining) / 10) * 100))}%`,
+                background: 'linear-gradient(90deg, #DC2626 0%, #EF4444 50%, #FCA5A5 100%)',
+                boxShadow: '0 0 8px rgba(220, 38, 38, 0.7)',
+                transition: 'width 120ms linear',
+              }}
+            />
+          </div>
+        )}
 
         {/* Plane sprite */}
         {phase === 'flying' && (

@@ -157,7 +157,17 @@ Migrate Matka11 satta app from Emergent preview environment to self-hosted Hosti
     CSS: Scoped overrides for [data-testid="kalyan-page"] reset global dark
     theme to pure-white Reddy66 light theme without affecting other pages.
 
+## 2026-02 Updates
+- Aviator Dashboard Tab: Red gradient tab with white "LIVE" badge
+  (top-right) and "Real Available" sub-label. Plane icon in red shades.
+- Aviator Betting Phase UI: Removed numeric countdown text. Plane stays
+  static on the runway (bottom-left). A red horizontal progress bar (with
+  glow) fills from 0% → 100% over the 10-second betting window, then the
+  plane takes off automatically. Backend BETTING_DURATION already 10s.
+
 ## Backlog
+- P0: Tell user to "Save to Github" → on VPS run `bash /var/www/new-23-aprial/deploy.sh`
+  to ship Aviator UI + Kalyan + tickers to the live APK.
 - P2: Stronger JWT_SECRET
 - P2: MongoDB backup cron
 - P2: Telegram admin alerts for deposits/withdraws

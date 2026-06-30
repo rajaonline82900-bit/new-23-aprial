@@ -31,7 +31,7 @@ from auth import get_current_user
 router = APIRouter()
 
 # ---------- Config ----------
-BETTING_DURATION = 8.0      # seconds
+BETTING_DURATION = 10.0     # seconds — betting phase
 CRASH_PAUSE = 3.0           # seconds shown after crash
 TICK_INTERVAL = 0.2          # broadcast WS ticks every 200ms — perf-friendly
                              # on low-end Android WebView (was 100ms, caused
