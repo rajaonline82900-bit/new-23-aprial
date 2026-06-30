@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import MatkaLogo from '../components/MatkaLogo';
@@ -12,7 +13,10 @@ import {
   HandCoins,
   BanknoteArrowUp,
   BarChart3,
-  Crown
+  Crown,
+  Dices,
+  Trophy,
+  Plane
 } from 'lucide-react';
 import FooterNav from '../components/FooterNav';
 import { speak } from '../utils/voice';
@@ -479,28 +483,33 @@ const DashboardPage = () => {
             </span>
           </div>
 
-          {/* Category Toggle - Gali Disawar | Kalyan (sticky pill switcher) */}
+          {/* Category Toggle - Gali Disawar | Kalyan | Aviator (3 segmented pills with icons) */}
           <div
-            className="flex items-stretch gap-1 p-1 rounded-2xl mb-3"
+            className="grid grid-cols-3 gap-2 p-1 rounded-2xl mb-3"
             style={{ background: '#16162A', border: '1px solid rgba(212, 175, 55, 0.3)' }}
             data-testid="category-switcher"
           >
             {[
-              { id: 'gali_disawar', label: 'Gali Disawar', hi: 'गली दिसावर' },
-              { id: 'kalyan',       label: 'Kalyan',        hi: 'कल्याण' },
+              { id: 'gali_disawar', label: 'Gali Disawar', hi: 'गली दिसावर', Icon: Dices,  iconColor: '#FDE047' },
+              { id: 'kalyan',       label: 'Kalyan',        hi: 'कल्याण',     Icon: Trophy, iconColor: '#F87171' },
+              { id: 'aviator',      label: 'Aviator',       hi: 'एविएटर',     Icon: Plane,  iconColor: '#67E8F9', soon: true },
             ].map((cat) => {
               const isActive = gameCategory === cat.id;
-              const count = games.filter(g => (g.category || 'gali_disawar') === cat.id).length;
+              const count = cat.soon ? 0 : games.filter(g => (g.category || 'gali_disawar') === cat.id).length;
               return (
                 <button
                   key={cat.id}
                   type="button"
                   onClick={() => {
+                    if (cat.soon) {
+                      toast.info('Aviator jaldi aa raha hai!');
+                      return;
+                    }
                     setGameCategory(cat.id);
                     localStorage.setItem('game_category', cat.id);
                   }}
                   data-testid={`category-btn-${cat.id}`}
-                  className="flex-1 rounded-xl py-2 px-2 flex flex-col items-center justify-center leading-tight active:scale-95"
+                  className="rounded-xl py-2 px-1 flex flex-col items-center justify-center leading-tight active:scale-95 relative"
                   style={
                     isActive
                       ? {
@@ -515,9 +524,14 @@ const DashboardPage = () => {
                         }
                   }
                 >
-                  <span className="text-[13px] font-black tracking-wide">{cat.label}</span>
-                  <span className={`text-[9px] font-bold mt-0.5 tabular-nums ${isActive ? 'text-[#1A0F00]/70' : 'text-gray-400'}`}>
-                    {cat.hi} • {count} games
+                  <cat.Icon
+                    className="w-5 h-5 mb-0.5"
+                    style={{ color: isActive ? '#1A0F00' : cat.iconColor }}
+                    strokeWidth={2.2}
+                  />
+                  <span className="text-[12px] font-black tracking-wide whitespace-nowrap">{cat.label}</span>
+                  <span className={`text-[8px] font-bold mt-0.5 tabular-nums ${isActive ? 'text-[#1A0F00]/70' : 'text-gray-400'}`}>
+                    {cat.soon ? 'Coming Soon' : `${cat.hi} • ${count}`}
                   </span>
                 </button>
               );

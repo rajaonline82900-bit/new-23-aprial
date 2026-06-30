@@ -98,6 +98,13 @@ Migrate Matka11 satta app from Emergent preview environment to self-hosted Hosti
     center (green open-panna, gold jodi, red close-panna). Live/Off pill
     + Bidding On/Off label. Visually completely separate from Gali Disawar
     gold cards so users immediately recognize which market they're on.
+16. CATEGORY SWITCHER 3-TAB (Feb 2026): Dashboard category switcher
+    upgraded from 2 to 3 segmented pills with lucide icons:
+    - Gali Disawar (Dices icon, yellow)
+    - Kalyan (Trophy icon, red)
+    - Aviator (Plane icon, cyan) — placeholder, shows "Coming Soon" toast
+    Equal-width grid, active = full gold gradient with black icon, inactive
+    = transparent with colored icon. Tap on Aviator triggers Sonner toast.
     - Black header bar with game name pill + BETS link + Back button
     - MARKET label + Rate (auto-changes per bet type)
     - OPEN/CLOSE session toggle with blue active border
