@@ -164,6 +164,13 @@ Migrate Matka11 satta app from Emergent preview environment to self-hosted Hosti
   static on the runway (bottom-left). A red horizontal progress bar (with
   glow) fills from 0% → 100% over the 10-second betting window, then the
   plane takes off automatically. Backend BETTING_DURATION already 10s.
+- Premium category switcher (Gali Disawar / Kalyan / Aviator):
+  Each pill has a distinct color theme that is preserved in active and
+  inactive states. Gali = gold, Kalyan = royal maroon/pink, Aviator =
+  sky-blue/cyan with a green-dot LIVE badge. Inactive pills shrink
+  slightly (scale 0.97) and use a muted tinted background. Switching
+  uses a 220ms ease transition on transform, background, and shadow.
+  Aviator icon reverted to cyan plane (no red).
 
 ## Backlog
 - P0: Tell user to "Save to Github" → on VPS run `bash /var/www/new-23-aprial/deploy.sh`

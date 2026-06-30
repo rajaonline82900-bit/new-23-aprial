@@ -73,19 +73,19 @@ const KalyanIcon = ({ size = 26, active = false }) => (
   </svg>
 );
 
-// Aviator — Stylish red plane with motion streak + chevron (LIVE/Real Available)
+// Aviator — Stylish sky-blue plane with motion streak (LIVE/Real Available)
 const AviatorIcon = ({ size = 26, active = false }) => (
   <svg width={size} height={size} viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <linearGradient id="planeG" x1="0%" y1="100%" x2="100%" y2="0%">
-        <stop offset="0%" stopColor={active ? '#1A0F00' : '#FCA5A5'} />
-        <stop offset="100%" stopColor={active ? '#1A0F00' : '#DC2626'} />
+        <stop offset="0%" stopColor={active ? '#FFFFFF' : '#67E8F9'} />
+        <stop offset="100%" stopColor={active ? '#E0F2FE' : '#06B6D4'} />
       </linearGradient>
     </defs>
     {/* Motion streak */}
     <path
       d="M 4 32 Q 14 30 22 22"
-      stroke={active ? '#1A0F00' : '#B91C1C'}
+      stroke={active ? '#BAE6FD' : '#0891B2'}
       strokeWidth="2"
       fill="none"
       strokeLinecap="round"
@@ -93,7 +93,7 @@ const AviatorIcon = ({ size = 26, active = false }) => (
     />
     <path
       d="M 6 36 Q 12 34 18 30"
-      stroke={active ? '#1A0F00' : '#EF4444'}
+      stroke={active ? '#E0F2FE' : '#22D3EE'}
       strokeWidth="1.5"
       fill="none"
       strokeLinecap="round"
@@ -104,18 +104,18 @@ const AviatorIcon = ({ size = 26, active = false }) => (
       <path
         d="M -10 0 L 10 -2 L 14 0 L 10 2 L -10 0 Z"
         fill="url(#planeG)"
-        stroke={active ? '#1A0F00' : '#7F1D1D'}
+        stroke={active ? '#0C4A6E' : '#0E7490'}
         strokeWidth="0.8"
       />
       {/* wing */}
-      <path d="M -2 -1 L 4 -7 L 8 -7 L 2 -1 Z" fill={active ? '#1A0F00' : '#B91C1C'} stroke={active ? '#1A0F00' : '#7F1D1D'} strokeWidth="0.6" />
-      <path d="M -2 1 L 4 7 L 8 7 L 2 1 Z" fill={active ? '#1A0F00' : '#B91C1C'} stroke={active ? '#1A0F00' : '#7F1D1D'} strokeWidth="0.6" />
+      <path d="M -2 -1 L 4 -7 L 8 -7 L 2 -1 Z" fill={active ? '#E0F2FE' : '#0891B2'} stroke={active ? '#0C4A6E' : '#0E7490'} strokeWidth="0.6" />
+      <path d="M -2 1 L 4 7 L 8 7 L 2 1 Z" fill={active ? '#E0F2FE' : '#0891B2'} stroke={active ? '#0C4A6E' : '#0E7490'} strokeWidth="0.6" />
       {/* tail */}
-      <path d="M -10 0 L -13 -3 L -10 -1 Z" fill={active ? '#1A0F00' : '#7F1D1D'} />
-      <path d="M -10 0 L -13 3 L -10 1 Z" fill={active ? '#1A0F00' : '#7F1D1D'} />
+      <path d="M -10 0 L -13 -3 L -10 -1 Z" fill={active ? '#BAE6FD' : '#155E75'} />
+      <path d="M -10 0 L -13 3 L -10 1 Z" fill={active ? '#BAE6FD' : '#155E75'} />
     </g>
     {/* Up-arrow sparkle (top-right) */}
-    <path d="M 32 6 L 35 10 L 32 9 L 32 13 L 30 13 L 30 9 L 28 10 Z" fill={active ? '#1A0F00' : '#FCA5A5'} opacity="0.9" />
+    <path d="M 32 6 L 35 10 L 32 9 L 32 13 L 30 13 L 30 9 L 28 10 Z" fill={active ? '#FFFFFF' : '#67E8F9'} opacity="0.9" />
   </svg>
 );
 import FooterNav from '../components/FooterNav';
@@ -583,18 +583,56 @@ const DashboardPage = () => {
             </span>
           </div>
 
-          {/* Category Toggle - Gali Disawar | Kalyan | Aviator (3 segmented pills with icons) */}
+          {/* Category Toggle - Premium 3-pill switcher with per-tab color themes */}
           <div
-            className="grid grid-cols-3 gap-2 p-1 rounded-2xl mb-3"
-            style={{ background: '#16162A', border: '1px solid rgba(212, 175, 55, 0.3)' }}
+            className="grid grid-cols-3 gap-1.5 p-1 rounded-2xl mb-3"
+            style={{
+              background: 'linear-gradient(135deg, #0F0F1F 0%, #1A1A2E 100%)',
+              border: '1px solid rgba(212, 175, 55, 0.25)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04), inset 0 -1px 0 rgba(0,0,0,0.4)',
+            }}
             data-testid="category-switcher"
           >
             {[
-              { id: 'gali_disawar', label: 'Gali Disawar', hi: 'गली दिसावर', Icon: GaliDisawarIcon },
-              { id: 'kalyan',       label: 'Kalyan',        hi: 'कल्याण',     Icon: KalyanIcon },
-              { id: 'aviator',      label: 'Aviator',       hi: 'एविएटर',     Icon: AviatorIcon, isLink: true },
+              {
+                id: 'gali_disawar', label: 'Gali Disawar', hi: 'गली दिसावर', Icon: GaliDisawarIcon,
+                activeBg: 'linear-gradient(135deg, #FFD700 0%, #D4AF37 55%, #8B6914 100%)',
+                activeBorder: '#FBBF24',
+                activeText: '#1A0F00',
+                activeSub: 'rgba(26,15,0,0.72)',
+                activeGlow: '0 4px 14px rgba(212, 175, 55, 0.45), inset 0 1px 0 rgba(255,255,255,0.35)',
+                inactiveBg: 'linear-gradient(135deg, rgba(212, 175, 55, 0.06) 0%, rgba(184, 134, 11, 0.03) 100%)',
+                inactiveBorder: 'rgba(212, 175, 55, 0.15)',
+                inactiveText: '#D4AF37',
+                inactiveSub: '#78716C',
+              },
+              {
+                id: 'kalyan', label: 'Kalyan', hi: 'कल्याण', Icon: KalyanIcon,
+                activeBg: 'linear-gradient(135deg, #B91C5C 0%, #8B1538 55%, #5C0D24 100%)',
+                activeBorder: '#EC4899',
+                activeText: '#FFFFFF',
+                activeSub: 'rgba(255,255,255,0.78)',
+                activeGlow: '0 4px 14px rgba(185, 28, 92, 0.45), inset 0 1px 0 rgba(255,255,255,0.18)',
+                inactiveBg: 'linear-gradient(135deg, rgba(185, 28, 92, 0.06) 0%, rgba(139, 21, 56, 0.03) 100%)',
+                inactiveBorder: 'rgba(236, 72, 153, 0.18)',
+                inactiveText: '#F9A8D4',
+                inactiveSub: '#78716C',
+              },
+              {
+                id: 'aviator', label: 'Aviator', hi: 'एविएटर', Icon: AviatorIcon, isLink: true,
+                activeBg: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 55%, #075985 100%)',
+                activeBorder: '#38BDF8',
+                activeText: '#FFFFFF',
+                activeSub: 'rgba(224, 242, 254, 0.85)',
+                activeGlow: '0 4px 14px rgba(14, 165, 233, 0.45), inset 0 1px 0 rgba(255,255,255,0.22)',
+                inactiveBg: 'linear-gradient(135deg, rgba(14, 165, 233, 0.06) 0%, rgba(2, 132, 199, 0.03) 100%)',
+                inactiveBorder: 'rgba(56, 189, 248, 0.18)',
+                inactiveText: '#67E8F9',
+                inactiveSub: '#78716C',
+              },
             ].map((cat) => {
-              const isActive = gameCategory === cat.id;
+              // Aviator always renders in its "active" themed state (always available)
+              const isActive = cat.isLink ? true : gameCategory === cat.id;
               const count = cat.isLink ? 0 : games.filter(g => (g.category || 'gali_disawar') === cat.id).length;
               const isAviator = cat.id === 'aviator';
               return (
@@ -610,62 +648,55 @@ const DashboardPage = () => {
                     localStorage.setItem('game_category', cat.id);
                   }}
                   data-testid={`category-btn-${cat.id}`}
-                  className="rounded-xl py-2 px-1 flex flex-col items-center justify-center leading-tight active:scale-95 relative"
-                  style={
-                    isAviator
-                      ? {
-                          background: 'linear-gradient(135deg, #7F1D1D 0%, #DC2626 55%, #B91C1C 100%)',
-                          border: '1px solid #EF4444',
-                          color: '#FFFFFF',
-                          boxShadow: '0 0 0 1px rgba(220, 38, 38, 0.4) inset',
-                        }
-                      : isActive
-                      ? {
-                          background: 'linear-gradient(135deg, #FFD700 0%, #D4AF37 60%, #B8860B 100%)',
-                          border: '1px solid #FFD700',
-                          color: '#1A0F00',
-                        }
-                      : {
-                          background: 'transparent',
-                          border: '1px solid transparent',
-                          color: '#FFD700',
-                        }
-                  }
+                  className="rounded-xl py-2 px-1 flex flex-col items-center justify-center leading-tight relative overflow-hidden"
+                  style={{
+                    background: isActive ? cat.activeBg : cat.inactiveBg,
+                    border: `1px solid ${isActive ? cat.activeBorder : cat.inactiveBorder}`,
+                    color: isActive ? cat.activeText : cat.inactiveText,
+                    boxShadow: isActive ? cat.activeGlow : 'none',
+                    transform: isActive ? 'scale(1.0)' : 'scale(0.97)',
+                    transition: 'transform 220ms ease, box-shadow 220ms ease, background 220ms ease, border-color 220ms ease',
+                  }}
                 >
-                  {/* Aviator LIVE badge (top-right corner) */}
+                  {/* Subtle top sheen on active tabs (premium feel) */}
+                  {isActive && (
+                    <span
+                      aria-hidden
+                      style={{
+                        position: 'absolute', top: 0, left: 0, right: 0, height: '40%',
+                        background: 'linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 100%)',
+                        pointerEvents: 'none',
+                      }}
+                    />
+                  )}
+                  {/* Aviator LIVE badge (green dot = online) */}
                   {isAviator && (
                     <span
-                      className="absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full text-[8px] font-black tracking-wider flex items-center gap-0.5"
+                      className="absolute top-0.5 right-1 px-1.5 py-0.5 rounded-full text-[8px] font-black tracking-wider flex items-center gap-1"
                       style={{
-                        background: '#FEF2F2',
-                        color: '#B91C1C',
-                        border: '1px solid #FCA5A5',
+                        background: 'rgba(0, 0, 0, 0.45)',
+                        color: '#86EFAC',
+                        border: '1px solid rgba(34, 197, 94, 0.55)',
                       }}
                       data-testid="aviator-live-badge"
                     >
                       <span
                         className="w-1.5 h-1.5 rounded-full"
-                        style={{ background: '#DC2626', boxShadow: '0 0 4px #DC2626' }}
+                        style={{ background: '#22C55E', boxShadow: '0 0 6px #22C55E' }}
                       />
                       LIVE
                     </span>
                   )}
-                  <cat.Icon size={28} active={isAviator ? false : isActive} />
+                  <cat.Icon size={28} active={isActive} />
                   <span
                     className="text-[12px] font-black tracking-wide whitespace-nowrap mt-0.5"
-                    style={isAviator ? { color: '#FFFFFF', textShadow: '0 1px 2px rgba(0,0,0,0.4)' } : undefined}
+                    style={isActive ? { textShadow: isAviator || cat.id === 'kalyan' ? '0 1px 2px rgba(0,0,0,0.35)' : 'none' } : undefined}
                   >
                     {cat.label}
                   </span>
                   <span
                     className="text-[8px] font-bold mt-0.5 tabular-nums"
-                    style={
-                      isAviator
-                        ? { color: '#FECACA' }
-                        : isActive
-                        ? { color: 'rgba(26,15,0,0.7)' }
-                        : { color: '#9CA3AF' }
-                    }
+                    style={{ color: isActive ? cat.activeSub : cat.inactiveSub }}
                   >
                     {cat.isLink ? 'Real Available' : `${cat.hi} • ${count}`}
                   </span>
