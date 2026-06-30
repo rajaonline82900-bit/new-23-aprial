@@ -219,7 +219,7 @@ const AviatorPage = () => {
   const { user, refreshUser } = useAuth();
 
   const [phase, setPhase] = useState('idle');
-  const [multiplier, setMultiplier] = useState(1.0);
+  const [multiplier, setMultiplier] = useState(0.0);
   const [crashPoint, setCrashPoint] = useState(null);
   const [history, setHistory] = useState([]);
   const [bettingRemaining, setBettingRemaining] = useState(0);
@@ -245,7 +245,7 @@ const AviatorPage = () => {
         const { data } = await axios.get(`${API}/api/aviator/state`, { withCredentials: true });
         if (data.state) {
           setPhase(data.state.phase);
-          setMultiplier(data.state.multiplier || 1.0);
+          setMultiplier(data.state.multiplier ?? 0.0);
           if (data.state.phase === 'crashed') setCrashPoint(data.state.crash_point);
           if (data.state.phase === 'betting') setBettingRemaining(data.state.betting_remaining || 0);
         }
@@ -322,7 +322,7 @@ const AviatorPage = () => {
             }
             return s.phase;
           });
-          setMultiplier(s.multiplier || 1.0);
+          setMultiplier(s.multiplier ?? 0.0);
           if (s.phase === 'betting') setBettingRemaining(s.betting_remaining || 0);
           if (s.phase === 'crashed' && s.crash_point) setCrashPoint(s.crash_point);
         }
@@ -346,7 +346,7 @@ const AviatorPage = () => {
     if (msg.type === 'snapshot' || msg.type === 'round_start') {
       const s = msg.state;
       setPhase(s.phase);
-      setMultiplier(s.multiplier || 1.0);
+      setMultiplier(s.multiplier ?? 0.0);
       if (s.phase === 'betting') {
         setBettingRemaining(s.betting_remaining || 0);
         setCrashPoint(null);
@@ -355,7 +355,7 @@ const AviatorPage = () => {
       }
     } else if (msg.type === 'flying_start') {
       setPhase('flying');
-      setMultiplier(1.0);
+      setMultiplier(0.0);
 
 
     } else if (msg.type === 'tick') {
