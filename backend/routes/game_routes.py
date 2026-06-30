@@ -49,18 +49,22 @@ async def get_games():
         today_result = await db.results.find_one({"game_id": game_id, "date": today}, {"_id": 0})
         yesterday_result = await db.results.find_one({"game_id": game_id, "date": yesterday}, {"_id": 0})
 
+        # Kalyan games never go on month-end holiday — they run every day
+        category = game.get("category", "gali_disawar")
+        game_is_holiday = is_holiday and category != "kalyan"
+
         games_list.append({
             "id": game_id,
             "game_id": game_id,
             "name": game["name"],
             "name_hi": game["name_hi"],
-            "category": game.get("category", "gali_disawar"),
+            "category": category,
             "start_time": game.get("start_time", game.get("time", "")),
             "end_time": game.get("end_time", game.get("time", "")),
             "time": game.get("end_time", game.get("time", "")),
             "display_time": game["display_time"],
             "is_active": game.get("is_active", True),
-            "is_holiday": is_holiday,
+            "is_holiday": game_is_holiday,
             "today_result": {"jodi": today_result["jodi_result"], "single": today_result["single_result"]} if today_result else None,
             "yesterday_result": {"jodi": yesterday_result["jodi_result"], "single": yesterday_result["single_result"]} if yesterday_result else None
         })

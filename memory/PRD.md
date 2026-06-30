@@ -87,6 +87,8 @@ Migrate Matka11 satta app from Emergent preview environment to self-hosted Hosti
     them. Dashboard now has "Gali Disawar | Kalyan" pill toggle in Market
     header — games filtered by category, choice persisted in localStorage.
     Admin Kalyan Results tab automatically lists all 16 Kalyan games.
+    Month-end is_holiday flag is now restricted to gali_disawar category
+    only — Kalyan games run every day (no HOLIDAY bar).
 
 ## Backlog
 - P2: Stronger JWT_SECRET
