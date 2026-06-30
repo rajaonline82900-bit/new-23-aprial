@@ -78,14 +78,18 @@ const AdminResultsTab = ({ games }) => {
 
   return (
     <>
-      {todayResults.games.length > 0 && (
+      {(() => {
+        const galiGameIds = new Set(games.filter(g => (g.category || 'gali_disawar') !== 'kalyan').map(g => g.game_id));
+        const galiResults = (todayResults.games || []).filter(g => galiGameIds.has(g.game_id));
+        if (galiResults.length === 0) return null;
+        return (
         <Card className="bg-[#141418] border-white/10 mb-6">
           <CardHeader className="pb-3">
-            <CardTitle className="text-white font-['Unbounded'] text-base">आज के रिजल्ट ({todayResults.date})</CardTitle>
+            <CardTitle className="text-white font-['Unbounded'] text-base">आज के रिजल्ट ({todayResults.date}) — गली दिसावर</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {todayResults.games.map((g) => (
+              {galiResults.map((g) => (
                 <div key={g.game_id} className={`flex items-center justify-between p-3 rounded-lg border ${g.declared ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-[#0A0A0C] border-white/5'}`} data-testid={`result-status-${g.game_id}`}>
                   <div className="flex items-center gap-3">
                     <div className={`w-2.5 h-2.5 rounded-full ${g.declared ? 'bg-emerald-500' : 'bg-gray-600'}`}></div>
@@ -106,7 +110,8 @@ const AdminResultsTab = ({ games }) => {
             </div>
           </CardContent>
         </Card>
-      )}
+        );
+      })()}
 
       <Card className="bg-[#141418] border-[#D4AF37]/20 mb-4">
         <CardContent className="p-4">
@@ -141,7 +146,7 @@ const AdminResultsTab = ({ games }) => {
               <Select value={selectedGame} onValueChange={setSelectedGame}>
                 <SelectTrigger data-testid="admin-game-select" className="bg-[#0A0A0C] border-white/10 text-white"><SelectValue placeholder="गेम चुनें" /></SelectTrigger>
                 <SelectContent className="bg-[#141418] border-white/10">
-                  {games.filter(g => g.is_active !== false).map((game) => (
+                  {games.filter(g => g.is_active !== false && (g.category || 'gali_disawar') !== 'kalyan').map((game) => (
                     <SelectItem key={game.game_id} value={game.game_id} className="text-white hover:bg-white/10">{game.name_hi}</SelectItem>
                   ))}
                 </SelectContent>

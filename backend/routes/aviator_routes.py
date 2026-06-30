@@ -87,19 +87,35 @@ _state = RoundState()
 _clients: Set[WebSocket] = set()
 _clients_lock = asyncio.Lock()
 
+async def _send_one(ws: WebSocket, payload: dict) -> Optional[WebSocket]:
+    """Send to a single ws with a hard timeout. Returns ws if it should be removed, else None."""
+    try:
+        await asyncio.wait_for(ws.send_json(payload), timeout=2.0)
+        return None
+    except Exception:
+        return ws
+
 async def _broadcast(payload: dict):
-    """Send payload to all connected ws clients (non-blocking)."""
+    """Send payload to all connected ws clients in parallel.
+    A slow/dead client must NEVER block the round loop — each send has a 2s
+    timeout and runs concurrently via asyncio.gather. Dead clients are pruned
+    after the broadcast completes.
+    """
     if not _clients:
         return
-    dead = []
     async with _clients_lock:
-        for ws in list(_clients):
-            try:
-                await ws.send_json(payload)
-            except Exception:
-                dead.append(ws)
-        for ws in dead:
-            _clients.discard(ws)
+        ws_list = list(_clients)
+    if not ws_list:
+        return
+    results = await asyncio.gather(
+        *[_send_one(ws, payload) for ws in ws_list],
+        return_exceptions=True,
+    )
+    dead = [r for r in results if isinstance(r, WebSocket)]
+    if dead:
+        async with _clients_lock:
+            for ws in dead:
+                _clients.discard(ws)
 
 # ---------- Crash point (bustabit-style) ----------
 def _gen_crash(server_seed: str) -> float:
@@ -419,16 +435,18 @@ async def aviator_ws(ws: WebSocket):
     # Send current state on connect
     try:
         await ws.send_json({"type": "snapshot", "state": _state.to_public(reveal_seed=(_state.phase == "crashed"))})
-        # Heart-beat loop: just sleep, broadcasts come from the round loop
+    except Exception:
+        async with _clients_lock:
+            _clients.discard(ws)
+        return
+    # Receive loop — ONLY receive here. All sends happen from the round loop
+    # via _broadcast(). Sending from two coroutines on the same WS would race
+    # and could deadlock the round loop. Frequent broadcasts (every 200ms when
+    # flying, plus round_start/flying_start/crash) keep the connection warm.
+    try:
         while True:
             try:
-                # Use receive with a short timeout to allow ping
-                await asyncio.wait_for(ws.receive_text(), timeout=30)
-            except asyncio.TimeoutError:
-                try:
-                    await ws.send_json({"type": "ping"})
-                except Exception:
-                    break
+                await ws.receive_text()
             except WebSocketDisconnect:
                 break
             except Exception:

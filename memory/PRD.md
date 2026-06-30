@@ -157,20 +157,29 @@ Migrate Matka11 satta app from Emergent preview environment to self-hosted Hosti
     CSS: Scoped overrides for [data-testid="kalyan-page"] reset global dark
     theme to pure-white Reddy66 light theme without affecting other pages.
 
-## 2026-02 Updates
-- Aviator Dashboard Tab: Red gradient tab with white "LIVE" badge
-  (top-right) and "Real Available" sub-label. Plane icon in red shades.
-- Aviator Betting Phase UI: Removed numeric countdown text. Plane stays
-  static on the runway (bottom-left). A red horizontal progress bar (with
-  glow) fills from 0% → 100% over the 10-second betting window, then the
-  plane takes off automatically. Backend BETTING_DURATION already 10s.
-- Premium category switcher (Gali Disawar / Kalyan / Aviator):
-  Each pill has a distinct color theme that is preserved in active and
-  inactive states. Gali = gold, Kalyan = royal maroon/pink, Aviator =
-  sky-blue/cyan with a green-dot LIVE badge. Inactive pills shrink
-  slightly (scale 0.97) and use a muted tinted background. Switching
-  uses a 220ms ease transition on transform, background, and shadow.
-  Aviator icon reverted to cyan plane (no red).
+## 2026-02-(latest) Updates
+- **Aviator round-loop hang FIX (critical)**: Previously `_broadcast`
+  iterated WS clients sequentially with no timeout — one slow/dead client
+  could block the entire round loop, freezing the betting → flying
+  transition (the "progress bar stuck" symptom). Two fixes:
+  1. `_broadcast` now uses `asyncio.gather` for parallel sends with a 2s
+     timeout per client (`_send_one`). Dead clients are pruned after.
+  2. `aviator_ws` no longer sends a periodic ping from the receive loop.
+     Two coroutines calling `ws.send_json` on the same WS (receive-loop
+     ping + round-loop broadcast) was a race that could deadlock. The
+     receive loop now only `receive_text()`s. Frequent broadcasts keep
+     the connection warm naturally.
+- **Admin panel: Kalyan section separation**:
+  - New tab **"कल्याण रिजल्ट"** (renders `AdminKalyanResultsTab`) with
+    Open/Close panna declaration, delete-result and reverse buttons per
+    Kalyan game.
+  - "रिजल्ट घोषणा" renamed to **"गली रिजल्ट"** and filtered to only
+    show non-Kalyan games (today-results card + declare-result dropdown).
+  - **"गेम सेटिंग्स"** tab split visually into two sections:
+    * **Gali / Disawar Games** (gold accent) + "Add Gali Game" button
+    * **Kalyan Games** (pink accent) + "Seed Default" + "Add Kalyan Game"
+      buttons
+  Each section pre-fills the create-game form with the matching category.
 
 ## Backlog
 - P0: Tell user to "Save to Github" → on VPS run `bash /var/www/new-23-aprial/deploy.sh`
