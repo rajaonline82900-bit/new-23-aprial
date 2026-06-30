@@ -111,14 +111,22 @@ Migrate Matka11 satta app from Emergent preview environment to self-hosted Hosti
     Frontend: Reddy66/Spribe pixel-style UI with 2 stacked bet panels, purple
     radial viewport + sun-ray streaks, All Bets/Previous/Top tabs.
 18. AVIATOR POLISH (Feb 2026): Custom red propeller plane SVG (replaces
-    lucide Plane icon) in both header and viewport — looks like authentic
-    Aviator brand. Aviator-style sound effects synthesized via Web Audio
-    API (no external audio files needed): takeoff whoosh, ambient
-    propeller drone during flying, crash boom on round end, two-note ding
-    on cashout, bet placed tick. Sound toggle button in header (state
-    persisted in localStorage). Prominent "🏆 Recent Winners" strip
-    above community feed showing top 10 recent winners with name + amount
-    + multiplier in green-glow cards (horizontal scroll).
+    lucide Plane icon) in both header and viewport. Aviator-style sound
+    effects synthesized via Web Audio API (realistic propeller drone with
+    7Hz blade-chop AM, 3-osc harmonic stack + brown-noise bandpass; takeoff
+    with engine ignition thump + rising prop buzz + air rush; crash with
+    filtered noise explosion + descending whistle + low rumble; cashout
+    3-note triumphal arpeggio + sparkle chimes). Audio context auto-unlocks
+    on first user touch/click (mobile WebView autoplay policy). Sound
+    toggle button in header (state persisted in localStorage). Prominent
+    "🏆 Recent Winners" strip above community feed with green-glow cards
+    showing name + win amount + multiplier.
+19. STYLISH CATEGORY ICONS (Feb 2026): Replaced lucide flat icons on
+    Dashboard category buttons with custom multi-layered SVG icons:
+    - Gali Disawar: twin 3D dice with gradient + sparkle
+    - Kalyan: royal crown with 3 gem peaks + center gem + base band
+    - Aviator: cyan plane angled up-right with motion streaks + sparkle
+    Auto-switches to dark theme when category is active (over gold gradient).
     - Black header bar with game name pill + BETS link + Back button
     - MARKET label + Rate (auto-changes per bet type)
     - OPEN/CLOSE session toggle with blue active border

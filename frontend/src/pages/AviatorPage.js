@@ -36,7 +36,9 @@ const PropellerPlane = ({ size = 72 }) => (
   </svg>
 );
 
-/* ------------ Aviator-style audio (synthesized via Web Audio API) ------------ */
+/* ------------ Aviator-style audio (synthesized via Web Audio API)
+   Designed to match the iconic Aviator/Spribe propeller drone, dramatic
+   takeoff whoosh, crash boom and cashout cash-register ding. ------------ */
 function useAviatorSound(enabled) {
   const ctxRef = useRef(null);
   const ambientRef = useRef(null);
@@ -49,108 +51,234 @@ function useAviatorSound(enabled) {
         ctxRef.current = new AC();
       } catch (e) { return null; }
     }
-    return ctxRef.current;
+    const ctx = ctxRef.current;
+    // Resume in case of autoplay-blocked state
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+    return ctx;
   };
 
+  // Reusable brown-noise buffer (richer than white noise — sounds like wind)
+  const _brownBuf = (ctx, durSec) => {
+    const buf = ctx.createBuffer(1, ctx.sampleRate * durSec, ctx.sampleRate);
+    const ch = buf.getChannelData(0);
+    let last = 0;
+    for (let i = 0; i < ch.length; i++) {
+      const white = Math.random() * 2 - 1;
+      last = (last + 0.02 * white) / 1.02;
+      ch[i] = last * 3.5;
+    }
+    return buf;
+  };
+
+  /* === TAKEOFF: prop spin-up + engine roar (≈1.4s) === */
   const playTakeoff = () => {
     const ctx = getCtx(); if (!ctx) return;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(120, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(420, ctx.currentTime + 0.7);
-    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + 0.1);
-    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.9);
-    osc.connect(gain).connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.9);
+    const t0 = ctx.currentTime;
+    const dur = 1.4;
+
+    // Low-end thump (engine ignition)
+    const low = ctx.createOscillator();
+    const lowG = ctx.createGain();
+    low.type = 'sine';
+    low.frequency.setValueAtTime(45, t0);
+    low.frequency.exponentialRampToValueAtTime(140, t0 + dur);
+    lowG.gain.setValueAtTime(0.0001, t0);
+    lowG.gain.exponentialRampToValueAtTime(0.45, t0 + 0.05);
+    lowG.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    low.connect(lowG).connect(ctx.destination);
+    low.start(t0); low.stop(t0 + dur);
+
+    // Propeller buzz (rising sawtooth with detune)
+    [-7, 0, 7].forEach((det) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'sawtooth';
+      o.detune.value = det;
+      o.frequency.setValueAtTime(80, t0);
+      o.frequency.exponentialRampToValueAtTime(280, t0 + dur);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.12, t0 + 0.2);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.connect(g).connect(ctx.destination);
+      o.start(t0); o.stop(t0 + dur);
+    });
+
+    // Air-rush noise overlay
+    const src = ctx.createBufferSource();
+    src.buffer = _brownBuf(ctx, dur);
+    const ng = ctx.createGain();
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass'; bp.frequency.value = 500; bp.Q.value = 0.6;
+    ng.gain.setValueAtTime(0.0001, t0);
+    ng.gain.exponentialRampToValueAtTime(0.25, t0 + 0.3);
+    ng.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    src.connect(bp).connect(ng).connect(ctx.destination);
+    src.start(t0); src.stop(t0 + dur);
   };
 
+  /* === AMBIENT: continuous propeller drone with blade-chop AM === */
   const startAmbient = () => {
     const ctx = getCtx(); if (!ctx || ambientRef.current) return;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    const lfo = ctx.createOscillator();
-    const lfoGain = ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.value = 220;
-    lfo.frequency.value = 6;
-    lfoGain.gain.value = 12;
-    lfo.connect(lfoGain).connect(osc.frequency);
-    gain.gain.value = 0.04;
-    osc.connect(gain).connect(ctx.destination);
-    osc.start();
-    lfo.start();
-    ambientRef.current = { osc, lfo, gain };
+    const t0 = ctx.currentTime;
+    const out = ctx.createGain();
+    out.gain.setValueAtTime(0.0001, t0);
+    out.gain.exponentialRampToValueAtTime(0.18, t0 + 0.3);
+    out.connect(ctx.destination);
+
+    // 1. Engine harmonic stack (fundamental 110 + 2x + 3x with slight detune)
+    const oscNodes = [];
+    [110, 220, 330].forEach((freq, i) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = i === 0 ? 'sawtooth' : 'triangle';
+      o.frequency.value = freq;
+      o.detune.value = (Math.random() - 0.5) * 8;
+      g.gain.value = [0.55, 0.25, 0.12][i];
+      o.connect(g).connect(out);
+      o.start();
+      oscNodes.push(o);
+    });
+
+    // 2. Brown-noise propeller-wash through bandpass
+    const noiseSrc = ctx.createBufferSource();
+    noiseSrc.buffer = _brownBuf(ctx, 4);
+    noiseSrc.loop = true;
+    const ng = ctx.createGain();
+    ng.gain.value = 0.45;
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass'; bp.frequency.value = 380; bp.Q.value = 1.0;
+    noiseSrc.connect(bp).connect(ng).connect(out);
+    noiseSrc.start();
+
+    // 3. Blade-chop AM modulator (~7 Hz makes it sound like spinning propeller)
+    const ampMod = ctx.createOscillator();
+    ampMod.type = 'sine';
+    ampMod.frequency.value = 7.2;
+    const ampDepth = ctx.createGain();
+    ampDepth.gain.value = 0.35;
+    const ampOffset = ctx.createConstantSource();
+    ampOffset.offset.value = 0.65;
+    ampMod.connect(ampDepth);
+    ampOffset.start();
+    // route the AM signal to modulate the output gain
+    const amSum = ctx.createGain();
+    amSum.gain.value = 1;
+    ampOffset.connect(amSum.gain);
+    ampDepth.connect(amSum.gain);
+    out.gain.cancelScheduledValues(t0);
+    out.gain.setValueAtTime(0.0001, t0);
+    out.gain.exponentialRampToValueAtTime(0.18, t0 + 0.3);
+    ampMod.start();
+
+    ambientRef.current = { oscNodes, noiseSrc, ampMod, ampOffset, out };
   };
 
   const stopAmbient = () => {
     if (!ambientRef.current) return;
-    const { osc, lfo, gain } = ambientRef.current;
+    const ctx = ctxRef.current;
+    const { oscNodes, noiseSrc, ampMod, ampOffset, out } = ambientRef.current;
     try {
-      const ctx = ctxRef.current;
-      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.2);
-      setTimeout(() => { try { osc.stop(); lfo.stop(); } catch (e) { /* node already stopped */ } }, 250);
-    } catch (e) { /* ramp failure ignored */ }
+      out.gain.cancelScheduledValues(ctx.currentTime);
+      out.gain.setValueAtTime(out.gain.value, ctx.currentTime);
+      out.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.25);
+      setTimeout(() => {
+        try {
+          oscNodes.forEach((o) => o.stop());
+          noiseSrc.stop();
+          ampMod.stop();
+          ampOffset.stop();
+        } catch (e) { /* nodes already stopped */ }
+      }, 300);
+    } catch (e) { /* ramp fail ignored */ }
     ambientRef.current = null;
   };
 
+  /* === CRASH: dramatic explosion + descending whistle === */
   const playCrash = () => {
     const ctx = getCtx(); if (!ctx) return;
-    // White noise burst
-    const buf = ctx.createBuffer(1, ctx.sampleRate * 0.45, ctx.sampleRate);
-    const ch = buf.getChannelData(0);
-    for (let i = 0; i < ch.length; i++) ch[i] = (Math.random() * 2 - 1) * (1 - i / ch.length);
+    const t0 = ctx.currentTime;
+
+    // Explosion: filtered noise burst
     const src = ctx.createBufferSource();
-    src.buffer = buf;
-    const gain = ctx.createGain();
-    gain.gain.value = 0.32;
-    src.connect(gain).connect(ctx.destination);
-    src.start();
-    // Low boom
-    const osc = ctx.createOscillator();
-    const og = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(110, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.5);
-    og.gain.setValueAtTime(0.35, ctx.currentTime);
-    og.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
-    osc.connect(og).connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.5);
+    src.buffer = _brownBuf(ctx, 0.7);
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(2000, t0);
+    lp.frequency.exponentialRampToValueAtTime(80, t0 + 0.7);
+    const ng = ctx.createGain();
+    ng.gain.setValueAtTime(0.6, t0);
+    ng.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.7);
+    src.connect(lp).connect(ng).connect(ctx.destination);
+    src.start(t0); src.stop(t0 + 0.7);
+
+    // Descending whistle (plane falling)
+    const w = ctx.createOscillator();
+    const wg = ctx.createGain();
+    w.type = 'sawtooth';
+    w.frequency.setValueAtTime(450, t0);
+    w.frequency.exponentialRampToValueAtTime(60, t0 + 0.6);
+    wg.gain.setValueAtTime(0.25, t0);
+    wg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.6);
+    w.connect(wg).connect(ctx.destination);
+    w.start(t0); w.stop(t0 + 0.6);
+
+    // Low rumble
+    const r = ctx.createOscillator();
+    const rg = ctx.createGain();
+    r.type = 'sine';
+    r.frequency.value = 55;
+    rg.gain.setValueAtTime(0.4, t0);
+    rg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.8);
+    r.connect(rg).connect(ctx.destination);
+    r.start(t0); r.stop(t0 + 0.8);
   };
 
+  /* === CASHOUT: cash register chime + coin clinks === */
   const playCashout = () => {
     const ctx = getCtx(); if (!ctx) return;
-    // Two-note ding (C5 → E5)
-    [523.25, 659.25].forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      const t0 = ctx.currentTime + i * 0.12;
-      gain.gain.setValueAtTime(0.0001, t0);
-      gain.gain.exponentialRampToValueAtTime(0.25, t0 + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.5);
-      osc.connect(gain).connect(ctx.destination);
-      osc.start(t0);
-      osc.stop(t0 + 0.55);
+    const t0 = ctx.currentTime;
+    // Triumphal 3-note arpeggio (C5 → E5 → G5)
+    [523.25, 659.25, 783.99].forEach((freq, i) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'triangle';
+      o.frequency.value = freq;
+      const start = t0 + i * 0.08;
+      g.gain.setValueAtTime(0.0001, start);
+      g.gain.exponentialRampToValueAtTime(0.3, start + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, start + 0.5);
+      o.connect(g).connect(ctx.destination);
+      o.start(start); o.stop(start + 0.55);
+    });
+    // Sparkle: high freq quick chimes
+    [1568, 2093, 2637].forEach((freq, i) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'sine';
+      o.frequency.value = freq;
+      const start = t0 + 0.05 + i * 0.04;
+      g.gain.setValueAtTime(0.0001, start);
+      g.gain.exponentialRampToValueAtTime(0.15, start + 0.005);
+      g.gain.exponentialRampToValueAtTime(0.0001, start + 0.2);
+      o.connect(g).connect(ctx.destination);
+      o.start(start); o.stop(start + 0.22);
     });
   };
 
+  /* === BET TICK: chip click === */
   const playBetTick = () => {
     const ctx = getCtx(); if (!ctx) return;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'square';
-    osc.frequency.value = 880;
-    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime + 0.01);
-    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.08);
-    osc.connect(gain).connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.1);
+    const t0 = ctx.currentTime;
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = 'square';
+    o.frequency.setValueAtTime(1200, t0);
+    o.frequency.exponentialRampToValueAtTime(800, t0 + 0.08);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.15, t0 + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.1);
+    o.connect(g).connect(ctx.destination);
+    o.start(t0); o.stop(t0 + 0.12);
   };
 
   return { playTakeoff, startAmbient, stopAmbient, playCrash, playCashout, playBetTick };
@@ -380,6 +508,22 @@ const AviatorPage = () => {
     const id = setInterval(() => setBettingRemaining((r) => Math.max(0, r - 0.1)), 100);
     return () => clearInterval(id);
   }, [phase]);
+
+  // Audio unlock — mobile WebView blocks autoplay until user gesture
+  useEffect(() => {
+    const unlock = () => {
+      // Play a silent buffer to bootstrap the AudioContext
+      sound.playBetTick();
+      window.removeEventListener('touchstart', unlock);
+      window.removeEventListener('click', unlock);
+    };
+    window.addEventListener('touchstart', unlock, { once: true });
+    window.addEventListener('click', unlock, { once: true });
+    return () => {
+      window.removeEventListener('touchstart', unlock);
+      window.removeEventListener('click', unlock);
+    };
+  }, [soundOn]);
 
   /* ---------- WebSocket ---------- */
   useEffect(() => {

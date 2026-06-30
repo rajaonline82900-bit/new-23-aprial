@@ -13,11 +13,111 @@ import {
   HandCoins,
   BanknoteArrowUp,
   BarChart3,
-  Crown,
-  Dices,
-  Trophy,
-  Plane
+  Crown
 } from 'lucide-react';
+
+/* ---------- Stylish custom SVG icons for category buttons ---------- */
+// Gali Disawar — 3D dice with glow + sparkle
+const GaliDisawarIcon = ({ size = 26, active = false }) => (
+  <svg width={size} height={size} viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="diceG" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor={active ? '#1A0F00' : '#FBBF24'} />
+        <stop offset="100%" stopColor={active ? '#1A0F00' : '#F59E0B'} />
+      </linearGradient>
+    </defs>
+    {/* Dice 1 (back, tilted) */}
+    <g transform="translate(2 9) rotate(-10)">
+      <rect x="0" y="0" width="18" height="18" rx="4" fill="url(#diceG)" stroke={active ? '#1A0F00' : '#92400E'} strokeWidth="1.2" />
+      <circle cx="5" cy="5" r="1.8" fill={active ? '#FDE047' : '#7F1D1D'} />
+      <circle cx="13" cy="13" r="1.8" fill={active ? '#FDE047' : '#7F1D1D'} />
+      <circle cx="9" cy="9" r="1.8" fill={active ? '#FDE047' : '#7F1D1D'} />
+    </g>
+    {/* Dice 2 (front, tilted opposite) */}
+    <g transform="translate(18 14) rotate(15)">
+      <rect x="0" y="0" width="18" height="18" rx="4" fill="url(#diceG)" stroke={active ? '#1A0F00' : '#92400E'} strokeWidth="1.2" />
+      <circle cx="9" cy="9" r="2.2" fill={active ? '#FDE047' : '#7F1D1D'} />
+    </g>
+    {/* Sparkle */}
+    <g opacity={active ? 1 : 0.85}>
+      <path d="M 33 5 L 34 8 L 37 9 L 34 10 L 33 13 L 32 10 L 29 9 L 32 8 Z" fill={active ? '#1A0F00' : '#FDE047'} />
+    </g>
+  </svg>
+);
+
+// Kalyan — Crown with gem + radiating star
+const KalyanIcon = ({ size = 26, active = false }) => (
+  <svg width={size} height={size} viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="crownG" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor={active ? '#1A0F00' : '#FCA5A5'} />
+        <stop offset="100%" stopColor={active ? '#1A0F00' : '#DC2626'} />
+      </linearGradient>
+    </defs>
+    {/* Crown body */}
+    <path
+      d="M 6 22 L 8 12 L 14 18 L 20 8 L 26 18 L 32 12 L 34 22 Z"
+      fill="url(#crownG)"
+      stroke={active ? '#1A0F00' : '#7F1D1D'}
+      strokeWidth="1.4"
+      strokeLinejoin="round"
+    />
+    {/* Base band */}
+    <rect x="6" y="22" width="28" height="5" rx="1.5" fill={active ? '#1A0F00' : '#991B1B'} stroke={active ? '#1A0F00' : '#7F1D1D'} strokeWidth="0.8" />
+    {/* Gems on peaks */}
+    <circle cx="8" cy="12" r="2" fill={active ? '#FDE047' : '#FBBF24'} stroke={active ? '#1A0F00' : '#7F1D1D'} strokeWidth="0.6" />
+    <circle cx="20" cy="8" r="2.4" fill={active ? '#FDE047' : '#FACC15'} stroke={active ? '#1A0F00' : '#7F1D1D'} strokeWidth="0.6" />
+    <circle cx="32" cy="12" r="2" fill={active ? '#FDE047' : '#FBBF24'} stroke={active ? '#1A0F00' : '#7F1D1D'} strokeWidth="0.6" />
+    {/* Center band gem */}
+    <rect x="18" y="23" width="4" height="3" rx="0.5" fill={active ? '#FDE047' : '#FACC15'} />
+  </svg>
+);
+
+// Aviator — Stylish plane with motion streak + chevron
+const AviatorIcon = ({ size = 26, active = false }) => (
+  <svg width={size} height={size} viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="planeG" x1="0%" y1="100%" x2="100%" y2="0%">
+        <stop offset="0%" stopColor={active ? '#1A0F00' : '#67E8F9'} />
+        <stop offset="100%" stopColor={active ? '#1A0F00' : '#06B6D4'} />
+      </linearGradient>
+    </defs>
+    {/* Motion streak */}
+    <path
+      d="M 4 32 Q 14 30 22 22"
+      stroke={active ? '#1A0F00' : '#0891B2'}
+      strokeWidth="2"
+      fill="none"
+      strokeLinecap="round"
+      opacity="0.65"
+    />
+    <path
+      d="M 6 36 Q 12 34 18 30"
+      stroke={active ? '#1A0F00' : '#22D3EE'}
+      strokeWidth="1.5"
+      fill="none"
+      strokeLinecap="round"
+      opacity="0.4"
+    />
+    {/* Plane body — pointing up-right */}
+    <g transform="translate(20 18) rotate(-30)">
+      <path
+        d="M -10 0 L 10 -2 L 14 0 L 10 2 L -10 0 Z"
+        fill="url(#planeG)"
+        stroke={active ? '#1A0F00' : '#0E7490'}
+        strokeWidth="0.8"
+      />
+      {/* wing */}
+      <path d="M -2 -1 L 4 -7 L 8 -7 L 2 -1 Z" fill={active ? '#1A0F00' : '#0891B2'} stroke={active ? '#1A0F00' : '#0E7490'} strokeWidth="0.6" />
+      <path d="M -2 1 L 4 7 L 8 7 L 2 1 Z" fill={active ? '#1A0F00' : '#0891B2'} stroke={active ? '#1A0F00' : '#0E7490'} strokeWidth="0.6" />
+      {/* tail */}
+      <path d="M -10 0 L -13 -3 L -10 -1 Z" fill={active ? '#1A0F00' : '#155E75'} />
+      <path d="M -10 0 L -13 3 L -10 1 Z" fill={active ? '#1A0F00' : '#155E75'} />
+    </g>
+    {/* Up-arrow sparkle (top-right) */}
+    <path d="M 32 6 L 35 10 L 32 9 L 32 13 L 30 13 L 30 9 L 28 10 Z" fill={active ? '#1A0F00' : '#67E8F9'} opacity="0.85" />
+  </svg>
+);
 import FooterNav from '../components/FooterNav';
 import { speak } from '../utils/voice';
 import SidebarMenu from '../components/SidebarMenu';
@@ -490,9 +590,9 @@ const DashboardPage = () => {
             data-testid="category-switcher"
           >
             {[
-              { id: 'gali_disawar', label: 'Gali Disawar', hi: 'गली दिसावर', Icon: Dices,  iconColor: '#FDE047' },
-              { id: 'kalyan',       label: 'Kalyan',        hi: 'कल्याण',     Icon: Trophy, iconColor: '#F87171' },
-              { id: 'aviator',      label: 'Aviator',       hi: 'एविएटर',     Icon: Plane,  iconColor: '#67E8F9', isLink: true },
+              { id: 'gali_disawar', label: 'Gali Disawar', hi: 'गली दिसावर', Icon: GaliDisawarIcon },
+              { id: 'kalyan',       label: 'Kalyan',        hi: 'कल्याण',     Icon: KalyanIcon },
+              { id: 'aviator',      label: 'Aviator',       hi: 'एविएटर',     Icon: AviatorIcon, isLink: true },
             ].map((cat) => {
               const isActive = gameCategory === cat.id;
               const count = cat.isLink ? 0 : games.filter(g => (g.category || 'gali_disawar') === cat.id).length;
@@ -524,12 +624,8 @@ const DashboardPage = () => {
                         }
                   }
                 >
-                  <cat.Icon
-                    className="w-5 h-5 mb-0.5"
-                    style={{ color: isActive ? '#1A0F00' : cat.iconColor }}
-                    strokeWidth={2.2}
-                  />
-                  <span className="text-[12px] font-black tracking-wide whitespace-nowrap">{cat.label}</span>
+                  <cat.Icon size={28} active={isActive} />
+                  <span className="text-[12px] font-black tracking-wide whitespace-nowrap mt-0.5">{cat.label}</span>
                   <span className={`text-[8px] font-bold mt-0.5 tabular-nums ${isActive ? 'text-[#1A0F00]/70' : 'text-gray-400'}`}>
                     {cat.isLink ? 'Play Now' : `${cat.hi} • ${count}`}
                   </span>
