@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { ArrowLeft, History, Wallet, ChevronDown, ChevronUp, Volume2, VolumeX } from 'lucide-react';
+import { ArrowLeft, History, Wallet, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const API = process.env.REACT_APP_BACKEND_URL;
@@ -36,253 +36,6 @@ const PropellerPlane = ({ size = 72 }) => (
   </svg>
 );
 
-/* ------------ Aviator-style audio (synthesized via Web Audio API)
-   Designed to match the iconic Aviator/Spribe propeller drone, dramatic
-   takeoff whoosh, crash boom and cashout cash-register ding. ------------ */
-function useAviatorSound(enabled) {
-  const ctxRef = useRef(null);
-  const ambientRef = useRef(null);
-
-  const getCtx = () => {
-    if (!enabled) return null;
-    if (!ctxRef.current) {
-      try {
-        const AC = window.AudioContext || window.webkitAudioContext;
-        ctxRef.current = new AC();
-      } catch (e) { return null; }
-    }
-    const ctx = ctxRef.current;
-    // Resume in case of autoplay-blocked state
-    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
-    return ctx;
-  };
-
-  // Reusable brown-noise buffer (richer than white noise — sounds like wind)
-  const _brownBuf = (ctx, durSec) => {
-    const buf = ctx.createBuffer(1, ctx.sampleRate * durSec, ctx.sampleRate);
-    const ch = buf.getChannelData(0);
-    let last = 0;
-    for (let i = 0; i < ch.length; i++) {
-      const white = Math.random() * 2 - 1;
-      last = (last + 0.02 * white) / 1.02;
-      ch[i] = last * 3.5;
-    }
-    return buf;
-  };
-
-  /* === TAKEOFF: prop spin-up + engine roar (≈1.4s) === */
-  const playTakeoff = () => {
-    const ctx = getCtx(); if (!ctx) return;
-    const t0 = ctx.currentTime;
-    const dur = 1.4;
-
-    // Low-end thump (engine ignition)
-    const low = ctx.createOscillator();
-    const lowG = ctx.createGain();
-    low.type = 'sine';
-    low.frequency.setValueAtTime(45, t0);
-    low.frequency.exponentialRampToValueAtTime(140, t0 + dur);
-    lowG.gain.setValueAtTime(0.0001, t0);
-    lowG.gain.exponentialRampToValueAtTime(0.45, t0 + 0.05);
-    lowG.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    low.connect(lowG).connect(ctx.destination);
-    low.start(t0); low.stop(t0 + dur);
-
-    // Propeller buzz (rising sawtooth with detune)
-    [-7, 0, 7].forEach((det) => {
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.type = 'sawtooth';
-      o.detune.value = det;
-      o.frequency.setValueAtTime(80, t0);
-      o.frequency.exponentialRampToValueAtTime(280, t0 + dur);
-      g.gain.setValueAtTime(0.0001, t0);
-      g.gain.exponentialRampToValueAtTime(0.12, t0 + 0.2);
-      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-      o.connect(g).connect(ctx.destination);
-      o.start(t0); o.stop(t0 + dur);
-    });
-
-    // Air-rush noise overlay
-    const src = ctx.createBufferSource();
-    src.buffer = _brownBuf(ctx, dur);
-    const ng = ctx.createGain();
-    const bp = ctx.createBiquadFilter();
-    bp.type = 'bandpass'; bp.frequency.value = 500; bp.Q.value = 0.6;
-    ng.gain.setValueAtTime(0.0001, t0);
-    ng.gain.exponentialRampToValueAtTime(0.25, t0 + 0.3);
-    ng.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    src.connect(bp).connect(ng).connect(ctx.destination);
-    src.start(t0); src.stop(t0 + dur);
-  };
-
-  /* === AMBIENT: continuous propeller drone with blade-chop AM === */
-  const startAmbient = () => {
-    const ctx = getCtx(); if (!ctx || ambientRef.current) return;
-    const t0 = ctx.currentTime;
-    const out = ctx.createGain();
-    out.gain.setValueAtTime(0.0001, t0);
-    out.gain.exponentialRampToValueAtTime(0.18, t0 + 0.3);
-    out.connect(ctx.destination);
-
-    // 1. Engine harmonic stack (fundamental 110 + 2x + 3x with slight detune)
-    const oscNodes = [];
-    [110, 220, 330].forEach((freq, i) => {
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.type = i === 0 ? 'sawtooth' : 'triangle';
-      o.frequency.value = freq;
-      o.detune.value = (Math.random() - 0.5) * 8;
-      g.gain.value = [0.55, 0.25, 0.12][i];
-      o.connect(g).connect(out);
-      o.start();
-      oscNodes.push(o);
-    });
-
-    // 2. Brown-noise propeller-wash through bandpass
-    const noiseSrc = ctx.createBufferSource();
-    noiseSrc.buffer = _brownBuf(ctx, 4);
-    noiseSrc.loop = true;
-    const ng = ctx.createGain();
-    ng.gain.value = 0.45;
-    const bp = ctx.createBiquadFilter();
-    bp.type = 'bandpass'; bp.frequency.value = 380; bp.Q.value = 1.0;
-    noiseSrc.connect(bp).connect(ng).connect(out);
-    noiseSrc.start();
-
-    // 3. Blade-chop AM modulator (~7 Hz makes it sound like spinning propeller)
-    const ampMod = ctx.createOscillator();
-    ampMod.type = 'sine';
-    ampMod.frequency.value = 7.2;
-    const ampDepth = ctx.createGain();
-    ampDepth.gain.value = 0.35;
-    const ampOffset = ctx.createConstantSource();
-    ampOffset.offset.value = 0.65;
-    ampMod.connect(ampDepth);
-    ampOffset.start();
-    // route the AM signal to modulate the output gain
-    const amSum = ctx.createGain();
-    amSum.gain.value = 1;
-    ampOffset.connect(amSum.gain);
-    ampDepth.connect(amSum.gain);
-    out.gain.cancelScheduledValues(t0);
-    out.gain.setValueAtTime(0.0001, t0);
-    out.gain.exponentialRampToValueAtTime(0.18, t0 + 0.3);
-    ampMod.start();
-
-    ambientRef.current = { oscNodes, noiseSrc, ampMod, ampOffset, out };
-  };
-
-  const stopAmbient = () => {
-    if (!ambientRef.current) return;
-    const ctx = ctxRef.current;
-    const { oscNodes, noiseSrc, ampMod, ampOffset, out } = ambientRef.current;
-    try {
-      out.gain.cancelScheduledValues(ctx.currentTime);
-      out.gain.setValueAtTime(out.gain.value, ctx.currentTime);
-      out.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.25);
-      setTimeout(() => {
-        try {
-          oscNodes.forEach((o) => o.stop());
-          noiseSrc.stop();
-          ampMod.stop();
-          ampOffset.stop();
-        } catch (e) { /* nodes already stopped */ }
-      }, 300);
-    } catch (e) { /* ramp fail ignored */ }
-    ambientRef.current = null;
-  };
-
-  /* === CRASH: dramatic explosion + descending whistle === */
-  const playCrash = () => {
-    const ctx = getCtx(); if (!ctx) return;
-    const t0 = ctx.currentTime;
-
-    // Explosion: filtered noise burst
-    const src = ctx.createBufferSource();
-    src.buffer = _brownBuf(ctx, 0.7);
-    const lp = ctx.createBiquadFilter();
-    lp.type = 'lowpass';
-    lp.frequency.setValueAtTime(2000, t0);
-    lp.frequency.exponentialRampToValueAtTime(80, t0 + 0.7);
-    const ng = ctx.createGain();
-    ng.gain.setValueAtTime(0.6, t0);
-    ng.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.7);
-    src.connect(lp).connect(ng).connect(ctx.destination);
-    src.start(t0); src.stop(t0 + 0.7);
-
-    // Descending whistle (plane falling)
-    const w = ctx.createOscillator();
-    const wg = ctx.createGain();
-    w.type = 'sawtooth';
-    w.frequency.setValueAtTime(450, t0);
-    w.frequency.exponentialRampToValueAtTime(60, t0 + 0.6);
-    wg.gain.setValueAtTime(0.25, t0);
-    wg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.6);
-    w.connect(wg).connect(ctx.destination);
-    w.start(t0); w.stop(t0 + 0.6);
-
-    // Low rumble
-    const r = ctx.createOscillator();
-    const rg = ctx.createGain();
-    r.type = 'sine';
-    r.frequency.value = 55;
-    rg.gain.setValueAtTime(0.4, t0);
-    rg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.8);
-    r.connect(rg).connect(ctx.destination);
-    r.start(t0); r.stop(t0 + 0.8);
-  };
-
-  /* === CASHOUT: cash register chime + coin clinks === */
-  const playCashout = () => {
-    const ctx = getCtx(); if (!ctx) return;
-    const t0 = ctx.currentTime;
-    // Triumphal 3-note arpeggio (C5 → E5 → G5)
-    [523.25, 659.25, 783.99].forEach((freq, i) => {
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.type = 'triangle';
-      o.frequency.value = freq;
-      const start = t0 + i * 0.08;
-      g.gain.setValueAtTime(0.0001, start);
-      g.gain.exponentialRampToValueAtTime(0.3, start + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, start + 0.5);
-      o.connect(g).connect(ctx.destination);
-      o.start(start); o.stop(start + 0.55);
-    });
-    // Sparkle: high freq quick chimes
-    [1568, 2093, 2637].forEach((freq, i) => {
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.type = 'sine';
-      o.frequency.value = freq;
-      const start = t0 + 0.05 + i * 0.04;
-      g.gain.setValueAtTime(0.0001, start);
-      g.gain.exponentialRampToValueAtTime(0.15, start + 0.005);
-      g.gain.exponentialRampToValueAtTime(0.0001, start + 0.2);
-      o.connect(g).connect(ctx.destination);
-      o.start(start); o.stop(start + 0.22);
-    });
-  };
-
-  /* === BET TICK: chip click === */
-  const playBetTick = () => {
-    const ctx = getCtx(); if (!ctx) return;
-    const t0 = ctx.currentTime;
-    const o = ctx.createOscillator();
-    const g = ctx.createGain();
-    o.type = 'square';
-    o.frequency.setValueAtTime(1200, t0);
-    o.frequency.exponentialRampToValueAtTime(800, t0 + 0.08);
-    g.gain.setValueAtTime(0.0001, t0);
-    g.gain.exponentialRampToValueAtTime(0.15, t0 + 0.005);
-    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.1);
-    o.connect(g).connect(ctx.destination);
-    o.start(t0); o.stop(t0 + 0.12);
-  };
-
-  return { playTakeoff, startAmbient, stopAmbient, playCrash, playCashout, playBetTick };
-}
 
 /* ------------ Single Bet Panel (Spribe-style stacked) ------------ */
 const BetPanel = ({
@@ -472,8 +225,6 @@ const AviatorPage = () => {
   const [bettingRemaining, setBettingRemaining] = useState(0);
   const [showHistory, setShowHistory] = useState(false);
   const [myBetsList, setMyBetsList] = useState([]);
-  const [soundOn, setSoundOn] = useState(() => localStorage.getItem('aviator_sound') !== 'off');
-  const sound = useAviatorSound(soundOn);
 
   // Two bet panels (Spribe parity)
   const [panel1, setPanel1] = useState({ amount: 100, autoCashout: '', mode: 'bet', bet: null, placing: false, cashingOut: false });
@@ -508,22 +259,6 @@ const AviatorPage = () => {
     const id = setInterval(() => setBettingRemaining((r) => Math.max(0, r - 0.1)), 100);
     return () => clearInterval(id);
   }, [phase]);
-
-  // Audio unlock — mobile WebView blocks autoplay until user gesture
-  useEffect(() => {
-    const unlock = () => {
-      // Play a silent buffer to bootstrap the AudioContext
-      sound.playBetTick();
-      window.removeEventListener('touchstart', unlock);
-      window.removeEventListener('click', unlock);
-    };
-    window.addEventListener('touchstart', unlock, { once: true });
-    window.addEventListener('click', unlock, { once: true });
-    return () => {
-      window.removeEventListener('touchstart', unlock);
-      window.removeEventListener('click', unlock);
-    };
-  }, [soundOn]);
 
   /* ---------- WebSocket ---------- */
   useEffect(() => {
@@ -563,14 +298,14 @@ const AviatorPage = () => {
     } else if (msg.type === 'flying_start') {
       setPhase('flying');
       setMultiplier(1.0);
-      sound.playTakeoff();
-      sound.startAmbient();
+
+
     } else if (msg.type === 'tick') {
       setMultiplier(msg.multiplier);
       [setPanel1, setPanel2].forEach((set) =>
         set((p) => {
           if (p.bet && !p.bet.cashed_out_at && p.bet.auto_cashout && msg.multiplier >= p.bet.auto_cashout) {
-            sound.playCashout();
+
             return { ...p, bet: { ...p.bet, cashed_out_at: p.bet.auto_cashout } };
           }
           return p;
@@ -581,8 +316,8 @@ const AviatorPage = () => {
       setCrashPoint(msg.crash_point);
       setMultiplier(msg.crash_point);
       setHistory((h) => [{ round_id: 'recent', crash_point: msg.crash_point }, ...h].slice(0, 30));
-      sound.stopAmbient();
-      sound.playCrash();
+
+
       refreshUser();
     }
   };
@@ -600,8 +335,8 @@ const AviatorPage = () => {
       } catch (e) { /* ignore */ }
     };
     fetchFeed();
-    // refresh every 3s while round live; 10s while crashed
-    id = setInterval(fetchFeed, phase === 'flying' ? 2000 : 4000);
+    // refresh every 3s while round live; 6s while crashed/betting (lighter load)
+    id = setInterval(fetchFeed, phase === 'flying' ? 3000 : 6000);
     return () => clearInterval(id);
   }, [feedTab, phase]);
 
@@ -631,7 +366,7 @@ const AviatorPage = () => {
         ...s,
         bet: { round_id: data.round_id, amount: Number(p.amount), auto_cashout: body.auto_cashout || null, cashed_out_at: null },
       }));
-      sound.playBetTick();
+
       toast.success(`Bet ₹${p.amount} placed`);
       refreshUser();
     } catch (e) {
@@ -650,7 +385,7 @@ const AviatorPage = () => {
     try {
       const { data } = await axios.post(`${API}/api/aviator/cashout`, {}, { withCredentials: true });
       set((s) => ({ ...s, bet: { ...s.bet, cashed_out_at: data.multiplier } }));
-      sound.playCashout();
+
       toast.success(`Cashed out @ ${data.multiplier}x — ₹${data.won}`);
       refreshUser();
     } catch (e) {
@@ -694,18 +429,6 @@ const AviatorPage = () => {
           <PropellerPlane size={28} />
           <span className="text-[#DC2626] font-black text-lg tracking-widest" style={{ fontFamily: 'Outfit, sans-serif', fontStyle: 'italic' }}>Aviator</span>
         </div>
-        <button
-          onClick={() => {
-            const next = !soundOn;
-            setSoundOn(next);
-            localStorage.setItem('aviator_sound', next ? 'on' : 'off');
-          }}
-          className="text-gray-300 active:scale-95"
-          data-testid="aviator-sound-toggle"
-          aria-label="Toggle sound"
-        >
-          {soundOn ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
-        </button>
         <button onClick={openHistory} className="text-gray-300 active:scale-95" data-testid="aviator-history-btn">
           <History className="w-5 h-5" />
         </button>
@@ -737,40 +460,33 @@ const AviatorPage = () => {
         })}
       </div>
 
-      {/* Game viewport — Reddy66 style radial purple/red bg + sun-ray streaks */}
+      {/* Game viewport — Reddy66 style radial purple/red bg with sun-ray streaks.
+          Streaks are 6 lightweight static SVG lines + a CSS conic-gradient backup.
+          Reduced from 12→6 streaks for low-end Android WebView smoothness. */}
       <div
         className="relative mx-3 rounded-xl overflow-hidden"
         style={{
           height: 'min(45vh, 320px)',
           background: 'radial-gradient(ellipse at 30% 70%, #4C1D95 0%, #1E0B36 35%, #0A0A14 75%)',
           border: '1px solid rgba(168, 85, 247, 0.3)',
+          contain: 'content',
         }}
         data-testid="aviator-viewport"
       >
-        {/* Sun-ray streaks emanating from bottom-left */}
-        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+        {/* Static sun-ray streaks — only 6, drawn once, never repainted on scroll */}
+        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
           <defs>
             <linearGradient id="rayG" x1="0%" y1="100%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="rgba(168, 85, 247, 0.0)" />
+              <stop offset="0%" stopColor="rgba(168, 85, 247, 0)" />
               <stop offset="20%" stopColor="rgba(168, 85, 247, 0.18)" />
-              <stop offset="100%" stopColor="rgba(168, 85, 247, 0.0)" />
+              <stop offset="100%" stopColor="rgba(168, 85, 247, 0)" />
             </linearGradient>
           </defs>
-          {Array.from({ length: 12 }).map((_, i) => {
-            const angle = 20 + i * 6;
+          {[25, 35, 45, 55, 65, 75].map((angle, i) => {
             const x2 = 100 * Math.cos((angle * Math.PI) / 180);
             const y2 = 100 - 100 * Math.sin((angle * Math.PI) / 180);
             return (
-              <line
-                key={i}
-                x1="0"
-                y1="100"
-                x2={x2}
-                y2={y2}
-                stroke="url(#rayG)"
-                strokeWidth="2.5"
-                opacity={i % 2 === 0 ? 0.7 : 0.35}
-              />
+              <line key={i} x1="0" y1="100" x2={x2} y2={y2} stroke="url(#rayG)" strokeWidth="2.5" opacity={i % 2 === 0 ? 0.55 : 0.3} />
             );
           })}
         </svg>

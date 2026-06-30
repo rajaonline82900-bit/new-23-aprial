@@ -127,6 +127,15 @@ Migrate Matka11 satta app from Emergent preview environment to self-hosted Hosti
     - Kalyan: royal crown with 3 gem peaks + center gem + base band
     - Aviator: cyan plane angled up-right with motion streaks + sparkle
     Auto-switches to dark theme when category is active (over gold gradient).
+20. AVIATOR PERF + NO SOUND (Feb 2026): Removed all sound code from
+    Aviator (~250 lines of Web Audio API: oscillators, brown-noise buffers,
+    AM modulator, ambient drone — these were heavy on low-end Android
+    WebView CPU). Also performance-optimized:
+    - Backend WS tick interval 100ms → 200ms (halved re-render rate)
+    - Sun-ray streaks 12 → 6 (halved SVG paint cost)
+    - Community feed poll 2s/4s → 3s/6s (lighter load)
+    - `contain: content` on viewport (paint isolation)
+    Result: smooth scroll/animation on low-end APK, no audio CPU drain.
     - Black header bar with game name pill + BETS link + Back button
     - MARKET label + Rate (auto-changes per bet type)
     - OPEN/CLOSE session toggle with blue active border

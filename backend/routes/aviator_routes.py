@@ -33,7 +33,9 @@ router = APIRouter()
 # ---------- Config ----------
 BETTING_DURATION = 8.0      # seconds
 CRASH_PAUSE = 3.0           # seconds shown after crash
-TICK_INTERVAL = 0.1         # ms between WS broadcasts during flying
+TICK_INTERVAL = 0.2          # broadcast WS ticks every 200ms — perf-friendly
+                             # on low-end Android WebView (was 100ms, caused
+                             # excessive React re-renders & jank).
 GROWTH_RATE = 0.06          # multiplier(t) = e^(GROWTH_RATE * t)
 HOUSE_EDGE_DIVISOR = 3      # ~33% house edge — every 3rd round is instant 1.00x.
                             # This gives P(crash >= 2x) ≈ 33% i.e. ~30% win
