@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { ArrowLeft, Plane, History, Wallet } from 'lucide-react';
+import { ArrowLeft, Plane, History, Wallet, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const API = process.env.REACT_APP_BACKEND_URL;
@@ -10,30 +10,211 @@ const WS_URL = (API || '').replace(/^http/, 'ws') + '/api/aviator/ws';
 
 const QUICK_AMOUNTS = [10, 50, 100, 500, 1000];
 
+/* ------------ Single Bet Panel (Spribe-style stacked) ------------ */
+const BetPanel = ({
+  panelId, phase, multiplier, balance,
+  amount, setAmount, autoCashout, setAutoCashout,
+  mode, setMode, currentBet, placing, cashingOut,
+  onPlace, onCashout, onClose,
+}) => {
+  const winAmt = currentBet ? currentBet.amount * multiplier : 0;
+  return (
+    <div
+      className="rounded-2xl p-2.5"
+      style={{ background: '#141420', border: '1px solid rgba(220, 38, 38, 0.18)' }}
+      data-testid={`aviator-panel-${panelId}`}
+    >
+      {/* Bet / Auto tabs */}
+      <div className="flex items-center justify-center gap-1 mb-2 relative">
+        <div className="inline-flex p-0.5 rounded-full" style={{ background: '#0A0A14' }}>
+          {['bet', 'auto'].map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => setMode(m)}
+              data-testid={`panel-${panelId}-mode-${m}`}
+              className="px-4 py-1 rounded-full text-xs font-bold capitalize"
+              style={mode === m
+                ? { background: '#2D2D40', color: '#FFFFFF' }
+                : { background: 'transparent', color: '#9CA3AF' }
+              }
+            >
+              {m === 'bet' ? 'Bet' : 'Auto'}
+            </button>
+          ))}
+        </div>
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            data-testid={`panel-${panelId}-close`}
+            className="absolute right-0 text-gray-400 active:scale-90"
+            aria-label="Close panel"
+          >
+            <ChevronUp className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+
+      <div className="flex items-center gap-2">
+        {/* Amount stepper + quick chips */}
+        <div className="flex-1">
+          <div
+            className="flex items-center justify-between px-2 py-2 rounded-full mb-1.5"
+            style={{ background: '#0A0A14', border: '1px solid rgba(255,255,255,0.06)' }}
+          >
+            <button
+              type="button"
+              onClick={() => setAmount(Math.max(5, Number(amount) - 10))}
+              disabled={!!currentBet}
+              data-testid={`panel-${panelId}-decr`}
+              className="w-6 h-6 rounded-full flex items-center justify-center text-gray-300 active:scale-90 disabled:opacity-30"
+              style={{ background: '#2D2D40' }}
+            >–</button>
+            <input
+              type="number"
+              inputMode="numeric"
+              value={amount}
+              onChange={(e) => setAmount(Number(e.target.value) || 0)}
+              disabled={!!currentBet}
+              data-testid={`panel-${panelId}-amount`}
+              className="flex-1 bg-transparent outline-none text-white text-base font-black tabular-nums text-center w-full disabled:opacity-50"
+              style={{ minWidth: 0 }}
+            />
+            <button
+              type="button"
+              onClick={() => setAmount(Number(amount) + 10)}
+              disabled={!!currentBet}
+              data-testid={`panel-${panelId}-incr`}
+              className="w-6 h-6 rounded-full flex items-center justify-center text-gray-300 active:scale-90 disabled:opacity-30"
+              style={{ background: '#2D2D40' }}
+            >+</button>
+          </div>
+          {/* 3 quick chips like Reddy66 (1000 / 2000 / 10000) — kept small (₹) */}
+          <div className="grid grid-cols-3 gap-1">
+            {[1000, 2000, 10000].map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setAmount(v)}
+                disabled={!!currentBet}
+                data-testid={`panel-${panelId}-quick-${v}`}
+                className="text-[11px] font-bold py-1 rounded-full text-gray-300 active:scale-95 disabled:opacity-40"
+                style={{ background: '#0A0A14', border: '1px solid rgba(255,255,255,0.08)' }}
+              >
+                {v.toLocaleString('en-IN')}
+              </button>
+            ))}
+          </div>
+          {/* Auto-cashout (only when in auto mode) */}
+          {mode === 'auto' && (
+            <input
+              type="number"
+              inputMode="decimal"
+              placeholder="Auto cashout @"
+              value={autoCashout}
+              onChange={(e) => setAutoCashout(e.target.value)}
+              disabled={!!currentBet}
+              data-testid={`panel-${panelId}-auto-cashout`}
+              className="w-full mt-1.5 px-3 py-1.5 rounded-full outline-none text-white text-xs font-bold text-center disabled:opacity-50"
+              style={{ background: '#0A0A14', border: '1px solid rgba(220, 38, 38, 0.3)' }}
+            />
+          )}
+        </div>
+
+        {/* Action button — big square green/red CTA */}
+        <div className="flex-1">
+          {!currentBet ? (
+            <button
+              type="button"
+              onClick={onPlace}
+              disabled={placing || phase !== 'betting'}
+              data-testid={`panel-${panelId}-place`}
+              className="w-full h-[88px] rounded-2xl text-white font-black flex flex-col items-center justify-center active:scale-95 disabled:opacity-40 leading-tight"
+              style={{
+                background: phase === 'betting' ? 'linear-gradient(135deg, #16A34A 0%, #15803D 100%)' : '#3F3F46',
+                border: phase === 'betting' ? '2px solid #16A34A' : '1px solid #4B5563',
+              }}
+            >
+              {phase === 'betting' ? (
+                <>
+                  <span className="text-base">Bet</span>
+                  <span className="text-xl tabular-nums">{Number(amount).toFixed(2)}</span>
+                </>
+              ) : (
+                <span className="text-sm uppercase tracking-wider">Wait for next round</span>
+              )}
+            </button>
+          ) : currentBet.cashed_out_at ? (
+            <button
+              type="button"
+              disabled
+              data-testid={`panel-${panelId}-cashed`}
+              className="w-full h-[88px] rounded-2xl text-white font-black flex flex-col items-center justify-center leading-tight"
+              style={{ background: 'linear-gradient(135deg, #16A34A 0%, #15803D 100%)' }}
+            >
+              <span className="text-xs uppercase tracking-widest">Cashed Out @ {currentBet.cashed_out_at}x</span>
+              <span className="text-lg tabular-nums mt-0.5">+₹{(currentBet.amount * currentBet.cashed_out_at).toFixed(2)}</span>
+            </button>
+          ) : phase === 'flying' ? (
+            <button
+              type="button"
+              onClick={onCashout}
+              disabled={cashingOut}
+              data-testid={`panel-${panelId}-cashout`}
+              className="w-full h-[88px] rounded-2xl text-white font-black flex flex-col items-center justify-center active:scale-95 leading-tight"
+              style={{
+                background: 'linear-gradient(135deg, #F59E0B 0%, #B45309 100%)',
+                border: '2px solid #F59E0B',
+              }}
+            >
+              <span className="text-xs uppercase tracking-widest">Cash Out</span>
+              <span className="text-xl tabular-nums">₹{winAmt.toFixed(2)}</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled
+              data-testid={`panel-${panelId}-waiting`}
+              className="w-full h-[88px] rounded-2xl text-gray-300 font-black flex flex-col items-center justify-center leading-tight"
+              style={{ background: '#1F2937', border: '1px solid #4B5563' }}
+            >
+              <span className="text-xs uppercase">Bet Placed</span>
+              <span className="text-lg tabular-nums">₹{currentBet.amount}</span>
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ------------ Main page ------------ */
 const AviatorPage = () => {
   const navigate = useNavigate();
   const { user, refreshUser } = useAuth();
 
-  const [phase, setPhase] = useState('idle');     // 'betting' | 'flying' | 'crashed'
+  const [phase, setPhase] = useState('idle');
   const [multiplier, setMultiplier] = useState(1.0);
   const [crashPoint, setCrashPoint] = useState(null);
   const [history, setHistory] = useState([]);
   const [bettingRemaining, setBettingRemaining] = useState(0);
-  const [activeBets, setActiveBets] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
   const [myBetsList, setMyBetsList] = useState([]);
 
-  // Bet panel state
-  const [betAmount, setBetAmount] = useState(10);
-  const [autoCashout, setAutoCashout] = useState('');
-  const [currentBet, setCurrentBet] = useState(null);   // { round_id, amount, auto_cashout, cashed_out_at }
-  const [placing, setPlacing] = useState(false);
-  const [cashingOut, setCashingOut] = useState(false);
+  // Two bet panels (Spribe parity)
+  const [panel1, setPanel1] = useState({ amount: 100, autoCashout: '', mode: 'bet', bet: null, placing: false, cashingOut: false });
+  const [panel2, setPanel2] = useState({ amount: 100, autoCashout: '', mode: 'bet', bet: null, placing: false, cashingOut: false });
+  const [showPanel2, setShowPanel2] = useState(false);
+
+  // Community feed
+  const [feedTab, setFeedTab] = useState('all');
+  const [feedItems, setFeedItems] = useState([]);
+  const [feedMeta, setFeedMeta] = useState({ total: 0, totalWin: 0 });
 
   const wsRef = useRef(null);
-  const lastWonRef = useRef(null);
 
-  // ---------- Initial state load ----------
+  /* ---------- initial load + countdown ---------- */
   useEffect(() => {
     (async () => {
       try {
@@ -45,26 +226,20 @@ const AviatorPage = () => {
           if (data.state.phase === 'betting') setBettingRemaining(data.state.betting_remaining || 0);
         }
         if (data.history) setHistory(data.history);
-      } catch (e) {
-        // initial state fetch fail — websocket may still recover
-      }
+      } catch (e) { /* ignore */ }
     })();
-    fetchActiveBets();
   }, []);
-  // ---------- Countdown ticker for betting phase ----------
+
   useEffect(() => {
     if (phase !== 'betting') return;
-    const id = setInterval(() => {
-      setBettingRemaining((r) => Math.max(0, r - 0.1));
-    }, 100);
+    const id = setInterval(() => setBettingRemaining((r) => Math.max(0, r - 0.1)), 100);
     return () => clearInterval(id);
   }, [phase]);
 
-  // ---------- WebSocket ----------
+  /* ---------- WebSocket ---------- */
   useEffect(() => {
     let closedManually = false;
     let retryDelay = 1000;
-
     function connect() {
       const ws = new WebSocket(WS_URL);
       wsRef.current = ws;
@@ -73,7 +248,7 @@ const AviatorPage = () => {
         try {
           const msg = JSON.parse(ev.data);
           handleWsMessage(msg);
-        } catch (e) { /* ignore parse */ }
+        } catch (e) { /* ignore */ }
       };
       ws.onclose = () => {
         if (!closedManually) setTimeout(connect, retryDelay);
@@ -92,84 +267,98 @@ const AviatorPage = () => {
       setMultiplier(s.multiplier || 1.0);
       if (s.phase === 'betting') {
         setBettingRemaining(s.betting_remaining || 0);
-        setCurrentBet(null);
         setCrashPoint(null);
-        lastWonRef.current = null;
+        setPanel1((p) => ({ ...p, bet: null }));
+        setPanel2((p) => ({ ...p, bet: null }));
       }
     } else if (msg.type === 'flying_start') {
       setPhase('flying');
       setMultiplier(1.0);
     } else if (msg.type === 'tick') {
       setMultiplier(msg.multiplier);
-      // If user is in flying with auto_cashout, let backend handle, just update bet display
-      setCurrentBet((b) => (b && !b.cashed_out_at && b.auto_cashout && msg.multiplier >= b.auto_cashout)
-        ? { ...b, cashed_out_at: b.auto_cashout, won: +(b.amount * b.auto_cashout).toFixed(2) }
-        : b);
+      // auto-cashout in UI for both panels
+      [setPanel1, setPanel2].forEach((set) =>
+        set((p) => (p.bet && !p.bet.cashed_out_at && p.bet.auto_cashout && msg.multiplier >= p.bet.auto_cashout)
+          ? { ...p, bet: { ...p.bet, cashed_out_at: p.bet.auto_cashout } }
+          : p)
+      );
     } else if (msg.type === 'crash') {
       setPhase('crashed');
       setCrashPoint(msg.crash_point);
       setMultiplier(msg.crash_point);
-      // refresh history & balance
       setHistory((h) => [{ round_id: 'recent', crash_point: msg.crash_point }, ...h].slice(0, 30));
-      setActiveBets([]);
       refreshUser();
-      if (currentBet && !currentBet.cashed_out_at) {
-        toast.error(`Crash @ ${msg.crash_point}x — Aap ₹${currentBet.amount} haar gaye`);
-      }
-    } else if (msg.type === 'cashout') {
-      setActiveBets((arr) => arr.map((b) =>
-        b.name === msg.name && b.amount === msg.amount && !b.cashed_out_at
-          ? { ...b, cashed_out_at: msg.multiplier, won: msg.won }
-          : b
-      ));
-    } else if (msg.type === 'new_bet') {
-      setActiveBets((arr) => [...arr, { name: msg.name, amount: msg.amount, cashed_out_at: null }]);
     }
   };
 
-  const fetchActiveBets = async () => {
-    try {
-      const { data } = await axios.get(`${API}/api/aviator/active-bets`, { withCredentials: true });
-      setActiveBets(data.bets || []);
-    } catch (e) { /* ignore */ }
-  };
+  /* ---------- Community feed polling ---------- */
+  useEffect(() => {
+    let id;
+    const fetchFeed = async () => {
+      try {
+        const { data } = await axios.get(`${API}/api/aviator/community-bets?tab=${feedTab}&limit=40`, { withCredentials: true });
+        const items = data.bets || [];
+        setFeedItems(items);
+        const won = items.filter((b) => b.won != null);
+        setFeedMeta({ total: items.length, totalWin: won.reduce((s, b) => s + (b.won || 0), 0) });
+      } catch (e) { /* ignore */ }
+    };
+    fetchFeed();
+    // refresh every 3s while round live; 10s while crashed
+    id = setInterval(fetchFeed, phase === 'flying' ? 2000 : 4000);
+    return () => clearInterval(id);
+  }, [feedTab, phase]);
 
-  // ---------- Actions ----------
-  const placeBet = async () => {
-    if (placing) return;
+  /* ---------- Actions ---------- */
+  const placeBet = async (panelKey) => {
+    const set = panelKey === 1 ? setPanel1 : setPanel2;
+    const p = panelKey === 1 ? panel1 : panel2;
+    if (p.placing) return;
     if (phase !== 'betting') { toast.error('Wait for next round'); return; }
-    if (!betAmount || betAmount < 5) { toast.error('Min bet ₹5'); return; }
-    if ((user?.balance || 0) < betAmount) { toast.error('Insufficient balance'); return; }
-    setPlacing(true);
+    if (!p.amount || p.amount < 5) { toast.error('Min bet ₹5'); return; }
+    if (p.bet) { toast.error('Already have an active bet'); return; }
+    if ((user?.balance || 0) < p.amount) { toast.error('Insufficient balance'); return; }
+
+    // Backend allows only 1 bet per user per round — check other panel
+    const other = panelKey === 1 ? panel2 : panel1;
+    if (other.bet && !other.bet.cashed_out_at) {
+      toast.error('Already have an active bet in the other panel');
+      return;
+    }
+    set((s) => ({ ...s, placing: true }));
     try {
-      const body = { amount: Number(betAmount) };
-      const co = Number(autoCashout);
-      if (autoCashout && co >= 1.01) body.auto_cashout = co;
+      const body = { amount: Number(p.amount) };
+      const co = Number(p.autoCashout);
+      if (p.mode === 'auto' && co >= 1.01) body.auto_cashout = co;
       const { data } = await axios.post(`${API}/api/aviator/bet`, body, { withCredentials: true });
-      setCurrentBet({ round_id: data.round_id, amount: Number(betAmount), auto_cashout: body.auto_cashout || null, cashed_out_at: null });
-      toast.success(`Bet ₹${betAmount} placed`);
+      set((s) => ({
+        ...s,
+        bet: { round_id: data.round_id, amount: Number(p.amount), auto_cashout: body.auto_cashout || null, cashed_out_at: null },
+      }));
+      toast.success(`Bet ₹${p.amount} placed`);
       refreshUser();
     } catch (e) {
       toast.error(e.response?.data?.detail || 'Bet failed');
     } finally {
-      setPlacing(false);
+      set((s) => ({ ...s, placing: false }));
     }
   };
 
-  const doCashout = async () => {
-    if (cashingOut || !currentBet || currentBet.cashed_out_at) return;
+  const cashOut = async (panelKey) => {
+    const set = panelKey === 1 ? setPanel1 : setPanel2;
+    const p = panelKey === 1 ? panel1 : panel2;
+    if (p.cashingOut || !p.bet || p.bet.cashed_out_at) return;
     if (phase !== 'flying') return;
-    setCashingOut(true);
+    set((s) => ({ ...s, cashingOut: true }));
     try {
       const { data } = await axios.post(`${API}/api/aviator/cashout`, {}, { withCredentials: true });
-      setCurrentBet((b) => ({ ...b, cashed_out_at: data.multiplier, won: data.won }));
-      lastWonRef.current = data.won;
+      set((s) => ({ ...s, bet: { ...s.bet, cashed_out_at: data.multiplier } }));
       toast.success(`Cashed out @ ${data.multiplier}x — ₹${data.won}`);
       refreshUser();
     } catch (e) {
       toast.error(e.response?.data?.detail || 'Cashout failed');
     } finally {
-      setCashingOut(false);
+      set((s) => ({ ...s, cashingOut: false }));
     }
   };
 
@@ -178,50 +367,42 @@ const AviatorPage = () => {
       const { data } = await axios.get(`${API}/api/aviator/my-bets?limit=30`, { withCredentials: true });
       setMyBetsList(data.bets || []);
       setShowHistory(true);
-    } catch (e) {
-      toast.error('History load fail');
-    }
+    } catch (e) { toast.error('History load fail'); }
   };
 
-  // ---------- Plane curve animation ----------
+  /* ---------- Plane position along curve ---------- */
   const planePos = useMemo(() => {
-    // Map multiplier to (x%, y%) along a quadratic curve.
-    // multiplier 1 → bottom-left ; multiplier 5+ → top-right
     const m = Math.min(8, multiplier);
-    const t = Math.min(1, Math.log(m) / Math.log(8)); // 0..1
-    const x = 8 + t * 78;       // 8% .. 86%
-    const y = 78 - t * 60;      // 78% .. 18%
+    const t = Math.min(1, Math.log(m) / Math.log(8));
+    const x = 8 + t * 78;
+    const y = 78 - t * 60;
     return { x, y };
   }, [multiplier]);
 
-  const multColor = phase === 'crashed' ? '#EF4444' : (phase === 'flying' ? '#22D3EE' : '#FFD700');
+  const multColor = phase === 'crashed' ? '#EF4444' : (phase === 'flying' ? '#FFFFFF' : '#FFD700');
 
+  /* ---------- Render ---------- */
   return (
-    <div className="min-h-screen pb-32" style={{ background: '#0A0A14', color: '#FFFFFF' }} data-testid="aviator-page">
+    <div className="min-h-screen pb-44" style={{ background: '#0A0A14', color: '#FFFFFF' }} data-testid="aviator-page">
       {/* Header */}
       <div
         className="sticky top-0 z-30 flex items-center gap-2 px-3 py-2.5"
-        style={{ background: '#0A0A14', borderBottom: '1px solid #DC2626' }}
+        style={{ background: '#0A0A14', borderBottom: '1px solid rgba(220, 38, 38, 0.5)' }}
       >
-        <button
-          onClick={() => navigate('/dashboard')}
-          className="flex items-center gap-1 text-white font-semibold active:scale-95"
-          data-testid="aviator-back"
-        >
+        <button onClick={() => navigate('/dashboard')} className="flex items-center text-white active:scale-95" data-testid="aviator-back">
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div className="flex-1 flex items-center justify-center gap-2">
           <Plane className="w-5 h-5 text-[#DC2626]" strokeWidth={2.5} fill="#DC2626" />
-          <span className="text-[#DC2626] font-black text-lg tracking-widest">AVIATOR</span>
+          <span className="text-[#DC2626] font-black text-lg tracking-widest" style={{ fontFamily: 'Outfit, sans-serif' }}>AVIATOR</span>
         </div>
-        <button
-          onClick={openHistory}
-          className="flex items-center gap-1 text-gray-300 active:scale-95"
-          data-testid="aviator-history-btn"
-        >
+        <button onClick={openHistory} className="text-gray-300 active:scale-95" data-testid="aviator-history-btn">
           <History className="w-5 h-5" />
         </button>
-        <div className="flex items-center gap-1 px-2 py-1 rounded-full" style={{ background: 'rgba(255, 215, 0, 0.12)', border: '1px solid rgba(212, 175, 55, 0.5)' }}>
+        <div
+          className="flex items-center gap-1 px-2 py-1 rounded-full"
+          style={{ background: 'rgba(255, 215, 0, 0.12)', border: '1px solid rgba(212, 175, 55, 0.5)' }}
+        >
           <Wallet className="w-3.5 h-3.5 text-[#FFD700]" />
           <span className="text-[#FFD700] text-xs font-black tabular-nums" data-testid="aviator-balance">
             ₹{user?.balance?.toFixed(2) || '0.00'}
@@ -237,8 +418,8 @@ const AviatorPage = () => {
           return (
             <span
               key={i}
-              className="px-2 py-0.5 rounded-full text-[11px] font-bold tabular-nums whitespace-nowrap"
-              style={{ background: 'rgba(255,255,255,0.08)', color, border: `1px solid ${color}40` }}
+              className="px-2.5 py-0.5 rounded-full text-[11px] font-bold tabular-nums whitespace-nowrap"
+              style={{ background: 'transparent', color, border: `1px solid ${color}55` }}
             >
               {v.toFixed(2)}x
             </span>
@@ -246,67 +427,85 @@ const AviatorPage = () => {
         })}
       </div>
 
-      {/* Game viewport */}
+      {/* Game viewport — Reddy66 style radial purple/red bg + sun-ray streaks */}
       <div
         className="relative mx-3 rounded-xl overflow-hidden"
         style={{
-          height: 'min(60vh, 380px)',
-          background: 'radial-gradient(ellipse at bottom left, #2A0A0A 0%, #0A0A14 60%)',
-          border: '1px solid rgba(220, 38, 38, 0.3)',
+          height: 'min(45vh, 320px)',
+          background: 'radial-gradient(ellipse at 30% 70%, #4C1D95 0%, #1E0B36 35%, #0A0A14 75%)',
+          border: '1px solid rgba(168, 85, 247, 0.3)',
         }}
         data-testid="aviator-viewport"
       >
-        {/* Grid lines for visual depth (static — zero scroll cost) */}
-        <svg className="absolute inset-0 w-full h-full opacity-20" viewBox="0 0 100 100" preserveAspectRatio="none">
-          {[20, 40, 60, 80].map((y) => (
-            <line key={y} x1="0" y1={y} x2="100" y2={y} stroke="#DC2626" strokeWidth="0.1" />
-          ))}
-          {[25, 50, 75].map((x) => (
-            <line key={x} x1={x} y1="0" x2={x} y2="100" stroke="#DC2626" strokeWidth="0.1" />
-          ))}
+        {/* Sun-ray streaks emanating from bottom-left */}
+        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="rayG" x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="rgba(168, 85, 247, 0.0)" />
+              <stop offset="20%" stopColor="rgba(168, 85, 247, 0.18)" />
+              <stop offset="100%" stopColor="rgba(168, 85, 247, 0.0)" />
+            </linearGradient>
+          </defs>
+          {Array.from({ length: 12 }).map((_, i) => {
+            const angle = 20 + i * 6;
+            const x2 = 100 * Math.cos((angle * Math.PI) / 180);
+            const y2 = 100 - 100 * Math.sin((angle * Math.PI) / 180);
+            return (
+              <line
+                key={i}
+                x1="0"
+                y1="100"
+                x2={x2}
+                y2={y2}
+                stroke="url(#rayG)"
+                strokeWidth="2.5"
+                opacity={i % 2 === 0 ? 0.7 : 0.35}
+              />
+            );
+          })}
         </svg>
 
-        {/* Trajectory curve (drawn from bottom-left to plane position) */}
+        {/* Trajectory curve + plane */}
         {phase !== 'betting' && (
           <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
             <defs>
               <linearGradient id="trailGrad" x1="0%" y1="100%" x2="100%" y2="0%">
                 <stop offset="0%" stopColor="#DC2626" stopOpacity="0" />
-                <stop offset="100%" stopColor="#DC2626" stopOpacity="0.7" />
+                <stop offset="100%" stopColor="#DC2626" stopOpacity="0.85" />
               </linearGradient>
             </defs>
             <path
-              d={`M 0 100 Q ${planePos.x / 2} ${100} ${planePos.x} ${planePos.y} L ${planePos.x} 100 Z`}
+              d={`M 0 100 Q ${planePos.x / 2} 100 ${planePos.x} ${planePos.y} L ${planePos.x} 100 Z`}
               fill="url(#trailGrad)"
             />
             <path
-              d={`M 0 100 Q ${planePos.x / 2} ${100} ${planePos.x} ${planePos.y}`}
-              stroke="#EF4444"
-              strokeWidth="0.6"
+              d={`M 0 100 Q ${planePos.x / 2} 100 ${planePos.x} ${planePos.y}`}
+              stroke="#FF1744"
+              strokeWidth="0.8"
               fill="none"
             />
           </svg>
         )}
 
-        {/* Multiplier */}
+        {/* Multiplier overlay */}
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
           {phase === 'betting' && (
             <>
-              <p className="text-gray-400 text-sm font-bold uppercase tracking-widest mb-2">Next Round In</p>
+              <p className="text-gray-300 text-sm font-bold uppercase tracking-widest mb-2">Next Round In</p>
               <p
                 className="font-black tabular-nums"
-                style={{ color: '#FFD700', fontSize: '4rem', lineHeight: 1, fontFamily: 'Outfit, monospace' }}
+                style={{ color: '#FFD700', fontSize: '3.5rem', lineHeight: 1, fontFamily: 'Outfit, monospace' }}
                 data-testid="aviator-countdown"
               >
                 {bettingRemaining.toFixed(1)}s
               </p>
-              <p className="text-gray-400 text-xs mt-2 font-semibold">Place your bet now</p>
+              <p className="text-gray-300 text-xs mt-2 font-semibold">Place your bet now</p>
             </>
           )}
           {phase === 'flying' && (
             <p
               className="font-black tabular-nums"
-              style={{ color: multColor, fontSize: '5.5rem', lineHeight: 1, fontFamily: 'Outfit, monospace' }}
+              style={{ color: multColor, fontSize: '5.5rem', lineHeight: 1, fontFamily: 'Outfit, sans-serif' }}
               data-testid="aviator-multiplier"
             >
               {multiplier.toFixed(2)}x
@@ -317,7 +516,7 @@ const AviatorPage = () => {
               <p className="text-red-400 text-sm font-bold uppercase tracking-widest mb-2">Flew Away!</p>
               <p
                 className="font-black tabular-nums"
-                style={{ color: '#EF4444', fontSize: '5.5rem', lineHeight: 1, fontFamily: 'Outfit, monospace' }}
+                style={{ color: '#EF4444', fontSize: '5rem', lineHeight: 1, fontFamily: 'Outfit, sans-serif' }}
                 data-testid="aviator-crash-point"
               >
                 {(crashPoint || multiplier).toFixed(2)}x
@@ -326,180 +525,176 @@ const AviatorPage = () => {
           )}
         </div>
 
-        {/* Plane icon */}
+        {/* Plane sprite */}
         {phase === 'flying' && (
           <div
-            className="absolute transition-none pointer-events-none"
+            className="absolute pointer-events-none"
             style={{
               left: `${planePos.x}%`,
               top: `${planePos.y}%`,
               transform: 'translate(-50%, -50%) rotate(-25deg)',
             }}
           >
-            <Plane className="w-12 h-12 text-red-500" fill="#DC2626" strokeWidth={1.5} />
+            <Plane className="w-14 h-14 text-red-500" fill="#DC2626" strokeWidth={1.5} />
           </div>
         )}
-      </div>
 
-      {/* Live bets count */}
-      <div className="flex items-center justify-between px-4 mt-3 mb-1">
-        <span className="text-gray-400 text-xs font-bold uppercase tracking-widest">
-          Live Bets <span className="text-white tabular-nums">{activeBets.length}</span>
-        </span>
-        {currentBet?.cashed_out_at && (
-          <span className="text-green-400 text-sm font-black tabular-nums" data-testid="aviator-my-win">
-            +₹{(currentBet.amount * currentBet.cashed_out_at).toFixed(2)} @ {currentBet.cashed_out_at}x
+        {/* Live bets count chip (bottom-right of viewport) */}
+        <div
+          className="absolute bottom-2 right-2 flex items-center gap-1.5 px-2 py-1 rounded-full"
+          style={{ background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)' }}
+        >
+          <div className="flex -space-x-1.5">
+            {['#EF4444', '#A855F7', '#22D3EE'].map((c, i) => (
+              <span key={i} className="w-4 h-4 rounded-full border border-black" style={{ background: c }} />
+            ))}
+          </div>
+          <span className="text-white text-[11px] font-bold tabular-nums" data-testid="aviator-live-count">
+            {feedMeta.total}
           </span>
-        )}
+        </div>
       </div>
 
-      {/* Live bets list (compact horizontal scroll) */}
-      {activeBets.length > 0 && (
-        <div className="flex gap-1.5 overflow-x-auto px-3 pb-2 no-scrollbar">
-          {activeBets.slice(0, 30).map((b, i) => (
-            <div
-              key={i}
-              className="flex items-center gap-1 px-2 py-1 rounded-md whitespace-nowrap flex-shrink-0"
-              style={{
-                background: b.cashed_out_at ? 'rgba(34, 197, 94, 0.15)' : 'rgba(220, 38, 38, 0.10)',
-                border: `1px solid ${b.cashed_out_at ? 'rgba(34, 197, 94, 0.4)' : 'rgba(220, 38, 38, 0.35)'}`,
-              }}
-              data-testid={`aviator-live-bet-${i}`}
-            >
-              <span className="text-[10px] text-white font-bold">{b.name}</span>
-              <span className="text-[10px] text-gray-400 tabular-nums">₹{b.amount}</span>
-              {b.cashed_out_at && (
-                <span className="text-[10px] text-green-400 font-black tabular-nums">{b.cashed_out_at}x</span>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Bet Panel 1 */}
+      <div className="px-3 mt-3">
+        <BetPanel
+          panelId={1}
+          phase={phase} multiplier={multiplier} balance={user?.balance}
+          amount={panel1.amount} setAmount={(v) => setPanel1((p) => ({ ...p, amount: v }))}
+          autoCashout={panel1.autoCashout} setAutoCashout={(v) => setPanel1((p) => ({ ...p, autoCashout: v }))}
+          mode={panel1.mode} setMode={(v) => setPanel1((p) => ({ ...p, mode: v }))}
+          currentBet={panel1.bet} placing={panel1.placing} cashingOut={panel1.cashingOut}
+          onPlace={() => placeBet(1)} onCashout={() => cashOut(1)}
+        />
+      </div>
 
-      {/* Bet panel - fixed bottom */}
-      <div
-        className="fixed bottom-0 left-0 right-0 px-3 py-3"
-        style={{
-          maxWidth: '480px',
-          margin: '0 auto',
-          background: '#0F0F1A',
-          borderTop: '1px solid rgba(220, 38, 38, 0.4)',
-        }}
-      >
-        {/* Amount + quick chips row */}
-        <div className="flex items-center gap-2 mb-2">
-          <div
-            className="flex-1 flex items-center gap-1 px-3 py-2 rounded-lg"
-            style={{ background: '#1A1A2E', border: '1px solid rgba(220, 38, 38, 0.3)' }}
-          >
-            <span className="text-gray-400 text-sm font-bold">₹</span>
-            <input
-              type="number"
-              inputMode="numeric"
-              value={betAmount}
-              onChange={(e) => setBetAmount(Number(e.target.value) || 0)}
-              disabled={!!currentBet}
-              data-testid="aviator-bet-amount"
-              className="flex-1 bg-transparent outline-none text-white text-base font-black tabular-nums w-full disabled:opacity-50"
-              style={{ minWidth: 0 }}
-            />
-            <button
-              type="button"
-              onClick={() => setBetAmount(Math.max(5, betAmount - 10))}
-              disabled={!!currentBet}
-              className="text-white text-xl font-black px-2 disabled:opacity-30"
-              data-testid="aviator-amount-decr"
-            >–</button>
-            <button
-              type="button"
-              onClick={() => setBetAmount(betAmount + 10)}
-              disabled={!!currentBet}
-              className="text-white text-xl font-black px-2 disabled:opacity-30"
-              data-testid="aviator-amount-incr"
-            >+</button>
-          </div>
-          <input
-            type="number"
-            inputMode="decimal"
-            placeholder="Auto @"
-            value={autoCashout}
-            onChange={(e) => setAutoCashout(e.target.value)}
-            disabled={!!currentBet}
-            data-testid="aviator-auto-cashout"
-            className="w-20 px-2 py-2 rounded-lg outline-none text-white text-sm font-bold text-center disabled:opacity-50"
-            style={{ background: '#1A1A2E', border: '1px solid rgba(220, 38, 38, 0.3)' }}
+      {/* Bet Panel 2 (toggleable) */}
+      {showPanel2 ? (
+        <div className="px-3 mt-2">
+          <BetPanel
+            panelId={2}
+            phase={phase} multiplier={multiplier} balance={user?.balance}
+            amount={panel2.amount} setAmount={(v) => setPanel2((p) => ({ ...p, amount: v }))}
+            autoCashout={panel2.autoCashout} setAutoCashout={(v) => setPanel2((p) => ({ ...p, autoCashout: v }))}
+            mode={panel2.mode} setMode={(v) => setPanel2((p) => ({ ...p, mode: v }))}
+            currentBet={panel2.bet} placing={panel2.placing} cashingOut={panel2.cashingOut}
+            onPlace={() => placeBet(2)} onCashout={() => cashOut(2)}
+            onClose={() => setShowPanel2(false)}
           />
         </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setShowPanel2(true)}
+          data-testid="aviator-add-panel"
+          className="mx-3 mt-2 w-[calc(100%-1.5rem)] py-1.5 rounded-full text-gray-400 text-xs font-bold flex items-center justify-center gap-1 active:scale-95"
+          style={{ background: '#141420', border: '1px solid rgba(255,255,255,0.06)' }}
+        >
+          <ChevronDown className="w-3.5 h-3.5" />
+          Add Second Bet
+        </button>
+      )}
 
-        {/* Quick amount chips */}
-        <div className="flex gap-1.5 mb-2">
-          {QUICK_AMOUNTS.map((v) => (
-            <button
-              key={v}
-              type="button"
-              onClick={() => setBetAmount(v)}
-              disabled={!!currentBet}
-              data-testid={`aviator-quick-${v}`}
-              className="flex-1 py-1 rounded-md text-xs font-bold text-white active:scale-95 disabled:opacity-40"
-              style={{ background: 'rgba(220, 38, 38, 0.15)', border: '1px solid rgba(220, 38, 38, 0.35)' }}
-            >
-              ₹{v}
-            </button>
-          ))}
+      {/* Community feed tabs */}
+      <div className="px-3 mt-4">
+        <div
+          className="flex items-stretch gap-1 p-0.5 rounded-full"
+          style={{ background: '#141420', border: '1px solid rgba(255,255,255,0.06)' }}
+        >
+          {[
+            { id: 'all',      label: 'All Bets' },
+            { id: 'previous', label: 'Previous' },
+            { id: 'top',      label: 'Top' },
+          ].map((t) => {
+            const isActive = feedTab === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setFeedTab(t.id)}
+                data-testid={`feed-tab-${t.id}`}
+                className="flex-1 py-1.5 rounded-full text-sm font-bold"
+                style={isActive
+                  ? { background: '#2D2D40', color: '#FFFFFF' }
+                  : { background: 'transparent', color: '#9CA3AF' }
+                }
+              >
+                {t.label}
+              </button>
+            );
+          })}
         </div>
 
-        {/* Action button */}
-        {!currentBet ? (
-          <button
-            type="button"
-            onClick={placeBet}
-            disabled={placing || phase !== 'betting'}
-            data-testid="aviator-place-bet"
-            className="w-full py-3.5 rounded-lg text-white font-black text-base uppercase tracking-wider active:scale-95 disabled:opacity-40"
-            style={{
-              background: phase === 'betting' ? 'linear-gradient(135deg, #16A34A 0%, #15803D 100%)' : '#4B5563',
-              boxShadow: phase === 'betting' ? '0 4px 14px rgba(22, 163, 74, 0.4)' : 'none',
-            }}
-          >
-            {placing ? 'PLACING...' : phase === 'betting' ? `BET ₹${betAmount}` : 'WAIT FOR NEXT ROUND'}
-          </button>
-        ) : currentBet.cashed_out_at ? (
-          <button
-            type="button"
-            disabled
-            data-testid="aviator-cashed-out"
-            className="w-full py-3.5 rounded-lg text-white font-black text-base uppercase tracking-wider"
-            style={{ background: 'linear-gradient(135deg, #16A34A 0%, #15803D 100%)' }}
-          >
-            CASHED OUT @ {currentBet.cashed_out_at}x &nbsp;•&nbsp; +₹{(currentBet.amount * currentBet.cashed_out_at).toFixed(2)}
-          </button>
-        ) : phase === 'flying' ? (
-          <button
-            type="button"
-            onClick={doCashout}
-            disabled={cashingOut}
-            data-testid="aviator-cashout-btn"
-            className="w-full py-3.5 rounded-lg text-white font-black text-base uppercase tracking-wider active:scale-95"
-            style={{
-              background: 'linear-gradient(135deg, #DC2626 0%, #991B1B 100%)',
-              boxShadow: '0 4px 14px rgba(220, 38, 38, 0.45)',
-            }}
-          >
-            {cashingOut ? 'CASHING OUT...' : `CASH OUT @ ${multiplier.toFixed(2)}x  •  ₹${(currentBet.amount * multiplier).toFixed(2)}`}
-          </button>
-        ) : (
-          <button
-            type="button"
-            disabled
-            className="w-full py-3.5 rounded-lg text-gray-300 font-black text-base uppercase tracking-wider"
-            style={{ background: '#1F2937', border: '1px solid #4B5563' }}
-          >
-            BET PLACED &nbsp;•&nbsp; ₹{currentBet.amount}  •  WAITING…
-          </button>
-        )}
+        {/* Bets count + total win row */}
+        <div className="flex items-center justify-between mt-3 mb-1.5 px-1">
+          <div className="flex items-center gap-2">
+            <div className="flex -space-x-1.5">
+              {['#EF4444', '#A855F7', '#22D3EE'].map((c, i) => (
+                <span key={i} className="w-6 h-6 rounded-full border-2 border-[#0A0A14]" style={{ background: c }} />
+              ))}
+            </div>
+            <span className="text-gray-300 text-sm">
+              <span className="text-white font-bold tabular-nums">{feedItems.length}/{feedMeta.total}</span>
+              <span className="text-gray-500"> Bets</span>
+            </span>
+          </div>
+          <div className="text-right">
+            <p className="text-white text-base font-black tabular-nums">{feedMeta.totalWin.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+            <p className="text-gray-500 text-[10px]">Total win</p>
+          </div>
+        </div>
+
+        {/* Column headers */}
+        <div className="grid grid-cols-12 px-2 pb-1 text-[10px] text-gray-500 uppercase tracking-wider">
+          <div className="col-span-4">Player</div>
+          <div className="col-span-3 text-right">Bet</div>
+          <div className="col-span-2 text-right">X</div>
+          <div className="col-span-3 text-right">Win</div>
+        </div>
+
+        {/* Bet rows */}
+        <div className="space-y-1" data-testid="aviator-feed-list">
+          {feedItems.length === 0 ? (
+            <p className="text-center text-gray-500 text-sm py-6">Koi bet nahi</p>
+          ) : feedItems.map((b, i) => {
+            const isWon = b.won != null && b.won > 0;
+            const multColor = b.multiplier >= 2 ? '#A855F7' : '#22D3EE';
+            return (
+              <div
+                key={i}
+                className="grid grid-cols-12 items-center px-2 py-1.5 rounded-full"
+                style={{ background: isWon ? 'rgba(34, 197, 94, 0.08)' : 'rgba(255, 255, 255, 0.025)' }}
+                data-testid={`feed-row-${i}`}
+              >
+                <div className="col-span-4 flex items-center gap-1.5 min-w-0">
+                  <span
+                    className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center text-[9px] font-black text-white"
+                    style={{ background: ['#EF4444','#A855F7','#22D3EE','#FACC15','#34D399'][i % 5] }}
+                  >
+                    {b.name?.[0]?.toUpperCase() || 'P'}
+                  </span>
+                  <span className="text-white text-xs truncate">{b.name}</span>
+                </div>
+                <div className="col-span-3 text-right text-white text-xs tabular-nums">
+                  {Number(b.amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+                <div className="col-span-2 text-right text-xs tabular-nums" style={{ color: b.multiplier ? multColor : 'transparent' }}>
+                  {b.multiplier ? `${b.multiplier.toFixed(2)}x` : '—'}
+                </div>
+                <div className="col-span-3 text-right text-xs tabular-nums" style={{ color: isWon ? multColor : 'transparent' }}>
+                  {isWon ? Number(b.won).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <p className="text-center text-gray-500 text-[10px] mt-4 mb-2">
+          <span style={{ color: '#22D3EE' }}>✓</span>&nbsp;Provably Fair Game &nbsp;•&nbsp; matka11.online
+        </p>
       </div>
 
-      {/* My bets history modal */}
+      {/* My bets modal */}
       {showHistory && (
         <div
           className="fixed inset-0 z-50 bg-black/70 flex items-end sm:items-center justify-center"

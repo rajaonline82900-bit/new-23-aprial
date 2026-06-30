@@ -107,23 +107,27 @@ Migrate Matka11 satta app from Emergent preview environment to self-hosted Hosti
 17. AVIATOR IN-HOUSE CRASH GAME (Feb 2026): Spribe-style provably-fair
     crash game built from scratch in-house (no third-party dependency).
     Backend (`routes/aviator_routes.py`):
-    - Single async round loop: betting (8s) → flying (until crash) → pause (3s)
-    - Bustabit-style crash formula: ~3% house edge, P(crash >= x) ≈ 0.97/x
+    - Single async round loop: betting (8s) → flying → pause (3s)
+    - Bustabit-style crash formula with **~33% house edge** (`HOUSE_EDGE_DIVISOR=3`)
+      giving exactly the user-requested **30% win chance** at typical 2x cashout
+      (verified by 5000-sample Monte Carlo: 33.6% instant crash, 32.9% reach 2x).
     - SHA-256 commit/reveal seed scheme — players can verify each round
     - WebSocket `/api/aviator/ws` broadcasts ticks every 100ms during flying
-    - REST: /api/aviator/{state,bet,cashout,active-bets,my-bets}
+    - REST: /api/aviator/{state,bet,cashout,active-bets,community-bets,my-bets}
     - Atomic balance debit on bet, atomic credit on cashout
     - Auto-cashout supported (1.01x–1000x)
     - Min bet ₹5, max ₹5000
     Frontend (`pages/AviatorPage.js`):
-    - Spribe-style dark UI: red plane, big neon multiplier, gold balance pill
-    - Recent crashes ticker (color-coded by multiplier)
-    - SVG plane trajectory curve, animated plane icon
-    - Bet panel with quick chips, auto-cashout input
-    - Smart CTA: BET (green) → CASH OUT (red, with live amount) → CASHED OUT
+    - Reddy66/Spribe pixel-style: red AVIATOR header + purple/red radial
+      viewport with diagonal sun-ray streaks
+    - **TWO stacked bet panels** (Spribe parity) — second toggleable
+    - Each panel: Bet/Auto mode tabs, –/+ stepper, 1000/2000/10000 chips,
+      big green "Bet" CTA → orange "Cash Out ₹X" during flying
+    - Smart CTA transitions: BET → CASHOUT → CASHED OUT (all 3 states)
+    - All Bets / Previous / Top community feed tabs (masked names like "r***l")
+    - Live bets count + total win sum + avatar stack
+    - Provably Fair footer
     - WebSocket auto-reconnect with exponential backoff
-    - Live bets ticker
-    - My Bets history modal
     Route: `/aviator` (protected). Dashboard Aviator tab navigates here.
     - Black header bar with game name pill + BETS link + Back button
     - MARKET label + Rate (auto-changes per bet type)

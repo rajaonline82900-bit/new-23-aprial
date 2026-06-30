@@ -35,7 +35,9 @@ BETTING_DURATION = 8.0      # seconds
 CRASH_PAUSE = 3.0           # seconds shown after crash
 TICK_INTERVAL = 0.1         # ms between WS broadcasts during flying
 GROWTH_RATE = 0.06          # multiplier(t) = e^(GROWTH_RATE * t)
-HOUSE_EDGE_DIVISOR = 33     # ~3% house edge — every 33rd round is instant 1.00x
+HOUSE_EDGE_DIVISOR = 3      # ~33% house edge — every 3rd round is instant 1.00x.
+                            # This gives P(crash >= 2x) ≈ 33% i.e. ~30% win
+                            # rate for typical 2x cashout play (per user spec).
 MIN_BET = 5.0
 MAX_BET = 5000.0
 MAX_AUTO_CASHOUT = 1000.0
@@ -248,6 +250,77 @@ async def active_bets():
             "won": round(b["amount"] * b["cashed_out_at"], 2) if b.get("cashed_out_at") else None,
         })
     return {"bets": out, "phase": _state.phase}
+
+
+@router.get("/aviator/community-bets")
+async def community_bets(tab: str = "all", limit: int = 30):
+    """Community feed for the bottom panel.
+    - tab="all":      current round's active bets (live)
+    - tab="previous": last completed round's settled bets
+    - tab="top":      highest-won bets across recent rounds
+    Returns masked names (e.g. 'd***9') for privacy.
+    """
+    def _mask(name: str) -> str:
+        if not name:
+            return "p****r"
+        n = name.strip().split(" ")[0]
+        if len(n) <= 2:
+            return n[0] + "****"
+        return f"{n[0].lower()}***{n[-1].lower()}"
+
+    if tab == "all":
+        items = []
+        for uid, b in _state.bets.items():
+            items.append({
+                "name": _mask(b.get("name", "Player")),
+                "amount": b["amount"],
+                "multiplier": b.get("cashed_out_at"),
+                "won": round(b["amount"] * b["cashed_out_at"], 2) if b.get("cashed_out_at") else None,
+            })
+        # sort by bet amount desc
+        items.sort(key=lambda x: x["amount"], reverse=True)
+        return {"bets": items[:limit], "phase": _state.phase}
+
+    if tab == "previous":
+        # last completed round
+        last = await db.aviator_rounds.find_one({}, sort=[("created_at", -1)])
+        if not last:
+            return {"bets": []}
+        bets_cur = db.aviator_bets.find(
+            {"round_id": last["round_id"]},
+            {"_id": 0, "user_id": 1, "amount": 1, "cashout_multiplier": 1, "won_amount": 1, "status": 1}
+        ).sort("amount", -1).limit(limit)
+        bets = await bets_cur.to_list(limit)
+        # join names
+        user_ids = list({b["user_id"] for b in bets if b.get("user_id")})
+        valid = [ObjectId(u) for u in user_ids]
+        users = await db.users.find({"_id": {"$in": valid}}, {"name": 1}).to_list(len(valid))
+        umap = {str(u["_id"]): u.get("name", "Player") for u in users}
+        out = [{
+            "name": _mask(umap.get(b["user_id"], "Player")),
+            "amount": b["amount"],
+            "multiplier": b.get("cashout_multiplier"),
+            "won": b.get("won_amount") if b.get("status") == "won" else None,
+        } for b in bets]
+        return {"bets": out, "crash_point": last.get("crash_point")}
+
+    # tab == "top": highest wins across recent bets
+    cur = db.aviator_bets.find(
+        {"status": "won"},
+        {"_id": 0, "user_id": 1, "amount": 1, "cashout_multiplier": 1, "won_amount": 1}
+    ).sort("won_amount", -1).limit(limit)
+    bets = await cur.to_list(limit)
+    user_ids = list({b["user_id"] for b in bets if b.get("user_id")})
+    valid = [ObjectId(u) for u in user_ids]
+    users = await db.users.find({"_id": {"$in": valid}}, {"name": 1}).to_list(len(valid))
+    umap = {str(u["_id"]): u.get("name", "Player") for u in users}
+    out = [{
+        "name": _mask(umap.get(b["user_id"], "Player")),
+        "amount": b["amount"],
+        "multiplier": b.get("cashout_multiplier"),
+        "won": b.get("won_amount"),
+    } for b in bets]
+    return {"bets": out}
 
 @router.post("/aviator/bet")
 async def place_bet(request: Request):
