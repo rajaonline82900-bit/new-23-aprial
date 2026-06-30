@@ -158,36 +158,34 @@ Migrate Matka11 satta app from Emergent preview environment to self-hosted Hosti
     theme to pure-white Reddy66 light theme without affecting other pages.
 
 ## 2026-02-(latest) Updates
-- **Aviator round-loop hang FIX (critical)**: Previously `_broadcast`
-  iterated WS clients sequentially with no timeout — one slow/dead client
-  could block the entire round loop, freezing the betting → flying
-  transition (the "progress bar stuck" symptom). Two fixes:
+- **Aviator round-loop hang FIX (critical)**: Two issues fixed:
   1. `_broadcast` now uses `asyncio.gather` for parallel sends with a 2s
-     timeout per client (`_send_one`). Dead clients are pruned after.
-  2. `aviator_ws` no longer sends a periodic ping from the receive loop.
-     Two coroutines calling `ws.send_json` on the same WS (receive-loop
-     ping + round-loop broadcast) was a race that could deadlock. The
-     receive loop now only `receive_text()`s. Frequent broadcasts keep
-     the connection warm naturally.
+     per-client timeout. A slow/dead WS can no longer block the loop.
+  2. `aviator_ws` no longer sends a periodic ping from the receive loop
+     (was racing with round-loop broadcasts on the same WS).
+- **Aviator watchdog (safety net)**: New `aviator_watchdog()` background
+  task running every 5s. Detects if any phase exceeds its max grace
+  duration (betting>25s, flying>~96s, crashed>13s) and force-recovers by
+  transitioning to crashed + settle, so the main loop continues. Even if
+  unforeseen issues occur, the game never stays stuck.
 - **Admin panel: Kalyan section separation**:
-  - New tab **"कल्याण रिजल्ट"** (renders `AdminKalyanResultsTab`).
-  - "रिजल्ट घोषणा" renamed to **"गली रिजल्ट"** and filtered to only
-    show non-Kalyan games.
-  - **"गेम सेटिंग्स"** tab split visually into two sections
-    (Gali/Disawar + Kalyan) each with its own Add button. Kalyan also has
-    "Seed Default" button.
-- **Kalyan result entry — critical bug fix**: Earlier code keyed React
-  state and result lookup on `g.id` which is undefined on API responses
-  (the actual field is `game_id`). All cards shared the same form state,
-  so typing in one input replicated to ALL inputs and clicking declare
-  sent `game_id=undefined`. Switched all references to `g.game_id`.
+  - New tab **"कल्याण रिजल्ट"**.
+  - "रिजल्ट घोषणा" renamed to **"गली रिजल्ट"** and filtered to non-Kalyan.
+  - **"गेम सेटिंग्स"** tab split visually into Gali/Disawar + Kalyan
+    sections (each with its own Add button). Kalyan also has "Seed Default".
+- **Kalyan result entry — bug fix**: Was using `g.id` (undefined on API
+  responses) for state keys, making all cards share the same form state.
+  Switched to `g.game_id`. Each card now has independent state.
 - **Kalyan result UI now 3-column**: OPEN | **JODI (auto)** | CLOSE.
-  The middle JODI cell shows `open_ank + close_ank` automatically (in
-  gold gradient when computed) — no manual entry needed.
+  JODI cell shows `open_ank + close_ank` automatically.
+- **Kalyan Panna Quick Picker**: A "Sparkles" button next to each
+  Open/Close input opens a modal showing all 220 valid pannas organized
+  by Ank (0-9) — 22 pannas per ank as clickable chips. One tap fills the
+  input. Plus a live "Ank preview" appears as admin types in the input.
 - **Kalyan game time labels**: In the game create/edit dialog, when
   category=`kalyan`, the time fields are labeled "Open Time (24hr)" and
-  "Close Time (24hr)" with helper text "कब Open/Close panna declare
-  hoga". For Gali/Disawar they remain "Start Time" / "End Time".
+  "Close Time (24hr)" with helper text. For Gali/Disawar they remain
+  "Start Time" / "End Time".
 
 ## Backlog
 - P0: Tell user to "Save to Github" → on VPS run `bash /var/www/new-23-aprial/deploy.sh`

@@ -3,10 +3,37 @@ import axios from 'axios';
 import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { RotateCcw, CheckCircle2, Trash2 } from 'lucide-react';
+import { RotateCcw, CheckCircle2, Trash2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 
 const API = process.env.REACT_APP_BACKEND_URL;
+
+// Generate all valid 3-digit pannas indexed by their ank (sum of digits mod 10).
+// Includes Single Pannas (3 unique ascending digits), Double Pannas (2 same)
+// and Triple Pannas (all same). This is the full matka panna universe.
+const PANNAS_BY_ANK = (() => {
+  const map = {};
+  for (let i = 0; i < 10; i++) map[i] = [];
+  // Single Pannas: a < b < c
+  for (let a = 0; a <= 9; a++) for (let b = a + 1; b <= 9; b++) for (let c = b + 1; c <= 9; c++) {
+    const p = `${a}${b}${c}`; map[(a + b + c) % 10].push(p);
+  }
+  // Double Pannas: a == b != c (ascending two patterns aab, abb)
+  for (let a = 0; a <= 9; a++) for (let b = 0; b <= 9; b++) {
+    if (a === b) continue;
+    const p1 = a < b ? `${a}${a}${b}` : `${b}${a}${a}`;
+    map[(a + a + b) % 10].push(p1);
+  }
+  // Triple Pannas
+  for (let a = 0; a <= 9; a++) {
+    const p = `${a}${a}${a}`; map[(3 * a) % 10].push(p);
+  }
+  // De-dupe & sort
+  for (let i = 0; i < 10; i++) {
+    map[i] = Array.from(new Set(map[i])).sort();
+  }
+  return map;
+})();
 
 const AdminKalyanResultsTab = ({ games = [] }) => {
   const kalyanGames = games.filter(g => g.category === 'kalyan');
@@ -16,8 +43,9 @@ const AdminKalyanResultsTab = ({ games = [] }) => {
   });
   const [date, setDate] = useState(today);
   const [results, setResults] = useState([]);
-  const [forms, setForms] = useState({});  // {gameId: {open:'', close:''}}
+  const [forms, setForms] = useState({});  // {gameId: {open:'', close:'', openAnk:'', closeAnk:''}}
   const [loading, setLoading] = useState(false);
+  const [picker, setPicker] = useState(null); // {gameId, session} when opened
 
   useEffect(() => { fetchResults(); }, [date]);
 
@@ -143,21 +171,31 @@ const AdminKalyanResultsTab = ({ games = [] }) => {
                         </Button>
                       </div>
                     ) : (
-                      <div className="flex gap-1">
-                        <Input
-                          value={f.open}
-                          onChange={e => setForm(gid, 'open', e.target.value)}
-                          placeholder="XXX"
-                          maxLength={3}
-                          data-testid={`admin-kalyan-open-input-${gid}`}
-                          className="bg-[#141418] border-white/10 text-white font-mono h-8 text-center"
-                        />
-                        <Button size="sm" onClick={() => declare(gid, 'open')} disabled={loading}
-                          className="bg-green-600 hover:bg-green-700 text-white h-8 px-2"
-                          data-testid={`admin-kalyan-declare-open-${gid}`}>
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                        </Button>
-                      </div>
+                      <>
+                        <div className="flex gap-1">
+                          <Input
+                            value={f.open}
+                            onChange={e => setForm(gid, 'open', e.target.value)}
+                            placeholder="XXX"
+                            maxLength={3}
+                            data-testid={`admin-kalyan-open-input-${gid}`}
+                            className="bg-[#141418] border-white/10 text-white font-mono h-8 text-center"
+                          />
+                          <Button size="sm" variant="ghost" onClick={() => setPicker({ gameId: gid, session: 'open' })}
+                            className="text-[#D4AF37] hover:bg-[#D4AF37]/10 h-8 px-1.5"
+                            title="Panna chuno" data-testid={`admin-kalyan-pick-open-${gid}`}>
+                            <Sparkles className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button size="sm" onClick={() => declare(gid, 'open')} disabled={loading}
+                            className="bg-green-600 hover:bg-green-700 text-white h-8 px-2"
+                            data-testid={`admin-kalyan-declare-open-${gid}`}>
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                        {f.open && /^\d{3}$/.test(f.open) && (
+                          <p className="text-gray-400 text-[10px] mt-1">Ank preview: <span className="text-green-400 font-bold">{(f.open.split('').reduce((s, d) => s + +d, 0)) % 10}</span></p>
+                        )}
+                      </>
                     )}
                   </div>
 
@@ -201,21 +239,31 @@ const AdminKalyanResultsTab = ({ games = [] }) => {
                         </Button>
                       </div>
                     ) : (
-                      <div className="flex gap-1">
-                        <Input
-                          value={f.close}
-                          onChange={e => setForm(gid, 'close', e.target.value)}
-                          placeholder="XXX"
-                          maxLength={3}
-                          data-testid={`admin-kalyan-close-input-${gid}`}
-                          className="bg-[#141418] border-white/10 text-white font-mono h-8 text-center"
-                        />
-                        <Button size="sm" onClick={() => declare(gid, 'close')} disabled={loading}
-                          className="bg-red-600 hover:bg-red-700 text-white h-8 px-2"
-                          data-testid={`admin-kalyan-declare-close-${gid}`}>
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                        </Button>
-                      </div>
+                      <>
+                        <div className="flex gap-1">
+                          <Input
+                            value={f.close}
+                            onChange={e => setForm(gid, 'close', e.target.value)}
+                            placeholder="XXX"
+                            maxLength={3}
+                            data-testid={`admin-kalyan-close-input-${gid}`}
+                            className="bg-[#141418] border-white/10 text-white font-mono h-8 text-center"
+                          />
+                          <Button size="sm" variant="ghost" onClick={() => setPicker({ gameId: gid, session: 'close' })}
+                            className="text-[#D4AF37] hover:bg-[#D4AF37]/10 h-8 px-1.5"
+                            title="Panna chuno" data-testid={`admin-kalyan-pick-close-${gid}`}>
+                            <Sparkles className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button size="sm" onClick={() => declare(gid, 'close')} disabled={loading}
+                            className="bg-red-600 hover:bg-red-700 text-white h-8 px-2"
+                            data-testid={`admin-kalyan-declare-close-${gid}`}>
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                        {f.close && /^\d{3}$/.test(f.close) && (
+                          <p className="text-gray-400 text-[10px] mt-1">Ank preview: <span className="text-red-400 font-bold">{(f.close.split('').reduce((s, d) => s + +d, 0)) % 10}</span></p>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -224,6 +272,69 @@ const AdminKalyanResultsTab = ({ games = [] }) => {
           );
         })}
       </div>
+
+      {/* Panna Quick Picker Modal */}
+      {picker && (
+        <div
+          className="fixed inset-0 z-50 bg-black/70 flex items-end sm:items-center justify-center"
+          onClick={() => setPicker(null)}
+          data-testid="panna-picker-overlay"
+        >
+          <div
+            className="w-full max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[85vh] overflow-hidden flex flex-col"
+            style={{ background: '#0F0F1A', border: '1px solid rgba(212, 175, 55, 0.4)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 sticky top-0"
+              style={{ background: '#0F0F1A', borderBottom: '1px solid rgba(212, 175, 55, 0.3)' }}>
+              <div>
+                <h3 className="text-[#FFD700] font-bold text-base">
+                  Panna chuno — {picker.session.toUpperCase()}
+                </h3>
+                <p className="text-gray-400 text-xs">
+                  Ank ke hisaab se panna select karo. Click karte hi input bhar jayega.
+                </p>
+              </div>
+              <button onClick={() => setPicker(null)} className="text-gray-400 font-bold text-2xl px-2" data-testid="panna-picker-close">×</button>
+            </div>
+            <div className="overflow-y-auto p-3 space-y-3">
+              {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((ank) => (
+                <div key={ank}>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span
+                      className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-black"
+                      style={{
+                        background: 'linear-gradient(135deg, #FFD700 0%, #D4AF37 100%)',
+                        color: '#1A0F00',
+                      }}
+                    >{ank}</span>
+                    <span className="text-gray-300 text-xs font-bold">Ank {ank}</span>
+                    <span className="text-gray-500 text-[10px]">({PANNAS_BY_ANK[ank].length} pannas)</span>
+                  </div>
+                  <div className="grid grid-cols-6 gap-1.5">
+                    {PANNAS_BY_ANK[ank].map((p) => (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => {
+                          setForm(picker.gameId, picker.session, p);
+                          setPicker(null);
+                        }}
+                        data-testid={`panna-pick-${p}`}
+                        className="text-white font-mono text-xs py-1.5 rounded-md active:scale-95"
+                        style={{
+                          background: '#1A1A2E',
+                          border: '1px solid rgba(255,255,255,0.08)',
+                        }}
+                      >{p}</button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -25,7 +25,7 @@ from routes.chat_routes import router as chat_router
 from routes.admin_routes import router as admin_router, auto_fetch_loop, expire_pending_deposits_loop
 from routes.notification_routes import router as notification_router
 from routes.kalyan_routes import router as kalyan_router
-from routes.aviator_routes import router as aviator_router, aviator_round_loop
+from routes.aviator_routes import router as aviator_router, aviator_round_loop, aviator_watchdog
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -185,6 +185,8 @@ async def start_auto_fetch():
     logger.info("Chat auto-delete loop started (every 1 hour)")
     asyncio.create_task(aviator_round_loop())
     logger.info("Aviator round loop started")
+    asyncio.create_task(aviator_watchdog())
+    logger.info("Aviator watchdog started (auto-recovers if any phase stuck)")
 
 
 @app.on_event("shutdown")

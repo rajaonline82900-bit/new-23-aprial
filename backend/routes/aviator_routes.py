@@ -245,6 +245,62 @@ async def aviator_round_loop():
             await asyncio.sleep(2)
 
 
+async def aviator_watchdog():
+    """Safety net: detects if the round loop is stuck in any phase for too
+    long (e.g. due to an unexpected hang) and forcibly resets state so the
+    main loop can recover. Runs every 5 seconds.
+
+    Maximum phase durations (with grace buffer):
+      betting → BETTING_DURATION + 15s
+      flying  → log(99)/GROWTH_RATE + 20s (cap covers >99x crashes)
+      crashed → CRASH_PAUSE + 10s
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    await asyncio.sleep(10)  # let the main loop establish state first
+    MAX_BETTING = BETTING_DURATION + 15.0
+    MAX_FLYING = (math.log(99) / GROWTH_RATE) + 20.0  # ~96s
+    MAX_CRASHED = CRASH_PAUSE + 10.0
+    while True:
+        try:
+            await asyncio.sleep(5)
+            if _state.phase == "idle":
+                continue
+            elapsed = time.time() - _state.start_ts
+            stuck = False
+            if _state.phase == "betting" and elapsed > MAX_BETTING:
+                stuck = True
+            elif _state.phase == "flying" and elapsed > MAX_FLYING:
+                stuck = True
+            elif _state.phase == "crashed" and elapsed > MAX_CRASHED:
+                stuck = True
+            if stuck:
+                logger.warning(
+                    f"aviator_watchdog: phase={_state.phase} stuck for {elapsed:.1f}s — forcing crash + reset"
+                )
+                # Force a clean transition through crashed → next round.
+                # We just settle whatever we have and let the main loop pick
+                # up the next round on its own cycle.
+                try:
+                    if _state.phase != "crashed":
+                        _state.phase = "crashed"
+                        _state.start_ts = time.time()
+                        await _broadcast({
+                            "type": "crash",
+                            "crash_point": _state.crash_point,
+                            "server_seed": _state.server_seed,
+                        })
+                        try:
+                            await _settle_round()
+                        except Exception as se:
+                            logger.exception(f"watchdog settle error: {se}")
+                except Exception as we:
+                    logger.exception(f"watchdog recovery error: {we}")
+        except Exception as outer:
+            logger.exception(f"watchdog outer error: {outer}")
+            await asyncio.sleep(5)
+
+
 # ---------- REST endpoints ----------
 @router.get("/aviator/state")
 async def get_state():
