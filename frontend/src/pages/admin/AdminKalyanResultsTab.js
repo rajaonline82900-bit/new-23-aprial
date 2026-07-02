@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { RotateCcw, CheckCircle2, Trash2, Sparkles } from 'lucide-react';
+import { RotateCcw, CheckCircle2, Trash2, Sparkles, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 
 const API = process.env.REACT_APP_BACKEND_URL;
@@ -111,16 +111,60 @@ const AdminKalyanResultsTab = ({ games = [] }) => {
     }
   };
 
+  const [autoFetching, setAutoFetching] = useState(false);
+  const triggerAutoFetch = async () => {
+    setAutoFetching(true);
+    try {
+      const { data } = await axios.post(`${API}/api/admin/kalyan/auto-fetch`, {}, { withCredentials: true });
+      if (data.success) {
+        const n = data.declared_count || 0;
+        if (n > 0) {
+          toast.success(`✅ ${n} result(s) auto-declared from DP Boss`);
+        } else {
+          toast.info(`DP Boss checked ${data.markets_checked} markets — koi naya result nahi mila`);
+        }
+        fetchResults();
+      } else {
+        toast.error(`DP Boss error: ${data.error || 'Unknown'}`);
+      }
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Auto-fetch failed');
+    } finally {
+      setAutoFetching(false);
+    }
+  };
+
   if (kalyanGames.length === 0) {
     return <div className="text-gray-400 text-center py-8">Koi Kalyan game nahi mila</div>;
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <label className="text-gray-300 text-sm">Date:</label>
-        <Input type="date" value={date} onChange={e => setDate(e.target.value)}
-          className="bg-[#0A0A0C] border-white/10 text-white w-44 h-9" data-testid="admin-kalyan-date" />
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2">
+          <label className="text-gray-300 text-sm">Date:</label>
+          <Input type="date" value={date} onChange={e => setDate(e.target.value)}
+            className="bg-[#0A0A0C] border-white/10 text-white w-44 h-9" data-testid="admin-kalyan-date" />
+        </div>
+        <Button
+          onClick={triggerAutoFetch}
+          disabled={autoFetching}
+          data-testid="admin-kalyan-auto-fetch-btn"
+          className="h-9"
+          style={{
+            background: 'linear-gradient(135deg, #B91C5C 0%, #8B1538 100%)',
+            border: '1px solid #EC4899',
+            color: '#fff',
+          }}
+        >
+          <Zap className={`w-4 h-4 mr-1.5 ${autoFetching ? 'animate-pulse' : ''}`} />
+          {autoFetching ? 'Fetching…' : 'Auto-Fetch (DP Boss)'}
+        </Button>
+      </div>
+
+      <div className="bg-pink-500/5 border border-pink-500/20 rounded-lg px-3 py-2 text-xs text-gray-300">
+        <span className="text-pink-400 font-bold">Auto-Fetch:</span> Background me har 3 min pe DP Boss API se result auto-declare hote hain.
+        Instant fetch ke liye upar wala button dabao.
       </div>
 
       <div className="grid gap-3">

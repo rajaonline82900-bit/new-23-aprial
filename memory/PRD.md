@@ -163,29 +163,36 @@ Migrate Matka11 satta app from Emergent preview environment to self-hosted Hosti
      per-client timeout. A slow/dead WS can no longer block the loop.
   2. `aviator_ws` no longer sends a periodic ping from the receive loop
      (was racing with round-loop broadcasts on the same WS).
-- **Aviator watchdog (safety net)**: New `aviator_watchdog()` background
-  task running every 5s. Detects if any phase exceeds its max grace
-  duration (betting>25s, flying>~96s, crashed>13s) and force-recovers by
-  transitioning to crashed + settle, so the main loop continues. Even if
-  unforeseen issues occur, the game never stays stuck.
-- **Admin panel: Kalyan section separation**:
-  - New tab **"कल्याण रिजल्ट"**.
-  - "रिजल्ट घोषणा" renamed to **"गली रिजल्ट"** and filtered to non-Kalyan.
-  - **"गेम सेटिंग्स"** tab split visually into Gali/Disawar + Kalyan
-    sections (each with its own Add button). Kalyan also has "Seed Default".
-- **Kalyan result entry — bug fix**: Was using `g.id` (undefined on API
-  responses) for state keys, making all cards share the same form state.
-  Switched to `g.game_id`. Each card now has independent state.
-- **Kalyan result UI now 3-column**: OPEN | **JODI (auto)** | CLOSE.
-  JODI cell shows `open_ank + close_ank` automatically.
-- **Kalyan Panna Quick Picker**: A "Sparkles" button next to each
-  Open/Close input opens a modal showing all 220 valid pannas organized
-  by Ank (0-9) — 22 pannas per ank as clickable chips. One tap fills the
-  input. Plus a live "Ank preview" appears as admin types in the input.
-- **Kalyan game time labels**: In the game create/edit dialog, when
-  category=`kalyan`, the time fields are labeled "Open Time (24hr)" and
-  "Close Time (24hr)" with helper text. For Gali/Disawar they remain
-  "Start Time" / "End Time".
+- **Aviator watchdog + polling fallback**: Watchdog auto-recovers if any
+  phase stuck; HTTP polling on `/api/aviator/state` runs even if WS dies.
+- **Admin panel: Kalyan section separation** — new "कल्याण रिजल्ट" tab
+  + "गेम सेटिंग्स" split into Gali/Disawar + Kalyan sections.
+- **Kalyan result entry — bug fix**: switched `g.id` → `g.game_id`;
+  each card now has independent state.
+- **Kalyan Panna Quick Picker**: 220 valid pannas organized by Ank 0-9,
+  live "Ank preview" as admin types.
+- **DP Boss API — Kalyan auto-result integration (NEW)**:
+  - New file `/app/backend/routes/kalyan_auto_results.py`.
+  - Env vars: `DPBOSS_API_KEY`, `DPBOSS_API_URL`.
+  - Background loop `kalyan_auto_fetch_loop()` polls DP Boss every 180s,
+    auto-declares Open/Close pannas via extracted helper
+    `declare_kalyan_panna_internal()` (same code path as manual admin
+    declare — bets settled atomically).
+  - Static mapping of 10 mapped Kalyan games → DP Boss market IDs
+    (kalyan_morning, main_bazar_morning, sridevi, madhur_morning,
+    milan_day, rajdhani_day, kalyan, main_bazar, milan_night,
+    rajdhani_night). Remaining 6 games (shagun, padmavathi, worli_morning,
+    day_bombay, maharani, sunday_bazar) → manual declare only.
+  - Admin endpoints:
+    * `POST /api/admin/kalyan/auto-fetch` — one-shot manual trigger
+    * `GET  /api/admin/kalyan/auto-fetch/status` — diagnostic (mapping,
+      running state, unmapped-games)
+  - Idempotency: same panna+session for same date skipped (no re-settle).
+  - UI: new ⚡ "Auto-Fetch (DP Boss)" pink button in the Kalyan Results
+    admin tab + explanatory banner.
+- **Bulletproof `deploy.sh`**: hard-reset git, wipe `node_modules`+build,
+  fresh yarn build, cache-bust `index.html`, auto-restart backend
+  systemd service, reload nginx, verify `/api/version` + games count.
 
 ## Backlog
 - P0: Tell user to "Save to Github" → on VPS run `bash /var/www/new-23-aprial/deploy.sh`

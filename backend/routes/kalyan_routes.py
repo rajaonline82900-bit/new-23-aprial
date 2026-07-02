@@ -222,25 +222,46 @@ async def declare_kalyan_result(request: Request):
     session = body.get("session")  # open / close
     panna = str(body.get("panna", "")).strip()
     date_str = body.get("date") or datetime.now(IST).strftime("%Y-%m-%d")
+    result = await declare_kalyan_panna_internal(game_id, session, panna, date_str, source="manual")
+    if not result.get("ok"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Declare failed"))
+    return {"message": f"{session.title()} result declared", "panna": panna, "ank": result["ank"]}
 
+
+async def declare_kalyan_panna_internal(
+    game_id: str,
+    session: str,
+    panna: str,
+    date_str: str,
+    source: str = "manual",
+) -> dict:
+    """Core declare + settle logic. Reusable by manual admin endpoint AND by
+    DP Boss auto-fetch loop. Returns {ok, ank, jodi} on success or {ok:False,
+    error} on failure. Idempotent — if same panna already declared for this
+    session, returns ok=True but does not re-settle bets.
+    """
     if session not in ("open", "close"):
-        raise HTTPException(status_code=400, detail="session must be open or close")
+        return {"ok": False, "error": "session must be open or close"}
     if not (panna.isdigit() and len(panna) == 3):
-        raise HTTPException(status_code=400, detail="Panna must be exactly 3 digits")
+        return {"ok": False, "error": "Panna must be exactly 3 digits"}
 
     games = await get_games_dict()
     game = games.get(game_id)
     if not game or game.get("category") != "kalyan":
-        raise HTTPException(status_code=400, detail="Invalid Kalyan game")
+        return {"ok": False, "error": "Invalid Kalyan game"}
 
     ank = get_ank(panna)
 
-    # Upsert result
+    # Idempotency: skip if already declared with the same panna for this session
     existing = await db.kalyan_results.find_one({"game_id": game_id, "date": date_str})
+    if existing and existing.get(f"{session}_panna") == panna:
+        return {"ok": True, "ank": ank, "already_declared": True}
+
     update = {
         f"{session}_panna": panna,
         f"{session}_ank": ank,
         f"{session}_declared_at": datetime.now(timezone.utc).isoformat(),
+        f"{session}_source": source,
     }
     if existing:
         merged = {**existing, **update}
@@ -260,9 +281,10 @@ async def declare_kalyan_result(request: Request):
         existing = doc
 
     # Settle bets for this session
-    await _settle_kalyan_bets(game_id, date_str, session, panna, ank, existing)
+    fresh = await db.kalyan_results.find_one({"game_id": game_id, "date": date_str}) or existing
+    await _settle_kalyan_bets(game_id, date_str, session, panna, ank, fresh)
 
-    return {"message": f"{session.title()} result declared", "panna": panna, "ank": ank}
+    return {"ok": True, "ank": ank, "jodi": fresh.get("jodi")}
 
 
 async def _settle_kalyan_bets(game_id: str, date_str: str, session: str, panna: str, ank: str, result_doc):
