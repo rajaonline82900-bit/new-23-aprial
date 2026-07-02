@@ -43,8 +43,9 @@ TOKENS_PER_PLAYER = 4
 
 MATCH_DURATION = 10 * 60         # 10 minutes (Zupee-Supreme)
 TURN_DURATION = 15
-BOT_FILL_WAIT = 180
+BOT_FILL_WAIT = 60               # 60s wait before bot autofill (per user request)
 MAX_CONSECUTIVE_SIXES = 3
+MAX_AUTO_SKIPS = 3               # After 3 auto-plays in a row, user forfeits on 4th
 ENTRY_FEE_SLABS = [10, 50, 100, 500]
 PLAYER_COUNTS = [2, 3, 4]
 DEFAULT_COMMISSION_PCT = 10.0
@@ -66,11 +67,20 @@ PLAYER_START_POS = [0, 13, 26, 39]
 SAFE_SQUARES = {0, 8, 13, 21, 26, 34, 39, 47}
 
 BOT_NAMES = [
-    "Rohit", "Sneha", "Aakash", "Priya", "Vikram", "Anjali", "Rahul", "Meera",
-    "Suresh", "Kavya", "Amit", "Neha", "Ravi", "Pooja", "Karan", "Isha",
-    "Deepak", "Simran", "Manish", "Riya", "Sanjay", "Nikita", "Arjun", "Divya",
-    "Sachin", "Payal", "Nitin", "Sonam", "Yash", "Tanya", "Gaurav", "Preeti",
-    "Ankit", "Shreya", "Mohit", "Aarti", "Varun", "Nisha", "Kunal", "Ritu",
+    # Boys
+    "Rohit Sharma", "Aakash Yadav", "Vikram Singh", "Rahul Verma", "Suresh Patel",
+    "Amit Kumar", "Ravi Gupta", "Karan Malhotra", "Deepak Jain", "Manish Tiwari",
+    "Sanjay Bhatt", "Arjun Rao", "Sachin Nair", "Nitin Bansal", "Yash Choudhary",
+    "Gaurav Mehta", "Ankit Saini", "Mohit Rathore", "Varun Kapoor", "Kunal Aggarwal",
+    "Aditya Joshi", "Rajesh Shukla", "Harish Dubey", "Naveen Reddy", "Pankaj Mishra",
+    "Sumit Chauhan", "Vishal Pandey", "Abhishek Roy", "Tarun Goyal", "Devendra Sinha",
+    # Girls
+    "Sneha Kapoor", "Priya Iyer", "Anjali Desai", "Meera Mehra", "Kavya Nair",
+    "Neha Bhatia", "Pooja Sethi", "Isha Khanna", "Simran Kaur", "Riya Chawla",
+    "Nikita Arora", "Divya Menon", "Payal Bhandari", "Sonam Rana", "Tanya Bhalla",
+    "Preeti Chopra", "Shreya Gill", "Aarti Bajaj", "Nisha Malhotra", "Ritu Grover",
+    "Anushka Trivedi", "Radhika Modi", "Sanya Bhatt", "Aisha Sethi", "Bhavya Doshi",
+    "Ishita Sood", "Komal Wadhwa", "Nandini Sen", "Ojasvi Rana", "Pallavi Naik",
 ]
 
 
@@ -173,6 +183,9 @@ def _make_player_slot(user: dict, idx: int, is_bot: bool = False) -> dict:
         "score": 0,
         "sixes": 0,
         "moves": 0,
+        "auto_skips": 0,          # consecutive auto-plays without a manual roll
+        "forfeited": False,       # true = eliminated (auto-skip x4 OR left game)
+        "forfeit_reason": None,   # "auto_skip_limit" | "left_game" | None
     }
 
 
@@ -221,7 +234,8 @@ def _public_table(t: dict) -> dict:
         "players": [{
             "user_id": p["user_id"],
             "name": p["name"],
-            "is_bot": p.get("is_bot", False),
+            # is_bot deliberately hidden from client — bots must appear as real users
+            "is_bot": False,
             "seat": p["seat"],
             "color": p["color"],
             "color_name": p["color_name"],
@@ -229,6 +243,8 @@ def _public_table(t: dict) -> dict:
             "tokens": p["tokens"],
             "captures": p.get("captures", 0),
             "score": _player_score(p),
+            "forfeited": p.get("forfeited", False),
+            "auto_skips": p.get("auto_skips", 0),
         } for p in t.get("players", [])],
         "current_turn_idx": t.get("current_turn_idx"),
         "current_turn_deadline": t.get("current_turn_deadline"),
@@ -256,9 +272,23 @@ def _current_player(t: dict) -> Optional[dict]:
 
 
 def _next_turn_idx(t: dict, extra: bool = False) -> int:
-    if extra:
-        return t["current_turn_idx"]
-    return (t["current_turn_idx"] + 1) % len(t["players"])
+    """Advance to next non-forfeited player. If `extra`, stay on current
+    player (but only if they're not forfeited)."""
+    players = t["players"]
+    cur = t["current_turn_idx"]
+    if extra and not players[cur].get("forfeited"):
+        return cur
+    n = len(players)
+    for step in range(1, n + 1):
+        idx = (cur + step) % n
+        if not players[idx].get("forfeited"):
+            return idx
+    return cur   # everyone forfeited (fallback)
+
+
+def _active_players(t: dict) -> list:
+    """Non-forfeited players."""
+    return [p for p in t.get("players", []) if not p.get("forfeited")]
 
 
 async def _log_event(t: dict, msg: str) -> None:
@@ -276,10 +306,17 @@ async def _settle_table(table_id: str, cause: str) -> None:
         p["score"] = _player_score(p)
 
     prize_pool = t.get("prize_pool", 0.0)
-    max_score = max((p["score"] for p in players), default=0)
-    winners = [p for p in players if p["score"] == max_score]
+
+    # Winner selection: only NON-forfeited players are eligible
+    eligible = [p for p in players if not p.get("forfeited")]
+    if not eligible:
+        # Edge case — everyone forfeited; house keeps commission, refund nobody (rare)
+        winners = []
+    else:
+        max_score = max(p["score"] for p in eligible)
+        winners = [p for p in eligible if p["score"] == max_score]
     winner_ids = [p["user_id"] for p in winners]
-    per_winner = round(prize_pool / max(len(winners), 1), 2) if prize_pool > 0 else 0.0
+    per_winner = round(prize_pool / max(len(winners), 1), 2) if (prize_pool > 0 and winners) else 0.0
 
     for w in winners:
         if not w.get("is_bot") and per_winner > 0:
@@ -343,17 +380,60 @@ async def _settle_table(table_id: str, cause: str) -> None:
     })
 
 
+async def _deduct_entry_fees(t: dict) -> None:
+    """Called at match start — deduct entry fee from every REAL player.
+    Bots don't pay. If a player has insufficient balance (edge case where
+    their balance changed after joining), they are forfeited and refunded.
+    """
+    entry_fee = t["entry_fee"]
+    for p in t["players"]:
+        if p.get("is_bot"):
+            continue
+        try:
+            u = await db.users.find_one({"_id": ObjectId(p["user_id"])})
+            bal = float(u.get("balance", 0)) if u else 0
+            if bal < entry_fee:
+                # Cannot afford — mark forfeited (they won't play)
+                p["forfeited"] = True
+                p["forfeit_reason"] = "insufficient_balance_at_start"
+                await _log_event(t, f"{p['name']} — insufficient balance, removed")
+                continue
+            await db.users.update_one(
+                {"_id": ObjectId(p["user_id"])},
+                {"$inc": {"balance": -entry_fee}}
+            )
+            await db.transactions.insert_one({
+                "user_id": p["user_id"],
+                "type": "ludo_entry",
+                "amount": -entry_fee,
+                "status": "completed",
+                "table_id": t["_id"],
+                "created_at": datetime.now(timezone.utc),
+            })
+        except Exception:
+            pass
+
+
 async def _start_match(t: dict) -> None:
     now_ts = time.time()
+
+    # Deferred payment — deduct entry fee ONLY now (once match is actually starting)
+    await _deduct_entry_fees(t)
+
+    # Only players who successfully paid contribute to the prize pool
+    paying_players = [p for p in t["players"] if not p.get("forfeited")]
     commission_pct = await _get_commission_pct()
-    gross = t["entry_fee"] * len(t["players"])
+    gross = t["entry_fee"] * len(paying_players)
     commission = round(gross * (commission_pct / 100.0), 2)
     prize_pool = round(gross - commission, 2)
 
     t["status"] = "playing"
     t["started_at"] = datetime.now(timezone.utc)
     t["match_ends_at"] = now_ts + MATCH_DURATION
+    # Ensure first turn goes to a non-forfeited player
     t["current_turn_idx"] = 0
+    if t["players"] and t["players"][0].get("forfeited"):
+        t["current_turn_idx"] = _next_turn_idx(t, extra=False)
     t["current_turn_deadline"] = now_ts + TURN_DURATION
     t["prize_pool"] = prize_pool
     t["commission_pct"] = commission_pct
@@ -380,7 +460,7 @@ async def _fill_with_bots(table_id: str) -> None:
         bot_name = available[i] if i < len(available) else f"Bot{i+1}"
         seat = len(t["players"])
         t["players"].append(_make_player_slot({"_id": None, "name": bot_name}, seat, is_bot=True))
-        await _log_event(t, f"🤖 {bot_name} joined (auto-fill)")
+        await _log_event(t, f"{bot_name} joined")
 
     await _start_match(t)
 
@@ -487,7 +567,7 @@ async def _apply_token_move(t: dict, seat: int, dice: int, token_id: int) -> Dic
 
     reached_home = tok["progress"] >= FINAL_HOME_PROGRESS
 
-    msg_prefix = "🤖 " if p.get("is_bot") else ""
+    msg_prefix = ""
     msg = f"{msg_prefix}{p['name']} rolled {dice}"
     if moved_from_yard:
         msg += " → released token"
@@ -561,7 +641,11 @@ async def ludo_watchdog():
 
 
 async def _auto_turn(table_id: str) -> None:
-    """Roll + move for the current player (bot or timed-out user)."""
+    """Roll + move for the current player (bot or timed-out user).
+    For real users: increments `auto_skips`. If auto_skips > MAX_AUTO_SKIPS,
+    that user is forfeited (loses) — matching the "3 auto-skips allowed,
+    4th means user loses" rule.
+    """
     t = await db.ludo_tables.find_one({"_id": table_id})
     if not t or t["status"] != "playing":
         return
@@ -569,6 +653,28 @@ async def _auto_turn(table_id: str) -> None:
     if not cp:
         return
     is_bot = cp.get("is_bot", False)
+
+    # Real user auto-skip forfeit check (BEFORE this auto-play)
+    if not is_bot:
+        current_skips = cp.get("auto_skips", 0)
+        # After this auto-play, skips will be current+1. If that would EXCEED
+        # the limit (i.e., 4th auto-skip), forfeit instead of auto-playing.
+        if current_skips >= MAX_AUTO_SKIPS:
+            cp["forfeited"] = True
+            cp["forfeit_reason"] = "auto_skip_limit"
+            await _log_event(t, f"{cp['name']} — {MAX_AUTO_SKIPS + 1}th miss, disqualified")
+            t["pending_dice"] = None
+            t["current_turn_idx"] = _next_turn_idx(t, extra=False)
+            t["current_turn_deadline"] = time.time() + TURN_DURATION
+            remaining = _active_players(t)
+            await db.ludo_tables.update_one({"_id": table_id}, {"$set": t})
+            await _broadcast(table_id, {"type": "player_forfeited", "seat": cp["seat"],
+                                         "state": _public_table(t)})
+            if len(remaining) <= 1:
+                await _settle_table(table_id, "forfeit_end")
+            return
+        # Otherwise increment counter for this auto-play
+        cp["auto_skips"] = current_skips + 1
 
     # If there's already a pending dice waiting to be consumed, resolve it
     pending = t.get("pending_dice")
@@ -578,7 +684,7 @@ async def _auto_turn(table_id: str) -> None:
     movable = _movable_tokens(cp, dice)
     if not movable:
         # No legal move -> skip turn
-        await _log_event(t, f"{'🤖 ' if is_bot else ''}{cp['name']} rolled {dice} — no legal move")
+        await _log_event(t, f"{cp['name']} rolled {dice} — no legal move")
         t["pending_dice"] = None
         t["last_dice"] = {"value": dice, "roller_seat": cp["seat"], "ts": int(time.time())}
         # 6-consecutive counter still applies
@@ -670,15 +776,7 @@ async def create_table(request: Request):
     if existing:
         raise HTTPException(400, "आप पहले से एक टेबल में हैं / Already in a table")
 
-    await db.users.update_one({"_id": ObjectId(user["_id"])}, {"$inc": {"balance": -entry_fee}})
-    await db.transactions.insert_one({
-        "user_id": user["_id"],
-        "type": "ludo_entry",
-        "amount": -entry_fee,
-        "status": "completed",
-        "created_at": datetime.now(timezone.utc),
-    })
-
+    # NO immediate deduction — money is deducted only when the match starts.
     t = _make_table_doc(entry_fee, max_players, user)
     await _log_event(t, f"{user.get('name','Player')} created table")
     await db.ludo_tables.insert_one(t)
@@ -706,15 +804,7 @@ async def join_table(table_id: str, request: Request):
     if other:
         raise HTTPException(400, "आप पहले से एक टेबल में हैं / Already in a table")
 
-    await db.users.update_one({"_id": ObjectId(user["_id"])}, {"$inc": {"balance": -t["entry_fee"]}})
-    await db.transactions.insert_one({
-        "user_id": user["_id"],
-        "type": "ludo_entry",
-        "amount": -t["entry_fee"],
-        "status": "completed",
-        "created_at": datetime.now(timezone.utc),
-    })
-
+    # NO immediate deduction — money is only deducted at match start.
     seat = len(t["players"])
     t["players"].append(_make_player_slot(user, seat))
     await _log_event(t, f"{user.get('name','Player')} joined")
@@ -729,25 +819,43 @@ async def join_table(table_id: str, request: Request):
 
 @router.post("/ludo/tables/{table_id}/leave")
 async def leave_table(table_id: str, request: Request):
+    """Leave the table.
+      • If status='waiting' → simple leave (no refund needed as money isn't
+        deducted until match start).
+      • If status='playing' → user FORFEITS (counts as loss). Their tokens
+        stop moving; if only one non-forfeited player remains, they win.
+    """
     user = await get_current_user(request)
     t = await db.ludo_tables.find_one({"_id": table_id})
     if not t:
         raise HTTPException(404, "Table not found")
-    if t["status"] != "waiting":
-        raise HTTPException(400, "गेम शुरू हो चुका है, अब leave नहीं कर सकते")
+
     idx = next((i for i, p in enumerate(t["players"]) if p["user_id"] == user["_id"]), -1)
     if idx < 0:
         raise HTTPException(400, "Not in this table")
 
-    await db.users.update_one({"_id": ObjectId(user["_id"])}, {"$inc": {"balance": t["entry_fee"]}})
-    await db.transactions.insert_one({
-        "user_id": user["_id"],
-        "type": "ludo_refund",
-        "amount": t["entry_fee"],
-        "status": "completed",
-        "table_id": table_id,
-        "created_at": datetime.now(timezone.utc),
-    })
+    # PLAYING → forfeit
+    if t["status"] == "playing":
+        t["players"][idx]["forfeited"] = True
+        t["players"][idx]["forfeit_reason"] = "left_game"
+        await _log_event(t, f"{t['players'][idx]['name']} left the game (forfeit)")
+
+        # If it was their turn, advance
+        if t.get("current_turn_idx") == idx:
+            t["current_turn_idx"] = _next_turn_idx(t, extra=False)
+            t["current_turn_deadline"] = time.time() + TURN_DURATION
+
+        remaining = _active_players(t)
+        await db.ludo_tables.update_one({"_id": table_id}, {"$set": t})
+        await _broadcast(table_id, {"type": "player_forfeited", "seat": idx,
+                                     "state": _public_table(t)})
+        if len(remaining) <= 1:
+            await _settle_table(table_id, "forfeit_end")
+        return {"status": "OK", "forfeited": True}
+
+    # WAITING → simple leave (no refund, nothing was deducted)
+    if t["status"] != "waiting":
+        raise HTTPException(400, "Table not joinable")
 
     del t["players"][idx]
     for i, p in enumerate(t["players"]):
@@ -762,7 +870,7 @@ async def leave_table(table_id: str, request: Request):
     else:
         await db.ludo_tables.update_one({"_id": table_id}, {"$set": t})
         await _broadcast(table_id, {"type": "player_left", "state": _public_table(t)})
-    return {"status": "OK"}
+    return {"status": "OK", "forfeited": False}
 
 
 @router.get("/ludo/tables/{table_id}")
@@ -787,6 +895,9 @@ async def roll_dice(table_id: str, request: Request):
         raise HTTPException(400, "आपकी बारी नहीं है")
     if t.get("pending_dice"):
         raise HTTPException(400, "Already rolled — choose a token to move")
+
+    # Manual roll — reset the auto-skip counter for this user
+    cp["auto_skips"] = 0
 
     dice = await weighted_dice_roll(user["_id"], is_bot=False)
     movable = _movable_tokens(cp, dice)

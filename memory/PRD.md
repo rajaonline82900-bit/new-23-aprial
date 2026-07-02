@@ -268,6 +268,33 @@ Migrate Matka11 satta app from Emergent preview environment to self-hosted Hosti
   token → forward moves → score/home tracking. Live board matches Zupee
   Ludo Supreme layout exactly.
 
+- **🎲 Ludo — polish pass (Feb 2026)**:
+    * **Bot fill wait**: 180s → **60s**.
+    * **Bots masquerade as real users**: `is_bot` no longer exposed via API;
+      bot names expanded to 60 real Indian full names (mix of boys/girls,
+      e.g. "Rohit Sharma", "Pallavi Naik"); all "🤖" emojis + "(auto-fill)"
+      tags stripped from logs and UI.
+    * **Deferred payment**: entry fee is NO longer deducted at table
+      create/join. Money only debits when the match actually starts. If
+      user leaves a waiting table, no refund needed (never deducted).
+      Verified: 500 → 500 on create → 450 on match start with ₹50 entry.
+    * **Auto-skip forfeit**: real users are allowed **3 auto-plays** in a
+      row (per 15-second turn timer). On the **4th miss**, user is
+      DISQUALIFIED (`forfeited=true, forfeit_reason=auto_skip_limit`) and
+      cannot win. Manual roll resets the counter to 0. Verified E2E.
+    * **Leave-during-game = forfeit**: `/leave` on a `playing` table marks
+      the user forfeited (not a simple leave). If only one non-forfeited
+      player remains, match auto-settles with them as winner. Verified.
+    * **Confirm-Leave modal** on frontend when user taps LOG-OUT during
+      play: warns "HAAR jaayenge aur entry fee ₹X wapas nahi milegi".
+    * **Auto-skip warning banner**: yellow (skips 1/3, 2/3) → red (3/3)
+      shown just above the board so user sees remaining chances.
+    * **Ludo tune + SFX**: `ludoAudio.js` uses Web Audio API — no external
+      files. Provides: gentle C-major arpeggio background loop while
+      playing, dice-rattle on roll, chime on capture / token-home,
+      C-major fanfare on win, minor triad on loss. Mute button in header.
+    * **10-minute match** (was 8) to match Zupee-Supreme timing.
+
 ## Backlog
 - P0: Tell user to "Save to Github" → on VPS run `bash /var/www/new-23-aprial/deploy.sh`
   to ship Aviator UI + Kalyan + tickers to the live APK.

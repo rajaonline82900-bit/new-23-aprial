@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { ArrowLeft, Users, Trophy, Clock, Bot, Plus, Wallet as WalletIcon } from 'lucide-react';
+import { ArrowLeft, Users, Trophy, Clock, Plus, Wallet as WalletIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import FooterNav from '../components/FooterNav';
 
@@ -108,7 +108,7 @@ const LudoLobbyPage = () => {
             <h1 className="text-xl font-black tracking-tight" style={{ background: 'linear-gradient(90deg,#C4B5FD,#7C3AED)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
               LUDO RACE
             </h1>
-            <p className="text-[10px] text-purple-300/70 font-bold uppercase tracking-widest">8-min match • Win real cash</p>
+            <p className="text-[10px] text-purple-300/70 font-bold uppercase tracking-widest">10-min match • Win real cash</p>
           </div>
           <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#141418] border border-white/10">
             <WalletIcon className="w-3.5 h-3.5 text-emerald-400" />
@@ -127,7 +127,7 @@ const LudoLobbyPage = () => {
             </div>
             <div>
               <Clock className="w-5 h-5 text-purple-300 mx-auto mb-1" />
-              <p className="text-[10px] text-purple-200/90 font-bold">8 Min</p>
+              <p className="text-[10px] text-purple-200/90 font-bold">10 Min</p>
             </div>
             <div>
               <Trophy className="w-5 h-5 text-yellow-300 mx-auto mb-1" />
@@ -135,7 +135,7 @@ const LudoLobbyPage = () => {
             </div>
           </div>
           <p className="text-[11px] text-purple-100/70 mt-2 text-center leading-snug">
-            180s tak koi na aaye to <Bot className="inline w-3 h-3 -mt-0.5" /> bots auto-join hote hain. Commission: {config?.commission_pct || 10}%
+            Paisa sirf match start hone par katega. 60s me players na aayen to auto-join. Commission: {config?.commission_pct || 10}%
           </p>
         </div>
 

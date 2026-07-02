@@ -2,8 +2,12 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { ArrowLeft, Trophy, Clock, Bot, Dice5, LogOut } from 'lucide-react';
+import { ArrowLeft, Trophy, Clock, Dice5, LogOut, Volume2, VolumeX, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import {
+  playDiceRoll, playTokenMove, playCapture, playTokenHome,
+  playWin, playLose, startMusic, stopMusic, setMuted, isMuted as audioIsMuted,
+} from '../utils/ludoAudio';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 const WS_URL = API_URL.replace(/^http/, 'ws');
@@ -301,6 +305,8 @@ const LudoGamePage = () => {
   const [countdown, setCountdown] = useState(0);
   const [matchLeft, setMatchLeft] = useState(0);
   const [botFillLeft, setBotFillLeft] = useState(0);
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [muted, setMutedState] = useState(false);
   const wsRef = useRef(null);
   const stateRef = useRef(null);
   stateRef.current = state;
@@ -331,6 +337,9 @@ const LudoGamePage = () => {
         try {
           const msg = JSON.parse(ev.data);
           if (msg.state) setState(msg.state);
+          if (msg.type === 'match_started') {
+            startMusic();
+          }
           if (msg.type === 'dice_rolled') {
             setRolling(false);
             if (msg.movable !== undefined) setMovable(msg.movable || []);
@@ -338,14 +347,31 @@ const LudoGamePage = () => {
           }
           if (msg.type === 'token_moved') {
             setMovable([]);
+            // Detect capture/home from log tail
+            try {
+              const last = (msg.state?.log || []).slice(-1)[0]?.msg || '';
+              if (last.includes('captured')) playCapture();
+              else if (last.includes('HOME')) playTokenHome();
+              else playTokenMove();
+            } catch { playTokenMove(); }
+          }
+          if (msg.type === 'player_forfeited') {
+            const forfeitedIsMe = msg.state?.players?.[msg.seat]?.user_id === myId;
+            if (forfeitedIsMe) {
+              toast.error('Aap disqualified ho gaye — game se bahar ho gaye');
+              playLose();
+            }
           }
           if (msg.type === 'game_over') {
+            stopMusic();
             const iWon = (msg.winner_ids || []).includes(myId);
             if (iWon) {
               toast.success(`🏆 Aap jeete! ₹${msg.per_winner}`);
+              playWin();
               refreshUser();
             } else {
               toast.error('Match khatam! Better luck next time');
+              playLose();
             }
           }
         } catch { /* ignore */ }
@@ -387,7 +413,7 @@ const LudoGamePage = () => {
     if (!state) return;
     if (state.status !== 'playing') { setMovable([]); return; }
     const cp = state.players[state.current_turn_idx];
-    if (!cp || cp.user_id !== myId || cp.is_bot) { setMovable([]); return; }
+    if (!cp || cp.user_id !== myId) { setMovable([]); return; }
     const pending = state.pending_dice;
     if (!pending) { setMovable([]); return; }
     // Compute movable locally (matches backend logic)
@@ -403,9 +429,29 @@ const LudoGamePage = () => {
     setMovable(ids);
   }, [state, myId]);
 
+  // Auto-start music when match becomes 'playing' and stop on unmount
+  useEffect(() => {
+    if (state?.status === 'playing') {
+      startMusic();
+    } else if (state?.status === 'completed' || state?.status === 'cancelled') {
+      stopMusic();
+    }
+    return () => { /* keep music running on re-render */ };
+  }, [state?.status]);
+
+  useEffect(() => () => { stopMusic(); }, []);
+
+  const toggleMute = () => {
+    const newMuted = !muted;
+    setMutedState(newMuted);
+    setMuted(newMuted);
+    if (!newMuted && state?.status === 'playing') startMusic();
+  };
+
   const rollDice = async () => {
     if (rolling) return;
     setRolling(true);
+    playDiceRoll();
     try {
       await axios.post(`${API_URL}/api/ludo/tables/${tableId}/roll`, {}, { withCredentials: true });
     } catch (e) {
@@ -427,11 +473,17 @@ const LudoGamePage = () => {
     }
   };
 
-  const leaveTable = async () => {
+  const requestLeave = () => {
     if (state?.status === 'playing') {
-      toast.error('Game shuru ho chuka hai, ab leave nahi kar sakte');
+      // Show confirm modal — leaving = forfeit + lose
+      setShowLeaveModal(true);
       return;
     }
+    doLeave();
+  };
+
+  const doLeave = async () => {
+    setShowLeaveModal(false);
     try {
       await axios.post(`${API_URL}/api/ludo/tables/${tableId}/leave`, {}, { withCredentials: true });
       await refreshUser();
@@ -479,8 +531,17 @@ const LudoGamePage = () => {
               {state.status === 'playing' && matchLeft > 0 && <> • <Clock className="inline w-3 h-3 -mt-0.5" /> {fmtTime(matchLeft)}</>}
             </p>
           </div>
-          {state.status === 'waiting' && (
-            <button onClick={leaveTable} data-testid="ludo-leave-btn"
+          {state.status === 'playing' && (
+            <button
+              onClick={toggleMute}
+              data-testid="ludo-mute-btn"
+              className="p-2 rounded-lg bg-[#141418] border border-white/10 text-gray-300"
+            >
+              {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+            </button>
+          )}
+          {(state.status === 'waiting' || state.status === 'playing') && (
+            <button onClick={requestLeave} data-testid="ludo-leave-btn"
               className="p-2 rounded-lg bg-red-500/20 border border-red-500/40 text-red-300">
               <LogOut className="w-4 h-4" />
             </button>
@@ -497,7 +558,7 @@ const LudoGamePage = () => {
             <p className="text-sm text-purple-200/80 mt-1">{state.players.length}/{state.max_players} joined</p>
             {botFillLeft > 0 && (
               <p className="text-xs text-yellow-300 mt-2 font-bold">
-                <Bot className="inline w-3.5 h-3.5 -mt-0.5" /> Auto-fill with bots in {botFillLeft}s
+                Auto-start in {botFillLeft}s
               </p>
             )}
           </div>
@@ -522,17 +583,23 @@ const LudoGamePage = () => {
                   }}
                 >
                   <div className="flex items-center gap-1.5">
-                    <div className="w-6 h-6 rounded-full flex items-center justify-center font-black text-white text-xs shrink-0"
-                      style={{ background: p.color }}>
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center font-black text-white text-xs shrink-0 relative"
+                      style={{ background: p.color, opacity: p.forfeited ? 0.4 : 1 }}>
                       {p.name.charAt(0).toUpperCase()}
+                      {p.forfeited && (
+                        <span className="absolute inset-0 flex items-center justify-center text-red-500 text-base font-black">✕</span>
+                      )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-[11px] font-bold truncate flex items-center gap-0.5">
-                        {p.is_bot && <Bot className="w-2.5 h-2.5" />}
+                      <p className={`text-[11px] font-bold truncate flex items-center gap-0.5 ${p.forfeited ? 'line-through opacity-60' : ''}`}>
                         {p.name} {isMe && <span className="text-[9px] text-emerald-400">(You)</span>}
                       </p>
                       <p className="text-[9px] text-gray-400 leading-tight">
-                        Score <span className="font-bold text-white">{p.score}</span> • Home {homeCount}/4
+                        {p.forfeited ? (
+                          <span className="text-red-400 font-bold">Disqualified</span>
+                        ) : (
+                          <>Score <span className="font-bold text-white">{p.score}</span> • Home {homeCount}/4</>
+                        )}
                       </p>
                     </div>
                   </div>
@@ -541,6 +608,31 @@ const LudoGamePage = () => {
             })}
           </div>
         )}
+
+        {/* Auto-skip warning banner — show when user's own skips accumulate */}
+        {state.status === 'playing' && (() => {
+          const me = state.players.find((p) => p.user_id === myId);
+          if (!me || me.forfeited) return null;
+          const skips = me.auto_skips || 0;
+          if (skips === 0) return null;
+          const remaining = 3 - skips;
+          const isCritical = skips >= 3;
+          return (
+            <div
+              data-testid="ludo-autoskip-warning"
+              className={`rounded-xl p-2.5 border flex items-center gap-2 ${
+                isCritical ? 'border-red-500/60 bg-red-500/10' : 'border-yellow-500/50 bg-yellow-500/10'
+              }`}
+            >
+              <AlertTriangle className={`w-4 h-4 shrink-0 ${isCritical ? 'text-red-400' : 'text-yellow-400'}`} />
+              <p className={`text-[11px] font-bold ${isCritical ? 'text-red-300' : 'text-yellow-200'}`}>
+                {isCritical
+                  ? `⚠️ Agli baar timeout hua to aap DISQUALIFY ho jaayenge! Turant chal chalein.`
+                  : `${skips}/3 auto-play used • ${remaining} aur miss allowed, uske baad aap LOSE ho jaayenge`}
+              </p>
+            </div>
+          );
+        })()}
 
         {/* Board */}
         {state.status !== 'waiting' && (
@@ -562,7 +654,6 @@ const LudoGamePage = () => {
               <div>
                 <p className="text-[9px] text-gray-400 uppercase font-bold">Turn</p>
                 <p className="text-sm font-black flex items-center gap-1" style={{ color: currentPlayer?.color }}>
-                  {currentPlayer?.is_bot && <Bot className="w-3.5 h-3.5" />}
                   {currentPlayer?.name}
                   {isMyTurn && <span className="text-emerald-400 text-[10px]">(Your Turn!)</span>}
                 </p>
@@ -633,6 +724,41 @@ const LudoGamePage = () => {
           </div>
         )}
       </main>
+
+      {/* Confirm-Leave modal (only when playing) */}
+      {showLeaveModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+          data-testid="ludo-leave-modal"
+        >
+          <div className="w-full max-w-sm rounded-2xl p-5 border border-red-500/40" style={{ background: 'linear-gradient(135deg, #1F1315, #0A0A0C)' }}>
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle className="w-6 h-6 text-red-400" />
+              <h3 className="text-lg font-black text-red-300">Sure leave karna hai?</h3>
+            </div>
+            <p className="text-sm text-gray-300 leading-snug">
+              Game start ho chuka hai. Ab leave karne par aap <span className="font-black text-red-400">HAAR</span> jaayenge aur entry fee ₹{state.entry_fee} bhi wapas nahi milegi.
+            </p>
+            <div className="grid grid-cols-2 gap-2 mt-4">
+              <button
+                onClick={() => setShowLeaveModal(false)}
+                data-testid="ludo-leave-cancel"
+                className="py-2.5 rounded-xl font-black text-sm bg-white/10 text-white border border-white/20"
+              >
+                Rukna hai
+              </button>
+              <button
+                onClick={doLeave}
+                data-testid="ludo-leave-confirm"
+                className="py-2.5 rounded-xl font-black text-sm text-white"
+                style={{ background: 'linear-gradient(135deg, #DC2626, #7F1D1D)' }}
+              >
+                Haan, leave karo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
