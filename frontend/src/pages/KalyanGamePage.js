@@ -316,15 +316,27 @@ const KalyanGamePage = () => {
           { id: 'close', label: 'CLOSE', cutoff: game.close_time || game.end_time, disabled: activeType === 'jodi' || marketClosed },
         ].map(s => {
           const active = session === s.id;
+          const handleSessionClick = () => {
+            if (!s.disabled) { setSession(s.id); return; }
+            if (marketClosed) {
+              toast.error('Market band ho chuka hai — abhi bet nahi lag sakti', { duration: 3500 });
+            } else if (s.id === 'open' && isOpenClosed) {
+              toast.error(
+                `Open ka time nikal chuka (${fmtTime(game.open_time)}). Ab sirf CLOSE section me Single / Single Patti / Double Patti / Triple Patti lag sakti hai.`,
+                { duration: 4500 }
+              );
+            } else if (s.id === 'close' && activeType === 'jodi') {
+              toast.error('Jodi ke saath sirf OPEN session hoti hai. Single / Patti chuno CLOSE ke liye.', { duration: 4000 });
+            }
+          };
           return (
             <button
               key={s.id}
               type="button"
-              disabled={s.disabled}
-              onClick={() => !s.disabled && setSession(s.id)}
+              onClick={handleSessionClick}
               data-testid={`kalyan-session-${s.id}`}
               className={`py-2.5 rounded-lg text-center font-semibold text-[13px] tracking-wide leading-tight ${
-                s.disabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-200 text-black'
+                s.disabled ? 'bg-gray-100 text-gray-400' : 'bg-gray-200 text-black'
               }`}
               style={active && !s.disabled ? { border: '2px solid #2563EB', background: '#E5E7EB' } : { border: '1px solid transparent' }}
               title={s.disabled ? (s.id === 'open' ? 'Open ka time nikal chuka' : 'Jodi bet Close session me nahi lagti') : ''}
@@ -341,15 +353,30 @@ const KalyanGamePage = () => {
         {TYPE_DEFS.map(t => {
           const active = activeType === t.id;
           const disabled = (t.id === 'jodi' && isJodiBlocked) || marketClosed;
+          const handleClick = () => {
+            if (disabled) {
+              if (marketClosed) {
+                toast.error('Market band ho chuka hai — abhi bet nahi lag sakti', {
+                  duration: 3500,
+                });
+              } else if (t.id === 'jodi' && isJodiBlocked) {
+                toast.error(
+                  `Jodi bet ka time nikal chuka (Open ${fmtTime(game.open_time)}). Ab sirf CLOSE me Single / Single Patti / Double Patti / Triple Patti lag sakti hai.`,
+                  { duration: 4500 }
+                );
+              }
+              return;
+            }
+            setActiveType(t.id);
+          };
           return (
             <button
               key={t.id}
               type="button"
-              disabled={disabled}
-              onClick={() => !disabled && setActiveType(t.id)}
+              onClick={handleClick}
               data-testid={`kalyan-type-${t.id}`}
               className={`rounded-lg py-2 px-1 flex flex-col items-center justify-center gap-1 active:scale-95 ${
-                disabled ? 'opacity-40 cursor-not-allowed' : ''
+                disabled ? 'opacity-40' : ''
               }`}
               style={active && !disabled
                 ? { border: '2px solid #2563EB', background: '#FFFFFF' }
