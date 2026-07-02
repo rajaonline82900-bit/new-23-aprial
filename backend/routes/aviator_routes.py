@@ -398,6 +398,8 @@ async def community_bets(tab: str = "all", limit: int = 30):
 
 @router.post("/aviator/bet")
 async def place_bet(request: Request):
+    from routes.game_toggles import assert_game_enabled
+    await assert_game_enabled("aviator")
     user = await get_current_user(request)
     if _state.phase != "betting":
         raise HTTPException(400, "Betting phase is over for this round. Wait for next.")

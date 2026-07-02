@@ -755,6 +755,8 @@ async def list_tables():
 
 @router.post("/ludo/tables/create")
 async def create_table(request: Request):
+    from routes.game_toggles import assert_game_enabled
+    await assert_game_enabled("ludo")
     user = await get_current_user(request)
     body = await request.json()
     try:
@@ -785,6 +787,8 @@ async def create_table(request: Request):
 
 @router.post("/ludo/tables/{table_id}/join")
 async def join_table(table_id: str, request: Request):
+    from routes.game_toggles import assert_game_enabled
+    await assert_game_enabled("ludo")
     user = await get_current_user(request)
     t = await db.ludo_tables.find_one({"_id": table_id})
     if not t:

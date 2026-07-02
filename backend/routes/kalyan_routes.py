@@ -120,6 +120,8 @@ def _validate_kalyan_bet_window(game: dict, session: str, bet_type: str) -> None
 @router.post("/kalyan/bet")
 async def place_kalyan_bet(request: Request):
     """Place a single Kalyan bet."""
+    from routes.game_toggles import assert_game_enabled
+    await assert_game_enabled("kalyan")
     user = await get_current_user(request)
     body = await request.json()
 
@@ -210,6 +212,8 @@ async def place_kalyan_bet_batch(request: Request):
     }
     Atomic: validates total, deducts once, inserts all bets.
     """
+    from routes.game_toggles import assert_game_enabled
+    await assert_game_enabled("kalyan")
     user = await get_current_user(request)
     body = await request.json()
 

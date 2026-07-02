@@ -295,6 +295,28 @@ Migrate Matka11 satta app from Emergent preview environment to self-hosted Hosti
       C-major fanfare on win, minor triad on loss. Mute button in header.
     * **10-minute match** (was 8) to match Zupee-Supreme timing.
 
+- **🎛️ Admin Game On/Off Toggles (Feb 2026)**:
+  New Admin Panel tab "गेम On/Off" with 4 switches — Gali Disawar,
+  Kalyan, Aviator, Ludo. When admin turns any category OFF:
+  * **Backend** (`/app/backend/routes/game_toggles.py`):
+    - `GET /api/settings/game-toggles` (public) — current state
+    - `GET/POST /api/admin/game-toggles` (admin) — read/update
+    - Guard `assert_game_enabled(category)` invoked at every bet-placement
+      / table-creation endpoint: `/api/bets`, `/api/bets/batch`,
+      `/api/aviator/bet`, `/api/kalyan/bet`, `/api/kalyan/bet/batch`,
+      `/api/ludo/tables/create`, `/api/ludo/tables/{id}/join`.
+      Returns **HTTP 403** with Hindi+English message.
+  * **Frontend**:
+    - Admin tab: `/pages/admin/AdminGameTogglesTab.js` — 4 colored cards
+      with power-icon + Switch, live/BAND status text, sonner toast on
+      each save.
+    - Dashboard category switcher: disabled tab shows greyscale + 40%
+      opacity + big red "BAND" pill overlay; click blocked with toast
+      "Xxx abhi band hai".
+  Verified E2E: Toggle Ludo OFF → create ludo table returns 403; toggle
+  ON → 200 with table_id. Live screenshots show Dashboard's disabled
+  Ludo tab and Admin toggle UI.
+
 ## Backlog
 - P0: Tell user to "Save to Github" → on VPS run `bash /var/www/new-23-aprial/deploy.sh`
   to ship Aviator UI + Kalyan + tickers to the live APK.

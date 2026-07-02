@@ -104,6 +104,11 @@ async def place_bet(bet: BetCreate, request: Request):
 
     game = games_dict[bet.game_id]
 
+    # Enforce admin game-category toggle
+    from routes.game_toggles import assert_game_enabled
+    category = game.get("category") or "gali_disawar"
+    await assert_game_enabled(category)
+
     ist_now = datetime.now(timezone(timedelta(hours=5, minutes=30)))
     last_day = calendar.monthrange(ist_now.year, ist_now.month)[1]
     if ist_now.day == last_day:
@@ -185,6 +190,11 @@ async def place_batch_bets(batch: BatchBetCreate, request: Request):
         raise HTTPException(status_code=400, detail="Invalid game")
 
     game = games_dict[batch.game_id]
+
+    # Enforce admin game-category toggle
+    from routes.game_toggles import assert_game_enabled
+    category = game.get("category") or "gali_disawar"
+    await assert_game_enabled(category)
 
     ist_now_batch = datetime.now(timezone(timedelta(hours=5, minutes=30)))
     last_day_batch = calendar.monthrange(ist_now_batch.year, ist_now_batch.month)[1]

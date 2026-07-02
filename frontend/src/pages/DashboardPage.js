@@ -162,6 +162,7 @@ const DashboardPage = () => {
   const [todayWithdrawals, setTodayWithdrawals] = useState([]);
   const [tickerTab, setTickerTab] = useState('winners'); // 'winners' | 'deposits' | 'withdrawals'
   const [tickerVisible, setTickerVisible] = useState(true);
+  const [gameToggles, setGameToggles] = useState({ gali_disawar: true, kalyan: true, aviator: true, ludo: true });
   const tickerRef = useRef(null);
   const gamesRef = useRef(null);
 
@@ -206,6 +207,7 @@ const DashboardPage = () => {
     fetchGames();
     fetchSettings();
     fetchTopWinner();
+    fetchGameToggles();
     refreshUser();
     fetchUnreadChat();
 
@@ -215,6 +217,7 @@ const DashboardPage = () => {
     const interval = setInterval(() => {
       if (document.visibilityState !== 'visible') return;
       fetchGames(false);
+      fetchGameToggles();
       fetchUnreadChat();
     }, 60000);
 
@@ -278,6 +281,13 @@ const DashboardPage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchGameToggles = async () => {
+    try {
+      const { data } = await axios.get(`${API_URL}/api/settings/game-toggles`);
+      if (data && data.toggles) setGameToggles(data.toggles);
+    } catch { /* silent */ }
   };
 
   const fetchUnreadChat = async () => {
@@ -663,6 +673,7 @@ const DashboardPage = () => {
               },
             ].map((cat) => {
               // Aviator and Ludo always render in their "active" themed state (always available)
+              const isDisabled = gameToggles[cat.id] === false;
               const isActive = cat.isLink ? true : gameCategory === cat.id;
               const count = cat.isLink ? 0 : games.filter(g => (g.category || 'gali_disawar') === cat.id).length;
               const isAviator = cat.id === 'aviator';
@@ -671,7 +682,12 @@ const DashboardPage = () => {
                 <button
                   key={cat.id}
                   type="button"
+                  disabled={isDisabled}
                   onClick={() => {
+                    if (isDisabled) {
+                      toast.error(`${cat.label} abhi band hai`);
+                      return;
+                    }
                     if (cat.isLink) {
                       navigate(cat.linkTo || '/aviator');
                       return;
@@ -688,8 +704,26 @@ const DashboardPage = () => {
                     boxShadow: isActive ? cat.activeGlow : 'none',
                     transform: isActive ? 'scale(1.0)' : 'scale(0.97)',
                     transition: 'transform 220ms ease, box-shadow 220ms ease, background 220ms ease, border-color 220ms ease',
+                    opacity: isDisabled ? 0.4 : 1,
+                    filter: isDisabled ? 'grayscale(85%)' : 'none',
+                    cursor: isDisabled ? 'not-allowed' : 'pointer',
                   }}
                 >
+                  {/* Disabled overlay — big red BAND badge */}
+                  {isDisabled && (
+                    <span
+                      className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                      style={{ background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(1px)', zIndex: 6 }}
+                    >
+                      <span
+                        className="px-1.5 py-0.5 rounded text-[9px] font-black tracking-widest"
+                        style={{ background: '#DC2626', color: '#FFF', border: '1px solid #FCA5A5' }}
+                        data-testid={`category-${cat.id}-disabled-badge`}
+                      >
+                        BAND
+                      </span>
+                    </span>
+                  )}
                   {/* Subtle top sheen on active tabs (premium feel) */}
                   {isActive && (
                     <span

@@ -28,6 +28,7 @@ from routes.kalyan_routes import router as kalyan_router
 from routes.kalyan_auto_results import router as kalyan_auto_router, kalyan_auto_fetch_loop
 from routes.aviator_routes import router as aviator_router, aviator_round_loop, aviator_watchdog
 from routes.ludo_routes import router as ludo_router, ludo_watchdog
+from routes.game_toggles import router as game_toggles_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -60,6 +61,7 @@ api_router.include_router(kalyan_router)
 api_router.include_router(kalyan_auto_router)
 api_router.include_router(aviator_router)
 api_router.include_router(ludo_router)
+api_router.include_router(game_toggles_router)
 
 
 # Build version — bumped manually on every release so APK/WebView clients

@@ -27,6 +27,7 @@ import AdminHistoryTab from './admin/AdminHistoryTab';
 import AdminFundRequestsTab from './admin/AdminFundRequestsTab';
 import AdminWinnersTab from './admin/AdminWinnersTab';
 import AdminReferralsTab from './admin/AdminReferralsTab';
+import AdminGameTogglesTab from './admin/AdminGameTogglesTab';
 import AdminKalyanResultsTab from './admin/AdminKalyanResultsTab';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -184,6 +185,7 @@ const AdminPage = () => {
               { value: 'history', label: 'पूरी हिस्ट्री' },
               { value: 'bets', label: 'बेट रिपोर्ट' },
               { value: 'games', label: 'गेम सेटिंग्स' },
+              { value: 'game_toggles', label: 'गेम On/Off' },
               { value: 'withdrawals', label: 'निकासी' },
               { value: 'deposits', label: 'जमा सूची' },
               { value: 'fund_requests', label: 'Fund Requests' },
@@ -206,6 +208,7 @@ const AdminPage = () => {
           <TabsContent value="history"><AdminHistoryTab /></TabsContent>
           <TabsContent value="bets"><AdminBetsTab games={games} /></TabsContent>
           <TabsContent value="games"><AdminGamesTab /></TabsContent>
+          <TabsContent value="game_toggles"><AdminGameTogglesTab /></TabsContent>
           <TabsContent value="withdrawals"><AdminWithdrawalsTab /></TabsContent>
           <TabsContent value="deposits"><AdminDepositsTab /></TabsContent>
           <TabsContent value="fund_requests"><AdminFundRequestsTab /></TabsContent>
