@@ -224,6 +224,37 @@ Migrate Matka11 satta app from Emergent preview environment to self-hosted Hosti
   Fix: detect existing TZ (`Z` or `±HH:MM`) via regex before appending.
   Verified with node against 4 formats (naive, `Z`, `+00:00`, `+05:30`).
 
+- **🎲 LUDO RACE mini-game (NEW category)** — full 4th tab in the
+  Dashboard category switcher (Gali / Kalyan / Aviator / **Ludo**) with
+  premium purple theme, LIVE badge.
+  **Backend** (`/app/backend/routes/ludo_routes.py`, ~530 lines):
+    * Matchmaking lobby with 2/3/4-player tables and ₹10/₹50/₹100/₹500 slabs
+    * `POST /api/ludo/tables/create|join|leave|roll` REST + `WS /api/ludo/ws/{id}`
+    * **Weighted Dice (Game Integrity Manager)** — targets ~30% user
+      win rate over rolling last 10 games; boosts 5/6 when user is
+      underperforming, penalises when overperforming. Bots roll uniformly.
+    * **180-second Bot Auto-fill** — `ludo_watchdog` background loop
+      fills empty seats with bots (40-name Indian pool) after wait expires.
+    * **Turn timer (15s)** with auto-play fallback if user idles.
+    * **8-minute match timer** — if reached, highest-position player wins
+      (ties = equal split).
+    * **Admin commission** (`settings.ludo.commission_pct`, default 10%,
+      configurable via `GET/POST /api/admin/ludo/settings`).
+    * **MongoDB persistence** (`ludo_tables`, `ludo_games` collections) —
+      users can reconnect to their active table via `/api/ludo/my-active`.
+    * Capture rule, 6-again rule (capped 3× consecutive), winner-takes-pot,
+      transactions logged (`ludo_entry`, `ludo_win`, `ludo_refund`).
+  **Frontend**:
+    * `/pages/LudoLobbyPage.js` — table listing, create panel with prize
+      preview, entry-fee slabs UI, active-table auto-redirect.
+    * `/pages/LudoGamePage.js` — waiting room, 30-square race track with
+      safe zones + 🏁 home, live player cards with progress bars, dice
+      roll with countdown, event log, game-over screen with winnings.
+    * Routes `/ludo` and `/ludo/table/:tableId` wired in App.js.
+  Verified end-to-end via curl: create → bot fill → user & bot rolls →
+  winner detection → balance credit (500 → 490 → 508 = +₹18 win) → history.
+  Live screenshots confirm all UI states render correctly.
+
 ## Backlog
 - P0: Tell user to "Save to Github" → on VPS run `bash /var/www/new-23-aprial/deploy.sh`
   to ship Aviator UI + Kalyan + tickers to the live APK.

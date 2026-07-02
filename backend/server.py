@@ -27,6 +27,7 @@ from routes.notification_routes import router as notification_router
 from routes.kalyan_routes import router as kalyan_router
 from routes.kalyan_auto_results import router as kalyan_auto_router, kalyan_auto_fetch_loop
 from routes.aviator_routes import router as aviator_router, aviator_round_loop, aviator_watchdog
+from routes.ludo_routes import router as ludo_router, ludo_watchdog
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -58,6 +59,7 @@ api_router.include_router(notification_router)
 api_router.include_router(kalyan_router)
 api_router.include_router(kalyan_auto_router)
 api_router.include_router(aviator_router)
+api_router.include_router(ludo_router)
 
 
 # Build version — bumped manually on every release so APK/WebView clients
@@ -191,6 +193,8 @@ async def start_auto_fetch():
     logger.info("Aviator watchdog started (auto-recovers if any phase stuck)")
     asyncio.create_task(kalyan_auto_fetch_loop())
     logger.info("Kalyan auto-fetch (DP Boss) loop started")
+    asyncio.create_task(ludo_watchdog())
+    logger.info("Ludo watchdog started (bot-fill + turn-timer + match-timer)")
 
 
 @app.on_event("shutdown")

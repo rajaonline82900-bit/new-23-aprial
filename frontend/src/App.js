@@ -21,6 +21,8 @@ import DashboardPage from "./pages/DashboardPage";
 import GamePage from "./pages/GamePage";
 import KalyanGamePage from "./pages/KalyanGamePage";
 import AviatorPage from "./pages/AviatorPage";
+import LudoLobbyPage from "./pages/LudoLobbyPage";
+import LudoGamePage from "./pages/LudoGamePage";
 import WalletPage from "./pages/WalletPage";
 import BetsPage from "./pages/BetsPage";
 import ResultsPage from "./pages/ResultsPage";
@@ -141,6 +143,22 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <AviatorPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/ludo"
+        element={
+          <ProtectedRoute>
+            <LudoLobbyPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/ludo/table/:tableId"
+        element={
+          <ProtectedRoute>
+            <LudoGamePage />
           </ProtectedRoute>
         }
       />

@@ -118,6 +118,25 @@ const AviatorIcon = ({ size = 26, active = false }) => (
     <path d="M 32 6 L 35 10 L 32 9 L 32 13 L 30 13 L 30 9 L 28 10 Z" fill={active ? '#FFFFFF' : '#67E8F9'} opacity="0.9" />
   </svg>
 );
+const LudoIcon = ({ size = 26, active = false }) => (
+  <svg width={size} height={size} viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+    {/* Board frame */}
+    <rect x="4" y="4" width="32" height="32" rx="5" fill={active ? '#FFFFFF' : '#1F2937'} stroke={active ? '#1F2937' : '#4B5563'} strokeWidth="1.5" />
+    {/* 4 colored home quadrants */}
+    <rect x="6" y="6" width="12" height="12" rx="2" fill="#EF4444" />
+    <rect x="22" y="6" width="12" height="12" rx="2" fill="#3B82F6" />
+    <rect x="6" y="22" width="12" height="12" rx="2" fill="#10B981" />
+    <rect x="22" y="22" width="12" height="12" rx="2" fill="#F59E0B" />
+    {/* Center star */}
+    <path d="M 20 15 L 22 19 L 26 19 L 23 22 L 24 26 L 20 24 L 16 26 L 17 22 L 14 19 L 18 19 Z"
+          fill={active ? '#FFFFFF' : '#F9FAFB'} stroke={active ? '#7C3AED' : '#111827'} strokeWidth="0.8" />
+    {/* Tokens (small dots) */}
+    <circle cx="10" cy="10" r="1.8" fill="#FFFFFF" stroke="#7F1D1D" strokeWidth="0.5" />
+    <circle cx="28" cy="10" r="1.8" fill="#FFFFFF" stroke="#1E3A8A" strokeWidth="0.5" />
+    <circle cx="10" cy="28" r="1.8" fill="#FFFFFF" stroke="#064E3B" strokeWidth="0.5" />
+    <circle cx="28" cy="28" r="1.8" fill="#FFFFFF" stroke="#78350F" strokeWidth="0.5" />
+  </svg>
+);
 import FooterNav from '../components/FooterNav';
 import { speak } from '../utils/voice';
 import SidebarMenu from '../components/SidebarMenu';
@@ -583,9 +602,9 @@ const DashboardPage = () => {
             </span>
           </div>
 
-          {/* Category Toggle - Premium 3-pill switcher with per-tab color themes */}
+          {/* Category Toggle - Premium 4-pill switcher with per-tab color themes */}
           <div
-            className="grid grid-cols-3 gap-1.5 p-1 rounded-2xl mb-3"
+            className="grid grid-cols-4 gap-1 p-1 rounded-2xl mb-3"
             style={{
               background: 'linear-gradient(135deg, #0F0F1F 0%, #1A1A2E 100%)',
               border: '1px solid rgba(212, 175, 55, 0.25)',
@@ -630,18 +649,31 @@ const DashboardPage = () => {
                 inactiveText: '#67E8F9',
                 inactiveSub: '#78716C',
               },
+              {
+                id: 'ludo', label: 'Ludo', hi: 'लूडो', Icon: LudoIcon, isLink: true, linkTo: '/ludo',
+                activeBg: 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 55%, #3B0764 100%)',
+                activeBorder: '#A78BFA',
+                activeText: '#FFFFFF',
+                activeSub: 'rgba(237, 233, 254, 0.85)',
+                activeGlow: '0 4px 14px rgba(124, 58, 237, 0.45), inset 0 1px 0 rgba(255,255,255,0.22)',
+                inactiveBg: 'linear-gradient(135deg, rgba(124, 58, 237, 0.06) 0%, rgba(91, 33, 182, 0.03) 100%)',
+                inactiveBorder: 'rgba(167, 139, 250, 0.20)',
+                inactiveText: '#C4B5FD',
+                inactiveSub: '#78716C',
+              },
             ].map((cat) => {
-              // Aviator always renders in its "active" themed state (always available)
+              // Aviator and Ludo always render in their "active" themed state (always available)
               const isActive = cat.isLink ? true : gameCategory === cat.id;
               const count = cat.isLink ? 0 : games.filter(g => (g.category || 'gali_disawar') === cat.id).length;
               const isAviator = cat.id === 'aviator';
+              const isLudo = cat.id === 'ludo';
               return (
                 <button
                   key={cat.id}
                   type="button"
                   onClick={() => {
                     if (cat.isLink) {
-                      navigate('/aviator');
+                      navigate(cat.linkTo || '/aviator');
                       return;
                     }
                     setGameCategory(cat.id);
@@ -669,8 +701,8 @@ const DashboardPage = () => {
                       }}
                     />
                   )}
-                  {/* Aviator LIVE badge (green dot = online) */}
-                  {isAviator && (
+                  {/* Aviator/Ludo LIVE badge (green dot = online) */}
+                  {(isAviator || isLudo) && (
                     <span
                       className="absolute top-0.5 right-1 px-1.5 py-0.5 rounded-full text-[8px] font-black tracking-wider flex items-center gap-1"
                       style={{
@@ -678,7 +710,7 @@ const DashboardPage = () => {
                         color: '#86EFAC',
                         border: '1px solid rgba(34, 197, 94, 0.55)',
                       }}
-                      data-testid="aviator-live-badge"
+                      data-testid={`${cat.id}-live-badge`}
                     >
                       <span
                         className="w-1.5 h-1.5 rounded-full"
@@ -690,7 +722,7 @@ const DashboardPage = () => {
                   <cat.Icon size={28} active={isActive} />
                   <span
                     className="text-[12px] font-black tracking-wide whitespace-nowrap mt-0.5"
-                    style={isActive ? { textShadow: isAviator || cat.id === 'kalyan' ? '0 1px 2px rgba(0,0,0,0.35)' : 'none' } : undefined}
+                    style={isActive ? { textShadow: isAviator || isLudo || cat.id === 'kalyan' ? '0 1px 2px rgba(0,0,0,0.35)' : 'none' } : undefined}
                   >
                     {cat.label}
                   </span>
@@ -698,7 +730,7 @@ const DashboardPage = () => {
                     className="text-[8px] font-bold mt-0.5 tabular-nums"
                     style={{ color: isActive ? cat.activeSub : cat.inactiveSub }}
                   >
-                    {cat.isLink ? 'Real Available' : `${cat.hi} • ${count}`}
+                    {cat.isLink ? (isLudo ? 'Play & Win' : 'Real Available') : `${cat.hi} • ${count}`}
                   </span>
                 </button>
               );
