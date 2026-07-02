@@ -99,8 +99,45 @@ const KalyanGamePage = () => {
   // has no Jodi bet). Switching to Jodi auto-selects Open session.
   useEffect(() => { if (activeType === 'jodi') setSession('open'); }, [activeType]);
 
-  // If user switched from Jodi to a Close-eligible type and Open time has
-  // passed, we still keep the last chosen session — backend enforces cutoffs.
+  // Live clock — used to gate UI based on open_time / close_time (IST).
+  const [nowMin, setNowMin] = useState(() => {
+    const d = new Date();
+    // Convert to IST minutes-since-midnight
+    const ist = new Date(d.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+    return ist.getHours() * 60 + ist.getMinutes();
+  });
+  useEffect(() => {
+    const tick = () => {
+      const d = new Date();
+      const ist = new Date(d.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+      setNowMin(ist.getHours() * 60 + ist.getMinutes());
+    };
+    const id = setInterval(tick, 30 * 1000); // every 30s is plenty
+    return () => clearInterval(id);
+  }, []);
+
+  const hhmmToMin = (s) => {
+    if (!s || !s.includes(':')) return -1;
+    const [h, m] = s.split(':').map(Number);
+    return h * 60 + m;
+  };
+
+  const openMin = hhmmToMin(game?.open_time || game?.start_time);
+  const closeMin = hhmmToMin(game?.close_time || game?.end_time);
+  const isOpenClosed = openMin >= 0 && nowMin >= openMin;   // Open cutoff hit
+  const isCloseClosed = closeMin >= 0 && (
+    // Handle cross-midnight (close < open) — treat as valid until then
+    closeMin >= openMin ? nowMin >= closeMin : (nowMin >= closeMin && nowMin < openMin)
+  );
+  const isJodiBlocked = isOpenClosed;  // Jodi disallowed after open_time
+  const marketClosed = isCloseClosed;  // Both sessions blocked
+
+  // If Jodi is the active type and Open time has passed, auto-switch to Single
+  useEffect(() => {
+    if (activeType === 'jodi' && isJodiBlocked) setActiveType('single');
+    // If Open session selected but Open closed, switch to Close
+    if (session === 'open' && isOpenClosed && !marketClosed) setSession('close');
+  }, [activeType, session, isJodiBlocked, isOpenClosed, marketClosed]);
 
   const type = TYPE_DEFS.find(t => t.id === activeType);
   const rate = type?.rate || 0;
@@ -239,22 +276,44 @@ const KalyanGamePage = () => {
         </button>
       </div>
 
-      {/* MARKET label + Rate */}
-      <div className="flex items-center justify-between px-4 pt-3 pb-2">
-        <span className="text-black font-bold text-sm uppercase tracking-wide">MARKET</span>
-        <span className="text-green-600 font-bold italic text-sm" data-testid="kalyan-rate">Rate : {rate}</span>
+      {/* MARKET label + Open/Close time display + Rate */}
+      <div className="px-4 pt-3 pb-2">
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-black font-bold text-sm uppercase tracking-wide">MARKET</span>
+          <span className="text-green-600 font-bold italic text-sm" data-testid="kalyan-rate">Rate : {rate}</span>
+        </div>
+        {/* Time display bar — admin-set open/close times */}
+        <div className="flex items-center justify-between gap-2" data-testid="kalyan-time-display">
+          <div className="flex-1 px-3 py-1.5 rounded-lg border" style={{
+            background: isOpenClosed ? 'rgba(239,68,68,0.08)' : 'rgba(34,197,94,0.10)',
+            borderColor: isOpenClosed ? 'rgba(239,68,68,0.35)' : 'rgba(34,197,94,0.4)',
+          }}>
+            <p className="text-[9px] font-bold uppercase tracking-wider" style={{ color: isOpenClosed ? '#DC2626' : '#16A34A' }}>
+              {isOpenClosed ? 'Open Closed' : 'Open bets till'}
+            </p>
+            <p className="text-black font-black text-sm tabular-nums" data-testid="kalyan-open-time">
+              {fmtTime(game.open_time || '--:--')}
+            </p>
+          </div>
+          <div className="flex-1 px-3 py-1.5 rounded-lg border" style={{
+            background: marketClosed ? 'rgba(239,68,68,0.08)' : 'rgba(239,68,68,0.06)',
+            borderColor: marketClosed ? 'rgba(239,68,68,0.5)' : 'rgba(239,68,68,0.35)',
+          }}>
+            <p className="text-[9px] font-bold uppercase tracking-wider text-red-600">
+              {marketClosed ? 'Market Closed' : 'Close bets till'}
+            </p>
+            <p className="text-black font-black text-sm tabular-nums" data-testid="kalyan-close-time">
+              {fmtTime(game.close_time || game.end_time || '--:--')}
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* OPEN / CLOSE session toggle
-          Rules (matka):
-            • Betting starts at game.start_time (7 AM)
-            • OPEN session closes at game.open_time  → Jodi + all types allowed
-            • CLOSE session closes at game.end_time  → NO Jodi, only single/panna
-      */}
+      {/* OPEN / CLOSE session toggle */}
       <div className="grid grid-cols-2 gap-3 px-4">
         {[
-          { id: 'open',  label: `OPEN`,  cutoff: game.open_time || game.start_time, disabled: false },
-          { id: 'close', label: `CLOSE`, cutoff: game.end_time,                     disabled: activeType === 'jodi' },
+          { id: 'open',  label: 'OPEN',  cutoff: game.open_time,                   disabled: isOpenClosed || marketClosed },
+          { id: 'close', label: 'CLOSE', cutoff: game.close_time || game.end_time, disabled: activeType === 'jodi' || marketClosed },
         ].map(s => {
           const active = session === s.id;
           return (
@@ -267,8 +326,8 @@ const KalyanGamePage = () => {
               className={`py-2.5 rounded-lg text-center font-semibold text-[13px] tracking-wide leading-tight ${
                 s.disabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-200 text-black'
               }`}
-              style={active ? { border: '2px solid #2563EB', background: '#E5E7EB' } : { border: '1px solid transparent' }}
-              title={s.disabled ? 'Jodi bet Close session me nahi lagti' : ''}
+              style={active && !s.disabled ? { border: '2px solid #2563EB', background: '#E5E7EB' } : { border: '1px solid transparent' }}
+              title={s.disabled ? (s.id === 'open' ? 'Open ka time nikal chuka' : 'Jodi bet Close session me nahi lagti') : ''}
             >
               <div>{s.label}</div>
               <div className="text-[10px] font-normal opacity-70">till {fmtTime(s.cutoff)}</div>
@@ -277,21 +336,26 @@ const KalyanGamePage = () => {
         })}
       </div>
 
-      {/* 5 bet-type tabs with icons */}
+      {/* 5 bet-type tabs with icons — Jodi tab disabled once open_time passed */}
       <div className="grid grid-cols-5 gap-2 px-4 mt-3">
         {TYPE_DEFS.map(t => {
           const active = activeType === t.id;
+          const disabled = (t.id === 'jodi' && isJodiBlocked) || marketClosed;
           return (
             <button
               key={t.id}
               type="button"
-              onClick={() => setActiveType(t.id)}
+              disabled={disabled}
+              onClick={() => !disabled && setActiveType(t.id)}
               data-testid={`kalyan-type-${t.id}`}
-              className="rounded-lg py-2 px-1 flex flex-col items-center justify-center gap-1 active:scale-95"
-              style={active
+              className={`rounded-lg py-2 px-1 flex flex-col items-center justify-center gap-1 active:scale-95 ${
+                disabled ? 'opacity-40 cursor-not-allowed' : ''
+              }`}
+              style={active && !disabled
                 ? { border: '2px solid #2563EB', background: '#FFFFFF' }
                 : { border: '1px solid #E5E7EB', background: '#FFFFFF' }
               }
+              title={disabled && t.id === 'jodi' ? 'Jodi ka time nikal chuka' : (marketClosed ? 'Market band ho gaya' : '')}
             >
               <TabIcon type={t.icon} />
               <span className="text-[10px] font-bold text-black leading-tight text-center">

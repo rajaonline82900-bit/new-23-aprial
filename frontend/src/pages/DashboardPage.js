@@ -841,10 +841,10 @@ const DashboardPage = () => {
                         >
                           <div className="flex flex-col gap-0.5">
                             <span className="text-[9px] uppercase tracking-widest font-bold leading-none" style={{ color: '#86EFAC' }}>
-                              Open • {formatTime(game.start_time)}
+                              Open • {formatTime(game.open_time || game.start_time)}
                             </span>
                             <span className="text-[9px] uppercase tracking-widest font-bold leading-none" style={{ color: '#FCA5A5' }}>
-                              Close • {formatTime(game.end_time)}
+                              Close • {formatTime(game.close_time || game.end_time)}
                             </span>
                           </div>
 
