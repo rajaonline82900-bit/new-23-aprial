@@ -1,24 +1,27 @@
-"""Ludo Race — 8-minute time-based, 2-4 player Ludo mini-game.
+"""Ludo (Zupee-Supreme style) — classic 4-token real-money Ludo.
 
 Features:
-  • Matchmaking lobby (per entry-fee slab)
+  • Matchmaking lobby (2/3/4 players, ₹10/₹50/₹100/₹500 slabs)
   • 180s Wait & Fill — auto-bot fill if no other player joins
   • Weighted dice — targets ~30% user win rate over rolling last 10 games
   • Admin-configurable commission (default 10%)
   • MongoDB-backed persistence — crash-safe reconnect
   • WebSocket real-time board updates
-  • 8-minute match timer + 15s per-turn timer with auto-skip
+  • 10-minute match timer + 15s per-turn timer with auto-skip
 
-Board (simplified linear race):
-  • Each player has 1 pawn on a 30-square track (index 0 → 30)
-  • Roll dice → move pawn forward; landing on opponent = capture (opp → 0)
-  • Rolling a 6 = extra turn (max 3 consecutive 6s to avoid infinite loop)
-  • Reaching square 30 first = instant win
-  • Timer expires → highest-square player wins; tie = equal split
+Board (classic Ludo):
+  • Each player has 4 tokens starting in their color YARD
+  • Roll 6 to release a token onto the main 52-square track
+  • Personal `progress` per token: 0 (yard) → 1..51 (main track) → 52..57 (home column)
+  • Progress 57 = token has reached FINAL HOME
+  • 8 safe squares (4 color-start + 4 stars) — no capture possible
+  • Landing on opponent at non-safe square = capture (back to yard)
+  • 6 = extra turn (max 3 consecutive)
+  • End: all 4 tokens home OR timer runs out → highest SCORE wins
+    Score = home_tokens*56 + Σ token progress + captures*20
 """
 import asyncio
 import random
-import secrets
 import time
 import uuid
 from datetime import datetime, timezone
@@ -33,20 +36,35 @@ from auth import get_current_user
 router = APIRouter()
 
 # ---------- Config ----------
-TRACK_LENGTH = 30              # Squares to reach = win
-MATCH_DURATION = 8 * 60        # 8 minutes in seconds
-TURN_DURATION = 15             # Per-turn seconds
-BOT_FILL_WAIT = 180            # Seconds before auto-filling with bots
-MAX_CONSECUTIVE_SIXES = 3      # Anti-abuse cap on 6-again rule
+MAIN_TRACK_LEN = 52              # Squares on the outer loop
+HOME_COLUMN_LEN = 6              # Squares in the color-specific home column
+FINAL_HOME_PROGRESS = MAIN_TRACK_LEN + HOME_COLUMN_LEN - 1  # = 57
+TOKENS_PER_PLAYER = 4
+
+MATCH_DURATION = 10 * 60         # 10 minutes (Zupee-Supreme)
+TURN_DURATION = 15
+BOT_FILL_WAIT = 180
+MAX_CONSECUTIVE_SIXES = 3
 ENTRY_FEE_SLABS = [10, 50, 100, 500]
 PLAYER_COUNTS = [2, 3, 4]
-DEFAULT_COMMISSION_PCT = 10.0  # % house cut
-TARGET_USER_WIN_RATE = 0.30    # 30% — matched with problem statement
+DEFAULT_COMMISSION_PCT = 10.0
+TARGET_USER_WIN_RATE = 0.30
 
-# Player colors (for UI)
-PLAYER_COLORS = ["#EF4444", "#3B82F6", "#10B981", "#F59E0B"]  # red, blue, green, yellow
+CAPTURE_BONUS_POINTS = 20        # Score points added for each capture
 
-# Bot name pool (Indian first names)
+# Zupee/standard color assignments — Red top-left, Green top-right,
+# Yellow bottom-right, Blue bottom-left (matches Zupee Ludo Supreme).
+PLAYER_COLORS = ["#DC2626", "#16A34A", "#EAB308", "#2563EB"]  # red, green, yellow, blue
+PLAYER_COLOR_NAMES = ["red", "green", "yellow", "blue"]
+
+# Each color's start square on the shared 52-track:
+PLAYER_START_POS = [0, 13, 26, 39]
+
+# Safe squares (no captures possible):
+#   • 4 color-start squares  (0, 13, 26, 39)
+#   • 4 star mid-path squares (8, 21, 34, 47)
+SAFE_SQUARES = {0, 8, 13, 21, 26, 34, 39, 47}
+
 BOT_NAMES = [
     "Rohit", "Sneha", "Aakash", "Priya", "Vikram", "Anjali", "Rahul", "Meera",
     "Suresh", "Kavya", "Amit", "Neha", "Ravi", "Pooja", "Karan", "Isha",
@@ -55,13 +73,13 @@ BOT_NAMES = [
     "Ankit", "Shreya", "Mohit", "Aarti", "Varun", "Nisha", "Kunal", "Ritu",
 ]
 
-# ---------- In-memory: WebSocket clients per table ----------
-_ws_clients: Dict[str, List[WebSocket]] = {}   # table_id -> [ws, ...]
+
+# ---------- WebSocket clients ----------
+_ws_clients: Dict[str, List[WebSocket]] = {}
 _ws_lock = asyncio.Lock()
 
 
 async def _broadcast(table_id: str, payload: dict) -> None:
-    """Fan-out payload to all connected clients of a given table."""
     async with _ws_lock:
         clients = list(_ws_clients.get(table_id, []))
     if not clients:
@@ -80,7 +98,7 @@ async def _broadcast(table_id: str, payload: dict) -> None:
                     lst.remove(d)
 
 
-# ---------- Commission (admin-configurable via settings collection) ----------
+# ---------- Commission ----------
 async def _get_commission_pct() -> float:
     s = await db.settings.find_one({"_id": "ludo"})
     if s and isinstance(s.get("commission_pct"), (int, float)):
@@ -88,9 +106,8 @@ async def _get_commission_pct() -> float:
     return DEFAULT_COMMISSION_PCT
 
 
-# ---------- Weighted Dice: Game Integrity Manager ----------
+# ---------- Weighted Dice ----------
 async def _user_recent_winrate(user_id: str) -> float:
-    """Look at the user's last 10 completed Ludo games and compute win rate."""
     cur = db.ludo_games.find(
         {"players.user_id": user_id, "status": "completed"},
         {"_id": 0, "winner_ids": 1}
@@ -103,50 +120,69 @@ async def _user_recent_winrate(user_id: str) -> float:
 
 
 async def weighted_dice_roll(user_id: str, is_bot: bool) -> int:
-    """Server-side dice roll with weighting toward TARGET_USER_WIN_RATE for
-    real users. Bots roll uniformly for fairness within the constraint.
-
-    Logic:
-      • If user's recent win rate is BELOW target -> boost 5/6 probability
-      • If ABOVE target -> boost 1/2 probability
-      • Delta magnitude scales the weight
-    """
+    """Server-side weighted RNG that keeps user win rate ~30% over last 10 games."""
     if is_bot:
         return random.randint(1, 6)
-
     try:
         wr = await _user_recent_winrate(user_id)
     except Exception:
         wr = 0.0
-    delta = TARGET_USER_WIN_RATE - wr   # positive => needs boost; negative => needs suppression
-
-    # Base weights uniform
-    weights = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]   # faces 1..6
-
-    # Boost/penalty capped so game still feels random
-    boost = max(min(delta * 2.5, 0.6), -0.6)  # ~ [-0.6, 0.6]
-
+    delta = TARGET_USER_WIN_RATE - wr
+    weights = [1.0] * 6
+    boost = max(min(delta * 2.5, 0.6), -0.6)
     if boost > 0:
-        # Favor high faces (5,6) — help the user advance
-        weights[4] += boost * 1.2
-        weights[5] += boost * 1.6
+        weights[4] += boost * 1.2   # face 5
+        weights[5] += boost * 1.6   # face 6 (extra turn + release)
         weights[0] -= boost * 0.8
         weights[1] -= boost * 0.4
     else:
-        # Suppress user — favor low faces
         b = abs(boost)
         weights[0] += b * 1.2
         weights[1] += b * 0.8
         weights[4] -= b * 0.6
         weights[5] -= b * 1.0
-
-    # Clamp to positive
     weights = [max(0.05, w) for w in weights]
-    faces = [1, 2, 3, 4, 5, 6]
-    return random.choices(faces, weights=weights, k=1)[0]
+    return random.choices([1, 2, 3, 4, 5, 6], weights=weights, k=1)[0]
 
 
-# ---------- Table lifecycle helpers ----------
+# ---------- Token / player helpers ----------
+def _make_token(idx: int) -> dict:
+    return {"id": idx, "progress": 0}   # 0 = yard, 1..51 = main, 52..57 = home column
+
+
+def _abs_position_of(token: dict, start_pos: int) -> Optional[int]:
+    """Return the absolute main-track square (0..51) the token occupies, or None
+    if in yard/home column."""
+    p = token["progress"]
+    if p <= 0 or p > 51:
+        return None
+    return (start_pos + p - 1) % MAIN_TRACK_LEN
+
+
+def _make_player_slot(user: dict, idx: int, is_bot: bool = False) -> dict:
+    return {
+        "user_id": user["_id"] if not is_bot else f"bot_{uuid.uuid4().hex[:8]}",
+        "name": user.get("name", "Player"),
+        "is_bot": is_bot,
+        "seat": idx,
+        "color": PLAYER_COLORS[idx],
+        "color_name": PLAYER_COLOR_NAMES[idx],
+        "start_pos": PLAYER_START_POS[idx],
+        "tokens": [_make_token(i) for i in range(TOKENS_PER_PLAYER)],
+        "captures": 0,
+        "score": 0,
+        "sixes": 0,
+        "moves": 0,
+    }
+
+
+def _player_score(p: dict) -> int:
+    home = sum(1 for t in p["tokens"] if t["progress"] >= FINAL_HOME_PROGRESS)
+    prog_sum = sum(t["progress"] for t in p["tokens"] if t["progress"] < FINAL_HOME_PROGRESS)
+    return home * 56 + prog_sum + p.get("captures", 0) * CAPTURE_BONUS_POINTS
+
+
+# ---------- Table lifecycle ----------
 def _make_table_doc(entry_fee: float, max_players: int, creator: dict) -> dict:
     now = datetime.now(timezone.utc)
     table_id = uuid.uuid4().hex[:12]
@@ -155,13 +191,13 @@ def _make_table_doc(entry_fee: float, max_players: int, creator: dict) -> dict:
         "table_id": table_id,
         "entry_fee": float(entry_fee),
         "max_players": int(max_players),
-        "status": "waiting",             # waiting | playing | completed | cancelled
+        "status": "waiting",
         "players": [_make_player_slot(creator, 0)],
         "current_turn_idx": 0,
-        "current_turn_deadline": None,    # epoch seconds
-        "last_dice": None,                # {value, roller_idx, ts}
+        "current_turn_deadline": None,
+        "last_dice": None,
         "consecutive_sixes": 0,
-        "match_ends_at": None,           # epoch seconds when match auto-ends
+        "match_ends_at": None,
         "created_at": now,
         "started_at": None,
         "ended_at": None,
@@ -169,48 +205,46 @@ def _make_table_doc(entry_fee: float, max_players: int, creator: dict) -> dict:
         "prize_pool": 0.0,
         "commission_pct": None,
         "commission_amount": 0.0,
-        "log": [],                        # append-only event log
+        "log": [],
         "bot_fill_deadline": time.time() + BOT_FILL_WAIT,
-    }
-
-
-def _make_player_slot(user: dict, idx: int, is_bot: bool = False) -> dict:
-    return {
-        "user_id": user["_id"] if not is_bot else f"bot_{uuid.uuid4().hex[:8]}",
-        "name": user.get("name", "Player"),
-        "is_bot": is_bot,
-        "position": 0,        # square index on track
-        "color": PLAYER_COLORS[idx],
-        "seat": idx,
-        "captures": 0,
-        "sixes": 0,
-        "moves": 0,
+        # A dice already rolled but not yet consumed (waiting for token pick):
+        "pending_dice": None,     # {value, roller_seat}
     }
 
 
 def _public_table(t: dict) -> dict:
-    """Sanitize table doc for client (strip internal fields)."""
-    out = {
+    return {
         "table_id": t["table_id"],
         "entry_fee": t["entry_fee"],
         "max_players": t["max_players"],
         "status": t["status"],
-        "players": [
-            {k: p[k] for k in ("user_id", "name", "is_bot", "position", "color", "seat", "captures")}
-            for p in t.get("players", [])
-        ],
+        "players": [{
+            "user_id": p["user_id"],
+            "name": p["name"],
+            "is_bot": p.get("is_bot", False),
+            "seat": p["seat"],
+            "color": p["color"],
+            "color_name": p["color_name"],
+            "start_pos": p["start_pos"],
+            "tokens": p["tokens"],
+            "captures": p.get("captures", 0),
+            "score": _player_score(p),
+        } for p in t.get("players", [])],
         "current_turn_idx": t.get("current_turn_idx"),
         "current_turn_deadline": t.get("current_turn_deadline"),
         "last_dice": t.get("last_dice"),
+        "pending_dice": t.get("pending_dice"),
         "consecutive_sixes": t.get("consecutive_sixes", 0),
         "match_ends_at": t.get("match_ends_at"),
         "winner_ids": t.get("winner_ids", []),
+        "per_winner": t.get("per_winner"),
         "prize_pool": t.get("prize_pool", 0.0),
         "bot_fill_deadline": t.get("bot_fill_deadline"),
-        "track_length": TRACK_LENGTH,
-        "log": (t.get("log") or [])[-15:],
+        "main_track_len": MAIN_TRACK_LEN,
+        "home_column_len": HOME_COLUMN_LEN,
+        "safe_squares": list(SAFE_SQUARES),
+        "log": (t.get("log") or [])[-20:],
     }
-    return out
 
 
 def _current_player(t: dict) -> Optional[dict]:
@@ -222,35 +256,31 @@ def _current_player(t: dict) -> Optional[dict]:
 
 
 def _next_turn_idx(t: dict, extra: bool = False) -> int:
-    """Advance turn (unless extra=True for a 6)."""
     if extra:
         return t["current_turn_idx"]
     return (t["current_turn_idx"] + 1) % len(t["players"])
 
 
 async def _log_event(t: dict, msg: str) -> None:
-    t.setdefault("log", []).append({
-        "t": int(time.time()),
-        "msg": msg,
-    })
+    t.setdefault("log", []).append({"t": int(time.time()), "msg": msg})
 
 
 async def _settle_table(table_id: str, cause: str) -> None:
-    """Determine winner, distribute prize, mark completed, broadcast."""
+    """Settle: highest score wins; ties split. Credit winners."""
     t = await db.ludo_tables.find_one({"_id": table_id})
     if not t or t.get("status") == "completed":
         return
 
     players = t.get("players", [])
-    prize_pool = t.get("prize_pool", 0.0)
+    for p in players:
+        p["score"] = _player_score(p)
 
-    # Winner = highest position; ties get equal split
-    max_pos = max(p["position"] for p in players)
-    winners = [p for p in players if p["position"] == max_pos]
+    prize_pool = t.get("prize_pool", 0.0)
+    max_score = max((p["score"] for p in players), default=0)
+    winners = [p for p in players if p["score"] == max_score]
     winner_ids = [p["user_id"] for p in winners]
     per_winner = round(prize_pool / max(len(winners), 1), 2) if prize_pool > 0 else 0.0
 
-    # Credit real users
     for w in winners:
         if not w.get("is_bot") and per_winner > 0:
             try:
@@ -278,9 +308,9 @@ async def _settle_table(table_id: str, cause: str) -> None:
             "winner_ids": winner_ids,
             "per_winner": per_winner,
             "end_cause": cause,
+            "players": players,
         }}
     )
-    # Snapshot into ludo_games history
     t2 = await db.ludo_tables.find_one({"_id": table_id})
     if t2:
         await db.ludo_games.insert_one({
@@ -290,7 +320,8 @@ async def _settle_table(table_id: str, cause: str) -> None:
                 "user_id": p["user_id"],
                 "name": p["name"],
                 "is_bot": p.get("is_bot", False),
-                "position": p["position"],
+                "score": _player_score(p),
+                "home_tokens": sum(1 for tok in p["tokens"] if tok["progress"] >= FINAL_HOME_PROGRESS),
                 "captures": p.get("captures", 0),
             } for p in t2["players"]],
             "winner_ids": winner_ids,
@@ -313,7 +344,6 @@ async def _settle_table(table_id: str, cause: str) -> None:
 
 
 async def _start_match(t: dict) -> None:
-    """Transition table from waiting -> playing, set timers."""
     now_ts = time.time()
     commission_pct = await _get_commission_pct()
     gross = t["entry_fee"] * len(t["players"])
@@ -329,19 +359,16 @@ async def _start_match(t: dict) -> None:
     t["commission_pct"] = commission_pct
     t["commission_amount"] = commission
     await _log_event(t, f"Match started • Prize ₹{prize_pool}")
-
     await db.ludo_tables.update_one({"_id": t["_id"]}, {"$set": t})
     await _broadcast(t["_id"], {"type": "match_started", "state": _public_table(t)})
 
 
 async def _fill_with_bots(table_id: str) -> None:
-    """Fill remaining seats with bots and start the match."""
     t = await db.ludo_tables.find_one({"_id": table_id})
     if not t or t["status"] != "waiting":
         return
     remaining = t["max_players"] - len(t["players"])
     if remaining <= 0:
-        # Already full
         await _start_match(t)
         return
 
@@ -358,19 +385,149 @@ async def _fill_with_bots(table_id: str) -> None:
     await _start_match(t)
 
 
-# ---------- Background loops ----------
+# ---------- Movement helpers ----------
+def _movable_tokens(player: dict, dice: int) -> List[int]:
+    """Return list of token IDs that CAN move with `dice`."""
+    ids = []
+    for tok in player["tokens"]:
+        p = tok["progress"]
+        # In yard: only 6 releases
+        if p == 0:
+            if dice == 6:
+                ids.append(tok["id"])
+            continue
+        # Already home
+        if p >= FINAL_HOME_PROGRESS:
+            continue
+        # Would over-shoot final home?
+        if p + dice > FINAL_HOME_PROGRESS:
+            continue
+        ids.append(tok["id"])
+    return ids
+
+
+def _bot_choose_token(player: dict, dice: int, all_players: List[dict]) -> Optional[int]:
+    """Simple heuristic: prefer capturing, then advancing furthest token,
+    then releasing if 6."""
+    movable = _movable_tokens(player, dice)
+    if not movable:
+        return None
+
+    def capture_target_seats(tok_id: int) -> int:
+        tok = player["tokens"][tok_id]
+        p = tok["progress"]
+        # Only main-track landings can capture
+        new_prog = p + dice if p > 0 else 1
+        if new_prog < 1 or new_prog > 51:
+            return 0
+        abs_pos = (player["start_pos"] + new_prog - 1) % MAIN_TRACK_LEN
+        if abs_pos in SAFE_SQUARES:
+            return 0
+        count = 0
+        for op in all_players:
+            if op["seat"] == player["seat"]:
+                continue
+            for ot in op["tokens"]:
+                if 0 < ot["progress"] <= 51:
+                    op_abs = (op["start_pos"] + ot["progress"] - 1) % MAIN_TRACK_LEN
+                    if op_abs == abs_pos:
+                        count += 1
+        return count
+
+    # 1. Capture opportunity
+    with_captures = [(tid, capture_target_seats(tid)) for tid in movable]
+    with_captures = [x for x in with_captures if x[1] > 0]
+    if with_captures:
+        with_captures.sort(key=lambda x: -x[1])
+        return with_captures[0][0]
+
+    # 2. Release from yard if any (6-roll only)
+    if dice == 6:
+        for tid in movable:
+            if player["tokens"][tid]["progress"] == 0:
+                return tid
+
+    # 3. Advance the furthest-along token
+    furthest = max(movable, key=lambda tid: player["tokens"][tid]["progress"])
+    return furthest
+
+
+async def _apply_token_move(t: dict, seat: int, dice: int, token_id: int) -> Dict:
+    """Move `token_id` for `seat` player by `dice`. Handle capture + extras."""
+    p = t["players"][seat]
+    tok = p["tokens"][token_id]
+
+    was_release = (tok["progress"] == 0 and dice == 6)
+    if was_release:
+        tok["progress"] = 1
+        moved_from_yard = True
+    else:
+        tok["progress"] = min(FINAL_HOME_PROGRESS, tok["progress"] + dice)
+        moved_from_yard = False
+
+    p["moves"] = p.get("moves", 0) + 1
+    if dice == 6:
+        p["sixes"] = p.get("sixes", 0) + 1
+
+    # Capture check (only on main track & non-safe)
+    captured_msgs = []
+    if 1 <= tok["progress"] <= 51:
+        abs_pos = (p["start_pos"] + tok["progress"] - 1) % MAIN_TRACK_LEN
+        if abs_pos not in SAFE_SQUARES:
+            for op in t["players"]:
+                if op["seat"] == seat:
+                    continue
+                for ot in op["tokens"]:
+                    if 0 < ot["progress"] <= 51:
+                        op_abs = (op["start_pos"] + ot["progress"] - 1) % MAIN_TRACK_LEN
+                        if op_abs == abs_pos:
+                            ot["progress"] = 0    # send to yard
+                            captured_msgs.append(f"{op['name']}'s token")
+                            p["captures"] = p.get("captures", 0) + 1
+
+    reached_home = tok["progress"] >= FINAL_HOME_PROGRESS
+
+    msg_prefix = "🤖 " if p.get("is_bot") else ""
+    msg = f"{msg_prefix}{p['name']} rolled {dice}"
+    if moved_from_yard:
+        msg += " → released token"
+    if captured_msgs:
+        msg += f" • captured {', '.join(captured_msgs)}"
+    if reached_home:
+        msg += " • 🏁 token HOME"
+    await _log_event(t, msg)
+
+    # Consumed
+    t["pending_dice"] = None
+
+    # Extra turn if: rolled 6 OR captured OR reached home
+    extra = (dice == 6) or bool(captured_msgs) or reached_home
+    if dice == 6:
+        t["consecutive_sixes"] = t.get("consecutive_sixes", 0) + 1
+        if t["consecutive_sixes"] >= MAX_CONSECUTIVE_SIXES:
+            extra = False
+            t["consecutive_sixes"] = 0
+            await _log_event(t, f"{p['name']} — 3rd six, turn passes!")
+    elif not extra:
+        t["consecutive_sixes"] = 0
+
+    t["last_dice"] = {"value": dice, "roller_seat": seat, "ts": int(time.time())}
+
+    # All 4 home? Instant match end (this player is likely winner)
+    all_home_players = [pl for pl in t["players"] if all(tt["progress"] >= FINAL_HOME_PROGRESS for tt in pl["tokens"])]
+    return {"extra": extra, "all_home": bool(all_home_players)}
+
+
+# ---------- Watchdog ----------
 async def ludo_watchdog():
-    """Every 2s:
-      • For 'waiting' tables past bot_fill_deadline -> fill with bots
-      • For 'playing' tables past current_turn_deadline -> auto-play current player
-      • For 'playing' tables past match_ends_at -> settle
-    """
+    """Every 2s: bot-fill waiting tables, auto-play stuck/bot turns,
+    settle matches whose timer expired."""
     await asyncio.sleep(3)
     while True:
         try:
             now_ts = time.time()
 
-            # 1. Bot fill for waiting tables
+            # 1. Bot fill
             waiting = await db.ludo_tables.find({
                 "status": "waiting",
                 "bot_fill_deadline": {"$lte": now_ts},
@@ -381,136 +538,110 @@ async def ludo_watchdog():
                 except Exception:
                     pass
 
-            # 2. Auto-turn advancement
+            # 2. Turn / match progression
             playing = await db.ludo_tables.find({"status": "playing"}).to_list(200)
             for t in playing:
-                # Match timeout -> settle
                 if t.get("match_ends_at") and now_ts >= t["match_ends_at"]:
                     await _settle_table(t["_id"], "time_up")
                     continue
-
-                # Current turn timeout OR current player is a bot -> auto-play
                 deadline = t.get("current_turn_deadline") or 0
                 cp = _current_player(t)
                 if not cp:
                     continue
                 should_auto = cp.get("is_bot") or now_ts >= deadline
                 if should_auto:
-                    # Small pacing delay if bot to feel natural
                     if cp.get("is_bot"):
                         await asyncio.sleep(0.5)
-                    await _auto_roll_and_move(t["_id"])
+                    await _auto_turn(t["_id"])
 
         except Exception as e:
-            # Don't crash the loop
             import logging
             logging.getLogger(__name__).warning(f"Ludo watchdog err: {e}")
         await asyncio.sleep(2.0)
 
 
-async def _auto_roll_and_move(table_id: str) -> None:
-    """Perform a dice roll + move for the current player (bot or timed-out user)."""
+async def _auto_turn(table_id: str) -> None:
+    """Roll + move for the current player (bot or timed-out user)."""
     t = await db.ludo_tables.find_one({"_id": table_id})
     if not t or t["status"] != "playing":
         return
     cp = _current_player(t)
     if not cp:
         return
-
-    # If real user timed out -> skip turn (no roll) OR treat as forced roll of 1
-    # We choose a forced random roll so game keeps flowing.
     is_bot = cp.get("is_bot", False)
-    dice = await weighted_dice_roll(cp["user_id"], is_bot=is_bot)
-    await _apply_move(table_id, cp["seat"], dice, forced=not is_bot)
 
+    # If there's already a pending dice waiting to be consumed, resolve it
+    pending = t.get("pending_dice")
+    dice = pending["value"] if pending else await weighted_dice_roll(cp["user_id"], is_bot=is_bot)
+    t["pending_dice"] = {"value": dice, "roller_seat": cp["seat"]}
 
-async def _apply_move(table_id: str, seat: int, dice: int, forced: bool = False) -> Optional[dict]:
-    """Apply a dice roll for `seat` and advance turn. Returns updated public state."""
-    t = await db.ludo_tables.find_one({"_id": table_id})
-    if not t or t["status"] != "playing":
-        return None
-    if t.get("current_turn_idx") != seat:
-        return None
-
-    players = t["players"]
-    p = players[seat]
-
-    new_pos = min(TRACK_LENGTH, p["position"] + dice)
-    p["moves"] = p.get("moves", 0) + 1
-    if dice == 6:
-        p["sixes"] = p.get("sixes", 0) + 1
-
-    # Capture check: any opponent on same square (not at 0 or TRACK_LENGTH)
-    captured_names = []
-    if 0 < new_pos < TRACK_LENGTH:
-        for other in players:
-            if other["seat"] != seat and other["position"] == new_pos:
-                other["position"] = 0
-                captured_names.append(other["name"])
-                p["captures"] = p.get("captures", 0) + 1
-
-    p["position"] = new_pos
-
-    # Log
-    msg = f"{'🤖 ' if p.get('is_bot') else ''}{p['name']} rolled {dice}"
-    if forced and not p.get("is_bot"):
-        msg += " (auto)"
-    if captured_names:
-        msg += f" • captured {', '.join(captured_names)}"
-    if new_pos >= TRACK_LENGTH:
-        msg += " • 🏁 HOME"
-    await _log_event(t, msg)
-
-    # Turn control (6 = extra, capped)
-    extra = (dice == 6)
-    if extra:
-        t["consecutive_sixes"] = t.get("consecutive_sixes", 0) + 1
-        if t["consecutive_sixes"] >= MAX_CONSECUTIVE_SIXES:
-            extra = False
+    movable = _movable_tokens(cp, dice)
+    if not movable:
+        # No legal move -> skip turn
+        await _log_event(t, f"{'🤖 ' if is_bot else ''}{cp['name']} rolled {dice} — no legal move")
+        t["pending_dice"] = None
+        t["last_dice"] = {"value": dice, "roller_seat": cp["seat"], "ts": int(time.time())}
+        # 6-consecutive counter still applies
+        if dice == 6:
+            t["consecutive_sixes"] = t.get("consecutive_sixes", 0) + 1
+        else:
             t["consecutive_sixes"] = 0
-            await _log_event(t, f"{p['name']} — 3rd six, turn passes!")
-    else:
-        t["consecutive_sixes"] = 0
-
-    t["last_dice"] = {"value": dice, "roller_seat": seat, "ts": int(time.time())}
-
-    # Win check (instant win at 30)
-    instant_win = new_pos >= TRACK_LENGTH
-
-    if instant_win:
-        # Save then settle
+        extra = (dice == 6 and t["consecutive_sixes"] < MAX_CONSECUTIVE_SIXES)
+        t["current_turn_idx"] = _next_turn_idx(t, extra=extra)
+        t["current_turn_deadline"] = time.time() + TURN_DURATION
         await db.ludo_tables.update_one({"_id": table_id}, {"$set": t})
-        await _broadcast(table_id, {"type": "dice_rolled", "seat": seat, "dice": dice,
+        await _broadcast(table_id, {"type": "dice_rolled", "seat": cp["seat"],
+                                     "dice": dice, "no_move": True,
                                      "state": _public_table(t)})
-        await _settle_table(table_id, "reached_home")
-        return _public_table(await db.ludo_tables.find_one({"_id": table_id}))
+        return
 
-    t["current_turn_idx"] = _next_turn_idx(t, extra=extra)
+    token_id = _bot_choose_token(cp, dice, t["players"])
+    result = await _apply_token_move(t, cp["seat"], dice, token_id)
+    extra = result["extra"]
+
+    # Advance turn
+    if not extra:
+        t["current_turn_idx"] = _next_turn_idx(t, extra=False)
     t["current_turn_deadline"] = time.time() + TURN_DURATION
+
+    # Check for instant-win (all 4 home for someone)
+    winner_now = None
+    for pl in t["players"]:
+        if all(tt["progress"] >= FINAL_HOME_PROGRESS for tt in pl["tokens"]):
+            winner_now = pl
+            break
+
     await db.ludo_tables.update_one({"_id": table_id}, {"$set": t})
-    await _broadcast(table_id, {"type": "dice_rolled", "seat": seat, "dice": dice,
-                                 "extra": extra, "state": _public_table(t)})
-    return _public_table(t)
+    await _broadcast(table_id, {
+        "type": "token_moved", "seat": cp["seat"], "dice": dice,
+        "token_id": token_id, "extra": extra,
+        "state": _public_table(t),
+    })
+    if winner_now:
+        await _settle_table(table_id, "all_home")
 
 
 # ---------- REST endpoints ----------
 @router.get("/ludo/config")
 async def ludo_config():
-    """Public config for lobby UI."""
     return {
         "entry_fees": ENTRY_FEE_SLABS,
         "player_counts": PLAYER_COUNTS,
-        "track_length": TRACK_LENGTH,
+        "main_track_len": MAIN_TRACK_LEN,
+        "home_column_len": HOME_COLUMN_LEN,
+        "tokens_per_player": TOKENS_PER_PLAYER,
+        "safe_squares": list(SAFE_SQUARES),
         "match_duration": MATCH_DURATION,
         "turn_duration": TURN_DURATION,
         "bot_fill_wait": BOT_FILL_WAIT,
         "commission_pct": await _get_commission_pct(),
+        "player_start_pos": PLAYER_START_POS,
+        "player_colors": PLAYER_COLORS,
     }
 
 
 @router.get("/ludo/tables")
 async def list_tables():
-    """Public list of joinable waiting tables."""
     cur = db.ludo_tables.find({"status": "waiting"}, {"_id": 0}).sort("created_at", -1).limit(30)
     tables = await cur.to_list(30)
     return {"tables": [_public_table(t) for t in tables]}
@@ -518,7 +649,6 @@ async def list_tables():
 
 @router.post("/ludo/tables/create")
 async def create_table(request: Request):
-    """Create a new waiting table with the caller as the first player."""
     user = await get_current_user(request)
     body = await request.json()
     try:
@@ -530,12 +660,9 @@ async def create_table(request: Request):
         raise HTTPException(400, f"entry_fee must be one of {ENTRY_FEE_SLABS}")
     if max_players not in PLAYER_COUNTS:
         raise HTTPException(400, f"max_players must be one of {PLAYER_COUNTS}")
-
-    # Balance check + deduct
     if float(user.get("balance", 0)) < entry_fee:
         raise HTTPException(400, "बैलेंस कम है / Insufficient balance")
 
-    # Prevent multiple active tables per user
     existing = await db.ludo_tables.find_one({
         "status": {"$in": ["waiting", "playing"]},
         "players.user_id": user["_id"],
@@ -567,14 +694,11 @@ async def join_table(table_id: str, request: Request):
     if t["status"] != "waiting":
         raise HTTPException(400, "Table already started / full")
     if any(p["user_id"] == user["_id"] for p in t["players"]):
-        # Already in — return state (reconnect)
         return {"table_id": table_id, "state": _public_table(t)}
     if len(t["players"]) >= t["max_players"]:
         raise HTTPException(400, "Table full")
     if float(user.get("balance", 0)) < t["entry_fee"]:
         raise HTTPException(400, "बैलेंस कम है / Insufficient balance")
-
-    # Check user isn't in another active table
     other = await db.ludo_tables.find_one({
         "status": {"$in": ["waiting", "playing"]},
         "players.user_id": user["_id"],
@@ -582,7 +706,6 @@ async def join_table(table_id: str, request: Request):
     if other:
         raise HTTPException(400, "आप पहले से एक टेबल में हैं / Already in a table")
 
-    # Deduct entry
     await db.users.update_one({"_id": ObjectId(user["_id"])}, {"$inc": {"balance": -t["entry_fee"]}})
     await db.transactions.insert_one({
         "user_id": user["_id"],
@@ -596,31 +719,26 @@ async def join_table(table_id: str, request: Request):
     t["players"].append(_make_player_slot(user, seat))
     await _log_event(t, f"{user.get('name','Player')} joined")
 
-    # If full -> auto start
     if len(t["players"]) >= t["max_players"]:
         await _start_match(t)
     else:
         await db.ludo_tables.update_one({"_id": table_id}, {"$set": t})
         await _broadcast(table_id, {"type": "player_joined", "state": _public_table(t)})
-
     return {"table_id": table_id, "state": _public_table(t)}
 
 
 @router.post("/ludo/tables/{table_id}/leave")
 async def leave_table(table_id: str, request: Request):
-    """Leave a WAITING table only (refund). Playing tables cannot be quit."""
     user = await get_current_user(request)
     t = await db.ludo_tables.find_one({"_id": table_id})
     if not t:
         raise HTTPException(404, "Table not found")
     if t["status"] != "waiting":
         raise HTTPException(400, "गेम शुरू हो चुका है, अब leave नहीं कर सकते")
-
     idx = next((i for i, p in enumerate(t["players"]) if p["user_id"] == user["_id"]), -1)
     if idx < 0:
         raise HTTPException(400, "Not in this table")
 
-    # Refund
     await db.users.update_one({"_id": ObjectId(user["_id"])}, {"$inc": {"balance": t["entry_fee"]}})
     await db.transactions.insert_one({
         "user_id": user["_id"],
@@ -632,10 +750,11 @@ async def leave_table(table_id: str, request: Request):
     })
 
     del t["players"][idx]
-    # Re-seat remaining players
     for i, p in enumerate(t["players"]):
         p["seat"] = i
         p["color"] = PLAYER_COLORS[i]
+        p["color_name"] = PLAYER_COLOR_NAMES[i]
+        p["start_pos"] = PLAYER_START_POS[i]
     await _log_event(t, f"{user.get('name','Player')} left")
 
     if not t["players"]:
@@ -647,8 +766,7 @@ async def leave_table(table_id: str, request: Request):
 
 
 @router.get("/ludo/tables/{table_id}")
-async def get_table(table_id: str, request: Request):
-    # No auth required for view (reconnect friendly)
+async def get_table(table_id: str):
     t = await db.ludo_tables.find_one({"_id": table_id})
     if not t:
         raise HTTPException(404, "Table not found")
@@ -657,7 +775,7 @@ async def get_table(table_id: str, request: Request):
 
 @router.post("/ludo/tables/{table_id}/roll")
 async def roll_dice(table_id: str, request: Request):
-    """User rolls dice on their turn."""
+    """Roll dice for the current player. Returns dice + list of movable tokens."""
     user = await get_current_user(request)
     t = await db.ludo_tables.find_one({"_id": table_id})
     if not t:
@@ -667,15 +785,94 @@ async def roll_dice(table_id: str, request: Request):
     cp = _current_player(t)
     if not cp or cp["user_id"] != user["_id"] or cp.get("is_bot"):
         raise HTTPException(400, "आपकी बारी नहीं है")
+    if t.get("pending_dice"):
+        raise HTTPException(400, "Already rolled — choose a token to move")
 
     dice = await weighted_dice_roll(user["_id"], is_bot=False)
-    state = await _apply_move(table_id, cp["seat"], dice, forced=False)
-    return {"dice": dice, "state": state}
+    movable = _movable_tokens(cp, dice)
+
+    t["last_dice"] = {"value": dice, "roller_seat": cp["seat"], "ts": int(time.time())}
+
+    if not movable:
+        # No legal move — auto skip
+        await _log_event(t, f"{cp['name']} rolled {dice} — no legal move")
+        if dice == 6:
+            t["consecutive_sixes"] = t.get("consecutive_sixes", 0) + 1
+        else:
+            t["consecutive_sixes"] = 0
+        extra = (dice == 6 and t["consecutive_sixes"] < MAX_CONSECUTIVE_SIXES)
+        t["current_turn_idx"] = _next_turn_idx(t, extra=extra)
+        t["current_turn_deadline"] = time.time() + TURN_DURATION
+        t["pending_dice"] = None
+        await db.ludo_tables.update_one({"_id": table_id}, {"$set": t})
+        await _broadcast(table_id, {"type": "dice_rolled", "dice": dice,
+                                     "seat": cp["seat"], "no_move": True,
+                                     "state": _public_table(t)})
+        return {"dice": dice, "movable": [], "state": _public_table(t)}
+
+    # Store pending dice; wait for user to pick token
+    t["pending_dice"] = {"value": dice, "roller_seat": cp["seat"]}
+    t["current_turn_deadline"] = time.time() + TURN_DURATION
+    await db.ludo_tables.update_one({"_id": table_id}, {"$set": t})
+    await _broadcast(table_id, {"type": "dice_rolled", "dice": dice,
+                                 "seat": cp["seat"], "movable": movable,
+                                 "state": _public_table(t)})
+    return {"dice": dice, "movable": movable, "state": _public_table(t)}
+
+
+@router.post("/ludo/tables/{table_id}/move")
+async def move_token(table_id: str, request: Request):
+    """User picks a token to move (after they rolled)."""
+    user = await get_current_user(request)
+    body = await request.json()
+    try:
+        token_id = int(body["token_id"])
+    except Exception:
+        raise HTTPException(400, "token_id required")
+    t = await db.ludo_tables.find_one({"_id": table_id})
+    if not t:
+        raise HTTPException(404, "Table not found")
+    if t["status"] != "playing":
+        raise HTTPException(400, "Match not active")
+    cp = _current_player(t)
+    if not cp or cp["user_id"] != user["_id"] or cp.get("is_bot"):
+        raise HTTPException(400, "आपकी बारी नहीं है")
+    pending = t.get("pending_dice")
+    if not pending:
+        raise HTTPException(400, "Roll dice first")
+    dice = pending["value"]
+
+    movable = _movable_tokens(cp, dice)
+    if token_id not in movable:
+        raise HTTPException(400, "This token cannot move with that dice")
+
+    result = await _apply_token_move(t, cp["seat"], dice, token_id)
+    extra = result["extra"]
+
+    if not extra:
+        t["current_turn_idx"] = _next_turn_idx(t, extra=False)
+    t["current_turn_deadline"] = time.time() + TURN_DURATION
+
+    winner_now = None
+    for pl in t["players"]:
+        if all(tt["progress"] >= FINAL_HOME_PROGRESS for tt in pl["tokens"]):
+            winner_now = pl
+            break
+
+    await db.ludo_tables.update_one({"_id": table_id}, {"$set": t})
+    await _broadcast(table_id, {
+        "type": "token_moved", "seat": cp["seat"], "dice": dice,
+        "token_id": token_id, "extra": extra,
+        "state": _public_table(t),
+    })
+    if winner_now:
+        await _settle_table(table_id, "all_home")
+
+    return {"state": _public_table(t)}
 
 
 @router.get("/ludo/my-active")
 async def my_active_table(request: Request):
-    """If user is currently in a waiting/playing table, return it (for reconnect)."""
     user = await get_current_user(request)
     t = await db.ludo_tables.find_one({
         "status": {"$in": ["waiting", "playing"]},
@@ -697,7 +894,7 @@ async def my_history(request: Request, limit: int = 30):
     return {"games": games}
 
 
-# ---------- Admin endpoints ----------
+# ---------- Admin ----------
 @router.get("/admin/ludo/settings")
 async def admin_get_settings(request: Request):
     from auth import get_admin_user
@@ -745,7 +942,6 @@ async def ludo_ws(ws: WebSocket, table_id: str):
     await ws.accept()
     async with _ws_lock:
         _ws_clients.setdefault(table_id, []).append(ws)
-    # Send snapshot
     try:
         t = await db.ludo_tables.find_one({"_id": table_id})
         if t:
@@ -754,7 +950,6 @@ async def ludo_ws(ws: WebSocket, table_id: str):
             await ws.send_json({"type": "error", "message": "Table not found"})
     except Exception:
         pass
-
     try:
         while True:
             try:
