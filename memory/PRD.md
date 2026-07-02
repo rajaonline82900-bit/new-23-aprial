@@ -214,6 +214,16 @@ Migrate Matka11 satta app from Emergent preview environment to self-hosted Hosti
   fresh yarn build, cache-bust `index.html`, auto-restart backend
   systemd service, reload nginx, verify `/api/version` + games count.
 
+### Feb 2026
+- **"Invalid Date" bug FIX in bet/wallet/admin lists**: `utcDate()` helper
+  updated across 9 files (BetsPage, WalletPage, AdminPage,
+  AdminReferralsTab, AdminWinnersTab, AdminFundRequestsTab,
+  AdminWithdrawalsTab, AdminUsersTab, AdminDepositsTab).
+  Root cause: Kalyan/Aviator routes stored `created_at` as ISO string
+  with `+00:00` offset; helper was blindly appending `Z` → invalid.
+  Fix: detect existing TZ (`Z` or `±HH:MM`) via regex before appending.
+  Verified with node against 4 formats (naive, `Z`, `+00:00`, `+05:30`).
+
 ## Backlog
 - P0: Tell user to "Save to Github" → on VPS run `bash /var/www/new-23-aprial/deploy.sh`
   to ship Aviator UI + Kalyan + tickers to the live APK.

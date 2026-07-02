@@ -175,7 +175,11 @@ const AdminKalyanResultsTab = ({ games = [] }) => {
           const gid = g.game_id;
           const r = results[gid] || {};
           const f = getForm(gid);
-          const autoJodi = r.jodi || (r.open_ank && r.close_ank ? `${r.open_ank}${r.close_ank}` : null);
+          const autoJodi = r.jodi ||
+            (r.open_ank && r.close_ank ? `${r.open_ank}${r.close_ank}` :
+             r.open_ank ? `${r.open_ank}_` :
+             r.close_ank ? `_${r.close_ank}` :
+             null);
           return (
             <Card key={gid} className="bg-[#141418] border-white/10" data-testid={`admin-kalyan-card-${gid}`}>
               <CardContent className="p-4">
@@ -188,7 +192,7 @@ const AdminKalyanResultsTab = ({ games = [] }) => {
                   </div>
                   <div className="flex items-center gap-2">
                     <p className="text-[#D4AF37] font-mono text-lg tabular-nums" data-testid={`admin-kalyan-summary-${gid}`}>
-                      {r.open_panna || 'XXX'}-{autoJodi || (r.open_ank ? `${r.open_ank}*` : 'XX')}-{r.close_panna || 'XXX'}
+                      {r.open_panna || 'XXX'}-{autoJodi || 'XX'}-{r.close_panna || 'XXX'}
                     </p>
                     {(r.open_panna || r.close_panna) && (
                       <Button size="sm" variant="ghost" onClick={() => deleteResult(gid)} disabled={loading}

@@ -11,7 +11,7 @@ import { Eye, Loader2, Wallet, Plus, Minus, Trash2, ArrowDownLeft, ArrowUpRight 
 import { toast } from 'sonner';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
-const utcDate = (d) => { if (!d) return new Date(); const s = String(d); return new Date(s.endsWith('Z') ? s : s + 'Z'); };
+const utcDate = (d) => { if (!d) return new Date(); const s = String(d); const hasTz = /Z$|[+-]\d{2}:?\d{2}$/.test(s); return new Date(hasTz ? s : s + 'Z'); };
 
 const AdminUsersTab = () => {
   const [users, setUsers] = useState([]);

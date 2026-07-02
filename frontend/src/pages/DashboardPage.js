@@ -732,8 +732,13 @@ const DashboardPage = () => {
                     return `${h12}:${(m || 0).toString().padStart(2, '0')} ${ampm}`;
                   };
                   // Build the iconic Matka result line  XXX-XX-XXX
+                  // Jodi partial display: only-Open → "6_", only-Close → "_0", both → "60"
                   const openP = kr.open_panna || '***';
-                  const jodi = kr.jodi || ((kr.open_ank && kr.close_ank) ? `${kr.open_ank}${kr.close_ank}` : '**');
+                  const jodi = kr.jodi ||
+                    (kr.open_ank && kr.close_ank ? `${kr.open_ank}${kr.close_ank}` :
+                     kr.open_ank ? `${kr.open_ank}_` :
+                     kr.close_ank ? `_${kr.close_ank}` :
+                     '**');
                   const closeP = kr.close_panna || '***';
                   const isOpen = gameStatus.status === 'open';
 
