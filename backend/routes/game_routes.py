@@ -45,11 +45,6 @@ async def get_games():
         game = games_dict[game_id]
         if not game.get("is_active", True):
             continue
-        # Hide Kalyan games from user-facing /api/games endpoint per user request.
-        # Admin endpoint /api/admin/games still returns everything so management
-        # remains possible without losing data.
-        if game.get("category") == "kalyan":
-            continue
 
         today_result = await db.results.find_one({"game_id": game_id, "date": today}, {"_id": 0})
         yesterday_result = await db.results.find_one({"game_id": game_id, "date": yesterday}, {"_id": 0})
