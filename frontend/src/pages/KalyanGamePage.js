@@ -95,8 +95,12 @@ const KalyanGamePage = () => {
   // Reset selection when bet type or session changes
   useEffect(() => { setSelected({}); }, [activeType, session]);
 
-  // Jodi forces close session (open jodi doesn't exist)
-  useEffect(() => { if (activeType === 'jodi') setSession('close'); }, [activeType]);
+  // Jodi is ONLY allowed in OPEN session (per matka rules — Close session
+  // has no Jodi bet). Switching to Jodi auto-selects Open session.
+  useEffect(() => { if (activeType === 'jodi') setSession('open'); }, [activeType]);
+
+  // If user switched from Jodi to a Close-eligible type and Open time has
+  // passed, we still keep the last chosen session — backend enforces cutoffs.
 
   const type = TYPE_DEFS.find(t => t.id === activeType);
   const rate = type?.rate || 0;
@@ -241,11 +245,16 @@ const KalyanGamePage = () => {
         <span className="text-green-600 font-bold italic text-sm" data-testid="kalyan-rate">Rate : {rate}</span>
       </div>
 
-      {/* OPEN / CLOSE session toggle */}
+      {/* OPEN / CLOSE session toggle
+          Rules (matka):
+            • Betting starts at game.start_time (7 AM)
+            • OPEN session closes at game.open_time  → Jodi + all types allowed
+            • CLOSE session closes at game.end_time  → NO Jodi, only single/panna
+      */}
       <div className="grid grid-cols-2 gap-3 px-4">
         {[
-          { id: 'open',  label: `OPEN (${fmtTime(game.start_time)})`, disabled: activeType === 'jodi' },
-          { id: 'close', label: `CLOSE (${fmtTime(game.end_time)})`,  disabled: false },
+          { id: 'open',  label: `OPEN`,  cutoff: game.open_time || game.start_time, disabled: false },
+          { id: 'close', label: `CLOSE`, cutoff: game.end_time,                     disabled: activeType === 'jodi' },
         ].map(s => {
           const active = session === s.id;
           return (
@@ -255,12 +264,14 @@ const KalyanGamePage = () => {
               disabled={s.disabled}
               onClick={() => !s.disabled && setSession(s.id)}
               data-testid={`kalyan-session-${s.id}`}
-              className={`py-3 rounded-lg text-center font-semibold text-[13px] tracking-wide ${
+              className={`py-2.5 rounded-lg text-center font-semibold text-[13px] tracking-wide leading-tight ${
                 s.disabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-200 text-black'
               }`}
               style={active ? { border: '2px solid #2563EB', background: '#E5E7EB' } : { border: '1px solid transparent' }}
+              title={s.disabled ? 'Jodi bet Close session me nahi lagti' : ''}
             >
-              {s.label}
+              <div>{s.label}</div>
+              <div className="text-[10px] font-normal opacity-70">till {fmtTime(s.cutoff)}</div>
             </button>
           );
         })}

@@ -198,34 +198,54 @@ const BetsPage = () => {
           </Card>
         ) : (
           <div className="space-y-3">
-            {bets.map((bet, index) => (
-              <Card 
-                key={index} 
+            {bets.map((bet, index) => {
+              const BET_LABEL = {
+                jodi: 'जोड़ी', haruf_andar: 'हरूफ अंदर', haruf_bahar: 'हरूफ बाहर',
+                single_ank: 'Single', kalyan_jodi: 'Jodi',
+                single_panna: 'Single Patti', double_panna: 'Double Patti', triple_panna: 'Triple Patti',
+                half_sangam: 'Half Sangam', full_sangam: 'Full Sangam',
+                aviator: 'Aviator',
+              };
+              const isAviator = bet.bet_type === 'aviator' || bet.game_category === 'aviator';
+              const displayDigit = bet.digit || bet.number || '-';
+              const iconBg = isAviator
+                ? 'bg-gradient-to-br from-sky-500/20 to-[#141418] border-sky-500/40'
+                : bet.game_category === 'kalyan'
+                  ? 'bg-gradient-to-br from-pink-500/20 to-[#141418] border-pink-500/40'
+                  : 'bg-gradient-to-br from-[#D4AF37]/20 to-[#141418] border-[#D4AF37]/30';
+              const iconTextColor = isAviator ? 'text-sky-300' : bet.game_category === 'kalyan' ? 'text-pink-300' : 'text-[#D4AF37]';
+              return (
+              <Card
+                key={index}
                 data-testid={`bet-card-${index}`}
                 className={`bg-[#141418] border-white/10 ${
-                  bet.status === 'won' ? 'border-l-4 border-l-emerald-500' : 
+                  bet.status === 'won' ? 'border-l-4 border-l-emerald-500' :
                   bet.status === 'lost' ? 'border-l-4 border-l-red-500' : ''
                 }`}
               >
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#D4AF37]/20 to-[#141418] flex items-center justify-center border border-[#D4AF37]/30">
-                        <span className="text-xl font-bold text-[#D4AF37]">{bet.number}</span>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center border shrink-0 ${iconBg}`}>
+                        <span className={`font-bold ${iconTextColor} ${String(displayDigit).length > 3 ? 'text-xs' : 'text-xl'}`}>
+                          {displayDigit}
+                        </span>
                       </div>
-                      <div>
-                        <h4 className="text-white font-semibold">{bet.game_name}</h4>
+                      <div className="min-w-0">
+                        <h4 className="text-white font-semibold truncate">{bet.game_name}</h4>
                         <p className="text-gray-400 text-sm">
-                          {bet.bet_type === 'jodi' ? 'जोड़ी' : bet.bet_type === 'haruf_andar' ? 'हरूफ अंदर' : bet.bet_type === 'haruf_bahar' ? 'हरूफ बाहर' : bet.bet_type}
+                          {BET_LABEL[bet.bet_type] || bet.bet_type}
+                          {bet.session ? <span className="ml-1 text-xs text-gray-500">• {bet.session.toUpperCase()}</span> : null}
+                          {isAviator && bet.crash_point ? <span className="ml-1 text-xs text-red-400">• crashed {bet.crash_point.toFixed(2)}x</span> : null}
                         </p>
                         <p className="text-gray-500 text-[10px]">
-                          {utcDate(bet.created_at).toLocaleDateString('hi-IN', { timeZone: 'Asia/Kolkata' })} • {utcDate(bet.created_at).toLocaleTimeString('hi-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true, timeZoneName: 'short' })}
+                          {bet.created_at ? utcDate(bet.created_at).toLocaleDateString('hi-IN', { timeZone: 'Asia/Kolkata' }) : (bet.date || '-')} • {bet.created_at ? utcDate(bet.created_at).toLocaleTimeString('hi-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true }) : ''}
                         </p>
                       </div>
                     </div>
                     {getStatusBadge(bet.status)}
                   </div>
-                  
+
                   <div className="flex items-center justify-between pt-3 border-t border-white/5">
                     <div>
                       <p className="text-gray-400 text-xs">बेट राशि</p>
@@ -234,13 +254,13 @@ const BetsPage = () => {
                     {bet.status === 'won' && (
                       <div className="text-right">
                         <p className="text-gray-400 text-xs">जीत</p>
-                        <p className="font-bold text-emerald-400">₹{bet.won_amount}</p>
+                        <p className="font-bold text-emerald-400">₹{Number(bet.won_amount || bet.winnings || 0).toFixed(0)}</p>
                       </div>
                     )}
                   </div>
                 </CardContent>
               </Card>
-            ))}
+            );})}
           </div>
         )}
       </main>

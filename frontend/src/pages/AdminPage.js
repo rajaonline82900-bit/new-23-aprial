@@ -22,6 +22,8 @@ import AdminUsersTab from './admin/AdminUsersTab';
 import AdminSettingsTab from './admin/AdminSettingsTab';
 import AdminChatInbox from './admin/AdminChatInbox';
 import AdminJantriTab from './admin/AdminJantriTab';
+import AdminKalyanJantriTab from './admin/AdminKalyanJantriTab';
+import AdminHistoryTab from './admin/AdminHistoryTab';
 import AdminFundRequestsTab from './admin/AdminFundRequestsTab';
 import AdminWinnersTab from './admin/AdminWinnersTab';
 import AdminReferralsTab from './admin/AdminReferralsTab';
@@ -178,6 +180,8 @@ const AdminPage = () => {
               { value: 'results', label: 'गली रिजल्ट' },
               { value: 'kalyan_results', label: 'कल्याण रिजल्ट' },
               { value: 'jantri', label: 'जंतरी रिपोर्ट' },
+              { value: 'kalyan_jantri', label: 'कल्याण जंतरी' },
+              { value: 'history', label: 'पूरी हिस्ट्री' },
               { value: 'bets', label: 'बेट रिपोर्ट' },
               { value: 'games', label: 'गेम सेटिंग्स' },
               { value: 'withdrawals', label: 'निकासी' },
@@ -198,6 +202,8 @@ const AdminPage = () => {
           <TabsContent value="results"><AdminResultsTab games={games} /></TabsContent>
           <TabsContent value="kalyan_results"><AdminKalyanResultsTab games={games} /></TabsContent>
           <TabsContent value="jantri"><AdminJantriTab games={games} /></TabsContent>
+          <TabsContent value="kalyan_jantri"><AdminKalyanJantriTab games={games} /></TabsContent>
+          <TabsContent value="history"><AdminHistoryTab /></TabsContent>
           <TabsContent value="bets"><AdminBetsTab games={games} /></TabsContent>
           <TabsContent value="games"><AdminGamesTab /></TabsContent>
           <TabsContent value="withdrawals"><AdminWithdrawalsTab /></TabsContent>

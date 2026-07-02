@@ -36,6 +36,87 @@ def categorize_panna(panna: str) -> str:
     return "double_panna"
 
 
+# ---------------------------------------------------------------------------
+# Session-based bet-type & time-window validation (matka rules)
+# ---------------------------------------------------------------------------
+# Open session accepts: single_ank + all pannas + jodi + sangams
+# Close session accepts: single_ank + all pannas (NO jodi, NO sangams)
+_OPEN_SESSION_TYPES = {
+    "single_ank", "kalyan_jodi",
+    "single_panna", "double_panna", "triple_panna",
+    "half_sangam", "full_sangam",
+}
+_CLOSE_SESSION_TYPES = {
+    "single_ank",
+    "single_panna", "double_panna", "triple_panna",
+}
+
+
+def _hhmm_to_minutes(s: str) -> int:
+    """Convert 'HH:MM' → minutes since midnight. Returns -1 on parse failure."""
+    if not s or ":" not in s:
+        return -1
+    try:
+        h, m = s.split(":")[:2]
+        return int(h) * 60 + int(m)
+    except Exception:
+        return -1
+
+
+def _validate_kalyan_bet_window(game: dict, session: str, bet_type: str) -> None:
+    """Raises HTTPException if the bet violates session/type/time rules.
+
+    Rules per user spec (2026-07-02):
+      • Betting opens at start_time (default 07:00 IST for all Kalyan games)
+      • Open-session bets: closed at game.open_time (result declaration cutoff).
+        Types allowed: single, single/double/triple patti, jodi, sangams.
+      • Close-session bets: closed at game.end_time (close_time).
+        Types allowed: single, single/double/triple patti  (NO jodi/sangam).
+    """
+    # 1. Type-vs-session compatibility
+    if session == "open":
+        if bet_type not in _OPEN_SESSION_TYPES:
+            raise HTTPException(400, f"Bet type '{bet_type}' is not allowed in Open session")
+    else:  # close
+        if bet_type not in _CLOSE_SESSION_TYPES:
+            if bet_type == "kalyan_jodi":
+                raise HTTPException(400, "Jodi bet Close session me nahi lagti — sirf Open session")
+            if bet_type in ("half_sangam", "full_sangam"):
+                raise HTTPException(400, f"{bet_type} sirf Open session me lagti hai")
+            raise HTTPException(400, f"Bet type '{bet_type}' is not allowed in Close session")
+
+    # 2. Time window (IST)
+    now_ist = datetime.now(IST)
+    now_min = now_ist.hour * 60 + now_ist.minute
+
+    start_min = _hhmm_to_minutes(game.get("start_time", "07:00")) or 7 * 60
+    if start_min < 0:
+        start_min = 7 * 60
+
+    if session == "open":
+        cutoff = _hhmm_to_minutes(game.get("open_time") or game.get("start_time"))
+        cutoff_label = game.get("open_time", "--:--")
+        session_label = "Open"
+    else:
+        cutoff = _hhmm_to_minutes(game.get("end_time") or game.get("close_time"))
+        cutoff_label = game.get("end_time", "--:--")
+        session_label = "Close"
+
+    if cutoff < 0:
+        # No configured cutoff → do not block
+        return
+
+    # Handle games that close past midnight (e.g. main_bazar 00:10). If cutoff
+    # < start_min we consider it "next day" and treat it as valid until then.
+    effective_cutoff = cutoff if cutoff >= start_min else cutoff + 24 * 60
+    effective_now = now_min if now_min >= start_min else now_min + 24 * 60
+
+    if effective_now < start_min:
+        raise HTTPException(400, f"Betting {game.get('start_time', '07:00')} AM se shuru hoti hai")
+    if effective_now >= effective_cutoff:
+        raise HTTPException(400, f"{session_label} session ka time nikal chuka hai ({cutoff_label}). Bet ab nahi lag sakti.")
+
+
 @router.post("/kalyan/bet")
 async def place_kalyan_bet(request: Request):
     """Place a single Kalyan bet."""
@@ -62,6 +143,11 @@ async def place_kalyan_bet(request: Request):
     game = games.get(game_id)
     if not game or game.get("category") != "kalyan":
         raise HTTPException(status_code=400, detail="Invalid Kalyan game")
+    if game.get("is_active") is False:
+        raise HTTPException(status_code=400, detail="Yeh game abhi band hai")
+
+    # NEW: session + type + time validation per user spec
+    _validate_kalyan_bet_window(game, session, bet_type)
 
     # Validate digit format per bet type
     if bet_type in ("single_ank",):
@@ -151,6 +237,11 @@ async def place_kalyan_bet_batch(request: Request):
     game = games.get(game_id)
     if not game or game.get("category") != "kalyan":
         raise HTTPException(status_code=400, detail="Invalid Kalyan game")
+    if game.get("is_active") is False:
+        raise HTTPException(status_code=400, detail="Yeh game abhi band hai")
+
+    # NEW: session + type + time validation per user spec
+    _validate_kalyan_bet_window(game, session, bet_type)
 
     # Validate each digit per bet type
     normalized = []

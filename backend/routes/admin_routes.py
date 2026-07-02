@@ -95,6 +95,171 @@ async def get_user_bets(user_id: str, request: Request):
     return {"bets": bets, "stats": stats}
 
 
+# ---------------------------------------------------------------------------
+# Full bet history — every bet across every game + Aviator, with filters.
+# Used by the admin "बेट रिपोर्ट → History" table.
+# ---------------------------------------------------------------------------
+@router.get("/admin/bet-history")
+async def admin_bet_history(
+    request: Request,
+    user_id: Optional[str] = None,
+    game_id: Optional[str] = None,
+    category: Optional[str] = None,   # gali_disawar | kalyan | aviator
+    date: Optional[str] = None,        # yyyy-mm-dd
+    status: Optional[str] = None,      # pending | won | lost
+    limit: int = 300,
+):
+    """Aggregated bet history across db.bets (gali+kalyan) and db.aviator_bets.
+
+    Enriches every row with user name/phone and game name for the admin table.
+    """
+    await get_admin_user(request)
+
+    # 1. Fetch regular bets (gali/disawar + kalyan)
+    q = {}
+    if user_id:
+        q["user_id"] = user_id
+    if game_id:
+        q["game_id"] = game_id
+    if date:
+        q["date"] = date
+    if status and status != "all":
+        q["status"] = status
+    if category and category not in ("aviator", "all"):
+        # Requires games lookup — filter after fetch to keep query simple
+        pass
+
+    from helpers import get_games_dict
+    games_dict = await get_games_dict()
+
+    rows = []
+    if category != "aviator":
+        raw = await db.bets.find(q, {"_id": 0}).sort("created_at", -1).limit(limit * 2).to_list(limit * 2)
+        for b in raw:
+            gid = b.get("game_id")
+            gcat = (games_dict.get(gid, {}).get("category")) or b.get("game_category") or "gali_disawar"
+            if category and category != "all" and gcat != category:
+                continue
+            b["game_category"] = gcat
+            b["game_name"] = games_dict.get(gid, {}).get("name_hi") or games_dict.get(gid, {}).get("name") or gid
+            rows.append(b)
+
+    # 2. Fetch Aviator bets (unless a category filter excludes them)
+    if not category or category in ("aviator", "all"):
+        aq = {}
+        if user_id:
+            aq["user_id"] = user_id
+        if date:
+            aq["date"] = date
+        if status and status != "all":
+            if status == "won":
+                aq["won"] = True
+            elif status == "lost":
+                aq["won"] = False
+        av = await db.aviator_bets.find(aq, {"_id": 0}).sort("created_at", -1).limit(limit).to_list(limit)
+        for a in av:
+            rows.append({
+                "id": a.get("id") or a.get("round_id"),
+                "user_id": a.get("user_id"),
+                "game_id": "aviator",
+                "game_name": "Aviator",
+                "game_category": "aviator",
+                "bet_type": "aviator",
+                "session": None,
+                "digit": f"{a.get('cashout_multiplier', 0):.2f}x" if a.get("won") else "crashed",
+                "amount": a.get("bet_amount", 0),
+                "status": ("won" if a.get("won") else "lost") if a.get("status") == "settled" else "pending",
+                "winnings": (a.get("bet_amount", 0) * a.get("cashout_multiplier", 0)) if a.get("won") else 0,
+                "cashout_multiplier": a.get("cashout_multiplier"),
+                "crash_point": a.get("crash_point"),
+                "round_id": a.get("round_id"),
+                "date": a.get("date"),
+                "created_at": a.get("created_at"),
+            })
+
+    # 3. Sort merged by created_at desc + trim to limit
+    rows.sort(key=lambda x: x.get("created_at") or "", reverse=True)
+    rows = rows[:limit]
+
+    # 4. Enrich each row with user info (batch lookup)
+    uids = list({r.get("user_id") for r in rows if r.get("user_id")})
+    users_map = {}
+    if uids:
+        obj_ids = []
+        for u in uids:
+            try:
+                obj_ids.append(ObjectId(u))
+            except Exception:
+                pass
+        async for u in db.users.find({"_id": {"$in": obj_ids}}, {"name": 1, "phone": 1}):
+            users_map[str(u["_id"])] = {"name": u.get("name", ""), "phone": u.get("phone", "")}
+    for r in rows:
+        uid = r.get("user_id")
+        if uid and uid in users_map:
+            r["user_name"] = users_map[uid]["name"]
+            r["user_phone"] = users_map[uid]["phone"]
+        else:
+            r["user_name"] = "-"
+            r["user_phone"] = "-"
+
+    return {"bets": rows, "count": len(rows)}
+
+
+# ---------------------------------------------------------------------------
+# Kalyan Jantri — full number-wise money-on-line report for one Kalyan game+date.
+# Groups by bet_type: single_ank, single_panna, double_panna, triple_panna, jodi
+# Separates Open and Close sessions.
+# ---------------------------------------------------------------------------
+@router.get("/admin/kalyan/jantri")
+async def kalyan_jantri(request: Request, game_id: str, date: Optional[str] = None):
+    await get_admin_user(request)
+    if not date:
+        from datetime import datetime as _dt
+        date = _dt.now().strftime("%Y-%m-%d")
+
+    bets = await db.bets.find(
+        {"game_id": game_id, "date": date, "game_category": "kalyan"},
+        {"_id": 0}
+    ).to_list(10000)
+
+    # Structure: {session: {bet_type: {digit: {count, amount}}}}
+    result = {
+        "open": {"single_ank": {}, "single_panna": {}, "double_panna": {}, "triple_panna": {}, "kalyan_jodi": {}},
+        "close": {"single_ank": {}, "single_panna": {}, "double_panna": {}, "triple_panna": {}},
+    }
+    totals = {"open": 0.0, "close": 0.0, "count_open": 0, "count_close": 0}
+
+    for b in bets:
+        session = b.get("session", "open")
+        bt = b.get("bet_type")
+        digit = str(b.get("digit", ""))
+        amt = float(b.get("amount", 0) or 0)
+        if session not in result:
+            continue
+        if bt not in result[session]:
+            continue
+        bucket = result[session][bt].setdefault(digit, {"count": 0, "amount": 0.0})
+        bucket["count"] += 1
+        bucket["amount"] = round(bucket["amount"] + amt, 2)
+        totals[session] += amt
+        totals[f"count_{session}"] += 1
+
+    totals["open"] = round(totals["open"], 2)
+    totals["close"] = round(totals["close"], 2)
+
+    from helpers import get_games_dict
+    games_dict = await get_games_dict()
+    game = games_dict.get(game_id, {})
+
+    return {
+        "game_id": game_id,
+        "game_name": game.get("name_hi") or game.get("name") or game_id,
+        "date": date,
+        "totals": totals,
+        "jantri": result,
+    }
+
+
 @router.get("/admin/users/{user_id}/winnings")
 async def get_user_winnings(user_id: str, request: Request):
     await get_admin_user(request)

@@ -157,7 +157,27 @@ Migrate Matka11 satta app from Emergent preview environment to self-hosted Hosti
     CSS: Scoped overrides for [data-testid="kalyan-page"] reset global dark
     theme to pure-white Reddy66 light theme without affecting other pages.
 
-## 2026-02-(latest) Updates
+## 2026-07 (July) Updates
+- **6 unmapped Kalyan games deactivated** (shagun, padmavathi, worli_morning, day_bombay, maharani, sunday_bazar). Only 10 DP-Boss-mapped Kalyan games remain visible.
+- **All Kalyan games start_time = 07:00 IST** (betting opens 7 AM daily).
+- **Per-game open_time + close_time populated from DP Boss** (Kalyan Morning 10:10/11:10, Milan Night 21:10/23:10, etc.).
+- **Session-based bet rules enforced** in `kalyan_routes.py::_validate_kalyan_bet_window`:
+  - Open session (7 AM → `open_time`): Single, S/D/T Patti, Jodi, Sangams allowed
+  - Close session (7 AM → `close_time`): Single + S/D/T Patti only (NO Jodi, NO Sangam)
+  - After respective cutoff → all bets in that session blocked
+  - Handles cross-midnight games (e.g. main_bazar 00:10 close)
+- **Frontend KalyanGamePage**: Jodi tab now auto-forces OPEN session (matka rule). CLOSE session disabled when Jodi active. Session buttons show cutoff times.
+- **NEW admin tab "पूरी हिस्ट्री"** (`AdminHistoryTab.js` + `GET /api/admin/bet-history`):
+  - Full unified bet history across Gali + Kalyan + Aviator
+  - Filters: category / status / date / phone-search
+  - Columns: Date-Time • User (name+phone) • Game • Session • Type • Number • Amount • Win • Status
+  - Real-time totals: rows, ₹ total, won count, lost count
+- **NEW admin tab "कल्याण जंतरी"** (`AdminKalyanJantriTab.js` + `GET /api/admin/kalyan/jantri`):
+  - Per-game per-date number-wise money-on-line report
+  - Separated OPEN vs CLOSE session totals
+  - Grouped by type: Single (0-9), Single Patti, Double Patti, Triple Patti, Jodi (Open only)
+  - Each number shows ₹ + bet count
+- **User `/api/bets` enhanced**: Now merges Aviator bets into unified history. Enriched with game_name lookup. BetsPage shows Kalyan (pink icon), Aviator (sky icon with crash multiplier), Gali (gold) with session tags.
 - **Aviator round-loop hang FIX (critical)**: Two issues fixed:
   1. `_broadcast` now uses `asyncio.gather` for parallel sends with a 2s
      per-client timeout. A slow/dead WS can no longer block the loop.

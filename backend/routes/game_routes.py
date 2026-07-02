@@ -61,6 +61,8 @@ async def get_games():
             "category": category,
             "start_time": game.get("start_time", game.get("time", "")),
             "end_time": game.get("end_time", game.get("time", "")),
+            "open_time": game.get("open_time"),
+            "close_time": game.get("close_time") or game.get("end_time"),
             "time": game.get("end_time", game.get("time", "")),
             "display_time": game["display_time"],
             "is_active": game.get("is_active", True),
@@ -276,4 +278,42 @@ async def get_user_bets(request: Request, limit: int = 100, game_id: str = None,
         query["date"] = date
 
     bets = await db.bets.find(query, {"_id": 0}).sort("created_at", -1).limit(limit).to_list(limit)
+
+    # Enrich with game_name for display
+    games_dict = await get_games_dict()
+    for b in bets:
+        gid = b.get("game_id")
+        b["game_name"] = games_dict.get(gid, {}).get("name_hi") or games_dict.get(gid, {}).get("name") or gid
+
+    # Merge Aviator bets (unless a specific gali/kalyan game_id filter was set)
+    if not game_id:
+        aviator_q = {"user_id": user["_id"]}
+        if status and status != "all":
+            aviator_q["status"] = status
+        if date:
+            aviator_q["date"] = date
+        av_bets = await db.aviator_bets.find(aviator_q, {"_id": 0}).sort("created_at", -1).limit(limit).to_list(limit)
+        for a in av_bets:
+            bets.append({
+                "id": a.get("id") or a.get("round_id"),
+                "user_id": a.get("user_id"),
+                "game_id": "aviator",
+                "game_name": "Aviator",
+                "game_category": "aviator",
+                "bet_type": "aviator",
+                "session": None,
+                "digit": f"{a.get('cashout_multiplier', 0):.2f}x" if a.get("won") else "crashed",
+                "amount": a.get("bet_amount", 0),
+                "status": ("won" if a.get("won") else "lost") if a.get("status") == "settled" else "pending",
+                "winnings": (a.get("bet_amount", 0) * a.get("cashout_multiplier", 0)) if a.get("won") else 0,
+                "cashout_multiplier": a.get("cashout_multiplier"),
+                "crash_point": a.get("crash_point"),
+                "round_id": a.get("round_id"),
+                "date": a.get("date"),
+                "created_at": a.get("created_at"),
+            })
+        # Re-sort merged list by created_at desc
+        bets.sort(key=lambda x: x.get("created_at") or "", reverse=True)
+        bets = bets[:limit]
+
     return {"bets": bets}

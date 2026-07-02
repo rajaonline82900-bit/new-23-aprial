@@ -22,6 +22,8 @@ async def load_games():
                 "name_hi": g.get("name_hi", g.get("name", game_id)),
                 "start_time": g.get("start_time", g.get("time", "00:00")),
                 "end_time": g.get("end_time", g.get("time", "00:00")),
+                "open_time": g.get("open_time"),
+                "close_time": g.get("close_time") or g.get("end_time"),
                 "time": g.get("end_time", g.get("time", "00:00")),
                 "display_time": g.get("display_time", g.get("time", "00:00")),
                 "category": g.get("category", "gali_disawar"),
