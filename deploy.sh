@@ -95,6 +95,29 @@ echo "   ✅ Backend deps OK"
 echo ""
 
 # ---------------------------------------------------------------
+# 4b. ENSURE KALYAN AUTO-FETCH IS ENABLED ON VPS
+# ---------------------------------------------------------------
+echo "🎯 [4b] Ensuring KALYAN_AUTO_FETCH_ENABLED=\"true\" in backend/.env…"
+ENV_FILE="backend/.env"
+if [ -f "$ENV_FILE" ]; then
+  if grep -q "^KALYAN_AUTO_FETCH_ENABLED" "$ENV_FILE"; then
+    # Force value to "true" (in case someone left it false)
+    sed -i 's|^KALYAN_AUTO_FETCH_ENABLED=.*|KALYAN_AUTO_FETCH_ENABLED="true"|' "$ENV_FILE"
+    echo "   ✅ KALYAN_AUTO_FETCH_ENABLED set to \"true\""
+  else
+    echo 'KALYAN_AUTO_FETCH_ENABLED="true"' >> "$ENV_FILE"
+    echo "   ✅ KALYAN_AUTO_FETCH_ENABLED added → \"true\""
+  fi
+  # Also make sure the API key is present (warn if missing)
+  if ! grep -q "^DPBOSS_API_KEY" "$ENV_FILE"; then
+    echo "   ⚠️  DPBOSS_API_KEY is NOT set — auto-fetch will skip. Add it to backend/.env"
+  fi
+else
+  echo "   ⚠️  $ENV_FILE not found — auto-fetch will not run"
+fi
+echo ""
+
+# ---------------------------------------------------------------
 # 5. RESTART BACKEND SYSTEMD SERVICE
 # ---------------------------------------------------------------
 echo "🔄 [5/7] Detecting + restarting backend service…"
@@ -155,6 +178,21 @@ else
   echo "   ❌ /api/version not responding"
 fi
 echo "   📊 Games endpoint → $GAMES_OK"
+
+# Confirm the Kalyan auto-fetch loop actually started (not skipped)
+if [ -n "$BACKEND_SVC" ]; then
+  AUTO_STATUS=$(sudo journalctl -u "$BACKEND_SVC" --since "2 min ago" --no-pager 2>/dev/null \
+                  | grep -E "kalyan-auto" | tail -3)
+  if echo "$AUTO_STATUS" | grep -q "Loop started"; then
+    echo "   ✅ Kalyan DP Boss auto-fetch LOOP is RUNNING (every 180s)"
+  elif echo "$AUTO_STATUS" | grep -q "Skipped"; then
+    echo "   ⚠️  Kalyan auto-fetch SKIPPED. Check backend/.env has:"
+    echo "         KALYAN_AUTO_FETCH_ENABLED=\"true\""
+    echo "         DPBOSS_API_KEY=\"<your-key>\""
+  else
+    echo "   ℹ️  Kalyan auto-fetch status unknown (logs not yet available)"
+  fi
+fi
 echo ""
 
 # Final summary
@@ -166,6 +204,7 @@ echo "✅ Code commit:    $NEW_COMMIT"
 echo "✅ Backend:        $BACKEND_SVC"
 echo "✅ Build cache:    cleared"
 echo "✅ Webview cache:  busted (ts=$TS)"
+echo "✅ Auto-fetch:     KALYAN_AUTO_FETCH_ENABLED=true"
 echo ""
 echo "📱 APK users → just close & reopen the app, new code auto-loads"
 echo "🌐 Website users → next page refresh shows new UI"
