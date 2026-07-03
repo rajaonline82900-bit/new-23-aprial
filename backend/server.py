@@ -121,6 +121,15 @@ async def startup_event():
 
     await load_games()
 
+    # Seed / sync authoritative Kalyan games list (idempotent — de-dupes)
+    try:
+        from seeds.kalyan_games_seed import seed_kalyan_games
+        res = await seed_kalyan_games()
+        logger.info(f"Kalyan games synced: {res}")
+        await load_games()  # reload after seed
+    except Exception as e:
+        logger.warning(f"Kalyan games seed failed: {e}")
+
     # Seed admin
     admin_email = os.environ.get("ADMIN_EMAIL", "admin@sattamatka.com")
     admin_password = os.environ.get("ADMIN_PASSWORD", "Admin@123")

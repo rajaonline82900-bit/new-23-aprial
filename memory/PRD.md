@@ -317,6 +317,30 @@ Migrate Matka11 satta app from Emergent preview environment to self-hosted Hosti
   ON → 200 with table_id. Live screenshots show Dashboard's disabled
   Ludo tab and Admin toggle UI.
 
+- **📋 Kalyan Games — authoritative list (Feb 2026)**:
+  User-supplied 13 official Kalyan games with exact open/close times are
+  now the ONLY Kalyan games. Old duplicates removed.
+  * New file: `/app/backend/seeds/kalyan_games_seed.py` — single source
+    of truth for Kalyan games + DP Boss market IDs. Idempotent
+    `seed_kalyan_games()` upserts the 13 games by `game_id` and deletes
+    any stray rows not in the list, guaranteeing zero double-counting.
+  * Runs automatically on backend startup (before `load_games()`).
+  * Games (with open→close): milan_morning 10:15-11:15, time_bazar_morning
+    11:00-12:00, sridevi 11:35-12:35, madhuri_day 12:00-13:00, time_bazar
+    13:10-14:10, milan_day 15:00-17:00, kalyan_day 16:00-18:00,
+    sridevi_night 19:00-20:00, madhur_night 20:30-22:30, milan_night
+    21:00-23:00, kalyan_night 21:30-23:30, rajdhani_night 21:35-23:55,
+    main_bazar 21:40-00:05.
+  * DP Boss auto-fetch mapping re-derived from the seed via
+    `get_dpboss_mapping()` — all 13 games now have valid market IDs.
+  * **KALYAN_AUTO_FETCH_ENABLED env toggle** — auto-fetch loop only runs
+    when this is `"true"`. Preview `.env` ships with `"false"` so the
+    paid DP Boss API is NEVER hit from the preview env; the VPS operator
+    just sets it to `"true"` in production `.env`.
+  * Verified: preview startup logs "[kalyan-auto] Skipped —
+    KALYAN_AUTO_FETCH_ENABLED is not 'true'". DB count = 13 unique
+    game_ids. Live dashboard shows all 13 games with correct times.
+
 ## Backlog
 - P0: Tell user to "Save to Github" → on VPS run `bash /var/www/new-23-aprial/deploy.sh`
   to ship Aviator UI + Kalyan + tickers to the live APK.

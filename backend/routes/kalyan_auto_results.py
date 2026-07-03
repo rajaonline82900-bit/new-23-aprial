@@ -25,24 +25,16 @@ router = APIRouter()
 
 DPBOSS_API_KEY = os.environ.get("DPBOSS_API_KEY", "").strip()
 DPBOSS_API_URL = os.environ.get("DPBOSS_API_URL", "https://api.codehap.com/dp/").strip()
+# ENV toggle: only actually run the polling loop when explicitly enabled.
+# On the preview environment we leave this false so the paid DP Boss API
+# is not called; on the VPS the operator sets it to "true".
+AUTO_FETCH_ENABLED = os.environ.get("KALYAN_AUTO_FETCH_ENABLED", "false").strip().lower() in ("1", "true", "yes")
 POLL_INTERVAL_SEC = 180
 
-# our game_id → DP Boss market id (verified 2026-06-30 via ?type=markets)
-KALYAN_DPBOSS_MAPPING = {
-    "kalyan_morning":      1,
-    "main_bazar_morning":  4,
-    "sridevi":             3,
-    "madhur_morning":      41,
-    "milan_day":           17,
-    "rajdhani_day":        104,
-    "kalyan":              21,
-    "main_bazar":          29,
-    "milan_night":         27,
-    "rajdhani_night":      28,
-    # No DP Boss mapping (manual declare only):
-    #   shagun, padmavathi, worli_morning, day_bombay,
-    #   maharani, sunday_bazar
-}
+# game_id → DP Boss market id — kept in sync with the authoritative seed
+# so a new Kalyan game only needs to be added in one place.
+from seeds.kalyan_games_seed import get_dpboss_mapping  # noqa: E402
+KALYAN_DPBOSS_MAPPING = get_dpboss_mapping()
 
 _running = False
 
@@ -112,6 +104,12 @@ async def fetch_kalyan_results_from_dpboss() -> dict:
 
 async def kalyan_auto_fetch_loop():
     global _running
+    if not AUTO_FETCH_ENABLED:
+        logger.warning(
+            "[kalyan-auto] Skipped — KALYAN_AUTO_FETCH_ENABLED is not 'true'. "
+            "Set it in backend/.env on the VPS to enable auto-fetch."
+        )
+        return
     if not DPBOSS_API_KEY:
         logger.warning("[kalyan-auto] Skipped — DPBOSS_API_KEY not set")
         return
@@ -146,6 +144,7 @@ async def kalyan_auto_fetch_status(request: Request):
     unmapped = [gid for gid in kalyan_game_ids_in_db if gid not in KALYAN_DPBOSS_MAPPING]
     return {
         "running": _running,
+        "auto_fetch_enabled": AUTO_FETCH_ENABLED,
         "api_url": DPBOSS_API_URL,
         "api_key_configured": bool(DPBOSS_API_KEY),
         "poll_interval_sec": POLL_INTERVAL_SEC,
