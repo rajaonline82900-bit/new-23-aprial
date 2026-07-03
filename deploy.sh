@@ -97,20 +97,39 @@ echo ""
 # ---------------------------------------------------------------
 # 4b. ENSURE KALYAN AUTO-FETCH IS ENABLED ON VPS
 # ---------------------------------------------------------------
-echo "🎯 [4b] Ensuring KALYAN_AUTO_FETCH_ENABLED=\"true\" in backend/.env…"
+echo "🎯 [4b] Ensuring Kalyan auto-fetch config in backend/.env…"
 ENV_FILE="backend/.env"
 if [ -f "$ENV_FILE" ]; then
+  # 1. Force KALYAN_AUTO_FETCH_ENABLED="true"
   if grep -q "^KALYAN_AUTO_FETCH_ENABLED" "$ENV_FILE"; then
-    # Force value to "true" (in case someone left it false)
     sed -i 's|^KALYAN_AUTO_FETCH_ENABLED=.*|KALYAN_AUTO_FETCH_ENABLED="true"|' "$ENV_FILE"
     echo "   ✅ KALYAN_AUTO_FETCH_ENABLED set to \"true\""
   else
     echo 'KALYAN_AUTO_FETCH_ENABLED="true"' >> "$ENV_FILE"
     echo "   ✅ KALYAN_AUTO_FETCH_ENABLED added → \"true\""
   fi
-  # Also make sure the API key is present (warn if missing)
+
+  # 2. Ensure DPBOSS_API_URL is present (default endpoint)
+  if ! grep -q "^DPBOSS_API_URL" "$ENV_FILE"; then
+    echo 'DPBOSS_API_URL="https://api.codehap.com/dp/"' >> "$ENV_FILE"
+    echo "   ✅ DPBOSS_API_URL added → https://api.codehap.com/dp/"
+  fi
+
+  # 3. Check DPBOSS_API_KEY — this is a paid key the operator owns, we
+  #    can't inject a value; just make the failure loud & actionable.
   if ! grep -q "^DPBOSS_API_KEY" "$ENV_FILE"; then
-    echo "   ⚠️  DPBOSS_API_KEY is NOT set — auto-fetch will skip. Add it to backend/.env"
+    echo ""
+    echo "   ❌ MISSING: DPBOSS_API_KEY"
+    echo "   👉 Ye paid DP Boss key hai — aap ise .env me add karo:"
+    echo ""
+    echo "        echo 'DPBOSS_API_KEY=\"<your-key>\"' >> $ENV_FILE"
+    echo "        sudo supervisorctl restart backend"
+    echo ""
+    echo "   Auto-fetch loop tab tak SKIP hoga. UI pe error message dikhega."
+    echo ""
+  else
+    KEY_VALUE=$(grep "^DPBOSS_API_KEY" "$ENV_FILE" | cut -d'=' -f2- | tr -d '"' | tr -d "'" | head -c 4)
+    echo "   ✅ DPBOSS_API_KEY present (starts with: ${KEY_VALUE}...)"
   fi
 else
   echo "   ⚠️  $ENV_FILE not found — auto-fetch will not run"
