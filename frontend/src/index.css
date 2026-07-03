@@ -234,6 +234,18 @@ code {
   background: #3F3F46;
 }
 
+/* Utility: fully hide horizontal scrollbar while keeping scroll functional
+   — used by the admin tab strip and other horizontally-scrolling nav rows. */
+.scrollbar-hide {
+  -ms-overflow-style: none;   /* IE & Edge */
+  scrollbar-width: none;      /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;              /* Chrome, Safari */
+  height: 0;
+  width: 0;
+}
+
 /* Gold glow effect */
 .gold-glow {
   box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);

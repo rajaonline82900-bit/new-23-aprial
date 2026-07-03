@@ -176,31 +176,42 @@ const AdminPage = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="bg-[#141418] border border-white/10 mb-6 flex-wrap">
-            {[
-              { value: 'results', label: 'गली रिजल्ट' },
-              { value: 'kalyan_results', label: 'कल्याण रिजल्ट' },
-              { value: 'jantri', label: 'जंतरी रिपोर्ट' },
-              { value: 'kalyan_jantri', label: 'कल्याण जंतरी' },
-              { value: 'history', label: 'पूरी हिस्ट्री' },
-              { value: 'bets', label: 'बेट रिपोर्ट' },
-              { value: 'games', label: 'गेम सेटिंग्स' },
-              { value: 'game_toggles', label: 'गेम On/Off' },
-              { value: 'withdrawals', label: 'निकासी' },
-              { value: 'deposits', label: 'जमा सूची' },
-              { value: 'fund_requests', label: 'Fund Requests' },
-              { value: 'winners', label: 'Winners' },
-              { value: 'referrals', label: 'Referrals' },
-              { value: 'users', label: 'यूजर्स' },
-              { value: 'settings', label: 'सेटिंग्स' },
-              { value: 'help', label: 'Chat' },
-            ].map(tab => (
-              <TabsTrigger key={tab.value} value={tab.value} data-testid={`admin-${tab.value}-tab`}
-                className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black">
-                {tab.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+          {/* Horizontal scrolling tab strip — clean single-line layout for
+              16+ admin tabs. No overlap, no ugly wrap-to-multiple-rows. */}
+          <div className="mb-4 -mx-3 px-3 overflow-x-auto scrollbar-hide">
+            <TabsList
+              className="inline-flex h-auto items-center gap-1.5 rounded-xl bg-[#141418] border border-white/10 p-1.5 w-max"
+              data-testid="admin-tabs-list"
+            >
+              {[
+                { value: 'results', label: 'गली रिजल्ट' },
+                { value: 'kalyan_results', label: 'कल्याण रिजल्ट' },
+                { value: 'jantri', label: 'जंतरी रिपोर्ट' },
+                { value: 'kalyan_jantri', label: 'कल्याण जंतरी' },
+                { value: 'history', label: 'पूरी हिस्ट्री' },
+                { value: 'bets', label: 'बेट रिपोर्ट' },
+                { value: 'games', label: 'गेम सेटिंग्स' },
+                { value: 'game_toggles', label: 'गेम On/Off' },
+                { value: 'withdrawals', label: 'निकासी' },
+                { value: 'deposits', label: 'जमा सूची' },
+                { value: 'fund_requests', label: 'Fund Requests' },
+                { value: 'winners', label: 'Winners' },
+                { value: 'referrals', label: 'Referrals' },
+                { value: 'users', label: 'यूजर्स' },
+                { value: 'settings', label: 'सेटिंग्स' },
+                { value: 'help', label: 'Chat' },
+              ].map(tab => (
+                <TabsTrigger
+                  key={tab.value}
+                  value={tab.value}
+                  data-testid={`admin-${tab.value}-tab`}
+                  className="shrink-0 whitespace-nowrap rounded-lg px-3 py-1.5 text-[13px] font-bold text-gray-300 data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black data-[state=active]:shadow-md transition-all"
+                >
+                  {tab.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
           <TabsContent value="results"><AdminResultsTab games={games} /></TabsContent>
           <TabsContent value="kalyan_results"><AdminKalyanResultsTab games={games} /></TabsContent>
           <TabsContent value="jantri"><AdminJantriTab games={games} /></TabsContent>
