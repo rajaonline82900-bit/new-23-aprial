@@ -63,6 +63,24 @@ echo ""
 # 3. FRESH FRONTEND BUILD
 # ---------------------------------------------------------------
 echo "🎨 [3/7] Fresh install + production build (this can take 2-4 min)…"
+# --- AUTO-VERSION BUMP so every deploy triggers auto-reload in APK webviews ---
+# Frontend bakes APP_BUILD_VERSION into bundle; if backend serves a different
+# version, versionCheck.js clears caches + hard-reloads instantly.
+NEW_VERSION=$(date -u +"%Y.%m.%d.%H%M")
+if [ -f src/utils/versionCheck.js ]; then
+  sed -i "s|export const APP_BUILD_VERSION = '[^']*';|export const APP_BUILD_VERSION = '$NEW_VERSION';|" \
+    src/utils/versionCheck.js
+  echo "   🔖 Version bumped → $NEW_VERSION"
+fi
+# Backend reads APP_BUILD_VERSION env var — write it into backend/.env (we're in frontend/ now, so go up one)
+if [ -f ../backend/.env ]; then
+  if grep -q "^APP_BUILD_VERSION=" ../backend/.env; then
+    sed -i "s|^APP_BUILD_VERSION=.*|APP_BUILD_VERSION=\"$NEW_VERSION\"|" ../backend/.env
+  else
+    echo "APP_BUILD_VERSION=\"$NEW_VERSION\"" >> ../backend/.env
+  fi
+fi
+
 # CI=true treats warnings as errors — all known warnings are suppressed
 # via eslint-disable-next-line at their source. If build breaks in future,
 # temporarily set DISABLE_ESLINT_PLUGIN=true here.
@@ -79,7 +97,7 @@ if [ -f build/index.html ]; then
   sed -i "s|<head>|<head><meta name=\"deploy-ts\" content=\"$TS\">|" build/index.html
 fi
 cd ..
-echo "   ✅ Frontend built (commit $NEW_COMMIT, ts=$TS)"
+echo "   ✅ Frontend built (commit $NEW_COMMIT, version=$NEW_VERSION, ts=$TS)"
 echo ""
 
 # ---------------------------------------------------------------

@@ -289,13 +289,66 @@ async def get_user_bets(request: Request, limit: int = 100, game_id: str = None,
 
     bets = await db.bets.find(query, {"_id": 0}).sort("created_at", -1).limit(limit).to_list(limit)
 
-    # Enrich with game_name + game_category for display / filtering
+    # Enrich with game_name + game_category + digit + winning result number
     games_dict = await get_games_dict()
+
+    # Batch-fetch results for (game_id, date) pairs so we can show winning number
+    pairs = list({(b.get("game_id"), b.get("date")) for b in bets if b.get("game_id") and b.get("date")})
+    result_map = {}  # (game_id, date) -> {single, jodi, ...}
+    if pairs:
+        or_query = [{"game_id": g, "date": d} for g, d in pairs]
+        async for r in db.results.find({"$or": or_query}, {"_id": 0}):
+            result_map[(r["game_id"], r["date"])] = r
+
+    # Also fetch kalyan session-wise results if any
+    kalyan_pairs = [(b.get("game_id"), b.get("date")) for b in bets
+                    if games_dict.get(b.get("game_id"), {}).get("category") == "kalyan"]
+    kalyan_map = {}
+    if kalyan_pairs:
+        or_q = [{"game_id": g, "date": d} for g, d in set(kalyan_pairs)]
+        async for r in db.kalyan_results.find({"$or": or_q}, {"_id": 0}):
+            kalyan_map[(r["game_id"], r["date"])] = r
+
+    def _winning_for(bet):
+        """Return the winning number for a bet as short string ('05', '134', 'X-Y')."""
+        gid, dt, bt = bet.get("game_id"), bet.get("date"), bet.get("bet_type")
+        session = bet.get("session")
+        # Kalyan
+        kr = kalyan_map.get((gid, dt))
+        if kr:
+            if bt == "jodi":
+                return kr.get("jodi") or f"{kr.get('open_ank','')}{kr.get('close_ank','')}"
+            if bt == "single_ank":
+                return kr.get("close_ank") if session == "close" else kr.get("open_ank")
+            if bt in ("single_panna", "double_panna", "triple_panna"):
+                return kr.get("close_panna") if session == "close" else kr.get("open_panna")
+            if bt == "half_sangam":
+                return f"{kr.get('open_panna','')}-{kr.get('close_ank','')}"
+            if bt == "full_sangam":
+                return f"{kr.get('open_panna','')}-{kr.get('close_panna','')}"
+        # Gali/Disawar
+        r = result_map.get((gid, dt))
+        if r:
+            if bt == "jodi":
+                return r.get("jodi_result")
+            if bt in ("haruf_andar", "haruf_bahar", "single_ank"):
+                return r.get("single_result")
+        return None
+
     for b in bets:
         gid = b.get("game_id")
         meta = games_dict.get(gid, {})
         b["game_name"] = meta.get("name_hi") or meta.get("name") or gid
         b["game_category"] = meta.get("category") or b.get("game_category") or "gali_disawar"
+        # Backwards-compat: frontend BetsPage reads `bet.digit`. Backend actually
+        # stores `bet.number`. Expose both.
+        if b.get("digit") is None:
+            b["digit"] = b.get("number")
+        # Winning number for this bet's game+date (if declared)
+        b["result_number"] = _winning_for(b)
+        # Standardise winnings key so frontend can pick either
+        if b.get("winnings") is None:
+            b["winnings"] = b.get("won_amount", 0)
 
     # Merge Aviator bets (unless a specific gali/kalyan game_id filter was set)
     if not game_id:

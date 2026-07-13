@@ -283,7 +283,7 @@ const BetsPage = () => {
                         <p className="text-sm font-black text-white truncate">{bet.game_name || bet.game_id}</p>
                         <StatusPill status={bet.status} />
                       </div>
-                      <div className="mt-0.5 flex items-center gap-2 text-[11px] text-gray-400">
+                      <div className="mt-0.5 flex items-center gap-2 text-[11px] text-gray-400 flex-wrap">
                         {isAviator ? (
                           <>
                             <span>Cashout: <span className="font-bold text-white">{bet.digit || 'crashed'}</span></span>
@@ -293,7 +293,22 @@ const BetsPage = () => {
                           <>
                             <span className="capitalize font-bold text-gray-300">{bet.bet_type}</span>
                             {bet.session && <span className="uppercase text-[9px] font-black px-1 py-0.5 rounded" style={{ background: bet.session === 'open' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', color: bet.session === 'open' ? '#6ee7b7' : '#fca5a5' }}>{bet.session}</span>}
-                            <span>#{bet.digit}</span>
+                            <span className="inline-flex items-center gap-1">
+                              <span className="text-gray-500">Bet:</span>
+                              <span className="font-black text-[#FFD700] tabular-nums px-1.5 py-0.5 rounded bg-yellow-500/10 border border-yellow-500/30">
+                                {bet.digit || bet.number || '—'}
+                              </span>
+                            </span>
+                            {bet.result_number != null && bet.result_number !== '' && (
+                              <span className="inline-flex items-center gap-1">
+                                <span className="text-gray-500">Result:</span>
+                                <span
+                                  className={`font-black tabular-nums px-1.5 py-0.5 rounded border ${bet.status === 'won' ? 'text-emerald-300 bg-emerald-500/10 border-emerald-500/40' : 'text-gray-200 bg-white/5 border-white/15'}`}
+                                >
+                                  {bet.result_number}
+                                </span>
+                              </span>
+                            )}
                           </>
                         )}
                       </div>
