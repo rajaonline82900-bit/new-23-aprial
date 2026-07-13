@@ -47,6 +47,7 @@ const AdminKalyanResultsTab = ({ games = [] }) => {
   const [loading, setLoading] = useState(false);
   const [picker, setPicker] = useState(null); // {gameId, session} when opened
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchResults(); }, [date]);
 
   const fetchResults = async () => {

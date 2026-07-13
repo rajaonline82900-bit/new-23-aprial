@@ -82,6 +82,7 @@ const GamePage = () => {
   useEffect(() => {
     fetchGame();
     axios.get(`${API_URL}/api/settings`).then(r => setAppSettings(r.data)).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameId]);
 
   useEffect(() => {

@@ -63,17 +63,15 @@ echo ""
 # 3. FRESH FRONTEND BUILD
 # ---------------------------------------------------------------
 echo "🎨 [3/7] Fresh install + production build (this can take 2-4 min)…"
-# NOTE: We deliberately DO NOT set CI=true — react-scripts treats lint
-# warnings (react-hooks/exhaustive-deps etc.) as build errors under CI.
-# DISABLE_ESLINT_PLUGIN=true skips lint entirely during build.
-export DISABLE_ESLINT_PLUGIN=true
-export ESLINT_NO_DEV_ERRORS=true
+# CI=true treats warnings as errors — all known warnings are suppressed
+# via eslint-disable-next-line at their source. If build breaks in future,
+# temporarily set DISABLE_ESLINT_PLUGIN=true here.
 if command -v yarn >/dev/null 2>&1; then
   yarn install --frozen-lockfile --silent
-  yarn build
+  CI=true yarn build
 else
   npm ci --silent
-  npm run build
+  CI=true npm run build
 fi
 # Cache-bust the index.html so APK webview refetches immediately
 TS=$(date +%s)

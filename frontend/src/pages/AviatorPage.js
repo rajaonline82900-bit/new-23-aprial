@@ -292,6 +292,7 @@ const AviatorPage = () => {
     }
     connect();
     return () => { closedManually = true; try { wsRef.current?.close(); } catch (e) { /* ignore */ } };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // HTTP polling safety net — keeps phase/multiplier in sync even when WS is dead.
@@ -340,6 +341,7 @@ const AviatorPage = () => {
       else if (sinceWs > 1500) poll(); // mild backup
     }, 600);
     return () => { alive = false; clearInterval(id); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleWsMessage = (msg) => {

@@ -40,6 +40,7 @@ const AdminChatInbox = ({ API }) => {
     fetchAutoDel();
     const interval = setInterval(fetchChatUsers, 10000);
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchAutoDel = async () => {
@@ -89,6 +90,7 @@ const AdminChatInbox = ({ API }) => {
       const interval = setInterval(() => fetchMessages(selectedUser.user_id), 5000);
       return () => clearInterval(interval);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedUser]);
 
   useEffect(() => {
