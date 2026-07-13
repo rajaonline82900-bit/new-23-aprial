@@ -391,11 +391,29 @@ Migrate Matka11 satta app from Emergent preview environment to self-hosted Hosti
     ₹10000, Amit Kumar withdrawal ₹7500 via curl → all appear in public
     ticker endpoints identically to real transactions.
 
+- **🧙 Phase 3.5 (Feb 2026)** — **Bulk Fake Ticker Generator**:
+    * Backend: `POST /api/admin/fake-ticker/bulk` (count 1-200, type
+      winner|deposit|withdrawal|mixed) auto-generates entries using a
+      built-in pool of ~80 Indian first names + ~40 surnames + 20 game
+      names, with smart weighted amount ranges per type (winners ₹500-₹50k,
+      deposits ₹100-₹10k, withdrawals ₹200-₹20k, snapped to ₹50/₹100).
+    * Backend cleanup: `DELETE /api/admin/fake-ticker/bulk/all?type=…`
+      wipes all entries of a given type in one shot.
+    * Frontend `AdminFakeTickerTab.js`: new "Bulk Generate" card with
+      count selector (10/20/30/50/75/100/150/200), type dropdown, gradient
+      Generate button + per-type Wipe button. Toast shows breakdown
+      `W:x D:y Wd:z` after each run.
+    Verified E2E: 30 mixed → 14 winners / 9 deposits / 7 withdrawals,
+    10 winners-only, bulk-delete by type, validation of count>200 (400),
+    unauth (401). All PASS.
+
 ## Backlog
 - P0: Tell user to "Save to Github" → on VPS run `bash /var/www/new-23-aprial/deploy.sh`
-  to ship Aviator UI + Kalyan + tickers to the live APK.
+  to ship Bulk Fake Ticker to the live APK.
+- P1: MongoDB backup cron on Hostinger VPS.
+- P2: Real-time countdown timer next to OPEN/CLOSE headers (urgency).
+- P2: Refactor DashboardPage.js and LudoGamePage.js (>1000 lines each).
 - P2: Stronger JWT_SECRET
-- P2: MongoDB backup cron
 - P2: Telegram admin alerts for deposits/withdraws
 - P3: Rate limiting on auth
 - P3: IMB stage -> production URL

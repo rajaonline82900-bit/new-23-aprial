@@ -3,7 +3,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import {
   Trophy, TrendingUp, TrendingDown, Plus, Trash2,
-  Eye, EyeOff, Loader2, Sparkles,
+  Eye, EyeOff, Loader2, Sparkles, Zap, Wand2,
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -20,6 +20,10 @@ const AdminFakeTickerTab = () => {
   const [activeType, setActiveType] = useState('winner');
   const [form, setForm] = useState({ name: '', amount: '', game_name: '' });
   const [saving, setSaving] = useState(false);
+  const [bulkCount, setBulkCount] = useState(20);
+  const [bulkType, setBulkType] = useState('mixed');
+  const [bulking, setBulking] = useState(false);
+  const [wiping, setWiping] = useState(false);
 
   const fetch_ = useCallback(async () => {
     try {
@@ -70,6 +74,40 @@ const AdminFakeTickerTab = () => {
     } catch { toast.error('Delete failed'); }
   };
 
+  const bulkGenerate = async () => {
+    if (bulkCount < 1 || bulkCount > 200) return toast.error('Count 1-200 ke beech rakho');
+    setBulking(true);
+    try {
+      const { data } = await axios.post(
+        `${API_URL}/api/admin/fake-ticker/bulk`,
+        { count: Number(bulkCount), type: bulkType },
+        { withCredentials: true }
+      );
+      const bt = data.by_type || {};
+      toast.success(
+        `${data.inserted} entries added — W:${bt.winner || 0} D:${bt.deposit || 0} Wd:${bt.withdrawal || 0}`
+      );
+      fetch_();
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || 'Bulk generate failed');
+    } finally { setBulking(false); }
+  };
+
+  const wipeAll = async () => {
+    if (!window.confirm(`Sabhi "${activeMeta.label}" fake entries delete kar do?`)) return;
+    setWiping(true);
+    try {
+      const { data } = await axios.delete(
+        `${API_URL}/api/admin/fake-ticker/bulk/all?type=${activeType}`,
+        { withCredentials: true }
+      );
+      toast.success(`${data.deleted} entries deleted`);
+      fetch_();
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || 'Delete failed');
+    } finally { setWiping(false); }
+  };
+
   const filtered = entries.filter(e => e.type === activeType);
   const activeMeta = TYPES.find(t => t.id === activeType);
   const Icon = activeMeta.icon;
@@ -87,6 +125,68 @@ const AdminFakeTickerTab = () => {
           dikhega. Jitne chahe entries add karo. Har entry ko toggle/delete bhi
           kar sakte ho.
         </p>
+      </div>
+
+      {/* Bulk generator */}
+      <div className="rounded-2xl p-4 bg-gradient-to-br from-indigo-500/10 via-[#141418] to-pink-500/10 border border-indigo-500/30 space-y-3">
+        <div className="flex items-center gap-2">
+          <Wand2 className="w-4 h-4 text-indigo-300" />
+          <p className="text-sm font-black text-white uppercase tracking-wider">Bulk Generate</p>
+          <span className="ml-auto text-[9px] text-indigo-300/80 bg-indigo-500/15 px-2 py-0.5 rounded-full font-bold">
+            Auto Indian names
+          </span>
+        </div>
+        <p className="text-[11px] text-gray-400 leading-snug">
+          Ek click me realistic Indian names ke saath fake entries generate karo — amounts smart ranges me randomize honge.
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-[10px] text-gray-400 font-bold uppercase">Count</label>
+            <select
+              value={bulkCount}
+              onChange={(e) => setBulkCount(Number(e.target.value))}
+              data-testid="bulk-count-select"
+              className="w-full mt-1 px-3 py-2 rounded-lg bg-[#0A0A0C] border border-white/10 text-white text-sm focus:outline-none focus:border-indigo-400"
+            >
+              {[10, 20, 30, 50, 75, 100, 150, 200].map(n => (
+                <option key={n} value={n}>{n} entries</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-[10px] text-gray-400 font-bold uppercase">Type</label>
+            <select
+              value={bulkType}
+              onChange={(e) => setBulkType(e.target.value)}
+              data-testid="bulk-type-select"
+              className="w-full mt-1 px-3 py-2 rounded-lg bg-[#0A0A0C] border border-white/10 text-white text-sm focus:outline-none focus:border-indigo-400"
+            >
+              <option value="mixed">Mixed (all 3)</option>
+              <option value="winner">Winners only</option>
+              <option value="deposit">Deposits only</option>
+              <option value="withdrawal">Withdrawals only</option>
+            </select>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={bulkGenerate}
+            disabled={bulking}
+            data-testid="bulk-generate-btn"
+            className="flex-1 py-2.5 rounded-xl font-black text-sm text-white disabled:opacity-50 flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-500 to-pink-500 shadow-lg shadow-indigo-500/30"
+          >
+            {bulking ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Zap className="w-4 h-4" /> Generate {bulkCount}</>}
+          </button>
+          <button
+            onClick={wipeAll}
+            disabled={wiping}
+            data-testid="bulk-wipe-btn"
+            className="px-3 py-2.5 rounded-xl font-black text-xs text-red-300 bg-red-500/15 border border-red-500/30 disabled:opacity-50 flex items-center gap-1.5"
+            title={`Delete all ${activeMeta.label} entries`}
+          >
+            {wiping ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Trash2 className="w-3.5 h-3.5" /> Wipe {activeMeta.label}</>}
+          </button>
+        </div>
       </div>
 
       {/* Type tabs */}
