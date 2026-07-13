@@ -289,11 +289,13 @@ async def get_user_bets(request: Request, limit: int = 100, game_id: str = None,
 
     bets = await db.bets.find(query, {"_id": 0}).sort("created_at", -1).limit(limit).to_list(limit)
 
-    # Enrich with game_name for display
+    # Enrich with game_name + game_category for display / filtering
     games_dict = await get_games_dict()
     for b in bets:
         gid = b.get("game_id")
-        b["game_name"] = games_dict.get(gid, {}).get("name_hi") or games_dict.get(gid, {}).get("name") or gid
+        meta = games_dict.get(gid, {})
+        b["game_name"] = meta.get("name_hi") or meta.get("name") or gid
+        b["game_category"] = meta.get("category") or b.get("game_category") or "gali_disawar"
 
     # Merge Aviator bets (unless a specific gali/kalyan game_id filter was set)
     if not game_id:
@@ -322,8 +324,15 @@ async def get_user_bets(request: Request, limit: int = 100, game_id: str = None,
                 "date": a.get("date"),
                 "created_at": a.get("created_at"),
             })
-        # Re-sort merged list by created_at desc
-        bets.sort(key=lambda x: x.get("created_at") or "", reverse=True)
+        # Re-sort merged list by created_at desc (datetime + ISO-str safe)
+        def _sk(x):
+            v = x.get("created_at")
+            if v is None:
+                return ""
+            if hasattr(v, "isoformat"):
+                return v.isoformat()
+            return str(v)
+        bets.sort(key=_sk, reverse=True)
         bets = bets[:limit]
 
     return {"bets": bets}

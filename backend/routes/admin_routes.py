@@ -178,7 +178,15 @@ async def admin_bet_history(
             })
 
     # 3. Sort merged by created_at desc + trim to limit
-    rows.sort(key=lambda x: x.get("created_at") or "", reverse=True)
+    #    Normalize mixed types (db.bets stores datetime, db.aviator_bets stores ISO strings)
+    def _sort_key(x):
+        v = x.get("created_at")
+        if v is None:
+            return ""
+        if hasattr(v, "isoformat"):
+            return v.isoformat()
+        return str(v)
+    rows.sort(key=_sort_key, reverse=True)
     rows = rows[:limit]
 
     # 4. Enrich each row with user info (batch lookup)

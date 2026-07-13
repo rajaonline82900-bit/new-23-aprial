@@ -407,6 +407,24 @@ Migrate Matka11 satta app from Emergent preview environment to self-hosted Hosti
     10 winners-only, bulk-delete by type, validation of count>200 (400),
     unauth (401). All PASS.
 
+- **🐛 Bug Fix (Feb 13, 2026)** — **Bet history 500 crash + Gali/Kalyan mis-categorization**:
+    * ROOT CAUSE: `admin_bet_history` and `/api/bets` sorted rows by
+      `created_at` mixing `db.bets` (datetime) with `db.aviator_bets`
+      (ISO string). Python raised `TypeError: '<' not supported between
+      instances of 'datetime.datetime' and 'str'` → 500. This made the
+      admin "पूरी बेट हिस्ट्री" tab show empty when category filter was
+      "All" and also affected the user's BetsPage in some data mixes.
+    * FIX: sort key normalizes datetime → `isoformat()` before compare
+      (both `admin_routes.py:181` and `game_routes.py:326`).
+    * BONUS FIX: `/api/bets` now enriches `game_category` from
+      `games_dict` so BetsPage.js's category filter properly separates
+      Kalyan from Gali/Disawar (earlier every non-aviator bet
+      defaulted to `gali` category client-side).
+    Verified: Admin "All" now returns 49 rows (42 gali + 6 kalyan +
+    1 aviator). Category=gali_disawar → 42, category=kalyan → 6.
+    User `/api/bets` returns 36 gali/disawar bets with correct
+    `game_category: 'gali_disawar'`.
+
 ## Backlog
 - P0: Tell user to "Save to Github" → on VPS run `bash /var/www/new-23-aprial/deploy.sh`
   to ship Bulk Fake Ticker to the live APK.
