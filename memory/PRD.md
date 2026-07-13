@@ -425,6 +425,20 @@ Migrate Matka11 satta app from Emergent preview environment to self-hosted Hosti
     User `/api/bets` returns 36 gali/disawar bets with correct
     `game_category: 'gali_disawar'`.
 
+- **📩 OTP SMS Hardening (Feb 13, 2026)** — Password reset OTPs failed
+    on VPS if `DVHOSTING_API_KEY` was missing or blank in
+    `backend/.env` (send_sms_otp returned `sms_key_missing`, no SMS).
+    * `deploy.sh` step 4b now injects a known-working DVHosting URL+key
+      when missing (or blank) so OTP works out of the box.
+    * New admin diagnostic endpoints:
+      - `GET  /api/admin/system/sms-status` — returns `configured`,
+        `key_length`, `url`, and an actionable fix hint.
+      - `POST /api/admin/system/sms-test`  `{"phone":"10-digit"}` —
+        fires a real test SMS + returns upstream body so operator can
+        pinpoint failures on the VPS in one click.
+    Verified: preview status shows `configured: true, key_length: 10`,
+    test SMS to dummy 9999999999 returned `{return:true, request_id:...}`.
+
 ## Backlog
 - P0: Tell user to "Save to Github" → on VPS run `bash /var/www/new-23-aprial/deploy.sh`
   to ship Bulk Fake Ticker to the live APK.

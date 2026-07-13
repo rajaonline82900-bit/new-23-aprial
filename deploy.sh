@@ -97,7 +97,7 @@ echo ""
 # ---------------------------------------------------------------
 # 4b. ENSURE KALYAN AUTO-FETCH IS ENABLED ON VPS
 # ---------------------------------------------------------------
-echo "🎯 [4b] Ensuring Kalyan auto-fetch config in backend/.env…"
+echo "🎯 [4b] Ensuring Kalyan auto-fetch + SMS config in backend/.env…"
 ENV_FILE="backend/.env"
 if [ -f "$ENV_FILE" ]; then
   # 1. Force KALYAN_AUTO_FETCH_ENABLED="true"
@@ -131,8 +131,28 @@ if [ -f "$ENV_FILE" ]; then
     KEY_VALUE=$(grep "^DPBOSS_API_KEY" "$ENV_FILE" | cut -d'=' -f2- | tr -d '"' | tr -d "'" | head -c 4)
     echo "   ✅ DPBOSS_API_KEY present (starts with: ${KEY_VALUE}...)"
   fi
+
+  # 4. Ensure DVHOSTING_API_URL + DVHOSTING_API_KEY for OTP SMS
+  if ! grep -q "^DVHOSTING_API_URL" "$ENV_FILE"; then
+    echo 'DVHOSTING_API_URL="https://dvhosting.in/api-sms-v3.php"' >> "$ENV_FILE"
+    echo "   ✅ DVHOSTING_API_URL added"
+  fi
+  if ! grep -q "^DVHOSTING_API_KEY" "$ENV_FILE"; then
+    # Inject known-working key so password-reset OTP works out of the box
+    echo 'DVHOSTING_API_KEY="8AH4KwTl1C"' >> "$ENV_FILE"
+    echo "   ✅ DVHOSTING_API_KEY injected (default working key) — OTP SMS enabled"
+  else
+    KEY_LEN=$(grep "^DVHOSTING_API_KEY" "$ENV_FILE" | cut -d'=' -f2- | tr -d '"' | tr -d "'" | wc -c)
+    if [ "$KEY_LEN" -lt 6 ]; then
+      echo "   ⚠️  DVHOSTING_API_KEY looks blank/short — OTP SMS will FAIL."
+      echo "        Overwriting with default working key…"
+      sed -i 's|^DVHOSTING_API_KEY=.*|DVHOSTING_API_KEY="8AH4KwTl1C"|' "$ENV_FILE"
+    else
+      echo "   ✅ DVHOSTING_API_KEY present (len $KEY_LEN chars)"
+    fi
+  fi
 else
-  echo "   ⚠️  $ENV_FILE not found — auto-fetch will not run"
+  echo "   ⚠️  $ENV_FILE not found — auto-fetch and OTP SMS will not run"
 fi
 echo ""
 

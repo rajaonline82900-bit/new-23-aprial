@@ -14,7 +14,8 @@ from config import (
     GAMES, DEFAULT_GAMES, IST, SETTINGS_DEFAULTS,
     MARKET_TO_GAME, MATKA_API_BASE, MATKA_API_USERNAME, MATKA_API_PASSWORD,
     matka_api_tokens, matka_api_last_error,
-    NEW_MATKA_API_URL, NEW_MATKA_API_KEY, NEW_MATKA_DOMAIN_KEY, NEW_MATKA_DOMAIN
+    NEW_MATKA_API_URL, NEW_MATKA_API_KEY, NEW_MATKA_DOMAIN_KEY, NEW_MATKA_DOMAIN,
+    DVHOSTING_API_KEY, DVHOSTING_API_URL
 )
 from helpers import get_games_dict, load_games, send_push_to_all
 from models import (
@@ -24,6 +25,76 @@ from notifications import notification_service
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+
+# ===== SMS diagnostics (helps debug OTP issues on VPS) =====
+
+@router.get("/admin/system/sms-status")
+async def admin_sms_status(request: Request):
+    """Reports whether DVHosting SMS is configured on this deployment.
+
+    Returns:
+        {
+            "configured": bool,
+            "key_length": int (0 if missing),
+            "url": str,
+            "hint": str
+        }
+    """
+    await get_admin_user(request)
+    key = DVHOSTING_API_KEY or ""
+    return {
+        "configured": bool(key.strip()),
+        "key_length": len(key.strip()),
+        "url": DVHOSTING_API_URL or "(missing)",
+        "hint": (
+            "OK — OTP SMS ready" if key.strip()
+            else "DVHOSTING_API_KEY missing in backend/.env. "
+                 "Run: echo 'DVHOSTING_API_KEY=\"8AH4KwTl1C\"' >> /var/www/new-23-aprial/backend/.env "
+                 "&& sudo systemctl restart matka11"
+        ),
+    }
+
+
+@router.post("/admin/system/sms-test")
+async def admin_sms_test(request: Request):
+    """Send a live test OTP to a phone number to verify SMS pipeline.
+    Body: { "phone": "10-digit number" }.
+    Returns success + upstream response body (helpful when debugging on VPS)."""
+    await get_admin_user(request)
+    body = await request.json()
+    phone = str(body.get("phone", "")).strip()
+    if len(phone) != 10 or not phone.isdigit():
+        raise HTTPException(400, "10-digit phone required")
+    if not (DVHOSTING_API_KEY or "").strip():
+        return {
+            "sent": False,
+            "reason": "DVHOSTING_API_KEY missing in backend/.env",
+            "fix": "echo 'DVHOSTING_API_KEY=\"8AH4KwTl1C\"' >> backend/.env && restart backend",
+        }
+    otp = str(__import__("random").randint(1000, 9999))
+    try:
+        async with httpx.AsyncClient(verify=False, timeout=15) as client:
+            resp = await client.get(
+                DVHOSTING_API_URL,
+                params={"api_key": DVHOSTING_API_KEY, "number": phone, "otp": otp}
+            )
+            text = resp.text[:400]
+            ok = resp.status_code == 200
+            try:
+                data = resp.json()
+                if data.get("return") is False or data.get("status") == "error":
+                    ok = False
+            except Exception:
+                pass
+            return {
+                "sent": ok,
+                "otp_sent": otp if ok else None,
+                "http_status": resp.status_code,
+                "upstream_response": text,
+            }
+    except Exception as e:
+        return {"sent": False, "reason": f"network_error: {str(e)[:200]}"}
 
 
 # ===== Admin User Management =====
