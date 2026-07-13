@@ -11,6 +11,80 @@ import { toast } from 'sonner';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
+// Standalone Aviator min-bet setting card — sits above the game list.
+const AviatorMinBetCard = () => {
+  const [minBet, setMinBet] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await axios.get(`${API_URL}/api/admin/aviator/settings`, { withCredentials: true });
+        setMinBet(String(data.min_bet ?? 5));
+      } catch { /* silent */ }
+      finally { setLoading(false); }
+    })();
+  }, []);
+
+  const save = async () => {
+    const val = parseFloat(minBet);
+    if (isNaN(val) || val < 1 || val > 5000) {
+      toast.error('Min bet 1 aur 5000 ke beech me hona chahiye');
+      return;
+    }
+    setSaving(true);
+    try {
+      await axios.post(`${API_URL}/api/admin/aviator/settings`, { min_bet: val }, { withCredentials: true });
+      toast.success(`Aviator minimum bet ₹${val} set ho gaya`);
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || 'Save failed');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Card className="bg-gradient-to-br from-sky-500/10 to-blue-600/5 border-sky-500/30 mb-4" data-testid="aviator-settings-card">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sky-300 font-['Unbounded'] flex items-center gap-2 text-base">
+          <Settings className="w-4 h-4" />Aviator Settings
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-end gap-3 flex-wrap">
+          <div className="flex-1 min-w-[160px]">
+            <Label htmlFor="aviator-min-bet" className="text-xs text-sky-200/80">Minimum Bet Amount (₹)</Label>
+            <Input
+              id="aviator-min-bet"
+              type="number"
+              min="1"
+              max="5000"
+              value={minBet}
+              onChange={(e) => setMinBet(e.target.value)}
+              disabled={loading || saving}
+              placeholder="5"
+              className="bg-[#0A0A0C] border-white/10 text-white mt-1"
+              data-testid="aviator-min-bet-input"
+            />
+          </div>
+          <Button
+            onClick={save}
+            disabled={loading || saving}
+            data-testid="aviator-min-bet-save"
+            className="bg-sky-500 hover:bg-sky-400 text-white"
+          >
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4 mr-1" />Save</>}
+          </Button>
+        </div>
+        <p className="text-[11px] text-sky-200/70 mt-2">
+          Users se is amount se kam ka Aviator bet accept nahi hoga. Default: ₹5.
+        </p>
+      </CardContent>
+    </Card>
+  );
+};
+
 const AdminGamesTab = () => {
   const [games, setGames] = useState([]);
   const [editingGame, setEditingGame] = useState(null);
@@ -81,6 +155,9 @@ const AdminGamesTab = () => {
 
   return (
     <>
+      {/* Aviator Min Bet — admin-configurable */}
+      <AviatorMinBetCard />
+
       <Card className="bg-[#141418] border-white/10">
         <CardHeader>
           <div className="flex items-center justify-between flex-wrap gap-2">

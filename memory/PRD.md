@@ -341,6 +341,37 @@ Migrate Matka11 satta app from Emergent preview environment to self-hosted Hosti
     KALYAN_AUTO_FETCH_ENABLED is not 'true'". DB count = 13 unique
     game_ids. Live dashboard shows all 13 games with correct times.
 
+- **🎯 Phase 2 (Feb 2026 batch)**:
+    * **Aviator min bet** — admin-configurable via new `AviatorMinBetCard` in
+      गेम सेटिंग्स tab. Endpoints: `GET /api/aviator/settings` (public),
+      `GET/POST /api/admin/aviator/settings`. Bet placement now enforces
+      `_get_aviator_min_bet()` from `settings.aviator.min_bet` (default ₹5).
+    * **Bet cancel (10-min rule)** — `DELETE /api/bets/{bet_id}`. Refunds
+      amount + marks status=cancelled + inserts bet_refund transaction.
+      Only for pending Gali/Kalyan bets where cutoff (close_time for Close
+      bets, open_time for Open/Jodi bets) is 10+ minutes away.
+    * **Withdrawal cancel** — endpoint already existed
+      (`POST /wallet/withdraw/{id}/cancel`), cancels only while
+      status='pending'. Once admin approves/rejects → blocked. Fits the
+      "last time tak allowed" requirement exactly.
+    * **Professional Bet History page** — full rewrite of `BetsPage.js`
+      (~330 lines, zero deps added):
+        - Header summary card: Total Staked / Total Won / P/L with
+          up-down trend icons + color coding.
+        - Category filter pills (All / Gali·Disawar / Kalyan / Aviator)
+          with live counts.
+        - Status filter chips (All / Pending / Won / Lost).
+        - Bets grouped by date with sticky-style date badge.
+        - Each bet row: colored category icon, game name, status pill,
+          bet-type/session/digit for Gali·Kalyan or cashout/crash-point
+          for Aviator, timestamp, staked amount, winnings (if won),
+          Cancel button (only for pending Gali/Kalyan).
+        - Aviator bets fully rendered (uses `game_category==='aviator'`
+          logic).
+    Verified: `/api/aviator/settings` returns min_bet 5, `/api/bets`
+    returns unified list. Live screenshots show new admin card + polished
+    history page.
+
 ## Backlog
 - P0: Tell user to "Save to Github" → on VPS run `bash /var/www/new-23-aprial/deploy.sh`
   to ship Aviator UI + Kalyan + tickers to the live APK.

@@ -40,11 +40,19 @@ GROWTH_RATE = 0.06          # multiplier(t) = e^(GROWTH_RATE * t)
 HOUSE_EDGE_DIVISOR = 3      # ~33% house edge — every 3rd round is instant 1.00x.
                             # This gives P(crash >= 2x) ≈ 33% i.e. ~30% win
                             # rate for typical 2x cashout play (per user spec).
-MIN_BET = 5.0
+MIN_BET = 5.0               # DEFAULT — admin can override via settings.aviator.min_bet
 MAX_BET = 5000.0
 MAX_AUTO_CASHOUT = 1000.0
 HISTORY_LIMIT = 30          # last N crash points kept for UI
 ROUND_HISTORY_KEEP = 200    # last N rounds in DB
+
+
+# ---------- Aviator settings (admin-configurable min_bet) ----------
+async def _get_aviator_min_bet() -> float:
+    s = await db.settings.find_one({"_id": "aviator"})
+    if s and isinstance(s.get("min_bet"), (int, float)):
+        return float(s["min_bet"])
+    return MIN_BET
 
 # ---------- In-memory round state ----------
 class RoundState:
@@ -418,8 +426,9 @@ async def place_bet(request: Request):
         except Exception:
             raise HTTPException(400, "auto_cashout must be between 1.01 and 1000")
 
-    if amount < MIN_BET or amount > MAX_BET:
-        raise HTTPException(400, f"Bet must be between ₹{int(MIN_BET)} and ₹{int(MAX_BET)}")
+    min_bet = await _get_aviator_min_bet()
+    if amount < min_bet or amount > MAX_BET:
+        raise HTTPException(400, f"Bet must be between ₹{int(min_bet)} and ₹{int(MAX_BET)}")
 
     uid = user["_id"]
     if uid in _state.bets:
@@ -512,3 +521,47 @@ async def aviator_ws(ws: WebSocket):
     finally:
         async with _clients_lock:
             _clients.discard(ws)
+
+
+
+# ---------- Aviator settings endpoints ----------
+@router.get("/aviator/settings")
+async def aviator_public_settings():
+    """Public config — used by frontend to display current min bet."""
+    return {
+        "min_bet": await _get_aviator_min_bet(),
+        "max_bet": MAX_BET,
+        "max_auto_cashout": MAX_AUTO_CASHOUT,
+    }
+
+
+@router.get("/admin/aviator/settings")
+async def admin_aviator_settings(request: Request):
+    from auth import get_admin_user
+    await get_admin_user(request)
+    return {
+        "min_bet": await _get_aviator_min_bet(),
+        "max_bet": MAX_BET,
+        "default_min_bet": MIN_BET,
+    }
+
+
+@router.post("/admin/aviator/settings")
+async def admin_aviator_settings_update(request: Request):
+    from auth import get_admin_user
+    from datetime import datetime as _dt
+    from datetime import timezone as _tz
+    await get_admin_user(request)
+    body = await request.json()
+    try:
+        min_bet = float(body["min_bet"])
+    except Exception:
+        raise HTTPException(400, "min_bet is required")
+    if min_bet < 1 or min_bet > MAX_BET:
+        raise HTTPException(400, f"min_bet must be between 1 and {int(MAX_BET)}")
+    await db.settings.update_one(
+        {"_id": "aviator"},
+        {"$set": {"min_bet": min_bet, "updated_at": _dt.now(_tz.utc)}},
+        upsert=True,
+    )
+    return {"status": "OK", "min_bet": min_bet}

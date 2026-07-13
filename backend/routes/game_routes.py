@@ -327,3 +327,74 @@ async def get_user_bets(request: Request, limit: int = 100, game_id: str = None,
         bets = bets[:limit]
 
     return {"bets": bets}
+
+
+
+@router.delete("/bets/{bet_id}")
+async def cancel_bet(bet_id: str, request: Request):
+    """User cancels a PENDING Gali/Kalyan bet.
+
+    Allowed only if the game's close_time (Kalyan) or start_time (Gali) is
+    at least 10 minutes away from now. This gives the user a real "change
+    of mind" window while preventing last-minute cancels that could
+    weaponise result knowledge.
+
+    On success:
+      • Bet doc is marked status="cancelled" (kept for audit trail)
+      • Amount is refunded to user balance
+      • A transaction row (type=bet_refund) is inserted
+    """
+    user = await get_current_user(request)
+    bet = await db.bets.find_one({"id": bet_id, "user_id": user["_id"]})
+    if not bet:
+        raise HTTPException(404, "बेट नहीं मिली / Bet not found")
+    if bet.get("status") != "pending":
+        raise HTTPException(400, "यह बेट cancel नहीं हो सकती (result declared)")
+
+    games_dict = await get_games_dict()
+    game = games_dict.get(bet.get("game_id"))
+    if not game:
+        raise HTTPException(400, "Game not found")
+
+    # Compute the effective cut-off. For Kalyan Close bets → use close_time;
+    # for Open bets or Gali → use open_time / close_time as-is.
+    session = bet.get("session")  # "open" | "close" | None
+    cutoff_str = game.get("close_time") if session == "close" else (game.get("open_time") or game.get("close_time"))
+    if not cutoff_str:
+        raise HTTPException(400, "Cannot determine game cutoff time")
+
+    ist_now = datetime.now(timezone(timedelta(hours=5, minutes=30)))
+    try:
+        cutoff_hour, cutoff_min = [int(x) for x in cutoff_str.split(":")]
+    except Exception:
+        raise HTTPException(400, "Invalid game time config")
+    cutoff_dt = ist_now.replace(hour=cutoff_hour, minute=cutoff_min, second=0, microsecond=0)
+    # Handle games that cross midnight — if cutoff already past today, use tomorrow
+    if cutoff_dt < ist_now - timedelta(hours=6):
+        cutoff_dt = cutoff_dt + timedelta(days=1)
+
+    seconds_left = (cutoff_dt - ist_now).total_seconds()
+    if seconds_left < 600:   # 10 minutes = 600 seconds
+        minutes = max(0, int(seconds_left // 60))
+        raise HTTPException(
+            400,
+            f"Cancel करने के लिए {minutes} min बचे हैं. Cut-off से 10 मिनट पहले तक cancel कर सकते हैं.",
+        )
+
+    # Refund + mark cancelled
+    amount = float(bet.get("amount", 0))
+    await db.users.update_one({"_id": ObjectId(user["_id"])}, {"$inc": {"balance": amount}})
+    await db.bets.update_one(
+        {"id": bet_id},
+        {"$set": {"status": "cancelled", "cancelled_at": datetime.now(timezone.utc)}},
+    )
+    await db.transactions.insert_one({
+        "id": str(uuid.uuid4()),
+        "user_id": user["_id"],
+        "type": "bet_refund",
+        "amount": amount,
+        "bet_id": bet_id,
+        "status": "completed",
+        "created_at": datetime.now(timezone.utc),
+    })
+    return {"message": "बेट cancel हो गई, ₹" + str(int(amount)) + " वापस आ गए", "refunded": amount}
