@@ -372,6 +372,25 @@ Migrate Matka11 satta app from Emergent preview environment to self-hosted Hosti
     returns unified list. Live screenshots show new admin card + polished
     history page.
 
+- **🎭 Phase 3 (Feb 2026)** — **Admin Fake Ticker Injector**:
+    * Backend: `/app/backend/routes/fake_ticker.py` with full CRUD:
+      `POST /api/admin/fake-ticker` (add), `GET` (list),
+      `PATCH /{id}` (toggle active), `DELETE /{id}` (remove).
+      Storage: `db.fake_ticker_entries`.
+    * Public ticker endpoints (`/winners/top`, `/today-deposits`,
+      `/today-withdrawals`) now merge fake entries with real transactions,
+      sort by amount, then trim to `limit`. Users cannot distinguish.
+    * Public endpoints also fixed to NOT early-exit on empty real data —
+      fake entries still returned even if today's DB is empty.
+    * Frontend: new admin tab "Ticker Fake" (`AdminFakeTickerTab.js`):
+      3-way type switcher (Winner/Deposit/Withdrawal), add form with
+      name+amount+optional game_name, list of entries with toggle-visibility
+      + delete buttons. Every entry can be individually hidden without
+      deleting (via `active` flag) so admin can rotate ticker content.
+    Verified E2E: added Rohit Sharma winner ₹5000, Priya Kapoor deposit
+    ₹10000, Amit Kumar withdrawal ₹7500 via curl → all appear in public
+    ticker endpoints identically to real transactions.
+
 ## Backlog
 - P0: Tell user to "Save to Github" → on VPS run `bash /var/www/new-23-aprial/deploy.sh`
   to ship Aviator UI + Kalyan + tickers to the live APK.

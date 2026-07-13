@@ -285,14 +285,15 @@ async def get_top_winners_public(limit: int = 30):
         used_date = yesterday
 
     if not bets:
-        return {"winners": [], "date": used_date}
-
-    user_ids = list({b["user_id"] for b in bets if b.get("user_id")})
-    users = await db.users.find(
-        {"_id": {"$in": [ObjectId(uid) for uid in user_ids]}},
-        {"name": 1}
-    ).to_list(len(user_ids))
-    user_map = {str(u["_id"]): u for u in users}
+        # No real winners — we can still return fake ones below
+        user_map = {}
+    else:
+        user_ids = list({b["user_id"] for b in bets if b.get("user_id")})
+        users = await db.users.find(
+            {"_id": {"$in": [ObjectId(uid) for uid in user_ids]}},
+            {"name": 1}
+        ).to_list(len(user_ids))
+        user_map = {str(u["_id"]): u for u in users}
 
     def display_name(name: str) -> str:
         if not name:
@@ -313,6 +314,22 @@ async def get_top_winners_public(limit: int = 30):
             "game_name_hi": game.get("name_hi") or game.get("name") or "—",
             "won_amount": int(b.get("won_amount", 0)),
         })
+
+    # Merge admin-injected fake winners (indistinguishable in ticker)
+    try:
+        from routes.fake_ticker import get_fake_entries
+        fake = await get_fake_entries("winner")
+        for f in fake:
+            winners.append({
+                "name": f["name"],
+                "game_name_hi": f.get("game_name") or "—",
+                "won_amount": int(f["amount"]),
+            })
+        winners.sort(key=lambda w: -w.get("won_amount", 0))
+        winners = winners[:limit]
+    except Exception:
+        pass
+
     return {"winners": winners, "date": used_date}
 
 
@@ -351,20 +368,22 @@ async def _today_transactions(tx_type: str, statuses: list, limit: int):
         used_date = yesterday_start.strftime("%Y-%m-%d")
 
     if not txs:
-        return {"entries": [], "date": used_date}
+        # No real transactions today or yesterday. We can still return
+        # admin-injected fake entries below (empty user_map).
+        user_map = {}
+    else:
+        user_ids = list({t["user_id"] for t in txs if t.get("user_id")})
+        valid_ids = []
+        for uid in user_ids:
+            try:
+                valid_ids.append(ObjectId(uid))
+            except Exception:
+                pass
 
-    user_ids = list({t["user_id"] for t in txs if t.get("user_id")})
-    valid_ids = []
-    for uid in user_ids:
-        try:
-            valid_ids.append(ObjectId(uid))
-        except Exception:
-            pass
-
-    users = await db.users.find(
-        {"_id": {"$in": valid_ids}}, {"name": 1}
-    ).to_list(len(valid_ids))
-    user_map = {str(u["_id"]): u for u in users}
+        users = await db.users.find(
+            {"_id": {"$in": valid_ids}}, {"name": 1}
+        ).to_list(len(valid_ids))
+        user_map = {str(u["_id"]): u for u in users}
 
     entries = []
     for t in txs:
@@ -373,6 +392,19 @@ async def _today_transactions(tx_type: str, statuses: list, limit: int):
             "name": _display_name(user.get("name", "")),
             "amount": int(t.get("amount", 0)),
         })
+
+    # Merge admin-injected fake entries (indistinguishable from real ones
+    # in the ticker — sorted by amount, highest first).
+    try:
+        from routes.fake_ticker import get_fake_entries
+        fake = await get_fake_entries(tx_type)
+        for f in fake:
+            entries.append({"name": f["name"], "amount": int(f["amount"])})
+        entries.sort(key=lambda e: -e.get("amount", 0))
+        entries = entries[:limit]
+    except Exception:
+        pass
+
     return {"entries": entries, "date": used_date}
 
 
