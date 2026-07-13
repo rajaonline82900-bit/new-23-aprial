@@ -1624,38 +1624,8 @@ async def trigger_auto_fetch_public(request: Request):
     return result
 
 
-# ===== Stripe Webhook =====
-
-@router.post("/webhook/stripe")
-async def stripe_webhook(request: Request):
-    from emergentintegrations.payments.stripe.checkout import StripeCheckout
-
-    body = await request.body()
-    signature = request.headers.get("Stripe-Signature")
-    api_key = os.environ.get("STRIPE_API_KEY")
-    host_url = str(request.base_url).rstrip("/")
-    webhook_url = f"{host_url}/api/webhook/stripe"
-    stripe_checkout = StripeCheckout(api_key=api_key, webhook_url=webhook_url)
-
-    try:
-        webhook_response = await stripe_checkout.handle_webhook(body, signature)
-
-        if webhook_response.payment_status == "paid":
-            session_id = webhook_response.session_id
-            transaction = await db.transactions.find_one({"session_id": session_id})
-
-            if transaction and transaction["status"] != "completed":
-                await db.users.update_one({"_id": ObjectId(transaction["user_id"])}, {"$inc": {"balance": transaction["amount"]}})
-                await db.transactions.update_one(
-                    {"session_id": session_id},
-                    {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc)}}
-                )
-                await db.payment_transactions.update_one(
-                    {"session_id": session_id},
-                    {"$set": {"payment_status": "paid", "status": "completed"}}
-                )
-
-        return {"received": True}
-    except Exception as e:
-        logger.error(f"Webhook error: {e}")
-        return {"received": True}
+# ===== Stripe Webhook (REMOVED — using IMB Payment Gateway instead) =====
+# The Stripe webhook was removed to eliminate the emergentintegrations
+# dependency from requirements.txt, which was blocking VPS deploys.
+# If Stripe is ever needed again, re-add emergentintegrations and this
+# handler.

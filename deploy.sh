@@ -86,14 +86,12 @@ echo ""
 # 4. BACKEND DEPENDENCY UPDATE (only if requirements changed)
 # ---------------------------------------------------------------
 echo "🐍 [4/7] Backend pip install (only changed deps)…"
-# emergentintegrations lives on Emergent's private index — add it here.
-EMERGENT_INDEX="--extra-index-url https://d33sy5i8bnduwe.cloudfront.net/simple/"
 if [ -f backend/requirements.txt ]; then
   if [ -d backend/venv ]; then
-    backend/venv/bin/pip install -q $EMERGENT_INDEX -r backend/requirements.txt
+    backend/venv/bin/pip install -q -r backend/requirements.txt
   elif command -v pip3 >/dev/null 2>&1; then
-    pip3 install -q $EMERGENT_INDEX -r backend/requirements.txt 2>/dev/null || \
-      sudo pip3 install -q $EMERGENT_INDEX -r backend/requirements.txt 2>/dev/null || true
+    pip3 install -q -r backend/requirements.txt 2>/dev/null || \
+      sudo pip3 install -q -r backend/requirements.txt 2>/dev/null || true
   fi
 fi
 echo "   ✅ Backend deps OK"
