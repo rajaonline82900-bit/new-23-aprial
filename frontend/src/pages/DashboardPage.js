@@ -470,9 +470,6 @@ const DashboardPage = () => {
                         <span className="text-[10px] font-black tracking-wide whitespace-nowrap">
                           {t.label}
                         </span>
-                        <span className={`text-[9px] font-bold mt-0.5 tabular-nums ${isActive ? 'text-[#1A0F00]/70' : 'text-gray-400'}`}>
-                          {t.data.length} {t.countLabel}
-                        </span>
                       </button>
                     );
                   })}

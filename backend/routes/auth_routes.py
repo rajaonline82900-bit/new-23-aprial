@@ -4,6 +4,7 @@ from datetime import datetime, timezone, timedelta
 from bson import ObjectId
 import random
 import logging
+import os
 import httpx
 import aiohttp
 import uuid
@@ -22,19 +23,39 @@ from config import otp_store, DVHOSTING_API_KEY, DVHOSTING_API_URL
 router = APIRouter()
 
 
-async def send_sms_otp(phone: str, otp: str):
-    """Send OTP via DVHosting SMS API"""
+async def send_sms_otp(phone: str, otp: str) -> tuple[bool, str]:
+    """Send OTP via DVHosting SMS API.
+
+    Returns (success, reason). The reason is a short description surfaced
+    to the caller so the API endpoint can inform the user precisely why
+    the SMS failed (blank key, upstream 5xx, upstream returned
+    ``return:false``, network exception, etc.).
+    """
+    if not DVHOSTING_API_KEY:
+        logging.error("send_sms_otp: DVHOSTING_API_KEY is empty — check backend/.env")
+        return False, "sms_key_missing"
     try:
         async with httpx.AsyncClient(verify=False, timeout=15) as client:
             resp = await client.get(
                 DVHOSTING_API_URL,
                 params={"api_key": DVHOSTING_API_KEY, "number": phone, "otp": otp}
             )
-            logging.info(f"DVHosting SMS response for {phone}: {resp.status_code} - {resp.text}")
-            return resp.status_code == 200
+            body = resp.text
+            logging.info(f"DVHosting SMS resp for {phone}: HTTP {resp.status_code} body={body[:200]}")
+            if resp.status_code != 200:
+                return False, f"sms_upstream_http_{resp.status_code}"
+            # DVHosting returns JSON like {"return":true, "message":[...]}
+            try:
+                data = resp.json()
+                if data.get("return") is False or data.get("status") == "error":
+                    return False, f"sms_upstream_error: {str(data)[:120]}"
+            except Exception:
+                # Non-JSON response — treat as success if HTTP 200
+                pass
+            return True, "ok"
     except Exception as e:
-        logging.error(f"DVHosting SMS error for {phone}: {e}")
-        return False
+        logging.error(f"DVHosting SMS exception for {phone}: {e}")
+        return False, f"sms_exception: {str(e)[:120]}"
 
 
 @router.post("/auth/register-mobile")
@@ -303,12 +324,17 @@ async def send_otp(data: OTPRequest):
     otp = str(random.randint(1000, 9999))
     otp_store[phone] = {"otp": otp, "name": data.name, "expires": datetime.now(timezone.utc) + timedelta(minutes=5)}
 
-    sent = await send_sms_otp(phone, otp)
+    sent, reason = await send_sms_otp(phone, otp)
+    resp = {"message": "OTP भेज दिया गया है"}
     if not sent:
-        logging.warning(f"SMS sending failed for {phone}, OTP: {otp}")
-
-    logging.info(f"OTP for {phone}: {otp}")
-    return {"message": "OTP भेज दिया गया है"}
+        logging.warning(f"[signup] SMS failed for {phone}, reason={reason}, OTP={otp}")
+        resp["sms_failed"] = True
+        resp["sms_reason"] = reason
+        # Only expose fallback OTP when explicitly enabled in env
+        if os.environ.get("DEBUG_OTP_FALLBACK", "").lower() == "true":
+            resp["dev_otp"] = otp
+    logging.info(f"[signup] OTP for {phone}: {otp}")
+    return resp
 
 
 @router.post("/auth/otp/verify")
@@ -382,12 +408,16 @@ async def login_otp_send(data: OTPLoginRequest):
     otp = str(random.randint(1000, 9999))
     otp_store[f"login_{phone}"] = {"otp": otp, "expires": datetime.now(timezone.utc) + timedelta(minutes=5)}
 
-    sent = await send_sms_otp(phone, otp)
+    sent, reason = await send_sms_otp(phone, otp)
+    resp = {"message": "OTP भेज दिया गया है"}
     if not sent:
-        logging.warning(f"Login OTP SMS failed for {phone}, OTP: {otp}")
-
-    logging.info(f"Login OTP for {phone}: {otp}")
-    return {"message": "OTP भेज दिया गया है"}
+        logging.warning(f"[login-otp] SMS failed for {phone}, reason={reason}, OTP={otp}")
+        resp["sms_failed"] = True
+        resp["sms_reason"] = reason
+        if os.environ.get("DEBUG_OTP_FALLBACK", "").lower() == "true":
+            resp["dev_otp"] = otp
+    logging.info(f"[login-otp] OTP for {phone}: {otp}")
+    return resp
 
 
 @router.post("/auth/login-otp/verify")
@@ -464,12 +494,16 @@ async def password_reset_send_otp(data: PasswordResetRequest):
     otp = str(random.randint(1000, 9999))
     otp_store[f"reset_{phone}"] = {"otp": otp, "expires": datetime.now(timezone.utc) + timedelta(minutes=5)}
 
-    sent = await send_sms_otp(phone, otp)
+    sent, reason = await send_sms_otp(phone, otp)
+    resp = {"message": "OTP भेज दिया गया है"}
     if not sent:
-        logging.warning(f"Password reset SMS failed for {phone}, OTP: {otp}")
-
-    logging.info(f"Password Reset OTP for {phone}: {otp}")
-    return {"message": "OTP भेज दिया गया है"}
+        logging.warning(f"[password-reset] SMS failed for {phone}, reason={reason}, OTP={otp}")
+        resp["sms_failed"] = True
+        resp["sms_reason"] = reason
+        if os.environ.get("DEBUG_OTP_FALLBACK", "").lower() == "true":
+            resp["dev_otp"] = otp
+    logging.info(f"[password-reset] OTP for {phone}: {otp}")
+    return resp
 
 
 @router.post("/auth/password/reset")

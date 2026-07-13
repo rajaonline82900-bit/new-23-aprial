@@ -74,7 +74,7 @@ const translations = {
 
     // Footer
     home: 'Home',
-    bid_history: 'Bid History',
+    bid_history: 'History',
     refer: 'Refer',
     result_chart: 'Result Chart',
 
@@ -164,7 +164,7 @@ const translations = {
     logout: 'Logout',
 
     home: 'Home',
-    bid_history: 'Bid History',
+    bid_history: 'History',
     refer: 'Refer',
     result_chart: 'Result Chart',
 
@@ -248,7 +248,7 @@ const translations = {
     install_app_desc: 'ਹੋਮ ਸਕ੍ਰੀਨ ਤੇ ਐਡ ਕਰੋ',
     logout: 'ਲੌਗਆਊਟ',
     home: 'ਹੋਮ',
-    bid_history: 'ਬਿਡ ਇਤਿਹਾਸ',
+    bid_history: 'ਇਤਿਹਾਸ',
     refer: 'ਰੈਫਰ',
     result_chart: 'ਨਤੀਜਾ ਚਾਰਟ',
     enable_notif: 'ਨਤੀਜਿਆਂ ਦੀ ਨੋਟੀਫਿਕੇਸ਼ਨ ਲਈ ਚਾਲੂ ਕਰੋ',
@@ -330,7 +330,7 @@ const translations = {
     install_app_desc: 'હોમ સ્ક્રીન પર ઉમેરો',
     logout: 'લોગઆઉટ',
     home: 'હોમ',
-    bid_history: 'બિડ ઇતિહાસ',
+    bid_history: 'ઇતિહાસ',
     refer: 'રેફર',
     result_chart: 'પરિણામ ચાર્ટ',
     enable_notif: 'પરિણામ નોટિફિકેશન મેળવવા માટે ચાલુ કરો',
@@ -412,7 +412,7 @@ const translations = {
     install_app_desc: 'ஹோம் ஸ்கிரீனில் சேர்',
     logout: 'வெளியேறு',
     home: 'முகப்பு',
-    bid_history: 'பிட் வரலாறு',
+    bid_history: 'வரலாறு',
     refer: 'பரிந்துரை',
     result_chart: 'முடிவு அட்டவணை',
     enable_notif: 'முடிவு நோட்டிஃபிகேஷன் பெற இயக்கவும்',

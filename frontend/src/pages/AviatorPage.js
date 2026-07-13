@@ -641,14 +641,21 @@ const AviatorPage = () => {
           </div>
         )}
 
-        {/* Plane sprite */}
+        {/* Plane sprite — GPU-accelerated transform + short transition so
+            the plane visually glides between multiplier ticks (150ms) instead
+            of jumping. `will-change` promotes to compositor layer for smooth
+            animation on low-end Android. */}
         {phase === 'flying' && (
           <div
             className="absolute pointer-events-none"
             style={{
-              left: `${planePos.x}%`,
-              top: `${planePos.y}%`,
-              transform: 'translate(-50%, -50%) rotate(-25deg)',
+              left: 0,
+              top: 0,
+              width: '1%',
+              height: '1%',
+              transform: `translate3d(${planePos.x * 100}%, ${planePos.y * 100}%, 0) translate(-50%, -50%) rotate(-25deg)`,
+              transition: 'transform 200ms cubic-bezier(0.22, 1, 0.36, 1)',
+              willChange: 'transform',
             }}
           >
             <PropellerPlane size={72} />
