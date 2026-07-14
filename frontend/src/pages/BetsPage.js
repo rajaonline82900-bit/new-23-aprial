@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import {
-  ArrowLeft, Clock, CheckCircle2, XCircle, Coins, Loader2, Trash2,
+  ArrowLeft, Clock, CheckCircle2, XCircle, Coins, Loader2,
   Trophy, Plane, Dice5, Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -26,10 +26,12 @@ const CAT_META = {
   aviator:  { icon: Plane, color: '#38BDF8', bg: 'rgba(56,189,248,0.12)', label: 'Aviator' },
   kalyan:   { icon: Sparkles, color: '#EF4444', bg: 'rgba(239,68,68,0.12)', label: 'Kalyan' },
   gali:     { icon: Dice5, color: '#D4AF37', bg: 'rgba(212,175,55,0.12)', label: 'Gali/Disawar' },
+  ludo:     { icon: Dice5, color: '#A78BFA', bg: 'rgba(167,139,250,0.12)', label: 'Ludo' },
 };
 
 const getCatMeta = (bet) => {
   if (bet.bet_type === 'aviator' || bet.game_category === 'aviator') return CAT_META.aviator;
+  if (bet.game_category === 'ludo') return CAT_META.ludo;
   if (bet.game_category === 'kalyan') return CAT_META.kalyan;
   return CAT_META.gali;
 };
@@ -60,43 +62,46 @@ const StatusPill = ({ status }) => {
   );
 };
 
-// Category filter pill
-const CatPill = ({ id, label, active, onClick, count }) => (
+// Unified filter chip — attractive with icon + count
+const FilterChip = ({ id, label, Icon, active, onClick, count, activeColor, activeGrad }) => (
   <button
     onClick={onClick}
-    data-testid={`filter-cat-${id}`}
-    className="shrink-0 px-3 py-1.5 rounded-full text-[11px] font-black transition-all whitespace-nowrap"
+    data-testid={`filter-${id}`}
+    className="shrink-0 flex items-center gap-1.5 pl-2 pr-2.5 py-1.5 rounded-full text-[10px] font-black whitespace-nowrap transition-all"
     style={{
-      background: active ? 'linear-gradient(135deg, #D4AF37, #B8860B)' : 'rgba(255,255,255,0.05)',
-      color: active ? '#1A0F00' : '#E5E7EB',
-      border: `1px solid ${active ? '#FFD700' : 'rgba(255,255,255,0.1)'}`,
+      background: active ? (activeGrad || activeColor) : 'rgba(255,255,255,0.045)',
+      color: active ? '#0F0A00' : '#D1D5DB',
+      border: `1px solid ${active ? (activeColor || 'rgba(255,255,255,0.15)') : 'rgba(255,255,255,0.08)'}`,
+      boxShadow: active ? `0 3px 10px ${activeColor}55, inset 0 1px 0 rgba(255,255,255,0.25)` : 'none',
+      transform: active ? 'scale(1)' : 'scale(0.97)',
+      letterSpacing: '0.02em',
     }}
   >
-    {label}{count !== undefined && <span className="ml-1 opacity-70">·{count}</span>}
-  </button>
-);
-
-const StatusChip = ({ id, label, active, onClick, color }) => (
-  <button
-    onClick={onClick}
-    data-testid={`filter-status-${id}`}
-    className="shrink-0 px-2.5 py-1 rounded-md text-[10px] font-black whitespace-nowrap"
-    style={{
-      background: active ? color : 'rgba(255,255,255,0.05)',
-      color: active ? '#FFF' : '#E5E7EB',
-      border: `1px solid ${active ? color : 'rgba(255,255,255,0.1)'}`,
-    }}
-  >
-    {label}
+    <span
+      className="w-4 h-4 rounded-full flex items-center justify-center"
+      style={{ background: active ? 'rgba(0,0,0,0.20)' : 'rgba(255,255,255,0.06)' }}
+    >
+      <Icon className="w-2.5 h-2.5" style={{ color: active ? '#0F0A00' : '#9CA3AF' }} strokeWidth={2.5} />
+    </span>
+    <span>{label}</span>
+    {count !== undefined && (
+      <span
+        className="tabular-nums font-black text-[9px] px-1 rounded"
+        style={{
+          background: active ? 'rgba(0,0,0,0.20)' : 'rgba(255,255,255,0.10)',
+          color: active ? '#0F0A00' : '#D1D5DB',
+        }}
+      >
+        {count}
+      </span>
+    )}
   </button>
 );
 
 const BetsPage = () => {
   const [bets, setBets] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [cancelling, setCancelling] = useState(null);
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [catFilter, setCatFilter] = useState('all');
+  const [activeFilter, setActiveFilter] = useState('all');
 
   const fetchBets = useCallback(async () => {
     try {
@@ -112,27 +117,28 @@ const BetsPage = () => {
 
   useEffect(() => { fetchBets(); }, [fetchBets]);
 
-  // Apply category + status filters client-side
+  // Apply single-filter (category or "won" special) client-side
   const filtered = useMemo(() => {
     return bets.filter((b) => {
-      if (statusFilter !== 'all' && b.status !== statusFilter) return false;
-      if (catFilter !== 'all') {
-        const meta = getCatMeta(b);
-        if (catFilter === 'aviator' && meta !== CAT_META.aviator) return false;
-        if (catFilter === 'kalyan' && meta !== CAT_META.kalyan) return false;
-        if (catFilter === 'gali' && meta !== CAT_META.gali) return false;
-      }
+      if (activeFilter === 'all') return true;
+      if (activeFilter === 'won') return b.status === 'won';
+      const meta = getCatMeta(b);
+      if (activeFilter === 'aviator') return meta === CAT_META.aviator;
+      if (activeFilter === 'kalyan') return meta === CAT_META.kalyan;
+      if (activeFilter === 'gali') return meta === CAT_META.gali;
+      if (activeFilter === 'ludo') return meta === CAT_META.ludo;
       return true;
     });
-  }, [bets, statusFilter, catFilter]);
+  }, [bets, activeFilter]);
 
   // Category counts for pill badges
   const counts = useMemo(() => {
-    const c = { all: bets.length, aviator: 0, kalyan: 0, gali: 0 };
+    const c = { all: bets.length, aviator: 0, kalyan: 0, gali: 0, ludo: 0 };
     bets.forEach((b) => {
       const m = getCatMeta(b);
       if (m === CAT_META.aviator) c.aviator++;
       else if (m === CAT_META.kalyan) c.kalyan++;
+      else if (m === CAT_META.ludo) c.ludo++;
       else c.gali++;
     });
     return c;
@@ -150,20 +156,6 @@ const BetsPage = () => {
     return { totalStaked, totalWon, wins, losses, pending, pnl: totalWon - totalStaked };
   }, [bets]);
 
-  const cancelBet = async (betId) => {
-    if (!window.confirm('Kya aap sure hain? Bet cancel karne pe amount wapas mil jayegi.')) return;
-    setCancelling(betId);
-    try {
-      const { data } = await axios.delete(`${API_URL}/api/bets/${betId}`, { withCredentials: true });
-      toast.success(data.message || 'Bet cancelled');
-      await fetchBets();
-    } catch (e) {
-      toast.error(e?.response?.data?.detail || 'Cancel nahi ho payi');
-    } finally {
-      setCancelling(null);
-    }
-  };
-
   // Group bets by date for nicer visual grouping
   const grouped = useMemo(() => {
     const map = {};
@@ -174,19 +166,6 @@ const BetsPage = () => {
     });
     return map;
   }, [filtered]);
-
-  // Only the SINGLE most-recently-placed pending bet gets the cancel button.
-  // Prevents users from clearing old bets that were placed hours ago.
-  const cancellableBetId = useMemo(() => {
-    let latest = null;
-    for (const b of bets) {
-      if (b.status !== 'pending') continue;
-      if (b.bet_type === 'aviator' || b.game_category === 'aviator') continue;
-      const t = new Date(b.created_at || 0).getTime();
-      if (!latest || t > latest.t) latest = { id: b.id, t };
-    }
-    return latest?.id || null;
-  }, [bets]);
 
   return (
     <div className="min-h-screen bg-[#0A0A0C] text-white pb-24 app-shell">
@@ -210,20 +189,56 @@ const BetsPage = () => {
       </header>
 
       <main className="px-3 py-3 space-y-2">
-        {/* Filter row: categories */}
+        {/* Unified attractive filter row */}
         <div className="flex gap-1.5 overflow-x-auto scrollbar-hide -mx-3 px-3 pb-1">
-          <CatPill id="all" label="All" active={catFilter === 'all'} onClick={() => setCatFilter('all')} count={counts.all} />
-          <CatPill id="gali" label="Gali/Disawar" active={catFilter === 'gali'} onClick={() => setCatFilter('gali')} count={counts.gali} />
-          <CatPill id="kalyan" label="Kalyan" active={catFilter === 'kalyan'} onClick={() => setCatFilter('kalyan')} count={counts.kalyan} />
-          <CatPill id="aviator" label="Aviator" active={catFilter === 'aviator'} onClick={() => setCatFilter('aviator')} count={counts.aviator} />
-        </div>
-
-        {/* Filter row: status */}
-        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide -mx-3 px-3 pb-1">
-          <StatusChip id="all" label="All" active={statusFilter === 'all'} onClick={() => setStatusFilter('all')} color="#6B7280" />
-          <StatusChip id="pending" label={`Pending · ${stats.pending}`} active={statusFilter === 'pending'} onClick={() => setStatusFilter('pending')} color="#EAB308" />
-          <StatusChip id="won" label={`Won · ${stats.wins}`} active={statusFilter === 'won'} onClick={() => setStatusFilter('won')} color="#10B981" />
-          <StatusChip id="lost" label={`Lost · ${stats.losses}`} active={statusFilter === 'lost'} onClick={() => setStatusFilter('lost')} color="#EF4444" />
+          <FilterChip
+            id="all" label="All Bet" Icon={Coins}
+            active={activeFilter === 'all'}
+            onClick={() => setActiveFilter('all')}
+            count={counts.all}
+            activeColor="#FBBF24"
+            activeGrad="linear-gradient(135deg, #FFD700 0%, #D4AF37 100%)"
+          />
+          <FilterChip
+            id="gali" label="Gali Disawar Bet" Icon={Dice5}
+            active={activeFilter === 'gali'}
+            onClick={() => setActiveFilter('gali')}
+            count={counts.gali}
+            activeColor="#D4AF37"
+            activeGrad="linear-gradient(135deg, #FDE68A 0%, #D4AF37 100%)"
+          />
+          <FilterChip
+            id="kalyan" label="Kalyan Bet" Icon={Sparkles}
+            active={activeFilter === 'kalyan'}
+            onClick={() => setActiveFilter('kalyan')}
+            count={counts.kalyan}
+            activeColor="#F87171"
+            activeGrad="linear-gradient(135deg, #FCA5A5 0%, #EF4444 100%)"
+          />
+          <FilterChip
+            id="aviator" label="Aviator Bet" Icon={Plane}
+            active={activeFilter === 'aviator'}
+            onClick={() => setActiveFilter('aviator')}
+            count={counts.aviator}
+            activeColor="#38BDF8"
+            activeGrad="linear-gradient(135deg, #7DD3FC 0%, #0EA5E9 100%)"
+          />
+          <FilterChip
+            id="ludo" label="Ludo Bet" Icon={Dice5}
+            active={activeFilter === 'ludo'}
+            onClick={() => setActiveFilter('ludo')}
+            count={counts.ludo}
+            activeColor="#A78BFA"
+            activeGrad="linear-gradient(135deg, #C4B5FD 0%, #7C3AED 100%)"
+          />
+          <FilterChip
+            id="won" label="Won Amount" Icon={Trophy}
+            active={activeFilter === 'won'}
+            onClick={() => setActiveFilter('won')}
+            count={stats.wins}
+            activeColor="#34D399"
+            activeGrad="linear-gradient(135deg, #6EE7B7 0%, #10B981 100%)"
+          />
         </div>
 
         {/* List */}
@@ -250,13 +265,11 @@ const BetsPage = () => {
               {group.map((bet) => {
                 const meta = getCatMeta(bet);
                 const isAviator = meta === CAT_META.aviator;
-                const canCancel = bet.id === cancellableBetId;
                 const winAmount = bet.winnings || bet.won_amount || 0;
                 const serial = String(bet.id || '').slice(-6).toUpperCase();
                 const isWon = bet.status === 'won';
                 const isLost = bet.status === 'lost';
                 const isCancel = bet.status === 'cancelled' || bet.status === 'reversed';
-                const isPending = !isWon && !isLost && !isCancel;
 
                 const primaryColor = isWon ? '#10B981' : isLost ? '#EF4444' : isCancel ? '#6B7280' : '#22D3EE';
                 const primaryTint = isWon ? 'rgba(16,185,129,0.10)' : isLost ? 'rgba(239,68,68,0.08)' : isCancel ? 'rgba(107,114,128,0.06)' : 'rgba(34,211,238,0.06)';
@@ -320,17 +333,6 @@ const BetsPage = () => {
                         )}
                         {isLost && (
                           <span className="text-[10px] font-black text-red-400 tabular-nums">−{fmtAmt(bet.amount)}</span>
-                        )}
-                        {canCancel && (
-                          <button
-                            onClick={() => cancelBet(bet.id)}
-                            disabled={cancelling === bet.id}
-                            data-testid={`cancel-bet-${bet.id}`}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-black bg-red-500/15 text-red-300 border border-red-500/30 active:bg-red-500/25 disabled:opacity-50"
-                          >
-                            {cancelling === bet.id ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Trash2 className="w-2.5 h-2.5" />}
-                            Cancel
-                          </button>
                         )}
                       </div>
                     </div>
