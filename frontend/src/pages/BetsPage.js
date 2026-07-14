@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import {
   ArrowLeft, Clock, CheckCircle2, XCircle, Coins, Loader2, Trash2,
-  Trophy, TrendingUp, TrendingDown, Timer, Plane, Dice5, Sparkles,
+  Trophy, TrendingUp, TrendingDown, Plane, Dice5, Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import FooterNav from '../components/FooterNav';
@@ -281,15 +281,17 @@ const BetsPage = () => {
                   <div
                     key={bet.id || bet._id || `${bet.created_at}-${bet.digit}`}
                     data-testid={`bet-row-${bet.id}`}
-                    className="rounded-2xl p-3 flex items-start gap-3 relative overflow-hidden"
+                    className="rounded-2xl relative overflow-hidden"
                     style={{
                       background: bet.status === 'won'
-                        ? 'linear-gradient(135deg, rgba(16,185,129,0.10) 0%, #141418 60%)'
+                        ? 'linear-gradient(135deg, rgba(16,185,129,0.14) 0%, #14181C 60%)'
                         : bet.status === 'lost'
-                        ? 'linear-gradient(135deg, rgba(239,68,68,0.08) 0%, #141418 60%)'
-                        : '#141418',
-                      border: `1px solid ${bet.status === 'won' ? 'rgba(16,185,129,0.35)' : bet.status === 'lost' ? 'rgba(239,68,68,0.25)' : 'rgba(255,255,255,0.10)'}`,
-                      boxShadow: bet.status === 'won' ? '0 4px 16px rgba(16,185,129,0.12)' : 'none',
+                        ? 'linear-gradient(135deg, rgba(239,68,68,0.10) 0%, #14181C 60%)'
+                        : bet.status === 'cancelled' || bet.status === 'reversed'
+                        ? 'linear-gradient(135deg, rgba(107,114,128,0.10) 0%, #141418 60%)'
+                        : 'linear-gradient(135deg, rgba(56,189,248,0.08) 0%, #141418 60%)',
+                      border: `1px solid ${bet.status === 'won' ? 'rgba(16,185,129,0.45)' : bet.status === 'lost' ? 'rgba(239,68,68,0.30)' : 'rgba(255,255,255,0.10)'}`,
+                      boxShadow: bet.status === 'won' ? '0 6px 20px rgba(16,185,129,0.15)' : 'none',
                     }}
                   >
                     {/* Left accent bar */}
@@ -303,43 +305,25 @@ const BetsPage = () => {
                       }}
                     />
 
-                    {/* Icon */}
-                    <div
-                      className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ml-1"
-                      style={{ background: meta.bg, border: `1px solid ${meta.color}55` }}
-                    >
-                      <Icon className="w-5 h-5" style={{ color: meta.color }} />
-                    </div>
-
-                    {/* Middle: game / bet detail */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <p className="text-sm font-black text-white truncate">{bet.game_name || bet.game_id}</p>
-                        <StatusPill status={bet.status} />
+                    {/* ── TOP ROW: icon + game + status ── */}
+                    <div className="px-3 pt-2.5 pb-2 flex items-center gap-2.5">
+                      <div
+                        className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                        style={{ background: meta.bg, border: `1px solid ${meta.color}55` }}
+                      >
+                        <Icon className="w-5 h-5" style={{ color: meta.color }} />
                       </div>
-                      {isAviator ? (
-                        <div className="mt-1 flex items-center gap-2 flex-wrap">
-                          <span className="inline-flex items-center gap-1 text-[11px]">
-                            <span className="text-gray-500">Cashout:</span>
-                            <span
-                              className={`font-black tabular-nums px-2 py-0.5 rounded-lg text-sm ${bet.status === 'won' ? 'text-emerald-300 bg-emerald-500/15 border border-emerald-500/40' : 'text-red-300 bg-red-500/15 border border-red-500/30'}`}
-                            >
-                              {bet.digit || (bet.status === 'lost' ? 'crashed' : '—')}
-                            </span>
-                          </span>
-                          {bet.crash_point && (
-                            <span className="text-[10px] text-gray-400">
-                              @ crash <span className="text-red-400 font-bold">{Number(bet.crash_point).toFixed(2)}x</span>
-                            </span>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="mt-1 flex items-center gap-2 flex-wrap">
-                          <span className="text-[10px] font-black uppercase text-gray-300 px-1.5 py-0.5 rounded bg-white/5 border border-white/10">
-                            {bet.bet_type?.replace(/_/g, ' ') || 'bet'}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[15px] font-black text-white truncate leading-tight">
+                          {bet.game_name || bet.game_id}
+                        </p>
+                        <div className="mt-0.5 flex items-center gap-1.5 flex-wrap text-[10px] text-gray-400">
+                          <span className="uppercase font-black text-gray-300">
+                            {isAviator ? 'Aviator' : bet.bet_type?.replace(/_/g, ' ') || 'bet'}
                           </span>
                           {bet.session && (
-                            <span className="uppercase text-[9px] font-black px-1.5 py-0.5 rounded"
+                            <span
+                              className="uppercase text-[9px] font-black px-1.5 py-0.5 rounded-md"
                               style={{
                                 background: bet.session === 'open' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)',
                                 color: bet.session === 'open' ? '#6ee7b7' : '#fca5a5'
@@ -348,47 +332,116 @@ const BetsPage = () => {
                               {bet.session}
                             </span>
                           )}
-                          <span className="inline-flex items-center gap-1 text-[11px]">
-                            <span className="text-gray-500">Bet</span>
-                            <span className="font-black text-[#1A0F00] tabular-nums px-2 py-0.5 rounded-lg text-sm shadow-sm"
-                              style={{ background: 'linear-gradient(135deg,#FFD700,#D4AF37)' }}
-                            >
-                              {bet.digit || bet.number || '—'}
-                            </span>
-                          </span>
-                          {bet.result_number != null && bet.result_number !== '' && (
-                            <span className="inline-flex items-center gap-1 text-[11px]">
-                              <span className="text-gray-500">Result</span>
-                              <span
-                                className={`font-black tabular-nums px-2 py-0.5 rounded-lg text-sm border ${bet.status === 'won' ? 'text-emerald-100 bg-emerald-500/25 border-emerald-400/60' : 'text-gray-200 bg-white/8 border-white/20'}`}
-                              >
-                                {bet.result_number}
-                              </span>
-                            </span>
-                          )}
+                          <span className="text-gray-500">· {fmtTime(bet.created_at)}</span>
                         </div>
-                      )}
-                      <div className="mt-1.5 flex items-center gap-2 text-[10px] text-gray-500">
-                        <Timer className="w-3 h-3" />
-                        <span>{fmtTime(bet.created_at)}</span>
-                        {bet.round_id && <span>· Round #{String(bet.round_id).slice(-6)}</span>}
                       </div>
+                      <StatusPill status={bet.status} />
                     </div>
 
-                    {/* Right: amount + cancel */}
-                    <div className="text-right shrink-0">
-                      <p className="text-sm font-black text-white tabular-nums">−{fmtAmt(bet.amount)}</p>
-                      {bet.status === 'won' && (
-                        <p className="text-[11px] font-black text-emerald-400 tabular-nums flex items-center justify-end gap-0.5 mt-0.5">
-                          <Trophy className="w-3 h-3" /> +{fmtAmt(winAmount)}
-                        </p>
+                    {/* ── MIDDLE ROW: big BET | RESULT badges ── */}
+                    <div className="px-3 py-2 border-t border-white/5">
+                      {isAviator ? (
+                        <div className="flex items-center justify-center gap-3 py-1">
+                          <div className="text-center">
+                            <p className="text-[8px] uppercase tracking-widest text-gray-500 font-black leading-none">Cashout</p>
+                            <p className={`text-2xl font-black tabular-nums leading-none mt-1 ${bet.status === 'won' ? 'text-emerald-300' : 'text-red-300'}`}>
+                              {bet.digit || (bet.status === 'lost' ? 'crashed' : '—')}
+                            </p>
+                          </div>
+                          {bet.crash_point && (
+                            <>
+                              <div className="text-gray-600 text-lg">·</div>
+                              <div className="text-center">
+                                <p className="text-[8px] uppercase tracking-widest text-gray-500 font-black leading-none">Crashed</p>
+                                <p className="text-2xl font-black tabular-nums leading-none mt-1 text-red-400">
+                                  {Number(bet.crash_point).toFixed(2)}x
+                                </p>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          {/* Your Bet */}
+                          <div className="flex-1 text-center">
+                            <p className="text-[8px] uppercase tracking-widest text-yellow-500/80 font-black leading-none mb-1">Your Bet</p>
+                            <div
+                              className="inline-block px-3 py-1.5 rounded-xl min-w-[3rem] font-black tabular-nums text-2xl leading-none"
+                              style={{ background: 'linear-gradient(135deg,#FFD700 0%,#D4AF37 100%)', color: '#1A0F00', boxShadow: '0 2px 8px rgba(212,175,55,0.35)' }}
+                            >
+                              {bet.digit || bet.number || '—'}
+                            </div>
+                          </div>
+
+                          {/* Arrow / Match indicator */}
+                          <div className="flex flex-col items-center px-1 shrink-0">
+                            {bet.result_number != null && bet.result_number !== '' ? (
+                              bet.status === 'won' ? (
+                                <>
+                                  <Trophy className="w-5 h-5 text-emerald-400" />
+                                  <span className="text-[8px] font-black text-emerald-400 uppercase mt-0.5">Match!</span>
+                                </>
+                              ) : (
+                                <>
+                                  <XCircle className="w-5 h-5 text-red-400/70" />
+                                  <span className="text-[8px] font-black text-red-400/70 uppercase mt-0.5">No Match</span>
+                                </>
+                              )
+                            ) : (
+                              <>
+                                <Clock className="w-5 h-5 text-cyan-400" />
+                                <span className="text-[8px] font-black text-cyan-400 uppercase mt-0.5">Wait</span>
+                              </>
+                            )}
+                          </div>
+
+                          {/* Winning Result */}
+                          <div className="flex-1 text-center">
+                            <p className="text-[8px] uppercase tracking-widest text-gray-500 font-black leading-none mb-1">Result</p>
+                            <div
+                              className={`inline-block px-3 py-1.5 rounded-xl min-w-[3rem] font-black tabular-nums text-2xl leading-none border ${
+                                bet.result_number != null && bet.result_number !== ''
+                                  ? (bet.status === 'won'
+                                    ? 'text-emerald-100 border-emerald-400/60'
+                                    : 'text-gray-100 border-white/20')
+                                  : 'text-gray-500 border-white/10'
+                              }`}
+                              style={{
+                                background: bet.result_number != null && bet.result_number !== ''
+                                  ? (bet.status === 'won' ? 'rgba(16,185,129,0.25)' : 'rgba(255,255,255,0.06)')
+                                  : 'rgba(255,255,255,0.03)',
+                              }}
+                            >
+                              {bet.result_number ?? '?'}
+                            </div>
+                          </div>
+                        </div>
                       )}
+                    </div>
+
+                    {/* ── BOTTOM ROW: staked + won + cancel ── */}
+                    <div className="px-3 py-2 border-t border-white/5 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-3 text-[11px]">
+                        <div>
+                          <span className="text-gray-500 font-bold">Staked: </span>
+                          <span className="text-white font-black tabular-nums">{fmtAmt(bet.amount)}</span>
+                        </div>
+                        {bet.status === 'won' && (
+                          <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/40">
+                            <Trophy className="w-3 h-3 text-emerald-300" />
+                            <span className="text-emerald-300 font-black tabular-nums text-[12px]">+{fmtAmt(winAmount)}</span>
+                          </div>
+                        )}
+                        {bet.status === 'lost' && (
+                          <span className="text-red-400/80 font-black tabular-nums">Lost {fmtAmt(bet.amount)}</span>
+                        )}
+                      </div>
                       {canCancel && (
                         <button
                           onClick={() => cancelBet(bet.id)}
                           disabled={cancelling === bet.id}
                           data-testid={`cancel-bet-${bet.id}`}
-                          className="mt-1.5 inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-black bg-red-500/15 text-red-300 border border-red-500/30 active:bg-red-500/25 disabled:opacity-50"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black bg-red-500/15 text-red-300 border border-red-500/30 active:bg-red-500/25 disabled:opacity-50"
                         >
                           {cancelling === bet.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
                           Cancel
