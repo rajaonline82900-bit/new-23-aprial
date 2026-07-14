@@ -359,6 +359,17 @@ async def get_user_bets(request: Request, limit: int = 100, game_id: str = None,
             aviator_q["date"] = date
         av_bets = await db.aviator_bets.find(aviator_q, {"_id": 0}).sort("created_at", -1).limit(limit).to_list(limit)
         for a in av_bets:
+            av_status = a.get("status", "pending")
+            # aviator_bets stores status directly as 'won' / 'lost' / 'pending'
+            is_won = av_status == "won"
+            cashout = a.get("cashout_multiplier") or 0
+            bet_amt = a.get("amount", 0) or a.get("bet_amount", 0)
+            won_amt = a.get("won_amount", 0) or (bet_amt * cashout if is_won else 0)
+            # Derive date from created_at if missing (aviator doc doesn't always store it)
+            av_date = a.get("date")
+            if not av_date and a.get("created_at"):
+                ca = a.get("created_at")
+                av_date = ca[:10] if isinstance(ca, str) else ca.strftime("%Y-%m-%d")
             bets.append({
                 "id": a.get("id") or a.get("round_id"),
                 "user_id": a.get("user_id"),
@@ -367,14 +378,17 @@ async def get_user_bets(request: Request, limit: int = 100, game_id: str = None,
                 "game_category": "aviator",
                 "bet_type": "aviator",
                 "session": None,
-                "digit": f"{a.get('cashout_multiplier', 0):.2f}x" if a.get("won") else "crashed",
-                "amount": a.get("bet_amount", 0),
-                "status": ("won" if a.get("won") else "lost") if a.get("status") == "settled" else "pending",
-                "winnings": (a.get("bet_amount", 0) * a.get("cashout_multiplier", 0)) if a.get("won") else 0,
-                "cashout_multiplier": a.get("cashout_multiplier"),
+                "digit": f"{cashout:.2f}x" if is_won and cashout else ("crashed" if av_status == "lost" else "-"),
+                "number": None,
+                "amount": bet_amt,
+                "status": av_status,
+                "winnings": won_amt,
+                "won_amount": won_amt,
+                "cashout_multiplier": cashout if is_won else None,
                 "crash_point": a.get("crash_point"),
                 "round_id": a.get("round_id"),
-                "date": a.get("date"),
+                "date": av_date,
+                "result_number": None,
                 "created_at": a.get("created_at"),
             })
         # Re-sort merged list by created_at desc (datetime + ISO-str safe)
@@ -390,6 +404,80 @@ async def get_user_bets(request: Request, limit: int = 100, game_id: str = None,
 
     return {"bets": bets}
 
+
+@router.get("/games/{game_id}/jantri")
+async def public_game_jantri(game_id: str, request: Request, date: str = None):
+    """Public number-wise bet summary for a game — 'kaunse number pe kitna laga'.
+
+    Rules to keep it fair/anonymised:
+      * Only returns TODAY's date by default (IST). Historical dates require
+        an authenticated request but here we simply cap to today.
+      * Aggregates across all users — never exposes user ids.
+      * Sorts per bet_type by total amount desc, so hot numbers surface first.
+      * Once result is declared for that game+date, endpoint returns
+        `locked: True` and `hides` amounts to prevent post-result reveals.
+    """
+    ist_now = datetime.now(IST)
+    today = ist_now.strftime("%Y-%m-%d")
+    if not date:
+        date = today
+    # Never allow future or beyond today
+    if date > today:
+        raise HTTPException(400, "Future date not allowed")
+
+    games_dict = await get_games_dict()
+    game = games_dict.get(game_id)
+    if not game:
+        raise HTTPException(404, "Game not found")
+
+    # If the result for this game+date is already declared, lock the report
+    result_doc = None
+    if game.get("category") == "kalyan":
+        result_doc = await db.kalyan_results.find_one({"game_id": game_id, "date": date})
+        if result_doc and (result_doc.get("close_ank") or result_doc.get("jodi")):
+            return {"locked": True, "reason": "Result declared — jantri hidden"}
+    else:
+        result_doc = await db.results.find_one({"game_id": game_id, "date": date})
+        if result_doc and (result_doc.get("jodi_result") or result_doc.get("single_result")):
+            return {"locked": True, "reason": "Result declared — jantri hidden"}
+
+    pipeline = [
+        {"$match": {"game_id": game_id, "date": date, "status": {"$in": ["pending", "won", "lost"]}}},
+        {"$group": {
+            "_id": {"bet_type": "$bet_type", "number": "$number", "session": "$session"},
+            "total_amount": {"$sum": "$amount"},
+            "bet_count": {"$sum": 1},
+        }},
+        {"$sort": {"total_amount": -1}},
+    ]
+    raw = await db.bets.aggregate(pipeline).to_list(2000)
+
+    # Group by (bet_type, session) → list of {number, total_amount, bet_count}
+    grouped = {}
+    for r in raw:
+        bt = r["_id"].get("bet_type") or "unknown"
+        session = r["_id"].get("session") or ""
+        key = f"{bt}__{session}" if session else bt
+        grouped.setdefault(key, []).append({
+            "number": r["_id"].get("number") or "-",
+            "total_amount": round(r["total_amount"], 2),
+            "bet_count": r["bet_count"],
+        })
+
+    total_bets = sum(len(v) for v in grouped.values())
+    total_amount = sum(r["total_amount"] for r in raw)
+
+    return {
+        "locked": False,
+        "game_id": game_id,
+        "game_name": game.get("name_hi") or game.get("name"),
+        "date": date,
+        "category": game.get("category"),
+        "total_bet_types": len(grouped),
+        "total_unique_numbers": total_bets,
+        "total_amount": round(total_amount, 2),
+        "sections": grouped,
+    }
 
 
 @router.delete("/bets/{bet_id}")

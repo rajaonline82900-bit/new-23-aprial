@@ -13,6 +13,7 @@ import {
   HandCoins,
   BanknoteArrowUp,
   BarChart3,
+  Flame,
   Crown
 } from 'lucide-react';
 
@@ -141,6 +142,7 @@ import FooterNav from '../components/FooterNav';
 import { speak } from '../utils/voice';
 import SidebarMenu from '../components/SidebarMenu';
 import GameHistoryModal from '../components/GameHistoryModal';
+import JantriModal from '../components/JantriModal';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -157,6 +159,7 @@ const DashboardPage = () => {
   const [gameCategory, setGameCategory] = useState(() => localStorage.getItem('game_category') || 'gali_disawar');
   const [kalyanResults, setKalyanResults] = useState({});
   const [historyGame, setHistoryGame] = useState(null);
+  const [jantriGame, setJantriGame] = useState(null);
   const [topWinners, setTopWinners] = useState([]);
   const [todayDeposits, setTodayDeposits] = useState([]);
   const [todayWithdrawals, setTodayWithdrawals] = useState([]);
@@ -251,7 +254,7 @@ const DashboardPage = () => {
       setTelegramLink(data.telegram_link || '');
       setWhatsappLink(data.whatsapp_link || '');
       setWhatsappNumber(data.whatsapp_number || '');
-    } catch (error) {}
+    } catch (error) { /* silent — settings load failed, keep defaults */ }
   };
 
   const fetchTopWinner = async () => {
@@ -294,7 +297,7 @@ const DashboardPage = () => {
     try {
       const { data } = await axios.get(`${API_URL}/api/chat/unread-count`, { withCredentials: true });
       setUnreadChat(data.unread || 0);
-    } catch (e) {}
+    } catch (e) { /* silent — unread count fetch failed */ }
   };
 
 
@@ -836,6 +839,16 @@ const DashboardPage = () => {
                           >
                             <BarChart3 className="w-4 h-4 text-[#FCA5A5]" strokeWidth={2.8} />
                           </button>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setJantriGame(game); }}
+                            data-testid={`jantri-btn-${game.id}`}
+                            aria-label={`${game.name} jantri report`}
+                            className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 active:scale-90 ml-1"
+                            style={{ background: 'rgba(251, 191, 36, 0.18)', border: '1.5px solid #FBBF24' }}
+                          >
+                            <Flame className="w-4 h-4 text-[#FBBF24]" strokeWidth={2.8} />
+                          </button>
 
                           <h3
                             className="font-black text-base uppercase tracking-wider flex-1 text-center px-2 truncate"
@@ -988,6 +1001,23 @@ const DashboardPage = () => {
                             >
                               <BarChart3 className="w-4 h-4 text-[#1A1A2E]" strokeWidth={2.8} />
                             </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setJantriGame(game);
+                              }}
+                              data-testid={`jantri-btn-${game.id}`}
+                              aria-label={`${game.name_hi} jantri report`}
+                              className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 active:scale-90"
+                              style={{
+                                background: 'linear-gradient(135deg, #F97316 0%, #DC2626 100%)',
+                                border: '1.5px solid #FB923C',
+                              }}
+                            >
+                              <Flame className="w-4 h-4 text-white" strokeWidth={2.8} />
+                            </button>
                             <h4
                               className="text-lg font-black tracking-tight truncate"
                               style={{
@@ -1102,6 +1132,9 @@ const DashboardPage = () => {
       <FooterNav />
       {historyGame && (
         <GameHistoryModal game={historyGame} onClose={() => setHistoryGame(null)} />
+      )}
+      {jantriGame && (
+        <JantriModal game={jantriGame} onClose={() => setJantriGame(null)} />
       )}
     </div>
   );

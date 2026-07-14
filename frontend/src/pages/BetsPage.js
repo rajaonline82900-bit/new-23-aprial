@@ -46,14 +46,16 @@ const StatusPill = ({ status }) => {
       <XCircle className="w-3 h-3" /> LOST
     </span>
   );
-  if (status === 'cancelled') return (
+  if (status === 'cancelled' || status === 'reversed') return (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-gray-500/20 text-gray-300 border border-gray-500/40">
       CANCELLED
     </span>
   );
+  // Pending — show as "PLACED" (green tick) so users see it as a successful placement,
+  // not a suspicious "pending" state. Result declare hone ke baad won/lost me convert hoga.
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-yellow-500/20 text-yellow-300 border border-yellow-500/40">
-      <Clock className="w-3 h-3" /> PENDING
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+      <CheckCircle2 className="w-3 h-3" /> PLACED
     </span>
   );
 };
@@ -173,6 +175,19 @@ const BetsPage = () => {
     return map;
   }, [filtered]);
 
+  // Only the SINGLE most-recently-placed pending bet gets the cancel button.
+  // Prevents users from clearing old bets that were placed hours ago.
+  const cancellableBetId = useMemo(() => {
+    let latest = null;
+    for (const b of bets) {
+      if (b.status !== 'pending') continue;
+      if (b.bet_type === 'aviator' || b.game_category === 'aviator') continue;
+      const t = new Date(b.created_at || 0).getTime();
+      if (!latest || t > latest.t) latest = { id: b.id, t };
+    }
+    return latest?.id || null;
+  }, [bets]);
+
   return (
     <div className="min-h-screen bg-[#0A0A0C] text-white pb-24 app-shell">
       {/* Header */}
@@ -260,18 +275,37 @@ const BetsPage = () => {
                 const meta = getCatMeta(bet);
                 const Icon = meta.icon;
                 const isAviator = meta === CAT_META.aviator;
-                const canCancel = bet.status === 'pending' && !isAviator;
+                const canCancel = bet.id === cancellableBetId;
                 const winAmount = bet.winnings || bet.won_amount || 0;
                 return (
                   <div
                     key={bet.id || bet._id || `${bet.created_at}-${bet.digit}`}
                     data-testid={`bet-row-${bet.id}`}
-                    className="rounded-xl p-3 bg-[#141418] border border-white/10 flex items-start gap-3"
-                    style={{ boxShadow: bet.status === 'won' ? '0 0 12px rgba(16,185,129,0.12)' : 'none' }}
+                    className="rounded-2xl p-3 flex items-start gap-3 relative overflow-hidden"
+                    style={{
+                      background: bet.status === 'won'
+                        ? 'linear-gradient(135deg, rgba(16,185,129,0.10) 0%, #141418 60%)'
+                        : bet.status === 'lost'
+                        ? 'linear-gradient(135deg, rgba(239,68,68,0.08) 0%, #141418 60%)'
+                        : '#141418',
+                      border: `1px solid ${bet.status === 'won' ? 'rgba(16,185,129,0.35)' : bet.status === 'lost' ? 'rgba(239,68,68,0.25)' : 'rgba(255,255,255,0.10)'}`,
+                      boxShadow: bet.status === 'won' ? '0 4px 16px rgba(16,185,129,0.12)' : 'none',
+                    }}
                   >
+                    {/* Left accent bar */}
+                    <div
+                      className="absolute left-0 top-0 bottom-0 w-1"
+                      style={{
+                        background: bet.status === 'won' ? '#10B981'
+                          : bet.status === 'lost' ? '#EF4444'
+                          : bet.status === 'cancelled' || bet.status === 'reversed' ? '#6B7280'
+                          : meta.color,
+                      }}
+                    />
+
                     {/* Icon */}
                     <div
-                      className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
+                      className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ml-1"
                       style={{ background: meta.bg, border: `1px solid ${meta.color}55` }}
                     >
                       <Icon className="w-5 h-5" style={{ color: meta.color }} />
@@ -283,36 +317,58 @@ const BetsPage = () => {
                         <p className="text-sm font-black text-white truncate">{bet.game_name || bet.game_id}</p>
                         <StatusPill status={bet.status} />
                       </div>
-                      <div className="mt-0.5 flex items-center gap-2 text-[11px] text-gray-400 flex-wrap">
-                        {isAviator ? (
-                          <>
-                            <span>Cashout: <span className="font-bold text-white">{bet.digit || 'crashed'}</span></span>
-                            {bet.crash_point && <span>· Crash: <span className="text-red-400 font-bold">{Number(bet.crash_point).toFixed(2)}x</span></span>}
-                          </>
-                        ) : (
-                          <>
-                            <span className="capitalize font-bold text-gray-300">{bet.bet_type}</span>
-                            {bet.session && <span className="uppercase text-[9px] font-black px-1 py-0.5 rounded" style={{ background: bet.session === 'open' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', color: bet.session === 'open' ? '#6ee7b7' : '#fca5a5' }}>{bet.session}</span>}
-                            <span className="inline-flex items-center gap-1">
-                              <span className="text-gray-500">Bet:</span>
-                              <span className="font-black text-[#FFD700] tabular-nums px-1.5 py-0.5 rounded bg-yellow-500/10 border border-yellow-500/30">
-                                {bet.digit || bet.number || '—'}
+                      {isAviator ? (
+                        <div className="mt-1 flex items-center gap-2 flex-wrap">
+                          <span className="inline-flex items-center gap-1 text-[11px]">
+                            <span className="text-gray-500">Cashout:</span>
+                            <span
+                              className={`font-black tabular-nums px-2 py-0.5 rounded-lg text-sm ${bet.status === 'won' ? 'text-emerald-300 bg-emerald-500/15 border border-emerald-500/40' : 'text-red-300 bg-red-500/15 border border-red-500/30'}`}
+                            >
+                              {bet.digit || (bet.status === 'lost' ? 'crashed' : '—')}
+                            </span>
+                          </span>
+                          {bet.crash_point && (
+                            <span className="text-[10px] text-gray-400">
+                              @ crash <span className="text-red-400 font-bold">{Number(bet.crash_point).toFixed(2)}x</span>
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="mt-1 flex items-center gap-2 flex-wrap">
+                          <span className="text-[10px] font-black uppercase text-gray-300 px-1.5 py-0.5 rounded bg-white/5 border border-white/10">
+                            {bet.bet_type?.replace(/_/g, ' ') || 'bet'}
+                          </span>
+                          {bet.session && (
+                            <span className="uppercase text-[9px] font-black px-1.5 py-0.5 rounded"
+                              style={{
+                                background: bet.session === 'open' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)',
+                                color: bet.session === 'open' ? '#6ee7b7' : '#fca5a5'
+                              }}
+                            >
+                              {bet.session}
+                            </span>
+                          )}
+                          <span className="inline-flex items-center gap-1 text-[11px]">
+                            <span className="text-gray-500">Bet</span>
+                            <span className="font-black text-[#1A0F00] tabular-nums px-2 py-0.5 rounded-lg text-sm shadow-sm"
+                              style={{ background: 'linear-gradient(135deg,#FFD700,#D4AF37)' }}
+                            >
+                              {bet.digit || bet.number || '—'}
+                            </span>
+                          </span>
+                          {bet.result_number != null && bet.result_number !== '' && (
+                            <span className="inline-flex items-center gap-1 text-[11px]">
+                              <span className="text-gray-500">Result</span>
+                              <span
+                                className={`font-black tabular-nums px-2 py-0.5 rounded-lg text-sm border ${bet.status === 'won' ? 'text-emerald-100 bg-emerald-500/25 border-emerald-400/60' : 'text-gray-200 bg-white/8 border-white/20'}`}
+                              >
+                                {bet.result_number}
                               </span>
                             </span>
-                            {bet.result_number != null && bet.result_number !== '' && (
-                              <span className="inline-flex items-center gap-1">
-                                <span className="text-gray-500">Result:</span>
-                                <span
-                                  className={`font-black tabular-nums px-1.5 py-0.5 rounded border ${bet.status === 'won' ? 'text-emerald-300 bg-emerald-500/10 border-emerald-500/40' : 'text-gray-200 bg-white/5 border-white/15'}`}
-                                >
-                                  {bet.result_number}
-                                </span>
-                              </span>
-                            )}
-                          </>
-                        )}
-                      </div>
-                      <div className="mt-1 flex items-center gap-2 text-[10px] text-gray-500">
+                          )}
+                        </div>
+                      )}
+                      <div className="mt-1.5 flex items-center gap-2 text-[10px] text-gray-500">
                         <Timer className="w-3 h-3" />
                         <span>{fmtTime(bet.created_at)}</span>
                         {bet.round_id && <span>· Round #{String(bet.round_id).slice(-6)}</span>}
@@ -323,7 +379,7 @@ const BetsPage = () => {
                     <div className="text-right shrink-0">
                       <p className="text-sm font-black text-white tabular-nums">−{fmtAmt(bet.amount)}</p>
                       {bet.status === 'won' && (
-                        <p className="text-[11px] font-black text-emerald-400 tabular-nums flex items-center justify-end gap-0.5">
+                        <p className="text-[11px] font-black text-emerald-400 tabular-nums flex items-center justify-end gap-0.5 mt-0.5">
                           <Trophy className="w-3 h-3" /> +{fmtAmt(winAmount)}
                         </p>
                       )}
@@ -332,7 +388,7 @@ const BetsPage = () => {
                           onClick={() => cancelBet(bet.id)}
                           disabled={cancelling === bet.id}
                           data-testid={`cancel-bet-${bet.id}`}
-                          className="mt-1 inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-black bg-red-500/15 text-red-300 border border-red-500/30 hover:bg-red-500/25 disabled:opacity-50"
+                          className="mt-1.5 inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-black bg-red-500/15 text-red-300 border border-red-500/30 active:bg-red-500/25 disabled:opacity-50"
                         >
                           {cancelling === bet.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
                           Cancel

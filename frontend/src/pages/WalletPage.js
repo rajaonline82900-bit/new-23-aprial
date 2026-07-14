@@ -505,86 +505,137 @@ const WalletPage = () => {
 
       {/* Deposit Dialog */}
       <Dialog open={depositOpen} onOpenChange={setDepositOpen}>
-        <DialogContent className="bg-[#141418] border-white/10 text-white max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-['Unbounded']">पैसे जमा करें</DialogTitle>
-            <DialogDescription className="text-gray-400">
-              राशि दर्ज करें और UPI से भुगतान करें
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 mt-4">
+        <DialogContent className="bg-gradient-to-br from-[#1A1A2E] via-[#141418] to-[#0A0A0C] border-2 border-[#D4AF37] text-white max-w-md p-0 overflow-hidden">
+          {/* Premium gradient header */}
+          <div
+            className="px-5 py-4 relative overflow-hidden"
+            style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #FFD700 45%, #B8860B 100%)' }}
+          >
+            <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-white/10" />
+            <div className="absolute -right-2 -bottom-4 w-16 h-16 rounded-full bg-white/5" />
+            <DialogHeader className="relative">
+              <DialogTitle className="font-['Unbounded'] text-black text-xl flex items-center gap-2">
+                <Wallet className="w-6 h-6" />
+                पैसे जमा करें
+              </DialogTitle>
+              <DialogDescription className="text-black/80 font-bold text-xs mt-0.5">
+                UPI se instant deposit · 1 minute me credit
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+
+          <div className="p-5 space-y-4">
+            {/* Amount input with big display */}
             <div>
-              <Label className="text-gray-300">राशि (₹)</Label>
-              <Input
-                type="number"
-                placeholder={`राशि दर्ज करें (न्यूनतम ₹${appSettings.min_deposit || 100})`}
-                value={depositAmount}
-                onChange={(e) => handleDepositAmountChange(e.target.value)}
-                data-testid="deposit-amount-input"
-                className="bg-[#0A0A0C] border-white/10 text-white mt-2 text-lg h-12"
-              />
+              <Label className="text-[10px] font-black text-[#D4AF37] uppercase tracking-widest">Amount</Label>
+              <div className="relative mt-2">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-3xl font-black text-[#FFD700]">₹</span>
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  placeholder="0"
+                  value={depositAmount}
+                  onChange={(e) => handleDepositAmountChange(e.target.value)}
+                  data-testid="deposit-amount-input"
+                  className="bg-[#0A0A0C] border-2 border-[#D4AF37]/40 text-white pl-10 pr-4 text-3xl font-black h-16 focus:border-[#FFD700] tabular-nums"
+                />
+              </div>
+              <p className="text-[10px] text-gray-500 mt-1">
+                Minimum: ₹{appSettings.min_deposit || 100} · Maximum: ₹50,000
+              </p>
             </div>
 
-            {/* Quick Amount Buttons */}
-            <div className="grid grid-cols-4 gap-2">
-              {[200, 500, 1000, 2000].map((amt) => (
-                <button
-                  key={amt}
-                  onClick={() => setDepositAmount(String(amt))}
-                  data-testid={`deposit-quick-${amt}`}
-                  className={`py-2 rounded-lg text-sm font-bold transition-all ${
-                    depositAmount === String(amt)
-                      ? 'bg-[#D4AF37] text-black'
-                      : 'bg-[#0A0A0C] text-gray-300 border border-white/10 hover:border-[#D4AF37]/50'
-                  }`}
-                >
-                  ₹{amt}
-                </button>
-              ))}
+            {/* Quick amount chips */}
+            <div>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Quick select</p>
+              <div className="grid grid-cols-4 gap-2">
+                {[200, 500, 1000, 2000, 5000, 10000, 20000, 50000].map((amt) => {
+                  const active = depositAmount === String(amt);
+                  return (
+                    <button
+                      key={amt}
+                      onClick={() => setDepositAmount(String(amt))}
+                      data-testid={`deposit-quick-${amt}`}
+                      className="py-2.5 rounded-xl text-xs font-black transition-all active:scale-95 tabular-nums"
+                      style={{
+                        background: active
+                          ? 'linear-gradient(135deg, #FFD700 0%, #D4AF37 100%)'
+                          : 'linear-gradient(135deg, rgba(212,175,55,0.10) 0%, rgba(212,175,55,0.03) 100%)',
+                        color: active ? '#1A0F00' : '#FFD700',
+                        border: `1.5px solid ${active ? '#FFD700' : 'rgba(212,175,55,0.30)'}`,
+                        boxShadow: active ? '0 4px 12px rgba(212,175,55,0.4)' : 'none',
+                      }}
+                    >
+                      ₹{amt >= 1000 ? `${amt / 1000}k` : amt}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
-          <Button
-            onClick={handleDeposit}
-            disabled={!depositAmount || parseFloat(depositAmount) < 100 || processing}
-            data-testid="confirm-deposit-button"
-            className="w-full mt-4 h-12 bg-[#10B981] hover:bg-[#059669] text-white font-bold"
-          >
-            {processing ? (
-              <span className="flex items-center gap-2">
-                <Loader2 className="w-5 h-5 animate-spin" />
-                प्रोसेसिंग...
-              </span>
-            ) : (
-              <span className="flex items-center gap-2">
-                <CreditCard className="w-5 h-5" />
-                {depositAmount && parseFloat(depositAmount) >= 100
-                  ? `₹${depositAmount} जमा करें`
-                  : 'भुगतान करें'
-                }
-              </span>
-            )}
-          </Button>
+          <div className="px-5 pb-5 space-y-3">
+            <Button
+              onClick={handleDeposit}
+              disabled={!depositAmount || parseFloat(depositAmount) < 100 || processing}
+              data-testid="confirm-deposit-button"
+              className="w-full h-14 text-base font-black active:scale-[0.98] transition-all"
+              style={{
+                background: 'linear-gradient(135deg, #10B981 0%, #059669 50%, #047857 100%)',
+                boxShadow: '0 8px 24px rgba(16,185,129,0.35)',
+                color: 'white',
+              }}
+            >
+              {processing ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Payment ho rha hai…
+                </span>
+              ) : (
+                <span className="flex items-center gap-2 tabular-nums">
+                  <CreditCard className="w-5 h-5" />
+                  {depositAmount && parseFloat(depositAmount) >= 100
+                    ? `₹${Number(depositAmount).toLocaleString('en-IN')} deposit karo`
+                    : 'भुगतान करें'
+                  }
+                </span>
+              )}
+            </Button>
 
-          {/* Deposit Warning */}
-          <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-xl" data-testid="deposit-warning">
-            <p className="text-yellow-400 text-xs font-bold text-center leading-relaxed">
-              जमा (DEPOSIT) करने के लिए हर बार स्केनर (BARCODE) का स्क्रीन शॉट लेकर ही पेमेंट करो। पेमेंट करने के बाद एप्लिकेशन को रिफ्रेश कर लेना। 1 मिनट में पेमेंट जमा हो जायेगा।
-            </p>
+            {/* Feature badges */}
+            <div className="grid grid-cols-3 gap-1.5">
+              <div className="rounded-lg py-1.5 bg-emerald-500/10 border border-emerald-500/30 text-center">
+                <p className="text-[9px] font-black text-emerald-300 uppercase leading-none">Instant</p>
+                <p className="text-[7px] text-emerald-400/80 mt-0.5">1 min me</p>
+              </div>
+              <div className="rounded-lg py-1.5 bg-cyan-500/10 border border-cyan-500/30 text-center">
+                <p className="text-[9px] font-black text-cyan-300 uppercase leading-none">Secure</p>
+                <p className="text-[7px] text-cyan-400/80 mt-0.5">UPI/QR</p>
+              </div>
+              <div className="rounded-lg py-1.5 bg-yellow-500/10 border border-yellow-500/30 text-center">
+                <p className="text-[9px] font-black text-yellow-300 uppercase leading-none">24×7</p>
+                <p className="text-[7px] text-yellow-400/80 mt-0.5">Support</p>
+              </div>
+            </div>
+
+            {/* Deposit Warning */}
+            <div className="p-2.5 rounded-xl bg-gradient-to-r from-yellow-500/10 to-orange-500/5 border border-yellow-500/30" data-testid="deposit-warning">
+              <p className="text-yellow-300 text-[10px] font-bold text-center leading-relaxed">
+                ⚠️ Har baar naya scanner (BARCODE) ka screenshot lekar payment karo. Payment ke baad app refresh karo. 1 min me deposit ho jayega.
+              </p>
+            </div>
+
+            {/* Chat Button for payment issues */}
+            <Button
+              onClick={() => { setDepositOpen(false); navigate('/chat'); }}
+              variant="outline"
+              data-testid="deposit-chat-btn"
+              className="w-full h-10 border-white/10 text-gray-300 hover:text-white hover:border-[#D4AF37]/50"
+            >
+              <MessageCircle className="w-4 h-4 mr-2" />
+              पेमेंट में समस्या? Chat करें
+            </Button>
           </div>
-
-          {/* Chat Button for payment issues */}
-          <Button
-            onClick={() => { setDepositOpen(false); navigate('/chat'); }}
-            variant="outline"
-            data-testid="deposit-chat-btn"
-            className="w-full mt-2 h-10 border-white/10 text-gray-300 hover:text-white hover:border-[#D4AF37]/50"
-          >
-            <MessageCircle className="w-4 h-4 mr-2" />
-            पेमेंट में समस्या? Chat करें
-          </Button>
-
         </DialogContent>
       </Dialog>
 
