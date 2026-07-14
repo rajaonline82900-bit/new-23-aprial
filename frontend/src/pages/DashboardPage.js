@@ -974,9 +974,9 @@ const DashboardPage = () => {
                         contain: 'content',
                       }}
                     >
-                      {/* ── TOP HEADER STRIP — golden ticket band ── */}
+                      {/* ── TOP HEADER STRIP — golden ticket band with shimmer ── */}
                       <div
-                        className="relative flex items-center gap-2 px-3 py-2"
+                        className="gold-ticket-band relative flex items-center gap-2 px-3 py-2"
                         style={{
                           background:
                             'linear-gradient(90deg, #7B4D0A 0%, #D4AF37 30%, #FFD700 50%, #D4AF37 70%, #7B4D0A 100%)',

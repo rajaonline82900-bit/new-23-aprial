@@ -32,3 +32,39 @@
         transform: rotate(360deg);
     }
 }
+
+/* Golden ticket band — slow diagonal shine, once every 6s */
+.gold-ticket-band {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+}
+.gold-ticket-band::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -60%;
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(
+        105deg,
+        transparent 20%,
+        rgba(255, 255, 255, 0.45) 45%,
+        rgba(255, 255, 255, 0.7) 50%,
+        rgba(255, 255, 255, 0.45) 55%,
+        transparent 80%
+    );
+    animation: gold-ticket-shimmer 5.5s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 1;
+}
+@keyframes gold-ticket-shimmer {
+    0%   { left: -60%; }
+    55%  { left: 140%; }
+    100% { left: 140%; }
+}
+/* Children of the band need to sit above the shimmer overlay */
+.gold-ticket-band > * {
+    position: relative;
+    z-index: 2;
+}
