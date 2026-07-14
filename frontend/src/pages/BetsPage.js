@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import {
   ArrowLeft, Clock, CheckCircle2, XCircle, Coins, Loader2, Trash2,
-  Trophy, TrendingUp, TrendingDown, Plane, Dice5, Sparkles,
+  Trophy, Plane, Dice5, Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import FooterNav from '../components/FooterNav';
@@ -192,50 +192,26 @@ const BetsPage = () => {
     <div className="min-h-screen bg-[#0A0A0C] text-white pb-24 app-shell">
       {/* Header */}
       <header className="sticky top-0 z-30 backdrop-blur-lg bg-[#0A0A0C]/85 border-b border-white/10">
-        <div className="px-3 py-3 flex items-center gap-3">
+        <div className="px-3 py-2.5 flex items-center gap-2.5">
           <Link to="/dashboard">
-            <button className="p-2 rounded-lg bg-[#141418] border border-white/10 text-gray-400" data-testid="bets-back-btn">
-              <ArrowLeft className="w-5 h-5" />
+            <button className="p-1.5 rounded-lg bg-[#141418] border border-white/10 text-gray-400" data-testid="bets-back-btn">
+              <ArrowLeft className="w-4 h-4" />
             </button>
           </Link>
-          <div className="flex-1">
-            <h1 className="text-lg font-black" style={{ background: 'linear-gradient(90deg,#FFD700,#D4AF37)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-sm font-black" style={{ background: 'linear-gradient(90deg,#FFD700,#D4AF37)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
               History
             </h1>
-            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">All bets • Gali • Kalyan • Aviator</p>
+            <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest leading-none mt-0.5">
+              Gali · Kalyan · Aviator
+            </p>
           </div>
         </div>
       </header>
 
-      <main className="px-3 py-3 space-y-3">
-        {/* Summary Stats Card */}
-        <div
-          className="rounded-2xl p-3 border grid grid-cols-3 gap-2"
-          style={{
-            background: 'linear-gradient(135deg, #1A1505 0%, #16162A 100%)',
-            borderColor: 'rgba(212, 175, 55, 0.35)',
-          }}
-          data-testid="bets-summary"
-        >
-          <div className="text-center">
-            <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Total Staked</p>
-            <p className="text-sm font-black text-white tabular-nums">{fmtAmt(stats.totalStaked)}</p>
-          </div>
-          <div className="text-center border-x border-white/10">
-            <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Total Won</p>
-            <p className="text-sm font-black text-emerald-400 tabular-nums">{fmtAmt(stats.totalWon)}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">P/L</p>
-            <p className={`text-sm font-black tabular-nums flex items-center justify-center gap-0.5 ${stats.pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-              {stats.pnl >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-              {fmtAmt(Math.abs(stats.pnl))}
-            </p>
-          </div>
-        </div>
-
+      <main className="px-3 py-3 space-y-2">
         {/* Filter row: categories */}
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-3 px-3 pb-1">
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide -mx-3 px-3 pb-1">
           <CatPill id="all" label="All" active={catFilter === 'all'} onClick={() => setCatFilter('all')} count={counts.all} />
           <CatPill id="gali" label="Gali/Disawar" active={catFilter === 'gali'} onClick={() => setCatFilter('gali')} count={counts.gali} />
           <CatPill id="kalyan" label="Kalyan" active={catFilter === 'kalyan'} onClick={() => setCatFilter('kalyan')} count={counts.kalyan} />
@@ -244,7 +220,7 @@ const BetsPage = () => {
 
         {/* Filter row: status */}
         <div className="flex gap-1.5 overflow-x-auto scrollbar-hide -mx-3 px-3 pb-1">
-          <StatusChip id="all" label="All Status" active={statusFilter === 'all'} onClick={() => setStatusFilter('all')} color="#6B7280" />
+          <StatusChip id="all" label="All" active={statusFilter === 'all'} onClick={() => setStatusFilter('all')} color="#6B7280" />
           <StatusChip id="pending" label={`Pending · ${stats.pending}`} active={statusFilter === 'pending'} onClick={() => setStatusFilter('pending')} color="#EAB308" />
           <StatusChip id="won" label={`Won · ${stats.wins}`} active={statusFilter === 'won'} onClick={() => setStatusFilter('won')} color="#10B981" />
           <StatusChip id="lost" label={`Lost · ${stats.losses}`} active={statusFilter === 'lost'} onClick={() => setStatusFilter('lost')} color="#EF4444" />
@@ -290,26 +266,19 @@ const BetsPage = () => {
                   <div
                     key={bet.id || bet._id || `${bet.created_at}-${bet.digit}`}
                     data-testid={`bet-row-${bet.id}`}
-                    className="ticket-slip relative"
+                    className="ticket-slip-compact relative"
                     style={{ '--tk-color': primaryColor, '--tk-tint': primaryTint }}
                   >
-                    {/* ── TICKET TOP: serial + game + status ── */}
-                    <div className="ticket-slip-header">
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <span className="ticket-serial">#{serial}</span>
-                        <div className="min-w-0">
-                          <p className="text-[13px] font-black text-white truncate leading-tight">
-                            {bet.game_name || bet.game_id}
-                          </p>
-                          <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest leading-none mt-0.5">
-                            {isAviator ? 'Aviator' : (bet.bet_type?.replace(/_/g, ' ') || 'bet')}
-                            {bet.session && ` · ${bet.session}`}
-                            {' · '}{fmtTime(bet.created_at)}
-                          </p>
-                        </div>
+                    {/* Row 1: serial + game + status */}
+                    <div className="flex items-center justify-between gap-2 px-3 pt-2">
+                      <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                        <span className="ticket-serial-sm">#{serial}</span>
+                        <p className="text-[11px] font-black text-white truncate leading-tight">
+                          {bet.game_name || bet.game_id}
+                        </p>
                       </div>
                       <span
-                        className="ticket-status-badge"
+                        className="ticket-status-badge-sm"
                         style={{ background: primaryColor, color: '#FFF' }}
                         data-testid={`bet-status-${bet.id}`}
                       >
@@ -317,96 +286,53 @@ const BetsPage = () => {
                       </span>
                     </div>
 
-                    {/* ── PERFORATED SEPARATOR ── */}
-                    <div className="ticket-perforation" />
-
-                    {/* ── TICKET BODY: giant numbers ── */}
-                    <div className="ticket-body">
-                      {isAviator ? (
-                        <div className="flex-1 flex items-center justify-center gap-4 py-1">
-                          <div className="text-center">
-                            <p className="text-[8px] uppercase tracking-widest text-gray-500 font-black">Cashout</p>
-                            <p className={`text-3xl font-black tabular-nums leading-none mt-1 ${isWon ? 'text-emerald-300' : 'text-red-400'}`}>
-                              {bet.digit || (isLost ? 'CRASH' : '—')}
-                            </p>
-                          </div>
-                          {bet.crash_point && (
-                            <>
-                              <div className="text-gray-600 text-2xl font-black">·</div>
-                              <div className="text-center">
-                                <p className="text-[8px] uppercase tracking-widest text-gray-500 font-black">Crashed at</p>
-                                <p className="text-3xl font-black tabular-nums leading-none mt-1 text-red-400">
-                                  {Number(bet.crash_point).toFixed(2)}x
-                                </p>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      ) : (
-                        <>
-                          <div className="ticket-num-block">
-                            <span className="ticket-num-label">Your Bet</span>
-                            <span className="ticket-num ticket-num-bet">{bet.digit || bet.number || '—'}</span>
-                          </div>
-                          <div className="ticket-arrow">
-                            {isWon
-                              ? <Trophy className="w-6 h-6 text-emerald-400" strokeWidth={2.5} />
-                              : isLost
-                              ? <XCircle className="w-6 h-6 text-red-400/70" strokeWidth={2.5} />
-                              : <Clock className="w-6 h-6 text-cyan-400" strokeWidth={2.5} />}
-                          </div>
-                          <div className="ticket-num-block">
-                            <span className="ticket-num-label">Result</span>
-                            <span
-                              className="ticket-num"
-                              style={{
-                                color: bet.result_number != null && bet.result_number !== ''
-                                  ? (isWon ? '#6EE7B7' : '#F3F4F6')
-                                  : '#4B5563',
-                                background: bet.result_number != null && bet.result_number !== ''
-                                  ? (isWon ? 'rgba(16,185,129,0.20)' : 'rgba(255,255,255,0.06)')
-                                  : 'rgba(255,255,255,0.03)',
-                                borderColor: bet.result_number != null && bet.result_number !== ''
-                                  ? (isWon ? 'rgba(52,211,153,0.55)' : 'rgba(255,255,255,0.15)')
-                                  : 'rgba(255,255,255,0.08)',
-                              }}
-                            >
-                              {bet.result_number ?? '?'}
-                            </span>
-                          </div>
-                        </>
-                      )}
+                    {/* Row 2: bet meta — justify between */}
+                    <div className="flex items-center justify-between gap-2 px-3 py-1.5 text-[9px] text-gray-400 font-bold uppercase tracking-wider">
+                      <span className="truncate">
+                        {isAviator ? 'Aviator' : (bet.bet_type?.replace(/_/g, ' ') || 'bet')}
+                        {bet.session && ` · ${bet.session}`}
+                      </span>
+                      <span className="tabular-nums">
+                        {fmtDate(bet.created_at || bet.date)} · {fmtTime(bet.created_at)}
+                      </span>
                     </div>
 
-                    {/* ── PERFORATED SEPARATOR ── */}
-                    <div className="ticket-perforation" />
-
-                    {/* ── TICKET FOOTER: amount + win + cancel ── */}
-                    <div className="ticket-slip-footer">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[9px] font-black uppercase tracking-widest text-gray-500">Stake</span>
-                        <span className="text-white font-black tabular-nums text-[13px]">{fmtAmt(bet.amount)}</span>
-                      </div>
-                      {isWon && (
-                        <div className="ticket-win-chip">
-                          <Trophy className="w-3.5 h-3.5" />
-                          <span className="tabular-nums">+{fmtAmt(winAmount)}</span>
+                    {/* Row 3: bet number + stake + win/loss + cancel */}
+                    <div className="flex items-center justify-between gap-2 px-3 pb-2.5 pt-1">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="ticket-bet-chip">
+                          <span className="ticket-bet-chip-label">Bet</span>
+                          <span className="ticket-bet-chip-val tabular-nums">
+                            {isAviator ? (bet.digit || (isLost ? 'CRASH' : '—')) : (bet.digit || bet.number || '—')}
+                          </span>
                         </div>
-                      )}
-                      {isLost && (
-                        <span className="text-[11px] font-black text-red-400 tabular-nums">Lost {fmtAmt(bet.amount)}</span>
-                      )}
-                      {canCancel && (
-                        <button
-                          onClick={() => cancelBet(bet.id)}
-                          disabled={cancelling === bet.id}
-                          data-testid={`cancel-bet-${bet.id}`}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-black bg-red-500/15 text-red-300 border border-red-500/30 active:bg-red-500/25 disabled:opacity-50"
-                        >
-                          {cancelling === bet.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
-                          Cancel
-                        </button>
-                      )}
+                        <div className="flex flex-col leading-tight">
+                          <span className="text-[8px] text-gray-500 font-black uppercase tracking-wider">Stake</span>
+                          <span className="text-[11px] text-white font-black tabular-nums">{fmtAmt(bet.amount)}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {isWon && (
+                          <div className="ticket-win-chip-sm">
+                            <Trophy className="w-3 h-3" />
+                            <span className="tabular-nums">+{fmtAmt(winAmount)}</span>
+                          </div>
+                        )}
+                        {isLost && (
+                          <span className="text-[10px] font-black text-red-400 tabular-nums">−{fmtAmt(bet.amount)}</span>
+                        )}
+                        {canCancel && (
+                          <button
+                            onClick={() => cancelBet(bet.id)}
+                            disabled={cancelling === bet.id}
+                            data-testid={`cancel-bet-${bet.id}`}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-black bg-red-500/15 text-red-300 border border-red-500/30 active:bg-red-500/25 disabled:opacity-50"
+                          >
+                            {cancelling === bet.id ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Trash2 className="w-2.5 h-2.5" />}
+                            Cancel
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
