@@ -80,7 +80,7 @@
     position: absolute;
     inset: -6px;
     border-radius: 50%;
-    border: 2px solid rgba(255, 215, 0, 0.55);
+    border: 2px solid rgba(255, 215, 0, 0.65);
     animation: play-btn-ping 2.2s cubic-bezier(0, 0, 0.2, 1) infinite;
     pointer-events: none;
     z-index: -1;
@@ -90,8 +90,36 @@
 }
 @keyframes play-btn-ping {
     0%   { transform: scale(0.85); opacity: 0.9; }
-    70%  { transform: scale(1.65); opacity: 0;   }
-    100% { transform: scale(1.65); opacity: 0;   }
+    70%  { transform: scale(1.7);  opacity: 0;   }
+    100% { transform: scale(1.7);  opacity: 0;   }
+}
+/* Casino chip poker stripes — dashed border rotating slowly */
+.chip-stripes {
+    background:
+        conic-gradient(
+            from 0deg,
+            #1A0F00 0deg 22.5deg,
+            #FFD700 22.5deg 45deg,
+            #1A0F00 45deg 67.5deg,
+            #FFD700 67.5deg 90deg,
+            #1A0F00 90deg 112.5deg,
+            #FFD700 112.5deg 135deg,
+            #1A0F00 135deg 157.5deg,
+            #FFD700 157.5deg 180deg,
+            #1A0F00 180deg 202.5deg,
+            #FFD700 202.5deg 225deg,
+            #1A0F00 225deg 247.5deg,
+            #FFD700 247.5deg 270deg,
+            #1A0F00 270deg 292.5deg,
+            #FFD700 292.5deg 315deg,
+            #1A0F00 315deg 337.5deg,
+            #FFD700 337.5deg 360deg
+        );
+    animation: chip-spin 12s linear infinite;
+}
+@keyframes chip-spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
 }
 /* Just-declared TODAY result — brief flash-highlight for 2.4s */
 @keyframes today-result-flash {

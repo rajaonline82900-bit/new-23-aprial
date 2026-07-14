@@ -1089,50 +1089,66 @@ const DashboardPage = () => {
                           </span>
                         </div>
 
-                        {/* Center Play/Status button (BIG premium coin) */}
-                        <div className="flex flex-col items-center justify-center w-14 shrink-0" data-testid={`play-status-${game.id}`}>
+                        {/* Center Play/Status button (BIG premium chip) */}
+                        <div className="flex flex-col items-center justify-center w-16 shrink-0" data-testid={`play-status-${game.id}`}>
                           {game.is_holiday ? (
                             <div
-                              className="w-12 h-12 rounded-full flex items-center justify-center"
-                              style={{ background: 'linear-gradient(135deg, #FBBF24 0%, #D97706 100%)', boxShadow: '0 4px 12px rgba(217,119,6,0.4)' }}
+                              className="w-14 h-14 rounded-full flex items-center justify-center"
+                              style={{ background: 'linear-gradient(135deg, #FBBF24 0%, #D97706 100%)', boxShadow: '0 4px 14px rgba(217,119,6,0.45)' }}
                               data-testid={`holiday-btn-${game.id}`}
                             >
-                              <span className="text-white font-black text-base">H</span>
+                              <span className="text-white font-black text-lg">H</span>
                             </div>
                           ) : isRunning ? (
                             <div
-                              className="play-btn-premium w-12 h-12 rounded-full flex items-center justify-center relative"
-                              style={{
-                                background:
-                                  'radial-gradient(circle at 32% 28%, #FFFDE7 0%, #FFF176 12%, #FFD700 32%, #D4AF37 62%, #8B5A00 100%)',
-                                border: '2px solid #FFF9C4',
-                                boxShadow:
-                                  '0 6px 18px rgba(255,215,0,0.55), inset 0 2px 3px rgba(255,255,255,0.7), inset 0 -3px 4px rgba(0,0,0,0.25)',
-                              }}
-                              onClick={() => speak('प्ले')}
+                              className="play-btn-premium w-14 h-14 rounded-full flex items-center justify-center relative"
+                              onClick={() => { try { navigator.vibrate?.([25, 10, 25]); } catch (_) { /* haptic api unavailable */ } speak('प्ले'); }}
                               data-testid={`play-btn-${game.id}`}
+                              style={{ filter: 'drop-shadow(0 6px 14px rgba(255,215,0,0.55))' }}
                             >
-                              {/* Inner gold ring for 3D coin look */}
+                              {/* Rotating chip-stripes outer ring (poker chip aesthetic) */}
+                              <div className="chip-stripes absolute inset-0 rounded-full" />
+                              {/* White inner ring separator */}
                               <div
-                                className="absolute inset-1 rounded-full pointer-events-none"
+                                className="absolute rounded-full"
                                 style={{
-                                  border: '1px dashed rgba(139, 90, 0, 0.6)',
+                                  inset: '4px',
+                                  background: '#FFFFFF',
                                 }}
                               />
-                              <Play className="w-5 h-5 text-[#1A0F00] ml-0.5 relative z-[1] drop-shadow-sm" fill="#1A0F00" strokeWidth={0} />
+                              {/* Deep-red center disc (like casino chip logo circle) */}
+                              <div
+                                className="absolute rounded-full flex items-center justify-center"
+                                style={{
+                                  inset: '6px',
+                                  background:
+                                    'radial-gradient(circle at 35% 30%, #FF6B6B 0%, #DC2626 30%, #991B1B 70%, #4C0519 100%)',
+                                  boxShadow:
+                                    'inset 0 2px 3px rgba(255,255,255,0.35), inset 0 -3px 5px rgba(0,0,0,0.4)',
+                                }}
+                              >
+                                {/* Golden play triangle */}
+                                <Play
+                                  className="w-6 h-6 ml-0.5 relative"
+                                  fill="#FFD700"
+                                  stroke="#FFF"
+                                  strokeWidth={1.5}
+                                  style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.6))' }}
+                                />
+                              </div>
                             </div>
                           ) : (
                             <div
-                              className="w-12 h-12 rounded-full flex items-center justify-center"
+                              className="w-14 h-14 rounded-full flex items-center justify-center"
                               style={{
                                 background: 'radial-gradient(circle at 32% 28%, #2A2A3E 0%, #1A1A2E 100%)',
                                 border: '2px solid #DC2626',
-                                boxShadow: '0 4px 10px rgba(220,38,38,0.4), inset 0 2px 3px rgba(255,255,255,0.08)',
+                                boxShadow: '0 4px 12px rgba(220,38,38,0.45), inset 0 2px 3px rgba(255,255,255,0.08)',
                               }}
                               data-testid={`timeout-btn-${game.id}`}
-                              onClick={() => speak('टाइम आउट')}
+                              onClick={() => { try { navigator.vibrate?.(15); } catch (_) { /* haptic api unavailable */ } speak('टाइम आउट'); }}
                             >
-                              <X className="w-6 h-6 text-[#DC2626]" strokeWidth={3.5} />
+                              <X className="w-7 h-7 text-[#DC2626]" strokeWidth={3.5} />
                             </div>
                           )}
                           <span
