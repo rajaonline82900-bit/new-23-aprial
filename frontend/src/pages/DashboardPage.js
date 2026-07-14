@@ -160,6 +160,9 @@ const DashboardPage = () => {
   const [kalyanResults, setKalyanResults] = useState({});
   const [historyGame, setHistoryGame] = useState(null);
   const [jantriGame, setJantriGame] = useState(null);
+  // Track today_result changes to briefly flash-highlight the Today badge when a result just appears
+  const prevResultsRef = useRef({});
+  const [flashGameIds, setFlashGameIds] = useState(new Set());
   const [topWinners, setTopWinners] = useState([]);
   const [todayDeposits, setTodayDeposits] = useState([]);
   const [todayWithdrawals, setTodayWithdrawals] = useState([]);
@@ -310,6 +313,36 @@ const DashboardPage = () => {
       });
     }
   }, []);
+
+  // Detect newly-declared today_result values and flash-highlight those Today badges
+  useEffect(() => {
+    if (!games || games.length === 0) return;
+    const prev = prevResultsRef.current;
+    const newlyDeclared = [];
+    const next = {};
+    for (const g of games) {
+      const cur = g.today_result?.jodi || '';
+      next[g.id] = cur;
+      const wasEmpty = !prev[g.id] || prev[g.id] === '--' || prev[g.id] === '';
+      const isNow = cur && cur !== '--';
+      // Only flash on transition from "no result" → "result declared"
+      if (wasEmpty && isNow && prev[g.id] !== undefined) {
+        newlyDeclared.push(g.id);
+      }
+    }
+    prevResultsRef.current = next;
+    if (newlyDeclared.length > 0) {
+      setFlashGameIds((s) => new Set([...s, ...newlyDeclared]));
+      // Auto-clear after animation finishes (2.4s x 2 iterations = 4.8s)
+      setTimeout(() => {
+        setFlashGameIds((s) => {
+          const nxt = new Set(s);
+          newlyDeclared.forEach((id) => nxt.delete(id));
+          return nxt;
+        });
+      }, 5000);
+    }
+  }, [games]);
 
   const handleLogout = async () => {
     await logout();
@@ -1056,7 +1089,7 @@ const DashboardPage = () => {
                           </span>
                         </div>
 
-                        {/* Center Play/Status button (BIG) */}
+                        {/* Center Play/Status button (BIG premium coin) */}
                         <div className="flex flex-col items-center justify-center w-14 shrink-0" data-testid={`play-status-${game.id}`}>
                           {game.is_holiday ? (
                             <div
@@ -1068,21 +1101,34 @@ const DashboardPage = () => {
                             </div>
                           ) : isRunning ? (
                             <div
-                              className="w-12 h-12 rounded-full flex items-center justify-center relative"
+                              className="play-btn-premium w-12 h-12 rounded-full flex items-center justify-center relative"
                               style={{
-                                background: 'radial-gradient(circle at 30% 30%, #FFF9C4 0%, #FFD700 25%, #D4AF37 60%, #7B4D0A 100%)',
-                                border: '2px solid #FFF176',
-                                boxShadow: '0 4px 14px rgba(255,215,0,0.55), inset 0 1px 2px rgba(255,255,255,0.5)',
+                                background:
+                                  'radial-gradient(circle at 32% 28%, #FFFDE7 0%, #FFF176 12%, #FFD700 32%, #D4AF37 62%, #8B5A00 100%)',
+                                border: '2px solid #FFF9C4',
+                                boxShadow:
+                                  '0 6px 18px rgba(255,215,0,0.55), inset 0 2px 3px rgba(255,255,255,0.7), inset 0 -3px 4px rgba(0,0,0,0.25)',
                               }}
                               onClick={() => speak('प्ले')}
                               data-testid={`play-btn-${game.id}`}
                             >
-                              <Play className="w-5 h-5 text-[#1A0F00] ml-0.5" fill="#1A0F00" strokeWidth={0} />
+                              {/* Inner gold ring for 3D coin look */}
+                              <div
+                                className="absolute inset-1 rounded-full pointer-events-none"
+                                style={{
+                                  border: '1px dashed rgba(139, 90, 0, 0.6)',
+                                }}
+                              />
+                              <Play className="w-5 h-5 text-[#1A0F00] ml-0.5 relative z-[1] drop-shadow-sm" fill="#1A0F00" strokeWidth={0} />
                             </div>
                           ) : (
                             <div
                               className="w-12 h-12 rounded-full flex items-center justify-center"
-                              style={{ background: '#1A1A2E', border: '2px solid #DC2626', boxShadow: '0 4px 10px rgba(220,38,38,0.4)' }}
+                              style={{
+                                background: 'radial-gradient(circle at 32% 28%, #2A2A3E 0%, #1A1A2E 100%)',
+                                border: '2px solid #DC2626',
+                                boxShadow: '0 4px 10px rgba(220,38,38,0.4), inset 0 2px 3px rgba(255,255,255,0.08)',
+                              }}
                               data-testid={`timeout-btn-${game.id}`}
                               onClick={() => speak('टाइम आउट')}
                             >
@@ -1100,7 +1146,7 @@ const DashboardPage = () => {
 
                         {/* Today */}
                         <div
-                          className="flex-1 rounded-xl px-2 py-2 flex flex-col items-center justify-center relative overflow-hidden"
+                          className={`flex-1 rounded-xl px-2 py-2 flex flex-col items-center justify-center relative overflow-hidden ${flashGameIds.has(game.id) ? 'today-result-flash' : ''}`}
                           style={{
                             background:
                               'linear-gradient(160deg, rgba(6, 182, 212, 0.20) 0%, rgba(14, 116, 144, 0.15) 100%)',
