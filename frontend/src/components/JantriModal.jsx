@@ -6,23 +6,32 @@ const API = process.env.REACT_APP_BACKEND_URL;
 
 const BET_TYPE_LABEL = {
   jodi: 'जोड़ी (Jodi)',
-  haruf_andar: 'हरूफ अंदर',
-  haruf_bahar: 'हरूफ बाहर',
-  single_ank: 'सिंगल अंक',
-  single_panna: 'सिंगल पत्ती',
-  double_panna: 'डबल पत्ती',
-  triple_panna: 'ट्रिपल पत्ती',
+  haruf_andar: 'हरूफ अंदर (Andar)',
+  haruf_bahar: 'हरूफ बाहर (Bahar)',
+  single_ank: 'सिंगल अंक (Single)',
+  single_panna: 'सिंगल पत्ती (Single Patti)',
+  double_panna: 'डबल पत्ती (Double Patti)',
+  triple_panna: 'ट्रिपल पत्ती (Triple Patti)',
   half_sangam: 'हाफ संगम',
   full_sangam: 'फुल संगम',
   kalyan_jodi: 'कल्याण जोड़ी',
 };
+
+// Display order — most-common bet_types first, less-common last
+const SECTION_ORDER = [
+  'jodi', 'kalyan_jodi',
+  'haruf_andar', 'haruf_bahar',
+  'single_ank',
+  'single_panna', 'double_panna', 'triple_panna',
+  'half_sangam', 'full_sangam',
+];
 
 const fmtAmt = (n) => `₹${Math.round(Number(n || 0)).toLocaleString('en-IN')}`;
 
 const JantriModal = ({ game, onClose }) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [openSection, setOpenSection] = useState(null);
+  const [openKeys, setOpenKeys] = useState(new Set());
 
   useEffect(() => {
     let alive = true;
@@ -31,9 +40,9 @@ const JantriModal = ({ game, onClose }) => {
         const { data } = await axios.get(`${API}/api/games/${game.id}/jantri`);
         if (!alive) return;
         setData(data);
-        // Auto-open the first section
+        // Open ALL sections by default so user sees haruf + jodi + patti at a glance
         if (data.sections && !data.locked) {
-          setOpenSection(Object.keys(data.sections)[0] || null);
+          setOpenKeys(new Set(Object.keys(data.sections)));
         }
       } catch (e) {
         if (alive) setData({ error: true });
@@ -41,6 +50,26 @@ const JantriModal = ({ game, onClose }) => {
     })();
     return () => { alive = false; };
   }, [game.id]);
+
+  const toggleSection = (key) => {
+    setOpenKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
+
+  // Sort sections by SECTION_ORDER; unknown types go last
+  const sortedSectionEntries = (sections) => {
+    if (!sections) return [];
+    const entries = Object.entries(sections);
+    const rank = (key) => {
+      const bt = key.split('__')[0];
+      const idx = SECTION_ORDER.indexOf(bt);
+      return idx === -1 ? 999 : idx;
+    };
+    return entries.sort((a, b) => rank(a[0]) - rank(b[0]));
+  };
 
   const sectionLabel = (key) => {
     // key is either "bet_type" or "bet_type__session"
@@ -129,14 +158,14 @@ const JantriModal = ({ game, onClose }) => {
                 </div>
               </div>
 
-              {/* Sections (accordion) */}
-              {Object.entries(data.sections).map(([key, rows]) => {
-                const isOpen = openSection === key;
+              {/* Sections (accordion — all open by default so haruf/jodi/patti sab dikhen) */}
+              {sortedSectionEntries(data.sections).map(([key, rows]) => {
+                const isOpen = openKeys.has(key);
                 const sectionTotal = rows.reduce((s, r) => s + r.total_amount, 0);
                 return (
                   <div key={key} className="rounded-2xl overflow-hidden border border-white/10 bg-[#141418]" data-testid={`jantri-section-${key}`}>
                     <button
-                      onClick={() => setOpenSection(isOpen ? null : key)}
+                      onClick={() => toggleSection(key)}
                       className="w-full px-3 py-2.5 flex items-center gap-2 active:bg-white/5"
                     >
                       <TrendingUp className="w-4 h-4 text-[#FFD700] shrink-0" />

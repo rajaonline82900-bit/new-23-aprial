@@ -839,16 +839,6 @@ const DashboardPage = () => {
                           >
                             <BarChart3 className="w-4 h-4 text-[#FCA5A5]" strokeWidth={2.8} />
                           </button>
-                          <button
-                            type="button"
-                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setJantriGame(game); }}
-                            data-testid={`jantri-btn-${game.id}`}
-                            aria-label={`${game.name} jantri report`}
-                            className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 active:scale-90 ml-1"
-                            style={{ background: 'rgba(251, 191, 36, 0.18)', border: '1.5px solid #FBBF24' }}
-                          >
-                            <Flame className="w-4 h-4 text-[#FBBF24]" strokeWidth={2.8} />
-                          </button>
 
                           <h3
                             className="font-black text-base uppercase tracking-wider flex-1 text-center px-2 truncate"
@@ -958,8 +948,9 @@ const DashboardPage = () => {
                   );
                 }
 
-                // Premium gold-themed game card
+                // Premium "Golden Ticket" card — completely redesigned for Gali/Disawar
                 const statusLabel = game.is_holiday ? 'Holiday' : (gameStatus.status === 'open' ? 'Running' : 'Closed');
+                const isRunning = !game.is_holiday && gameStatus.status === 'open';
                 const fmt = (timeStr) => {
                   const [h, m] = (timeStr || '00:00').split(':').map(Number);
                   const ampm = h >= 12 ? 'PM' : 'AM';
@@ -971,153 +962,188 @@ const DashboardPage = () => {
                 return (
                   <CardWrapper key={game.id} {...cardProps}>
                     <div
-                      className={`rounded-2xl p-3.5 relative overflow-hidden ${
-                        isDisabled ? 'opacity-90 cursor-not-allowed' : 'active:scale-[0.99] cursor-pointer'
+                      className={`rounded-2xl relative overflow-hidden ${
+                        isDisabled ? 'opacity-95 cursor-not-allowed' : 'active:scale-[0.98] cursor-pointer'
                       }`}
                       style={{
-                        background: '#16162A',
-                        border: '2px solid #D4AF37',
+                        background: 'linear-gradient(180deg, #14100A 0%, #0A0A0C 100%)',
+                        border: '1px solid rgba(255, 215, 0, 0.35)',
+                        boxShadow: isRunning
+                          ? '0 4px 18px rgba(255, 215, 0, 0.18), inset 0 1px 0 rgba(255, 215, 0, 0.15)'
+                          : '0 2px 8px rgba(0, 0, 0, 0.5)',
                         contain: 'content',
                       }}
                     >
-                      <div className="flex items-start gap-3">
-                        {/* LEFT: Game Name + Yesterday/Today */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-2">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setHistoryGame(game);
-                              }}
-                              data-testid={`chart-btn-${game.id}`}
-                              aria-label={`${game.name_hi} result chart`}
-                              className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 active:scale-90"
-                              style={{
-                                background: 'linear-gradient(135deg, #FFD700 0%, #D4AF37 50%, #B8860B 100%)',
-                                border: '1.5px solid #FFD700',
-                              }}
-                            >
-                              <BarChart3 className="w-4 h-4 text-[#1A1A2E]" strokeWidth={2.8} />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setJantriGame(game);
-                              }}
-                              data-testid={`jantri-btn-${game.id}`}
-                              aria-label={`${game.name_hi} jantri report`}
-                              className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 active:scale-90"
-                              style={{
-                                background: 'linear-gradient(135deg, #F97316 0%, #DC2626 100%)',
-                                border: '1.5px solid #FB923C',
-                              }}
-                            >
-                              <Flame className="w-4 h-4 text-white" strokeWidth={2.8} />
-                            </button>
-                            <h4
-                              className="text-lg font-black tracking-tight truncate"
-                              style={{
-                                color: '#FFD700',
-                                fontFamily: 'Outfit, Noto Sans Devanagari, sans-serif',
-                              }}
-                              data-testid={`game-name-${game.id}`}
-                            >
-                              {game.name_hi}
-                            </h4>
-                          </div>
+                      {/* ── TOP HEADER STRIP — golden ticket band ── */}
+                      <div
+                        className="relative flex items-center gap-2 px-3 py-2"
+                        style={{
+                          background:
+                            'linear-gradient(90deg, #7B4D0A 0%, #D4AF37 30%, #FFD700 50%, #D4AF37 70%, #7B4D0A 100%)',
+                        }}
+                      >
+                        {/* Diagonal shine pattern overlay */}
+                        <div
+                          className="absolute inset-0 pointer-events-none opacity-25"
+                          style={{
+                            backgroundImage:
+                              'repeating-linear-gradient(45deg, transparent 0 6px, rgba(255,255,255,0.2) 6px 7px)',
+                          }}
+                        />
+                        {/* Chart btn */}
+                        <button
+                          type="button"
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setHistoryGame(game); }}
+                          data-testid={`chart-btn-${game.id}`}
+                          aria-label={`${game.name_hi} result chart`}
+                          className="relative w-7 h-7 rounded-full flex items-center justify-center shrink-0 active:scale-90 bg-black/20 border border-black/40"
+                        >
+                          <BarChart3 className="w-3.5 h-3.5 text-[#1A0F00]" strokeWidth={3} />
+                        </button>
 
-                          <div className="flex gap-2">
-                            {/* Yesterday - solid purple, no shadows */}
-                            <div
-                              className="flex-1 rounded-xl py-1.5 px-2 flex flex-col items-center justify-center"
-                              style={{
-                                background: '#6D28D9',
-                                border: '1px solid rgba(196, 181, 253, 0.4)',
-                              }}
-                              data-testid={`yesterday-result-${game.id}`}
-                            >
-                              <span className="text-[8px] uppercase tracking-widest text-white/90 leading-none font-bold">Yesterday</span>
-                              <span className="text-white font-black text-base leading-tight tabular-nums mt-0.5" style={{ fontFamily: 'Outfit, monospace' }}>
-                                {game.yesterday_result?.jodi || '--'}
-                              </span>
-                            </div>
+                        <h4
+                          className="relative text-[15px] font-black tracking-tight truncate flex-1"
+                          style={{
+                            color: '#1A0F00',
+                            fontFamily: 'Outfit, Noto Sans Devanagari, sans-serif',
+                            textShadow: '0 1px 0 rgba(255,255,255,0.35)',
+                          }}
+                          data-testid={`game-name-${game.id}`}
+                        >
+                          {game.name_hi}
+                        </h4>
 
-                            {/* Today - solid cyan, no shadows, no live-blink */}
-                            <div
-                              className="flex-1 rounded-xl py-1.5 px-2 flex flex-col items-center justify-center relative"
-                              style={{
-                                background: '#0E7490',
-                                border: '1px solid rgba(125, 211, 252, 0.4)',
-                              }}
-                              data-testid={`today-result-${game.id}`}
-                            >
-                              {gameStatus.status === 'open' && (
-                                <span className="absolute -top-1.5 right-1.5 bg-red-500 text-white text-[7px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider leading-none">Live</span>
-                              )}
-                              <span className="text-[8px] uppercase tracking-widest text-white/90 leading-none font-bold">Today</span>
-                              <span className="text-white font-black text-base leading-tight tabular-nums mt-0.5" style={{ fontFamily: 'Outfit, monospace' }}>
-                                {game.today_result?.jodi || '--'}
-                              </span>
-                            </div>
-                          </div>
+                        {/* JANTRI chip — small pill next to game name */}
+                        <button
+                          type="button"
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setJantriGame(game); }}
+                          data-testid={`jantri-btn-${game.id}`}
+                          aria-label={`${game.name_hi} jantri report`}
+                          className="relative shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-md active:scale-95 border"
+                          style={{
+                            background: 'linear-gradient(180deg, #1A1408 0%, #0A0A0C 100%)',
+                            borderColor: 'rgba(255, 215, 0, 0.75)',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.5)',
+                          }}
+                        >
+                          <Flame className="w-3 h-3 text-orange-400" strokeWidth={3} />
+                          <span className="text-[9px] font-black text-[#FFD700] uppercase tracking-widest leading-none">
+                            Jantri
+                          </span>
+                        </button>
+                      </div>
+
+                      {/* ── BODY — Yesterday/Today mega-numbers ── */}
+                      <div className="px-3 pt-3 pb-2 flex items-stretch gap-2">
+                        {/* Yesterday */}
+                        <div
+                          className="flex-1 rounded-xl px-2 py-2 flex flex-col items-center justify-center relative overflow-hidden"
+                          style={{
+                            background:
+                              'linear-gradient(160deg, rgba(139, 92, 246, 0.18) 0%, rgba(76, 29, 149, 0.15) 100%)',
+                            border: '1px solid rgba(196, 181, 253, 0.28)',
+                          }}
+                          data-testid={`yesterday-result-${game.id}`}
+                        >
+                          <span className="text-[7px] uppercase tracking-widest text-purple-300/80 leading-none font-black">
+                            Yesterday
+                          </span>
+                          <span
+                            className="text-white font-black leading-none tabular-nums mt-1"
+                            style={{ fontFamily: 'Outfit, monospace', fontSize: '1.5rem', letterSpacing: '0.05em' }}
+                          >
+                            {game.yesterday_result?.jodi || '--'}
+                          </span>
                         </div>
 
-                        {/* RIGHT: Open/Close pills + Play button + Status */}
-                        <div className="flex flex-col items-stretch gap-1 w-[82px] flex-shrink-0" data-testid={`play-status-${game.id}`}>
-                          {/* Open Time pill */}
-                          <div className="flex items-center justify-between px-2 py-0.5 rounded-md" style={{ background: 'rgba(34, 197, 94, 0.18)', border: '1px solid rgba(74, 222, 128, 0.35)' }}>
-                            <span className="text-[7px] uppercase tracking-wider text-[#86EFAC] font-black leading-none">Open</span>
-                            <span className="text-[9px] font-bold text-[#86EFAC] tabular-nums leading-none">{openTimeStr}</span>
-                          </div>
-                          {/* Close Time pill */}
-                          <div className="flex items-center justify-between px-2 py-0.5 rounded-md" style={{ background: 'rgba(239, 68, 68, 0.18)', border: '1px solid rgba(248, 113, 113, 0.35)' }}>
-                            <span className="text-[7px] uppercase tracking-wider text-[#FCA5A5] font-black leading-none">Close</span>
-                            <span className="text-[9px] font-bold text-[#FCA5A5] tabular-nums leading-none">{closeTimeStr}</span>
-                          </div>
-
-                          {/* Play / Pause / Holiday - no glow keyframe, no multi-shadow */}
-                          <div className="flex flex-col items-center mt-0.5">
-                            {game.is_holiday ? (
-                              <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #FBBF24 0%, #D97706 100%)' }} data-testid={`holiday-btn-${game.id}`}>
-                                <span className="text-white font-black text-sm">H</span>
-                              </div>
-                            ) : gameStatus.status === 'open' ? (
-                              <div
-                                className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer"
-                                style={{
-                                  background: 'linear-gradient(135deg, #FFD700 0%, #D4AF37 70%, #B8860B 100%)',
-                                  border: '2px solid #FFD700',
-                                }}
-                                onClick={() => speak('प्ले')}
-                                data-testid={`play-btn-${game.id}`}
-                              >
-                                <Play className="w-4 h-4 text-[#1A0F00] ml-0.5" fill="#1A0F00" />
-                              </div>
-                            ) : (
-                              <div
-                                className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer"
-                                style={{
-                                  background: '#FFFFFF',
-                                  border: '2px solid #DC2626',
-                                }}
-                                data-testid={`timeout-btn-${game.id}`}
-                                onClick={() => speak('टाइम आउट')}
-                              >
-                                <X className="w-5 h-5 text-[#DC2626]" strokeWidth={3.5} />
-                              </div>
-                            )}
-                            <span
-                              className={`text-[9px] font-black tracking-wide uppercase leading-none mt-1 ${
-                                game.is_holiday ? 'text-[#FBBF24]' : gameStatus.status === 'open' ? 'text-[#FFD700]' : 'text-[#FCA5A5]'
-                              }`}
+                        {/* Center Play/Status button (BIG) */}
+                        <div className="flex flex-col items-center justify-center w-14 shrink-0" data-testid={`play-status-${game.id}`}>
+                          {game.is_holiday ? (
+                            <div
+                              className="w-12 h-12 rounded-full flex items-center justify-center"
+                              style={{ background: 'linear-gradient(135deg, #FBBF24 0%, #D97706 100%)', boxShadow: '0 4px 12px rgba(217,119,6,0.4)' }}
+                              data-testid={`holiday-btn-${game.id}`}
                             >
-                              {statusLabel}
+                              <span className="text-white font-black text-base">H</span>
+                            </div>
+                          ) : isRunning ? (
+                            <div
+                              className="w-12 h-12 rounded-full flex items-center justify-center relative"
+                              style={{
+                                background: 'radial-gradient(circle at 30% 30%, #FFF9C4 0%, #FFD700 25%, #D4AF37 60%, #7B4D0A 100%)',
+                                border: '2px solid #FFF176',
+                                boxShadow: '0 4px 14px rgba(255,215,0,0.55), inset 0 1px 2px rgba(255,255,255,0.5)',
+                              }}
+                              onClick={() => speak('प्ले')}
+                              data-testid={`play-btn-${game.id}`}
+                            >
+                              <Play className="w-5 h-5 text-[#1A0F00] ml-0.5" fill="#1A0F00" strokeWidth={0} />
+                            </div>
+                          ) : (
+                            <div
+                              className="w-12 h-12 rounded-full flex items-center justify-center"
+                              style={{ background: '#1A1A2E', border: '2px solid #DC2626', boxShadow: '0 4px 10px rgba(220,38,38,0.4)' }}
+                              data-testid={`timeout-btn-${game.id}`}
+                              onClick={() => speak('टाइम आउट')}
+                            >
+                              <X className="w-6 h-6 text-[#DC2626]" strokeWidth={3.5} />
+                            </div>
+                          )}
+                          <span
+                            className={`text-[8px] font-black tracking-widest uppercase leading-none mt-1.5 ${
+                              game.is_holiday ? 'text-[#FBBF24]' : isRunning ? 'text-[#FFD700]' : 'text-[#FCA5A5]'
+                            }`}
+                          >
+                            {statusLabel}
+                          </span>
+                        </div>
+
+                        {/* Today */}
+                        <div
+                          className="flex-1 rounded-xl px-2 py-2 flex flex-col items-center justify-center relative overflow-hidden"
+                          style={{
+                            background:
+                              'linear-gradient(160deg, rgba(6, 182, 212, 0.20) 0%, rgba(14, 116, 144, 0.15) 100%)',
+                            border: `1px solid ${isRunning ? 'rgba(34, 211, 238, 0.55)' : 'rgba(125, 211, 252, 0.28)'}`,
+                          }}
+                          data-testid={`today-result-${game.id}`}
+                        >
+                          {isRunning && (
+                            <span className="absolute -top-1 -right-1 flex items-center gap-1 bg-red-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider leading-none shadow-lg">
+                              <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
+                              Live
                             </span>
-                          </div>
+                          )}
+                          <span className="text-[7px] uppercase tracking-widest text-cyan-300/80 leading-none font-black">
+                            Today
+                          </span>
+                          <span
+                            className="text-white font-black leading-none tabular-nums mt-1"
+                            style={{ fontFamily: 'Outfit, monospace', fontSize: '1.5rem', letterSpacing: '0.05em' }}
+                          >
+                            {game.today_result?.jodi || '--'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* ── FOOTER — Time bar ── */}
+                      <div
+                        className="flex items-center px-3 py-1.5 gap-3"
+                        style={{
+                          background: 'rgba(0, 0, 0, 0.4)',
+                          borderTop: '1px dashed rgba(255, 215, 0, 0.25)',
+                        }}
+                      >
+                        <div className="flex items-center gap-1 flex-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                          <span className="text-[8px] uppercase tracking-wider text-emerald-300 font-black leading-none">Open</span>
+                          <span className="text-[10px] font-bold text-white tabular-nums leading-none">{openTimeStr}</span>
+                        </div>
+                        <div className="w-px h-3 bg-white/15" />
+                        <div className="flex items-center gap-1 flex-1 justify-end">
+                          <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+                          <span className="text-[8px] uppercase tracking-wider text-red-300 font-black leading-none">Close</span>
+                          <span className="text-[10px] font-bold text-white tabular-nums leading-none">{closeTimeStr}</span>
                         </div>
                       </div>
                     </div>
