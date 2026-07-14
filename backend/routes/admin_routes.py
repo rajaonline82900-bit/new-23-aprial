@@ -882,6 +882,34 @@ async def delete_game(game_id: str, request: Request):
     return {"message": "Game deleted successfully"}
 
 
+@router.post("/admin/games/reorder")
+async def admin_reorder_games(request: Request):
+    """Persist admin-defined display order for games.
+    Body: { "order": ["game_id_1", "game_id_2", ...] }
+    Games not in the list retain their previous order (or fallback to hardcoded GAME_ORDER).
+    """
+    await get_admin_user(request)
+    body = await request.json()
+    order = body.get("order") or []
+    if not isinstance(order, list) or not order:
+        raise HTTPException(400, "order must be a non-empty list of game_ids")
+
+    # Wipe old order docs and write new ones
+    await db.game_order.delete_many({})
+    docs = [{"game_id": gid, "display_order": idx} for idx, gid in enumerate(order)]
+    if docs:
+        await db.game_order.insert_many(docs)
+    return {"status": "OK", "count": len(docs)}
+
+
+@router.get("/admin/games/order")
+async def admin_get_game_order(request: Request):
+    """Returns current admin-defined game order (empty list if never set)."""
+    await get_admin_user(request)
+    docs = await db.game_order.find({}, {"_id": 0}).sort("display_order", 1).to_list(200)
+    return {"order": [d["game_id"] for d in docs]}
+
+
 @router.post("/admin/games/seed-kalyan")
 async def seed_kalyan_games(request: Request):
     """Insert default Kalyan games. Skips games that already exist."""

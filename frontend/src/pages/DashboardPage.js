@@ -14,7 +14,8 @@ import {
   BanknoteArrowUp,
   BarChart3,
   Flame,
-  Crown
+  Crown,
+  Lock
 } from 'lucide-react';
 
 /* ---------- Stylish custom SVG icons for category buttons ---------- */
@@ -1097,24 +1098,25 @@ const DashboardPage = () => {
                             </div>
                           ) : (
                             <div
-                              className="w-14 h-14 rounded-full flex items-center justify-center"
+                              className="time-up-btn w-14 h-14 rounded-full flex items-center justify-center relative"
                               style={{
-                                background: 'radial-gradient(circle at 32% 28%, #2A2A3E 0%, #1A1A2E 100%)',
-                                border: '2px solid #DC2626',
-                                boxShadow: '0 4px 12px rgba(220,38,38,0.45), inset 0 2px 3px rgba(255,255,255,0.08)',
+                                background: 'radial-gradient(circle at 32% 28%, #FCA5A5 0%, #DC2626 30%, #991B1B 70%, #450A0A 100%)',
+                                border: '2px solid rgba(254, 202, 202, 0.6)',
+                                boxShadow: '0 6px 16px rgba(220,38,38,0.55), inset 0 2px 3px rgba(255,255,255,0.35), inset 0 -3px 4px rgba(0,0,0,0.35)',
+                                filter: 'drop-shadow(0 4px 8px rgba(220,38,38,0.45))',
                               }}
                               data-testid={`timeout-btn-${game.id}`}
-                              onClick={() => { try { navigator.vibrate?.(15); } catch (_) { /* haptic api unavailable */ } speak('टाइम आउट'); }}
+                              onClick={() => { try { navigator.vibrate?.(15); } catch (_) { /* haptic api unavailable */ } }}
                             >
-                              <X className="w-7 h-7 text-[#DC2626]" strokeWidth={3.5} />
+                              <Lock className="w-6 h-6 text-white drop-shadow" strokeWidth={3} fill="rgba(255,255,255,0.2)" />
                             </div>
                           )}
                           <span
                             className={`text-[8px] font-black tracking-widest uppercase leading-none mt-1.5 ${
-                              game.is_holiday ? 'text-[#FBBF24]' : isRunning ? 'text-[#FFD700]' : 'text-[#FCA5A5]'
+                              game.is_holiday ? 'text-[#FBBF24]' : isRunning ? 'text-[#FFD700]' : 'text-[#F87171]'
                             }`}
                           >
-                            {statusLabel}
+                            {game.is_holiday ? statusLabel : isRunning ? statusLabel : 'Time Up'}
                           </span>
                         </div>
 

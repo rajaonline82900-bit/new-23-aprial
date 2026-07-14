@@ -8,6 +8,7 @@ import { Badge } from '../../components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
 import { Settings, Plus, Clock, Edit, Trash2, Save, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import SortableGaliGames from '../../components/admin/SortableGaliGames';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -218,7 +219,8 @@ const AdminGamesTab = () => {
                   <div className="space-y-3">
                     {galiGames.length === 0
                       ? <p className="text-gray-500 text-sm py-4 text-center">कोई Gali/Disawar game नहीं</p>
-                      : galiGames.map(renderGameRow)}
+                      : <SortableGaliGames games={galiGames} renderRow={(g) => renderGameRow(g, 0)} />
+                    }
                   </div>
                 </div>
 

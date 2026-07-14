@@ -36,10 +36,21 @@ async def get_games():
 
     games_dict = await get_games_dict()
 
-    ordered_ids = [gid for gid in GAME_ORDER if gid in games_dict]
-    for gid in games_dict:
-        if gid not in ordered_ids:
-            ordered_ids.append(gid)
+    # Load display_order overrides if admin has set them
+    order_map = {}
+    async for o in db.game_order.find({}, {"_id": 0}):
+        order_map[o["game_id"]] = o.get("display_order", 999)
+
+    # Build ordered id list: (a) admin-set order first, (b) fall back to GAME_ORDER hardcoded, (c) rest
+    def _rank(gid):
+        if gid in order_map:
+            return (0, order_map[gid])
+        try:
+            return (1, GAME_ORDER.index(gid))
+        except ValueError:
+            return (2, gid)
+
+    ordered_ids = sorted(games_dict.keys(), key=_rank)
 
     for game_id in ordered_ids:
         game = games_dict[game_id]
