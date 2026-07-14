@@ -579,25 +579,32 @@ const WalletPage = () => {
               onClick={handleDeposit}
               disabled={!depositAmount || parseFloat(depositAmount) < 100 || processing}
               data-testid="confirm-deposit-button"
-              className="w-full h-14 text-base font-black active:scale-[0.98] transition-all"
+              className="w-full h-14 text-lg font-black active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
               style={{
-                background: 'linear-gradient(135deg, #10B981 0%, #059669 50%, #047857 100%)',
-                boxShadow: '0 8px 24px rgba(16,185,129,0.35)',
+                background: (!depositAmount || parseFloat(depositAmount) < 100)
+                  ? 'linear-gradient(135deg, #4B5563 0%, #374151 100%)'
+                  : 'linear-gradient(135deg, #10B981 0%, #059669 50%, #047857 100%)',
+                boxShadow: (!depositAmount || parseFloat(depositAmount) < 100)
+                  ? 'none'
+                  : '0 6px 20px rgba(16, 185, 129, 0.45), inset 0 1px 0 rgba(255,255,255,0.25)',
                 color: 'white',
+                letterSpacing: '0.05em',
               }}
             >
               {processing ? (
-                <span className="flex items-center gap-2">
+                <span className="flex items-center justify-center gap-2">
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Payment ho rha hai…
+                  <span>Payment ho rha hai…</span>
                 </span>
               ) : (
-                <span className="flex items-center gap-2 tabular-nums">
-                  <CreditCard className="w-5 h-5" />
-                  {depositAmount && parseFloat(depositAmount) >= 100
-                    ? `₹${Number(depositAmount).toLocaleString('en-IN')} deposit karo`
-                    : 'भुगतान करें'
-                  }
+                <span className="flex items-center justify-center gap-2.5 tabular-nums">
+                  <CreditCard className="w-6 h-6" strokeWidth={2.5} />
+                  <span className="text-xl font-black">PAY</span>
+                  {depositAmount && parseFloat(depositAmount) >= 100 && (
+                    <span className="text-lg font-black text-white/90">
+                      · ₹{Number(depositAmount).toLocaleString('en-IN')}
+                    </span>
+                  )}
                 </span>
               )}
             </Button>

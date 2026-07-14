@@ -871,3 +871,13 @@ code {
     font-size: 10px;
     line-height: 1;
 }
+
+/* Active category icon — glowing golden ring pulse to indicate "selected/live" */
+.active-cat-ring {
+    box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.55), 0 3px 10px rgba(255, 215, 0, 0.25);
+    animation: active-cat-pulse 2s ease-in-out infinite;
+}
+@keyframes active-cat-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.5), 0 3px 10px rgba(255, 215, 0, 0.25); }
+    50%      { box-shadow: 0 0 0 6px rgba(255, 215, 0, 0), 0 3px 14px rgba(255, 215, 0, 0.4); }
+}

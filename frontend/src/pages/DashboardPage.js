@@ -656,54 +656,10 @@ const DashboardPage = () => {
             data-testid="category-switcher"
           >
             {[
-              {
-                id: 'gali_disawar', label: 'Gali Disawar', hi: 'गली दिसावर', Icon: GaliDisawarIcon,
-                activeBg: 'linear-gradient(135deg, #FFD700 0%, #D4AF37 55%, #8B6914 100%)',
-                activeBorder: '#FBBF24',
-                activeText: '#1A0F00',
-                activeSub: 'rgba(26,15,0,0.72)',
-                activeGlow: '0 4px 14px rgba(212, 175, 55, 0.45), inset 0 1px 0 rgba(255,255,255,0.35)',
-                inactiveBg: 'linear-gradient(135deg, rgba(212, 175, 55, 0.06) 0%, rgba(184, 134, 11, 0.03) 100%)',
-                inactiveBorder: 'rgba(212, 175, 55, 0.15)',
-                inactiveText: '#D4AF37',
-                inactiveSub: '#78716C',
-              },
-              {
-                id: 'kalyan', label: 'Kalyan', hi: 'कल्याण', Icon: KalyanIcon,
-                activeBg: 'linear-gradient(135deg, #B91C5C 0%, #8B1538 55%, #5C0D24 100%)',
-                activeBorder: '#EC4899',
-                activeText: '#FFFFFF',
-                activeSub: 'rgba(255,255,255,0.78)',
-                activeGlow: '0 4px 14px rgba(185, 28, 92, 0.45), inset 0 1px 0 rgba(255,255,255,0.18)',
-                inactiveBg: 'linear-gradient(135deg, rgba(185, 28, 92, 0.06) 0%, rgba(139, 21, 56, 0.03) 100%)',
-                inactiveBorder: 'rgba(236, 72, 153, 0.18)',
-                inactiveText: '#F9A8D4',
-                inactiveSub: '#78716C',
-              },
-              {
-                id: 'aviator', label: 'Aviator', hi: 'एविएटर', Icon: AviatorIcon, isLink: true,
-                activeBg: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 55%, #075985 100%)',
-                activeBorder: '#38BDF8',
-                activeText: '#FFFFFF',
-                activeSub: 'rgba(224, 242, 254, 0.85)',
-                activeGlow: '0 4px 14px rgba(14, 165, 233, 0.45), inset 0 1px 0 rgba(255,255,255,0.22)',
-                inactiveBg: 'linear-gradient(135deg, rgba(14, 165, 233, 0.06) 0%, rgba(2, 132, 199, 0.03) 100%)',
-                inactiveBorder: 'rgba(56, 189, 248, 0.18)',
-                inactiveText: '#67E8F9',
-                inactiveSub: '#78716C',
-              },
-              {
-                id: 'ludo', label: 'Ludo', hi: 'लूडो', Icon: LudoIcon, isLink: true, linkTo: '/ludo',
-                activeBg: 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 55%, #3B0764 100%)',
-                activeBorder: '#A78BFA',
-                activeText: '#FFFFFF',
-                activeSub: 'rgba(237, 233, 254, 0.85)',
-                activeGlow: '0 4px 14px rgba(124, 58, 237, 0.45), inset 0 1px 0 rgba(255,255,255,0.22)',
-                inactiveBg: 'linear-gradient(135deg, rgba(124, 58, 237, 0.06) 0%, rgba(91, 33, 182, 0.03) 100%)',
-                inactiveBorder: 'rgba(167, 139, 250, 0.20)',
-                inactiveText: '#C4B5FD',
-                inactiveSub: '#78716C',
-              },
+              { id: 'gali_disawar', label: 'Gali Disawar', hi: 'गली दिसावर', Icon: GaliDisawarIcon },
+              { id: 'kalyan', label: 'Kalyan', hi: 'कल्याण', Icon: KalyanIcon },
+              { id: 'aviator', label: 'Aviator', hi: 'एविएटर', Icon: AviatorIcon, isLink: true },
+              { id: 'ludo', label: 'Ludo', hi: 'लूडो', Icon: LudoIcon, isLink: true, linkTo: '/ludo' },
             ].map((cat) => {
               // Aviator and Ludo always render in their "active" themed state (always available)
               const isDisabled = gameToggles[cat.id] === false;
@@ -731,18 +687,21 @@ const DashboardPage = () => {
                   data-testid={`category-btn-${cat.id}`}
                   className="rounded-xl py-2 px-1 flex flex-col items-center justify-center leading-tight relative overflow-hidden"
                   style={{
-                    background: isActive ? cat.activeBg : cat.inactiveBg,
-                    border: `1px solid ${isActive ? cat.activeBorder : cat.inactiveBorder}`,
-                    color: isActive ? cat.activeText : cat.inactiveText,
-                    boxShadow: isActive ? cat.activeGlow : 'none',
-                    transform: isActive ? 'scale(1.0)' : 'scale(0.97)',
-                    transition: 'transform 220ms ease, box-shadow 220ms ease, background 220ms ease, border-color 220ms ease',
+                    background: isActive
+                      ? 'linear-gradient(160deg, #1F1B2E 0%, #14111E 100%)'
+                      : 'linear-gradient(160deg, #131319 0%, #0E0E13 100%)',
+                    border: `1px solid ${isActive ? 'rgba(255, 215, 0, 0.55)' : 'rgba(255, 255, 255, 0.06)'}`,
+                    boxShadow: isActive
+                      ? '0 4px 12px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,215,0,0.20)'
+                      : 'none',
+                    transition: 'transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease',
+                    transform: isActive ? 'scale(1.0)' : 'scale(0.96)',
                     opacity: isDisabled ? 0.4 : 1,
                     filter: isDisabled ? 'grayscale(85%)' : 'none',
                     cursor: isDisabled ? 'not-allowed' : 'pointer',
                   }}
                 >
-                  {/* Disabled overlay — big red BAND badge */}
+                  {/* Disabled overlay */}
                   {isDisabled && (
                     <span
                       className="absolute inset-0 flex items-center justify-center pointer-events-none"
@@ -757,47 +716,46 @@ const DashboardPage = () => {
                       </span>
                     </span>
                   )}
-                  {/* Subtle top sheen on active tabs (premium feel) */}
-                  {isActive && (
-                    <span
-                      aria-hidden
-                      style={{
-                        position: 'absolute', top: 0, left: 0, right: 0, height: '40%',
-                        background: 'linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 100%)',
-                        pointerEvents: 'none',
-                      }}
-                    />
-                  )}
-                  {/* Aviator/Ludo LIVE badge (green dot = online) */}
+                  {/* LIVE badge (Aviator + Ludo) */}
                   {(isAviator || isLudo) && (
                     <span
-                      className="absolute top-0.5 right-1 px-1.5 py-0.5 rounded-full text-[8px] font-black tracking-wider flex items-center gap-1"
+                      className="absolute top-1 right-1 px-1.5 py-0.5 rounded-full text-[7px] font-black tracking-wider flex items-center gap-1"
                       style={{
-                        background: 'rgba(0, 0, 0, 0.45)',
+                        background: 'rgba(0, 0, 0, 0.55)',
                         color: '#86EFAC',
-                        border: '1px solid rgba(34, 197, 94, 0.55)',
+                        border: '1px solid rgba(34, 197, 94, 0.5)',
                       }}
                       data-testid={`${cat.id}-live-badge`}
                     >
-                      <span
-                        className="w-1.5 h-1.5 rounded-full"
-                        style={{ background: '#22C55E', boxShadow: '0 0 6px #22C55E' }}
-                      />
+                      <span className="w-1 h-1 rounded-full" style={{ background: '#22C55E', boxShadow: '0 0 4px #22C55E' }} />
                       LIVE
                     </span>
                   )}
-                  <cat.Icon size={28} active={isActive} />
+                  {/* Icon in a soft circle — golden ring when active */}
+                  <div
+                    className={`relative flex items-center justify-center rounded-full transition-all ${isActive ? 'active-cat-ring' : ''}`}
+                    style={{
+                      width: 40,
+                      height: 40,
+                      background: isActive
+                        ? 'radial-gradient(circle at 30% 30%, rgba(255,215,0,0.20) 0%, rgba(212,175,55,0.10) 60%, rgba(0,0,0,0) 100%)'
+                        : 'rgba(255, 255, 255, 0.04)',
+                      border: `1.5px solid ${isActive ? 'rgba(255, 215, 0, 0.75)' : 'rgba(255,255,255,0.10)'}`,
+                    }}
+                  >
+                    <cat.Icon size={20} active={isActive} />
+                  </div>
                   <span
-                    className="text-[12px] font-black tracking-wide whitespace-nowrap mt-0.5"
-                    style={isActive ? { textShadow: isAviator || isLudo || cat.id === 'kalyan' ? '0 1px 2px rgba(0,0,0,0.35)' : 'none' } : undefined}
+                    className="text-[11px] font-black tracking-wide whitespace-nowrap mt-1.5"
+                    style={{ color: isActive ? '#FFD700' : '#9CA3AF' }}
                   >
                     {cat.label}
                   </span>
                   <span
                     className="text-[8px] font-bold mt-0.5 tabular-nums"
-                    style={{ color: isActive ? cat.activeSub : cat.inactiveSub }}
+                    style={{ color: isActive ? 'rgba(255,215,0,0.60)' : '#6B7280' }}
                   >
-                    {cat.isLink ? (isLudo ? 'Play & Win' : 'Real Available') : `${cat.hi} • ${count}`}
+                    {cat.isLink ? (isLudo ? 'Play & Win' : 'Real Available') : `${cat.hi} · ${count}`}
                   </span>
                 </button>
               );
