@@ -130,3 +130,158 @@
 .today-result-flash {
     animation: today-result-flash 2.4s ease-out 2;
 }
+
+/* ============ Bet History — Lottery Ticket Slip Style ============ */
+.ticket-slip {
+    position: relative;
+    background: linear-gradient(180deg, #14181C 0%, #0F1216 100%);
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+    padding: 0;
+    overflow: visible;
+    isolation: isolate;
+}
+/* Colored left edge (status bar) */
+.ticket-slip::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    width: 4px;
+    background: var(--tk-color);
+    border-radius: 14px 0 0 14px;
+    z-index: 1;
+}
+/* Subtle status tint background */
+.ticket-slip::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--tk-tint);
+    border-radius: 14px;
+    pointer-events: none;
+    z-index: 0;
+}
+.ticket-slip > * { position: relative; z-index: 2; }
+
+.ticket-slip-header {
+    padding: 10px 12px 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.ticket-serial {
+    display: inline-block;
+    font-family: 'JetBrains Mono', 'Roboto Mono', ui-monospace, monospace;
+    font-weight: 900;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    color: #FFD700;
+    background: rgba(255, 215, 0, 0.08);
+    border: 1px dashed rgba(255, 215, 0, 0.35);
+    padding: 3px 6px;
+    border-radius: 4px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+.ticket-status-badge {
+    padding: 4px 8px;
+    border-radius: 20px;
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 0.15em;
+    line-height: 1;
+    text-transform: uppercase;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+/* Dashed perforation line — like real ticket stub tear-off */
+.ticket-perforation {
+    position: relative;
+    height: 12px;
+    margin: 0 -1px;
+    background:
+        radial-gradient(circle at 0 6px, #0A0A0C 6px, transparent 6px) left / 12px 12px no-repeat,
+        radial-gradient(circle at 100% 6px, #0A0A0C 6px, transparent 6px) right / 12px 12px no-repeat;
+}
+.ticket-perforation::before {
+    content: '';
+    position: absolute;
+    left: 12px; right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 0;
+    border-top: 1px dashed rgba(255, 255, 255, 0.14);
+}
+
+.ticket-body {
+    padding: 6px 16px 6px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+.ticket-num-block {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+.ticket-num-label {
+    font-size: 8px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    font-weight: 900;
+    color: rgba(255, 255, 255, 0.42);
+    line-height: 1;
+}
+.ticket-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 60px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-family: 'JetBrains Mono', 'Roboto Mono', ui-monospace, monospace;
+    font-size: 26px;
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    border: 1px solid;
+}
+.ticket-num-bet {
+    color: #1A0F00;
+    background: linear-gradient(135deg, #FFEB3B 0%, #FFD700 50%, #D4AF37 100%);
+    border-color: rgba(255, 215, 0, 0.9);
+    box-shadow:
+        0 2px 8px rgba(212, 175, 55, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+.ticket-arrow {
+    flex-shrink: 0;
+    padding: 0 2px;
+}
+
+.ticket-slip-footer {
+    padding: 8px 12px 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.ticket-win-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(5, 150, 105, 0.15) 100%);
+    border: 1px solid rgba(52, 211, 153, 0.55);
+    color: #6EE7B7;
+    font-weight: 900;
+    font-size: 11px;
+    box-shadow: 0 2px 6px rgba(16, 185, 129, 0.20);
+}
