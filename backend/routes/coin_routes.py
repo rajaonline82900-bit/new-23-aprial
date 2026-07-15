@@ -32,9 +32,10 @@ LOCK_BEFORE_END = 10         # last 10s locked (no bets)
 RESULT_BEFORE_END = 2        # result revealed 2s before round ends
 DEFAULT_MIN_BET = 10.0       # admin can override
 DEFAULT_MAX_BET = 5000.0
-COMMISSION_PCT = 10.0        # 10% commission on winning payout
+COMMISSION_PCT = 0.0         # NO commission — winner gets full 2x payout
 HISTORY_KEEP = 200           # DB retention
 DISPLAY_HISTORY = 30         # UI list length
+USER_WIN_TARGET = 0.15       # 15% user win rate (85% house edge in skewed pool)
 
 
 # ---------- Admin-configurable settings ----------
@@ -438,11 +439,11 @@ async def _run_one_round():
         # Equal pools → fair 50/50
         result_side = random.choice(["head", "tail"])
     else:
-        # Skewed pools → house picks the SMALLER pool 80% of the time
-        # (that's where FEWER users win → house profits). 20% chance user luck flips it.
+        # Skewed pools → house picks the SMALLER pool 85% of the time
+        # (that's where FEWER users win → house profits). 15% user luck flips it.
         smaller = "tail" if total_head > total_tail else "head"
         bigger = "head" if smaller == "tail" else "tail"
-        result_side = smaller if random.random() < 0.80 else bigger
+        result_side = smaller if random.random() < (1 - USER_WIN_TARGET) else bigger
 
     await db.coin_rounds.update_one(
         {"_id": round_id},

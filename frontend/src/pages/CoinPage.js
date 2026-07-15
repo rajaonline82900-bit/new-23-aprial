@@ -186,7 +186,7 @@ const CoinPage = () => {
       if (myBets.length > 0) {
         const won = myBets.filter((b) => b.side === round.result_side);
         const lost = myBets.filter((b) => b.side !== round.result_side);
-        const totalWin = won.reduce((s, b) => s + (b.amount * (config?.payout_multiplier || 1.8)), 0);
+        const totalWin = won.reduce((s, b) => s + (b.amount * (config?.payout_multiplier || 2)), 0);
         const totalLost = lost.reduce((s, b) => s + b.amount, 0);
         if (won.length > 0) {
           toast.success(`🎉 आप जीते! +₹${Math.floor(totalWin).toLocaleString('en-IN')}`, { duration: 4000 });
@@ -291,7 +291,7 @@ const CoinPage = () => {
               <Zap className="w-4 h-4" style={{ color: THEME.gold, filter: `drop-shadow(0 0 4px ${THEME.gold})` }} />
             </h1>
             <p className="text-[10px] font-bold uppercase tracking-widest mt-0.5" style={{ color: THEME.goldSoft, opacity: 0.75 }}>
-              हर 1 मिनट में Result • 1.8x Payout • Min ₹{Math.floor(config?.min_bet || 10)}
+              हर 1 मिनट में Result • 2x Payout • Min ₹{Math.floor(config?.min_bet || 10)}
             </p>
           </div>
           <button
@@ -357,103 +357,127 @@ const CoinPage = () => {
             </div>
           </div>
 
-          {/* Coin visual — larger, metallic 3D. Perspective on wrapper. */}
+          {/* Coin visual — beautiful ornate SVG coin with dramatic bottom-up toss. */}
           <div className="flex flex-col items-center justify-center py-6" style={{ perspective: '900px' }}>
             <div
               className={`coin-3d-v2 ${flipAnim ? 'coin-flipping-v2' : ''} ${lastResult ? `coin-final-v2-${lastResult}` : ''}`}
               data-testid="coin-visual"
               style={{
-                width: 160,
-                height: 160,
+                width: 170,
+                height: 170,
                 position: 'relative',
                 transformStyle: 'preserve-3d',
-                filter: `drop-shadow(0 12px 32px ${THEME.gold}90)`,
+                filter: `drop-shadow(0 12px 28px ${THEME.gold}90) drop-shadow(0 0 40px ${THEME.gold}45)`,
               }}
             >
-              {/* HEAD face — metallic gold */}
+              {/* HEAD face — ornate gold coin */}
               <div
                 className="coin-face-v2"
                 style={{
                   position: 'absolute', inset: 0, borderRadius: '50%',
-                  background: `
-                    radial-gradient(circle at 32% 28%, #FEF9C3 0%, ${THEME.goldBright} 20%, ${THEME.gold} 55%, #B45309 85%, #78350F 100%),
-                    conic-gradient(from 0deg, #B45309, ${THEME.gold}, #FEF9C3, ${THEME.gold}, #B45309, ${THEME.gold}, #FEF9C3, ${THEME.gold}, #B45309)
-                  `,
-                  border: '5px double #78350F',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: `
-                    inset 0 6px 12px rgba(255,255,255,0.4),
-                    inset 0 -6px 12px rgba(120,53,15,0.5),
-                    0 0 30px ${THEME.gold}70
-                  `,
+                  overflow: 'hidden',
                   backfaceVisibility: 'hidden',
                   transform: 'rotateY(0deg)',
                 }}
               >
-                {/* Inner ridge ring */}
-                <div style={{
-                  position: 'absolute', inset: '6px', borderRadius: '50%',
-                  border: '2px dashed #78350F', opacity: 0.4,
-                }} />
-                <div style={{
-                  position: 'absolute', inset: '14px', borderRadius: '50%',
-                  border: '1.5px solid #78350F', opacity: 0.55,
-                  background: 'radial-gradient(circle at 40% 35%, rgba(255,255,255,0.35) 0%, transparent 55%)',
-                }} />
-                {/* H letter with shadow */}
-                <span style={{
-                  fontSize: '3.5rem', fontWeight: 900, color: '#78350F',
-                  fontFamily: 'Outfit, sans-serif',
-                  textShadow: '0 2px 3px rgba(255,255,255,0.5), 0 -1px 2px rgba(0,0,0,0.3)',
-                  letterSpacing: '-0.05em',
-                  zIndex: 1,
-                }}>
-                  H
-                </span>
-                {/* Corner sparkles */}
-                <span style={{ position: 'absolute', top: '18%', left: '20%', fontSize: '10px', color: '#FEF3C7', opacity: 0.8 }}>✦</span>
-                <span style={{ position: 'absolute', bottom: '20%', right: '22%', fontSize: '8px', color: '#FEF3C7', opacity: 0.7 }}>✦</span>
+                <svg viewBox="0 0 200 200" width="100%" height="100%" style={{ display: 'block' }}>
+                  <defs>
+                    <radialGradient id="goldGrad" cx="35%" cy="30%">
+                      <stop offset="0%" stopColor="#FFFBEB" />
+                      <stop offset="15%" stopColor="#FEF3C7" />
+                      <stop offset="40%" stopColor="#FBBF24" />
+                      <stop offset="75%" stopColor="#D97706" />
+                      <stop offset="100%" stopColor="#78350F" />
+                    </radialGradient>
+                    <linearGradient id="goldRim" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#FEF3C7" />
+                      <stop offset="50%" stopColor="#D97706" />
+                      <stop offset="100%" stopColor="#78350F" />
+                    </linearGradient>
+                  </defs>
+                  {/* Outer thick rim */}
+                  <circle cx="100" cy="100" r="98" fill="url(#goldRim)" />
+                  <circle cx="100" cy="100" r="93" fill="#78350F" />
+                  {/* Ridge dots around rim (like real coin edges) */}
+                  {Array.from({ length: 48 }).map((_, i) => {
+                    const angle = (i * 360) / 48;
+                    const rad = (angle * Math.PI) / 180;
+                    const cx = 100 + 88 * Math.cos(rad);
+                    const cy = 100 + 88 * Math.sin(rad);
+                    return <circle key={i} cx={cx} cy={cy} r="2.2" fill="#FEF3C7" opacity="0.85" />;
+                  })}
+                  {/* Main coin body */}
+                  <circle cx="100" cy="100" r="82" fill="url(#goldGrad)" />
+                  {/* Inner double ring */}
+                  <circle cx="100" cy="100" r="72" fill="none" stroke="#78350F" strokeWidth="1.5" opacity="0.55" />
+                  <circle cx="100" cy="100" r="66" fill="none" stroke="#78350F" strokeWidth="0.8" strokeDasharray="3 3" opacity="0.55" />
+                  {/* Star decorations at 4 compass points */}
+                  {[0, 90, 180, 270].map((deg) => {
+                    const rad = ((deg - 90) * Math.PI) / 180;
+                    const cx = 100 + 74 * Math.cos(rad);
+                    const cy = 100 + 74 * Math.sin(rad);
+                    return <text key={deg} x={cx} y={cy + 4} textAnchor="middle" fontSize="9" fill="#78350F" opacity="0.75">★</text>;
+                  })}
+                  {/* Big H letter with embossed shadow */}
+                  <text x="100" y="126" textAnchor="middle" fontSize="95" fontWeight="900" fill="#78350F" fontFamily="Outfit, sans-serif"
+                    style={{ paintOrder: 'stroke fill', stroke: '#FEF3C7', strokeWidth: '2' }}>H</text>
+                  {/* Top shine highlight */}
+                  <ellipse cx="75" cy="55" rx="35" ry="14" fill="rgba(255,255,255,0.35)" transform="rotate(-25 75 55)" />
+                  {/* Sparkles */}
+                  <text x="45" y="65" fontSize="10" fill="#FEF9C3" opacity="0.9">✦</text>
+                  <text x="150" y="145" fontSize="8" fill="#FEF9C3" opacity="0.7">✦</text>
+                </svg>
               </div>
 
-              {/* TAIL face — metallic violet */}
+              {/* TAIL face — ornate violet coin */}
               <div
                 className="coin-face-v2"
                 style={{
                   position: 'absolute', inset: 0, borderRadius: '50%',
-                  background: `
-                    radial-gradient(circle at 32% 28%, #DDD6FE 0%, #C4B5FD 20%, ${THEME.tailColor} 55%, #4C1D95 85%, #2E1065 100%)
-                  `,
-                  border: '5px double #2E1065',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: `
-                    inset 0 6px 12px rgba(255,255,255,0.4),
-                    inset 0 -6px 12px rgba(46,16,101,0.5),
-                    0 0 30px ${THEME.tailColor}70
-                  `,
+                  overflow: 'hidden',
                   backfaceVisibility: 'hidden',
                   transform: 'rotateY(180deg)',
                 }}
               >
-                <div style={{
-                  position: 'absolute', inset: '6px', borderRadius: '50%',
-                  border: '2px dashed #2E1065', opacity: 0.4,
-                }} />
-                <div style={{
-                  position: 'absolute', inset: '14px', borderRadius: '50%',
-                  border: '1.5px solid #2E1065', opacity: 0.55,
-                  background: 'radial-gradient(circle at 40% 35%, rgba(255,255,255,0.35) 0%, transparent 55%)',
-                }} />
-                <span style={{
-                  fontSize: '3.5rem', fontWeight: 900, color: '#2E1065',
-                  fontFamily: 'Outfit, sans-serif',
-                  textShadow: '0 2px 3px rgba(255,255,255,0.4), 0 -1px 2px rgba(0,0,0,0.3)',
-                  letterSpacing: '-0.05em',
-                  zIndex: 1,
-                }}>
-                  T
-                </span>
-                <span style={{ position: 'absolute', top: '18%', left: '20%', fontSize: '10px', color: '#DDD6FE', opacity: 0.8 }}>✦</span>
-                <span style={{ position: 'absolute', bottom: '20%', right: '22%', fontSize: '8px', color: '#DDD6FE', opacity: 0.7 }}>✦</span>
+                <svg viewBox="0 0 200 200" width="100%" height="100%" style={{ display: 'block' }}>
+                  <defs>
+                    <radialGradient id="violetGrad" cx="35%" cy="30%">
+                      <stop offset="0%" stopColor="#F5F3FF" />
+                      <stop offset="15%" stopColor="#DDD6FE" />
+                      <stop offset="40%" stopColor="#8B5CF6" />
+                      <stop offset="75%" stopColor="#5B21B6" />
+                      <stop offset="100%" stopColor="#2E1065" />
+                    </radialGradient>
+                    <linearGradient id="violetRim" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#DDD6FE" />
+                      <stop offset="50%" stopColor="#5B21B6" />
+                      <stop offset="100%" stopColor="#2E1065" />
+                    </linearGradient>
+                  </defs>
+                  <circle cx="100" cy="100" r="98" fill="url(#violetRim)" />
+                  <circle cx="100" cy="100" r="93" fill="#2E1065" />
+                  {Array.from({ length: 48 }).map((_, i) => {
+                    const angle = (i * 360) / 48;
+                    const rad = (angle * Math.PI) / 180;
+                    const cx = 100 + 88 * Math.cos(rad);
+                    const cy = 100 + 88 * Math.sin(rad);
+                    return <circle key={i} cx={cx} cy={cy} r="2.2" fill="#DDD6FE" opacity="0.85" />;
+                  })}
+                  <circle cx="100" cy="100" r="82" fill="url(#violetGrad)" />
+                  <circle cx="100" cy="100" r="72" fill="none" stroke="#2E1065" strokeWidth="1.5" opacity="0.55" />
+                  <circle cx="100" cy="100" r="66" fill="none" stroke="#2E1065" strokeWidth="0.8" strokeDasharray="3 3" opacity="0.55" />
+                  {[0, 90, 180, 270].map((deg) => {
+                    const rad = ((deg - 90) * Math.PI) / 180;
+                    const cx = 100 + 74 * Math.cos(rad);
+                    const cy = 100 + 74 * Math.sin(rad);
+                    return <text key={deg} x={cx} y={cy + 4} textAnchor="middle" fontSize="9" fill="#2E1065" opacity="0.75">★</text>;
+                  })}
+                  <text x="100" y="126" textAnchor="middle" fontSize="95" fontWeight="900" fill="#2E1065" fontFamily="Outfit, sans-serif"
+                    style={{ paintOrder: 'stroke fill', stroke: '#DDD6FE', strokeWidth: '2' }}>T</text>
+                  <ellipse cx="75" cy="55" rx="35" ry="14" fill="rgba(255,255,255,0.35)" transform="rotate(-25 75 55)" />
+                  <text x="45" y="65" fontSize="10" fill="#F5F3FF" opacity="0.9">✦</text>
+                  <text x="150" y="145" fontSize="8" fill="#F5F3FF" opacity="0.7">✦</text>
+                </svg>
               </div>
             </div>
 
@@ -543,7 +567,7 @@ const CoinPage = () => {
             <div className="flex flex-col items-center gap-0.5">
               <span className="text-3xl leading-none">H</span>
               <span className="text-[11px] font-black tracking-widest uppercase">Head</span>
-              <span className="text-[9px] font-bold opacity-80">Win 1.8x • ₹{Math.floor(amount * 1.8)}</span>
+              <span className="text-[9px] font-bold opacity-80">Win 2x • ₹{Math.floor(amount * 2)}</span>
             </div>
           </button>
           <button
@@ -560,7 +584,7 @@ const CoinPage = () => {
             <div className="flex flex-col items-center gap-0.5">
               <span className="text-3xl leading-none">T</span>
               <span className="text-[11px] font-black tracking-widest uppercase">Tail</span>
-              <span className="text-[9px] font-bold opacity-80">Win 1.8x • ₹{Math.floor(amount * 1.8)}</span>
+              <span className="text-[9px] font-bold opacity-80">Win 2x • ₹{Math.floor(amount * 2)}</span>
             </div>
           </button>
         </div>
@@ -687,7 +711,7 @@ const CoinPage = () => {
           }}
         >
           <p>• Har 1 minute me naya round + auto flip animation with sound.</p>
-          <p>• Win par <span className="font-black" style={{ color: THEME.gold }}>1.8x payout</span> ({config?.commission_pct || 10}% commission).</p>
+          <p>• Win par <span className="font-black" style={{ color: THEME.gold }}>2x payout</span> (no commission).</p>
           <p>• Last 10 seconds ⏰ clock tick sound + locked (koi bet nahi).</p>
           <p>• History → <Link to="/bets" className="underline font-black" style={{ color: THEME.goldBright }}>My Bets</Link> me date/time ke saath dekhein.</p>
         </div>
