@@ -447,7 +447,7 @@ const AdminUsersTab = () => {
                     const losses = rows.filter((r) => (r.type || '').endsWith('_loss'));
                     const totalWinAmt = wins.reduce((s, r) => s + Math.max(0, r.amount || 0), 0);
                     const totalLossAmt = losses.reduce((s, r) => s + Math.abs(r.amount || 0), 0) +
-                      rows.filter((r) => (r.type || '').endsWith('_bet')).reduce((s, r) => s + Math.abs(r.amount || 0), 0);
+                      rows.filter((r) => (r.type || '').endsWith('_bet') || (r.type || '').endsWith('_entry')).reduce((s, r) => s + Math.abs(r.amount || 0), 0);
                     return (
                       <div className="grid grid-cols-3 gap-2 mb-3">
                         <div className="p-2 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-center">
@@ -475,22 +475,26 @@ const AdminUsersTab = () => {
                       {(userDetails.walletTx || []).map((r) => {
                         const isWin = (r.type || '').endsWith('_win');
                         const isLoss = (r.type || '').endsWith('_loss');
-                        const isBet = (r.type || '').endsWith('_bet');
+                        const isBet = (r.type || '').endsWith('_bet') || (r.type || '').endsWith('_entry');
                         const amt = Math.abs(r.amount || 0);
+                        const stake = Math.abs(r.bet_amount || (isBet ? r.amount || 0 : 0));
                         return (
                           <div
                             key={r.id}
-                            className="grid grid-cols-[1.1fr_0.9fr_0.5fr_0.9fr] gap-2 items-center px-2.5 py-2 bg-[#0A0A0C] rounded-lg border border-white/5"
+                            className="grid grid-cols-[1.2fr_0.7fr_0.7fr_0.9fr] gap-2 items-center px-2.5 py-2 bg-[#0A0A0C] rounded-lg border border-white/5"
                             data-testid={`user-wallet-tx-row-${r.id}`}
                           >
                             <div>
-                              <p className="text-cyan-300 text-[11px] font-bold leading-tight">{r.game_name || '-'}</p>
+                              <p className="text-cyan-300 text-[11px] font-bold leading-tight truncate">{r.game_name || '-'}</p>
                               <p className="text-gray-500 text-[9px] tabular-nums leading-tight mt-0.5">
-                                {r.created_at ? new Date(r.created_at.endsWith?.('Z') ? r.created_at : r.created_at + 'Z').toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true }) : '-'}
+                                {r.created_at ? utcDate(r.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true }) : '-'}
                               </p>
+                              {r.side && (
+                                <p className="text-[8px] text-gray-500 leading-tight mt-0.5 uppercase truncate">{r.side}{r.result_side ? ` → ${r.result_side}` : ''}</p>
+                              )}
                             </div>
                             <div>
-                              <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded ${
+                              <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded whitespace-nowrap ${
                                 isWin ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' :
                                 isLoss ? 'bg-red-500/20 text-red-300 border border-red-500/40' :
                                 isBet ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/40' :
@@ -499,13 +503,17 @@ const AdminUsersTab = () => {
                                 {isWin ? 'WIN' : isLoss ? 'LOSS' : isBet ? 'BET' : (r.type || '').split('_').slice(-1)[0]?.toUpperCase()}
                               </span>
                             </div>
-                            <div className="text-[9px] text-gray-400 font-bold uppercase truncate">
-                              {r.side ? r.side : (r.result_side ? `→ ${r.result_side}` : '')}
+                            <div className="text-right leading-tight">
+                              <p className="text-[8px] text-gray-500 font-black uppercase tracking-wider">Bet</p>
+                              <p className="text-[11px] text-white font-black tabular-nums">₹{Math.floor(stake).toLocaleString('en-IN')}</p>
                             </div>
                             <div className={`text-right font-black tabular-nums text-[12px] ${
                               isWin ? 'text-emerald-400' : (isLoss || isBet) ? 'text-red-400' : 'text-gray-300'
                             }`}>
-                              {isWin ? '+' : '−'}₹{Math.floor(amt).toLocaleString('en-IN')}
+                              <p className="text-[8px] text-gray-500 font-black uppercase tracking-wider">
+                                {isWin ? 'Win' : isBet ? 'Debit' : 'Amt'}
+                              </p>
+                              <p>{isWin ? '+' : (isLoss ? '' : '−')}₹{Math.floor(amt).toLocaleString('en-IN')}</p>
                             </div>
                           </div>
                         );

@@ -369,14 +369,16 @@ async def community_bets(tab: str = "all", limit: int = 30):
             k=1,
         )[0]
 
-    def _fake_all_bets(n: int):
+    def _fake_all_bets(n: int, max_mult: float = 4.5):
         """Fake bets during OPEN/betting phase — no multiplier yet OR
-        already cashed out mid-flight."""
+        already cashed out mid-flight (capped by current running multiplier)."""
         out = []
+        # Absolute floor for cashouts we'd show — no point emitting 1.00x
+        upper = max(1.10, float(max_mult))
         for _ in range(n):
             amt = _fake_amt()
             # 45% still active, 55% already cashed out
-            if random.random() < 0.45:
+            if random.random() < 0.45 or upper <= 1.10:
                 out.append({
                     "name": random.choice(_FAKE_NAMES),
                     "amount": amt,
@@ -384,7 +386,9 @@ async def community_bets(tab: str = "all", limit: int = 30):
                     "won": None,
                 })
             else:
-                mult = round(random.uniform(1.10, 4.50), 2)
+                # Cashout is uniformly random up to just BELOW current multiplier
+                # (fake users cashed out earlier than the current live value).
+                mult = round(random.uniform(1.10, upper), 2)
                 out.append({
                     "name": random.choice(_FAKE_NAMES),
                     "amount": amt,
@@ -393,13 +397,15 @@ async def community_bets(tab: str = "all", limit: int = 30):
                 })
         return out
 
-    def _fake_prev_bets(n: int):
-        """Historical bets — mix of won/lost. Crash was at some point."""
+    def _fake_prev_bets(n: int, crash_at: float = 6.0):
+        """Historical bets — mix of won/lost. Fake winners' cashouts are STRICTLY
+        below the round's crash point (otherwise they would have crashed too)."""
         out = []
+        upper = max(1.10, float(crash_at) - 0.01)
         for _ in range(n):
             amt = _fake_amt()
-            if random.random() < 0.5:
-                mult = round(random.uniform(1.15, 6.00), 2)
+            if random.random() < 0.5 and upper > 1.10:
+                mult = round(random.uniform(1.10, upper), 2)
                 out.append({
                     "name": random.choice(_FAKE_NAMES),
                     "amount": amt,
@@ -407,10 +413,11 @@ async def community_bets(tab: str = "all", limit: int = 30):
                     "won": round(amt * mult, 2),
                 })
             else:
+                # Crashed before cashout
                 out.append({
                     "name": random.choice(_FAKE_NAMES),
                     "amount": amt,
-                    "multiplier": None,   # crashed before cashout
+                    "multiplier": None,
                     "won": None,
                 })
         return out
@@ -439,10 +446,21 @@ async def community_bets(tab: str = "all", limit: int = 30):
                 "multiplier": b.get("cashed_out_at"),
                 "won": round(b["amount"] * b["cashed_out_at"], 2) if b.get("cashed_out_at") else None,
             })
-        # Mix in ~18 fake bets so the feed always looks active
-        items.extend(_fake_all_bets(18))
+        # Compute current running multiplier to cap fake cashouts.
+        # betting → 1.00 (no cashouts), flying → live exp curve, crashed → crash_point.
+        now = time.time()
+        elapsed_now = max(0.0, now - _state.start_ts)
+        if _state.phase == "flying":
+            live_mult = round(math.exp(GROWTH_RATE * elapsed_now), 2)
+        elif _state.phase == "crashed":
+            live_mult = _state.crash_point
+        else:
+            live_mult = 1.00
+        # Mix in ~18 fake bets so the feed always looks active; multipliers stay
+        # STRICTLY below current live multiplier (never richer than reality).
+        items.extend(_fake_all_bets(18, max_mult=live_mult))
         items.sort(key=lambda x: x["amount"], reverse=True)
-        return {"bets": items[:limit], "phase": _state.phase}
+        return {"bets": items[:limit], "phase": _state.phase, "live_multiplier": live_mult}
 
     if tab == "previous":
         # last completed round
@@ -465,7 +483,7 @@ async def community_bets(tab: str = "all", limit: int = 30):
             "multiplier": b.get("cashout_multiplier"),
             "won": b.get("won_amount") if b.get("status") == "won" else None,
         } for b in bets]
-        out.extend(_fake_prev_bets(18))
+        out.extend(_fake_prev_bets(18, crash_at=(last or {}).get("crash_point") or 1.10))
         out.sort(key=lambda x: x["amount"], reverse=True)
         return {"bets": out[:limit], "crash_point": (last or {}).get("crash_point")}
 

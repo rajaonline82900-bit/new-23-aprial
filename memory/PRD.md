@@ -1,7 +1,34 @@
 # MATKA11 - Product Requirements Document
 
 
-## Latest Update (2026-02-15) — Admin Wallet Tx: All Games Merged (Batch 17) 💼📊
+## Latest Update (2026-02-15) — Admin Wallet Tx Dates + Aviator Fake Multiplier Cap (Batch 18) 🔧✈️
+
+**User complaints:**
+1. Admin > User Details > Wallet Tx me Aviator ki DATE show nahi ho rahi (baaki games ki date visible thi).
+2. Aviator "All Bets" section me fake users ka profit multiplier hamesha real live multiplier se JADA dikhta tha — jaise plane 1.5x pe crash ho toh bhi fake user 3x cashout dikhata tha.
+
+**Fixes:**
+1. **Date parsing** — `AdminUsersTab.js` wallet tx row me `new Date(r.created_at.endsWith?.('Z') ? ...)` ki jagah pehle se maujood `utcDate()` helper use kiya. Helper `/Z$|[+-]\d{2}:?\d{2}$/` regex se both `Z` aur `+00:00` timezones detect karta hai. Ab Aviator ka `2026-07-13T08:33:02.856587+00:00` timestamp properly parse hota hai. Screenshot me "14 Jul 26, 02:18 pm" visible.
+2. **Fake multiplier cap** — `_fake_all_bets(n, max_mult)` and `_fake_prev_bets(n, crash_at)` ab STRICT upper bound accept karte hain:
+   - `all` tab: `max_mult = live_multiplier` (betting=1.00 → koi cashout nahi, flying=running, crashed=crash_point)
+   - `previous` tab: `crash_at - 0.01` (fake cashouts strictly below actual crash)
+   - `top` tab: no cap (historical big wins)
+3. **Wallet Tx row layout enhanced** — 4-column grid: Game+Date+Side / BET-WIN-LOSS badge / **Bet ₹stake** / Debit/Win amount. `ludo_entry` bhi ab BET count karta hai.
+
+**Verified via curl:**
+- Betting phase: 0 fake cashouts ✓
+- Flying live=1.47 → max_fake=1.34 ✓
+- Flying live=3.11 → max_fake=3.09 ✓  
+- Flying live=5.15 → max_fake=4.69 ✓
+- Previous crash=4.08 → max_fake=4.06 ✓ (no fake ≥ crash)
+- Aviator wallet tx date renders correctly (screenshot)
+
+**Files:**
+- `backend/routes/aviator_routes.py` — fake bet generators accept upper bound; endpoint passes `live_multiplier`/`crash_point`
+- `frontend/src/pages/admin/AdminUsersTab.js` — utcDate for wallet tx date + explicit Bet stake column + ludo_entry treated as BET
+
+
+## Previous Update (2026-02-15) — Admin Wallet Tx: All Games Merged (Batch 17) 💼📊
 
 **User request:** Admin dashboard user details ke Wallet Transactions tab me kewal coin dikh raha tha. Sabhi games (Gali, Kalyan, Aviator, Ludo, Coin) ki transactions dikhni chahiye — jaise user ke apne app history me sabhi games dikhte hain.
 
