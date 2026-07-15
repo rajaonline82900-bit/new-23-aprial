@@ -172,6 +172,20 @@ if [ -f "$ENV_FILE" ]; then
       echo "   ✅ DVHOSTING_API_KEY present (len $KEY_LEN chars)"
     fi
   fi
+
+  # 5. Ensure SATTA_API_* for Gali/Disawar auto-fetch (king.sattaapi.com)
+  if ! grep -q "^SATTA_API_URL" "$ENV_FILE"; then
+    echo 'SATTA_API_URL="https://king.sattaapi.com/wp-json/satta/v1/results"' >> "$ENV_FILE"
+    echo "   ✅ SATTA_API_URL added"
+  fi
+  if ! grep -q "^SATTA_API_KEY" "$ENV_FILE"; then
+    echo 'SATTA_API_KEY="ZRE71yG2j4Dryeqi!&Ji"' >> "$ENV_FILE"
+    echo "   ✅ SATTA_API_KEY injected — Gali auto-fetch enabled"
+  fi
+  if ! grep -q "^SATTA_DOMAIN_KEY" "$ENV_FILE"; then
+    echo 'SATTA_DOMAIN_KEY="OVf%ZqGEFNqzr4kZLFxL@Ean7"' >> "$ENV_FILE"
+    echo "   ✅ SATTA_DOMAIN_KEY injected"
+  fi
 else
   echo "   ⚠️  $ENV_FILE not found — auto-fetch and OTP SMS will not run"
 fi

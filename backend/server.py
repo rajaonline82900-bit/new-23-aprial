@@ -26,6 +26,7 @@ from routes.admin_routes import router as admin_router, auto_fetch_loop, expire_
 from routes.notification_routes import router as notification_router
 from routes.kalyan_routes import router as kalyan_router
 from routes.kalyan_auto_results import router as kalyan_auto_router, kalyan_auto_fetch_loop
+from routes.gali_auto_results import satta_auto_fetch_loop
 from routes.aviator_routes import router as aviator_router, aviator_round_loop, aviator_watchdog
 from routes.ludo_routes import router as ludo_router, ludo_watchdog
 from routes.game_toggles import router as game_toggles_router
@@ -206,6 +207,8 @@ async def start_auto_fetch():
     logger.info("Aviator watchdog started (auto-recovers if any phase stuck)")
     asyncio.create_task(kalyan_auto_fetch_loop())
     logger.info("Kalyan auto-fetch (DP Boss) loop started")
+    asyncio.create_task(satta_auto_fetch_loop())
+    logger.info("Gali/Disawar auto-fetch (SattaAPI) loop started")
     asyncio.create_task(ludo_watchdog())
     logger.info("Ludo watchdog started (bot-fill + turn-timer + match-timer)")
 
