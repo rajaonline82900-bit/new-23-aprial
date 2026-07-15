@@ -1,7 +1,38 @@
 # MATKA11 - Product Requirements Document
 
 
-## Latest Update (2026-02-15) — Coin Simple + Correct H/T Fix (Batch 12) 🪙🔧
+## Latest Update (2026-02-15) — Coin Toss Persistence + Real Toss + BetsPage Fix (Batch 13) 🪙✅
+
+**All 3 P0 complaints — VERIFIED FIXED (testing agent iteration_36, 100% pass):**
+
+1. **Coin face persists across rounds** — After result HEAD, next betting phase still shows HEAD until the next flip. Implemented via:
+   - `lastResult` state seeded from `localStorage.coin_last_result` on mount
+   - No longer cleared on new-round transition (only replaced on entering RESULT)
+   - Also seeded from most-recent settled round on first load if localStorage empty
+   - Survives page reload
+
+2. **Real coin toss animation** — Face visibly swaps between H and T during flipping:
+   - `spinFace` state toggles every 90ms during LOCKED phase (JS-driven, not CSS)
+   - `.coin-simple-flipping` CSS animation now uses pure translateY (-220px peak) + scale (no rotate) so face-swap is fully controlled by JS
+   - Displayed face = `flipAnim ? spinFace : (lastResult || 'head')`
+   - Intervals cleaned up on unmount + on entering RESULT
+
+3. **BetsPage Coin display** — coin bets never fall into aviator "CRASH" branch:
+   - Explicit `isCoin` computed via `getCatMeta`
+   - `betChipVal` computed per-type: coin → H/T, aviator → digit-or-CRASH, others → digit-or-number
+   - Coin rows show extra "Result: HEAD/TAIL" column with colored text (orange/violet)
+   - Sub-line shows "Coin Toss · HEAD/TAIL" (not raw bet_type)
+
+**Files changed:**
+- `frontend/src/pages/CoinPage.js` — lastResult localStorage, spinFace interval, seed from recentRounds
+- `frontend/src/pages/BetsPage.js` — explicit isCoin branch in bet chip, HEAD/TAIL result column
+- `frontend/src/App.css` — coinSimpleFlip keyframe redesigned (no rotate, higher peak)
+
+**Test credentials seeded:**
+- User: phone 9870012345 / password Test@1234 (balance ~₹1050)
+
+
+## Previous Update (2026-02-15) — Coin Simple + Correct H/T Fix (Batch 12) 🪙🔧
 
 **User's critical complaints — fixed:**
 
