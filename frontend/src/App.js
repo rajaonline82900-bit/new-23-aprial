@@ -21,6 +21,7 @@ import DashboardPage from "./pages/DashboardPage";
 import GamePage from "./pages/GamePage";
 import KalyanGamePage from "./pages/KalyanGamePage";
 import AviatorPage from "./pages/AviatorPage";
+import CoinPage from "./pages/CoinPage";
 import LudoLobbyPage from "./pages/LudoLobbyPage";
 import LudoGamePage from "./pages/LudoGamePage";
 import WalletPage from "./pages/WalletPage";
@@ -143,6 +144,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <AviatorPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/coin"
+        element={
+          <ProtectedRoute>
+            <CoinPage />
           </ProtectedRoute>
         }
       />

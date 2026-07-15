@@ -1,7 +1,54 @@
 # MATKA11 - Product Requirements Document
 
 
-## Latest Update (2026-02-15) — True Zupee-Style Turn Handling (Batch 6) 🎯
+## Latest Update (2026-02-15) — Coin Toss Game Added (Batch 7) 🪙
+Brand new 5th game category — a live 1-minute Head/Tail coin flip.
+
+**Core rules:**
+- Round every 60 seconds — auto-created by backend background loop
+- 50-second betting window, 8-second flip animation, 2-second result reveal
+- **10% commission on winnings** → 1.8x payout multiplier (₹100 bet → ₹180 win)
+- Fair 50/50 random flip (server-decided at round start, revealed only in last 2s)
+- Min bet ₹10 (admin-configurable), Max ₹5000
+
+**Backend** (`/app/backend/routes/coin_routes.py` — 344 lines):
+- Collections: `coin_rounds`, `coin_bets`, `settings` (config)
+- Endpoints:
+  - `GET /api/coin/config` — public config
+  - `GET /api/coin/current` — active round + phase + timer
+  - `GET /api/coin/my-current` — user's current-round bets
+  - `POST /api/coin/bet` — place head/tail bet
+  - `GET /api/coin/history?limit=N` — user's past bets with result + date/time
+  - `GET /api/coin/rounds?limit=N` — public round result history
+  - `GET/POST /api/admin/coin/config` — admin min_bet, max_bet, commission_pct
+- Background loop: `coin_round_loop()` auto-creates rounds, settles winners, cleans old data
+- Auto-cleanup keeps last 200 settled rounds in DB
+
+**Frontend** (`/app/frontend/src/pages/CoinPage.js`):
+- Premium golden theme with orange (Head) + violet (Tail) accents
+- 3D CSS coin animation (flipping / landing pulse)
+- Live countdown timer + phase indicator (BETTING OPEN / FLIPPING / RESULT)
+- Head/Tail pool split display
+- 6-chip bet amount selector
+- My active bets pill list
+- Recent results ticker (last 20 rounds)
+- Info card with rules + link to My Bets history
+- Route: `/coin` (added to `App.js`)
+
+**Dashboard update**: 5th box added — Coin Toss spans full width in row 3 with "1 MIN" live badge (marks it as always-live game). New `CoinIcon` SVG.
+
+**Testing (curl-verified full flow):**
+- ✅ Config returns min_bet=10, max_bet=5000, commission=10%, payout=1.8x
+- ✅ Round auto-created every 60s (currently `open` phase)
+- ✅ Below-min bet rejected: "Minimum bet is ₹10"
+- ✅ Invalid side rejected: "side must be 'head' or 'tail'"
+- ✅ Admin config update works (min_bet changed to ₹25, re-validated, reverted)
+- ✅ Valid bet placed successfully
+- ✅ After round settlement: ₹100 tail bet on tail-result → status=won, payout=₹180 (exact 1.8x)
+- ✅ History API returns bets with result_side + created_at timestamp
+- ✅ Public rounds history returns settled rounds with result_side
+
+
 **User complaint**: "Zupee me jo ludo tha time vala vese bnao bilkul. Isme 2-4 baar hi play kar pa raha hu, baad me baari nahi aati" — was getting stuck after 2-4 turns.
 
 **Root cause**: `MAX_AUTO_SKIPS = 3` meant if user took >15s per turn (very common while learning), they'd be AUTO-FORFEITED after 3 misses. Curl-verified: user forfeited on the 4th missed turn → match ended with bot as winner.

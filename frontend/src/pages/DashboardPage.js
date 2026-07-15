@@ -139,6 +139,28 @@ const LudoIcon = ({ size = 26, active = false }) => (
     <circle cx="28" cy="28" r="1.8" fill="#FFFFFF" stroke="#78350F" strokeWidth="0.5" />
   </svg>
 );
+const CoinIcon = ({ size = 26, active = false }) => (
+  <svg width={size} height={size} viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+    {/* Outer glow ring */}
+    <circle cx="20" cy="20" r="18" fill={active ? '#FFFFFF' : '#78350F'} stroke={active ? '#78350F' : '#B45309'} strokeWidth="1" />
+    {/* Coin face */}
+    <circle cx="20" cy="20" r="15" fill="url(#coinGrad)" />
+    <defs>
+      <radialGradient id="coinGrad" cx="30%" cy="30%">
+        <stop offset="0%" stopColor="#FEF3C7" />
+        <stop offset="50%" stopColor="#FBBF24" />
+        <stop offset="100%" stopColor="#B45309" />
+      </radialGradient>
+    </defs>
+    {/* Inner ring */}
+    <circle cx="20" cy="20" r="12" fill="none" stroke="#78350F" strokeWidth="0.8" opacity="0.4" />
+    {/* ₹ symbol */}
+    <text x="20" y="26" textAnchor="middle" fontSize="15" fontWeight="900" fill="#78350F" fontFamily="Outfit, sans-serif">₹</text>
+    {/* Tiny stars for premium feel */}
+    <circle cx="10" cy="12" r="1" fill="#FEF3C7" opacity="0.7" />
+    <circle cx="30" cy="28" r="1" fill="#FEF3C7" opacity="0.7" />
+  </svg>
+);
 import FooterNav from '../components/FooterNav';
 import { speak } from '../utils/voice';
 import SidebarMenu from '../components/SidebarMenu';
@@ -719,6 +741,22 @@ const DashboardPage = () => {
                     isLink: true,
                     linkTo: '/ludo',
                   },
+                  {
+                    id: 'coin',
+                    label: 'Coin Toss',
+                    hi: 'सिक्का',
+                    Icon: CoinIcon,
+                    bg: 'linear-gradient(155deg, #3A2708 0%, #1F1608 55%, #0A0704 100%)',
+                    border: '#FBBF24',
+                    accent: '#FCD34D',
+                    badgeBg: 'linear-gradient(135deg, #FCD34D 0%, #FBBF24 55%, #B45309 100%)',
+                    badgeColor: '#1A0F00',
+                    stripe: 'linear-gradient(90deg, #78350F 0%, #FBBF24 50%, #78350F 100%)',
+                    liveLabel: '1 MIN',
+                    countSuffix: 'Head or Tail',
+                    isLink: true,
+                    linkTo: '/coin',
+                  },
                 ].map((cat) => {
                   const isDisabled = gameToggles[cat.id] === false;
                   return (
@@ -739,12 +777,12 @@ const DashboardPage = () => {
                         setGameCategory(cat.id);
                       }}
                       data-testid={`gateway-box-${cat.id}`}
-                      className="rounded-2xl relative overflow-hidden text-left active:scale-[0.97]"
+                      className={`rounded-2xl relative overflow-hidden text-left active:scale-[0.97] ${cat.id === 'coin' ? 'col-span-2' : ''}`}
                       style={{
                         background: cat.bg,
                         border: `1.5px solid ${cat.border}`,
                         boxShadow: `0 4px 14px rgba(0,0,0,0.5), inset 0 1px 0 ${cat.border}30`,
-                        minHeight: '158px',
+                        minHeight: cat.id === 'coin' ? '120px' : '158px',
                         transition: 'transform 180ms ease',
                         opacity: isDisabled ? 0.55 : 1,
                         filter: isDisabled ? 'grayscale(70%)' : 'none',

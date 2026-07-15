@@ -1,0 +1,342 @@
+"""Coin Toss (Head/Tail) — Real-time 60-second round game.
+
+Round lifecycle (60 seconds total):
+  1. OPEN     (0-50s)   — users can place bets on Head or Tail
+  2. LOCKED   (50-58s)  — betting closed, coin flip animation on client
+  3. RESULT   (58-60s)  — result revealed (head/tail), winners paid
+Then a new round begins immediately.
+
+Fairness:
+  - 50/50 fair flip (seeded random) with 10% house commission on winning payout.
+  - Server-side result deterministic per round (persisted before reveal window).
+  - Winner payout = bet × 2 × (1 - commission_pct/100)  →  default 1.8x per ₹1.
+"""
+import asyncio
+import random
+import time
+import uuid
+from datetime import datetime, timezone
+from typing import List, Optional
+
+from fastapi import APIRouter, HTTPException, Request
+
+from database import db
+from auth import get_current_user
+
+router = APIRouter()
+
+# ---------- Config ----------
+ROUND_DURATION = 60          # total round length (seconds)
+LOCK_BEFORE_END = 10         # last 10s locked (no bets)
+RESULT_BEFORE_END = 2        # result revealed 2s before round ends
+DEFAULT_MIN_BET = 10.0       # admin can override
+DEFAULT_MAX_BET = 5000.0
+COMMISSION_PCT = 10.0        # 10% commission on winning payout
+HISTORY_KEEP = 200           # DB retention
+DISPLAY_HISTORY = 30         # UI list length
+
+
+# ---------- Admin-configurable settings ----------
+async def _get_coin_config() -> dict:
+    s = await db.settings.find_one({"_id": "coin"}) or {}
+    return {
+        "min_bet": float(s.get("min_bet", DEFAULT_MIN_BET)),
+        "max_bet": float(s.get("max_bet", DEFAULT_MAX_BET)),
+        "commission_pct": float(s.get("commission_pct", COMMISSION_PCT)),
+    }
+
+
+# ---------- Public config endpoint ----------
+@router.get("/coin/config")
+async def coin_config():
+    cfg = await _get_coin_config()
+    return {
+        **cfg,
+        "round_duration": ROUND_DURATION,
+        "lock_before_end": LOCK_BEFORE_END,
+        "result_before_end": RESULT_BEFORE_END,
+        "payout_multiplier": round(2.0 * (1 - cfg["commission_pct"] / 100), 3),
+    }
+
+
+# ---------- Round current state ----------
+@router.get("/coin/current")
+async def coin_current():
+    """Return the active round's state + remaining time."""
+    now = time.time()
+    r = await db.coin_rounds.find_one({"status": {"$in": ["open", "locked", "result"]}}, sort=[("started_at", -1)])
+    if not r:
+        # No live round yet — background loop will create one within ~1s.
+        # Return a synthetic "waiting" object.
+        return {
+            "round_id": None,
+            "status": "waiting",
+            "started_at": None,
+            "ends_at": None,
+            "seconds_left": 0,
+            "phase": "waiting",
+            "result_side": None,
+            "totals": {"head": 0, "tail": 0},
+        }
+    ends_at = r["ends_at"]
+    lock_at = r["lock_at"]
+    result_at = r["result_at"]
+    if now >= ends_at:
+        phase = "settled"
+    elif now >= result_at:
+        phase = "result"
+    elif now >= lock_at:
+        phase = "locked"
+    else:
+        phase = "open"
+    return {
+        "round_id": r["_id"],
+        "status": r["status"],
+        "started_at": r["started_at"],
+        "ends_at": ends_at,
+        "lock_at": lock_at,
+        "result_at": result_at,
+        "seconds_left": max(0, int(ends_at - now)),
+        "phase": phase,
+        # only reveal result once we're in the result phase
+        "result_side": r.get("result_side") if phase in ("result", "settled") else None,
+        "totals": {
+            "head": r.get("total_head", 0.0),
+            "tail": r.get("total_tail", 0.0),
+        },
+    }
+
+
+# ---------- Place bet ----------
+@router.post("/coin/bet")
+async def coin_place_bet(request: Request):
+    user = await get_current_user(request)
+    body = await request.json()
+    side = str(body.get("side", "")).lower().strip()
+    if side not in ("head", "tail"):
+        raise HTTPException(400, "side must be 'head' or 'tail'")
+    try:
+        amount = float(body.get("amount", 0))
+    except Exception:
+        raise HTTPException(400, "invalid amount")
+
+    cfg = await _get_coin_config()
+    if amount < cfg["min_bet"]:
+        raise HTTPException(400, f"Minimum bet is ₹{int(cfg['min_bet'])}")
+    if amount > cfg["max_bet"]:
+        raise HTTPException(400, f"Maximum bet is ₹{int(cfg['max_bet'])}")
+    if (user.get("balance") or 0) < amount:
+        raise HTTPException(400, "बैलेंस कम है / Insufficient balance")
+
+    # Find the OPEN round
+    now = time.time()
+    r = await db.coin_rounds.find_one({"status": "open", "lock_at": {"$gt": now}}, sort=[("started_at", -1)])
+    if not r:
+        raise HTTPException(400, "Betting closed for this round — wait for next")
+
+    # Deduct from balance
+    await db.users.update_one({"_id": user["_id"]}, {"$inc": {"balance": -amount}})
+
+    bet_doc = {
+        "_id": uuid.uuid4().hex,
+        "round_id": r["_id"],
+        "user_id": user["_id"],
+        "name": user.get("name") or user.get("phone", "Player"),
+        "side": side,
+        "amount": amount,
+        "status": "pending",
+        "payout": 0.0,
+        "commission_pct": cfg["commission_pct"],
+        "created_at": datetime.now(timezone.utc),
+    }
+    await db.coin_bets.insert_one(bet_doc)
+
+    # Update round totals
+    field = "total_head" if side == "head" else "total_tail"
+    await db.coin_rounds.update_one({"_id": r["_id"]}, {"$inc": {field: amount}})
+
+    # Return success — frontend will refresh balance via /auth/me
+    return {"ok": True, "bet_id": bet_doc["_id"], "amount": amount, "side": side}
+
+
+# ---------- My active bet(s) in current round ----------
+@router.get("/coin/my-current")
+async def coin_my_current(request: Request):
+    user = await get_current_user(request)
+    r = await db.coin_rounds.find_one({"status": {"$in": ["open", "locked", "result"]}}, sort=[("started_at", -1)])
+    if not r:
+        return {"bets": []}
+    cur = db.coin_bets.find({"round_id": r["_id"], "user_id": user["_id"]}).sort("created_at", 1)
+    bets = await cur.to_list(20)
+    for b in bets:
+        b.pop("user_id", None)
+        b["created_at"] = b["created_at"].isoformat() if isinstance(b["created_at"], datetime) else b.get("created_at")
+    return {"bets": bets, "round_id": r["_id"]}
+
+
+# ---------- User history ----------
+@router.get("/coin/history")
+async def coin_history(request: Request, limit: int = 50):
+    """Return current user's past coin bets with round result + date/time."""
+    user = await get_current_user(request)
+    limit = max(1, min(200, int(limit)))
+    cur = db.coin_bets.find({"user_id": user["_id"]}).sort("created_at", -1).limit(limit)
+    bets = await cur.to_list(limit)
+    # Attach round result for each bet
+    round_ids = list({b["round_id"] for b in bets})
+    rounds = {}
+    if round_ids:
+        async for r in db.coin_rounds.find({"_id": {"$in": round_ids}}, {"result_side": 1, "ended_at": 1}):
+            rounds[r["_id"]] = r
+    out = []
+    for b in bets:
+        r = rounds.get(b["round_id"], {})
+        out.append({
+            "bet_id": b["_id"],
+            "round_id": b["round_id"],
+            "side": b["side"],
+            "amount": b["amount"],
+            "status": b["status"],
+            "payout": b.get("payout", 0.0),
+            "result_side": r.get("result_side"),
+            "created_at": b["created_at"].isoformat() if isinstance(b["created_at"], datetime) else b.get("created_at"),
+        })
+    return {"bets": out}
+
+
+# ---------- Public round history (result feed) ----------
+@router.get("/coin/rounds")
+async def coin_rounds_history(limit: int = 30):
+    limit = max(1, min(HISTORY_KEEP, int(limit)))
+    cur = db.coin_rounds.find({"status": "settled"}, {"result_side": 1, "started_at": 1, "ended_at": 1, "total_head": 1, "total_tail": 1}).sort("started_at", -1).limit(limit)
+    rounds = await cur.to_list(limit)
+    return {"rounds": [{
+        "round_id": r["_id"],
+        "result_side": r.get("result_side"),
+        "started_at": r.get("started_at"),
+        "ended_at": r.get("ended_at"),
+        "total_head": r.get("total_head", 0.0),
+        "total_tail": r.get("total_tail", 0.0),
+    } for r in rounds]}
+
+
+# ---------- Admin: update min_bet / config ----------
+@router.get("/admin/coin/config")
+async def admin_coin_get(request: Request):
+    user = await get_current_user(request)
+    if user.get("role") != "admin":
+        raise HTTPException(403, "Admin only")
+    return await _get_coin_config()
+
+
+@router.post("/admin/coin/config")
+async def admin_coin_update(request: Request):
+    user = await get_current_user(request)
+    if user.get("role") != "admin":
+        raise HTTPException(403, "Admin only")
+    body = await request.json()
+    upd = {}
+    for k in ("min_bet", "max_bet", "commission_pct"):
+        if k in body:
+            try:
+                upd[k] = float(body[k])
+            except Exception:
+                raise HTTPException(400, f"invalid {k}")
+    if not upd:
+        raise HTTPException(400, "No fields to update")
+    await db.settings.update_one({"_id": "coin"}, {"$set": upd}, upsert=True)
+    return await _get_coin_config()
+
+
+# ==================== Background Round Loop ====================
+async def coin_round_loop():
+    """Endless loop that creates a new round every ROUND_DURATION seconds and
+    settles bets when the round completes."""
+    await asyncio.sleep(3)   # let DB warm up
+    while True:
+        try:
+            await _run_one_round()
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning(f"Coin round loop err: {e}")
+            await asyncio.sleep(2)
+
+
+async def _run_one_round():
+    now = time.time()
+    round_id = uuid.uuid4().hex[:12]
+    started_at = now
+    lock_at = now + (ROUND_DURATION - LOCK_BEFORE_END)   # e.g. now + 50
+    result_at = now + (ROUND_DURATION - RESULT_BEFORE_END)  # e.g. now + 58
+    ends_at = now + ROUND_DURATION
+
+    # Pre-decide the coin flip result now (so it's deterministic once round starts)
+    result_side = random.choice(["head", "tail"])
+
+    doc = {
+        "_id": round_id,
+        "started_at": started_at,
+        "lock_at": lock_at,
+        "result_at": result_at,
+        "ends_at": ends_at,
+        "status": "open",
+        "result_side": result_side,
+        "total_head": 0.0,
+        "total_tail": 0.0,
+        "created_at": datetime.now(timezone.utc),
+    }
+    await db.coin_rounds.insert_one(doc)
+
+    # Sleep until lock time
+    await asyncio.sleep(max(0.0, lock_at - time.time()))
+    await db.coin_rounds.update_one({"_id": round_id}, {"$set": {"status": "locked"}})
+
+    # Sleep until result reveal time
+    await asyncio.sleep(max(0.0, result_at - time.time()))
+    await db.coin_rounds.update_one({"_id": round_id}, {"$set": {"status": "result"}})
+
+    # Settle bets
+    await _settle_round(round_id, result_side)
+
+    # Sleep until round officially ends
+    await asyncio.sleep(max(0.0, ends_at - time.time()))
+    await db.coin_rounds.update_one({"_id": round_id}, {"$set": {"status": "settled"}})
+
+    # Cleanup very-old rounds
+    await _cleanup_old()
+
+
+async def _settle_round(round_id: str, result_side: str):
+    """Pay winners on this round. Losers already had their bet deducted at bet time."""
+    cfg = await _get_coin_config()
+    commission = cfg["commission_pct"]
+    multiplier = 2.0 * (1 - commission / 100)   # e.g. 1.8x
+
+    cur = db.coin_bets.find({"round_id": round_id, "status": "pending"})
+    async for b in cur:
+        if b["side"] == result_side:
+            payout = round(b["amount"] * multiplier, 2)
+            await db.coin_bets.update_one(
+                {"_id": b["_id"]},
+                {"$set": {"status": "won", "payout": payout, "settled_at": datetime.now(timezone.utc)}}
+            )
+            await db.users.update_one({"_id": b["user_id"]}, {"$inc": {"balance": payout}})
+        else:
+            await db.coin_bets.update_one(
+                {"_id": b["_id"]},
+                {"$set": {"status": "lost", "payout": 0.0, "settled_at": datetime.now(timezone.utc)}}
+            )
+
+
+async def _cleanup_old():
+    """Keep only the latest HISTORY_KEEP settled rounds."""
+    try:
+        count = await db.coin_rounds.count_documents({"status": "settled"})
+        if count > HISTORY_KEEP:
+            excess = count - HISTORY_KEEP
+            cur = db.coin_rounds.find({"status": "settled"}, {"_id": 1}).sort("started_at", 1).limit(excess)
+            old_ids = [r["_id"] async for r in cur]
+            if old_ids:
+                await db.coin_rounds.delete_many({"_id": {"$in": old_ids}})
+    except Exception:
+        pass
