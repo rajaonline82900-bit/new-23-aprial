@@ -41,7 +41,7 @@ HOME_COLUMN_LEN = 6              # Squares in the color-specific home column
 FINAL_HOME_PROGRESS = MAIN_TRACK_LEN + HOME_COLUMN_LEN - 1  # = 57
 TOKENS_PER_PLAYER = 4
 
-MATCH_DURATION = 10 * 60         # 10 minutes (Zupee-Supreme)
+MATCH_DURATION = 5 * 60          # 5 minutes (Zupee Supreme style)
 TURN_DURATION = 15
 BOT_FILL_WAIT = 15               # 15s wait for real user before bot autofill (user request)
 MAX_CONSECUTIVE_SIXES = 3
@@ -51,7 +51,7 @@ PLAYER_COUNTS = [2, 3, 4]
 DEFAULT_COMMISSION_PCT = 10.0
 TARGET_USER_WIN_RATE = 0.30      # User wins ~30% → Bot wins ~70%
 
-CAPTURE_BONUS_POINTS = 20        # Score points added for each capture
+CAPTURE_BONUS_POINTS = 50        # +50 pts per capture (Zupee Supreme style)
 
 # Zupee/standard color assignments — Red top-left, Green top-right,
 # Yellow bottom-right, Blue bottom-left (matches Zupee Ludo Supreme).
@@ -443,6 +443,25 @@ async def _start_match(t: dict) -> None:
     await _broadcast(t["_id"], {"type": "match_started", "state": _public_table(t)})
 
 
+def _next_seat(t: dict) -> int:
+    """Return the next seat index to assign.
+
+    Zupee-style seating rule for 2-player tables → players sit DIAGONALLY
+    OPPOSITE (seats 0 and 2), not adjacent. For 3+ players we go sequential.
+    """
+    used = {p["seat"] for p in t.get("players", [])}
+    if t.get("max_players") == 2:
+        # First player → seat 0, second → seat 2 (diagonally opposite)
+        for s in (0, 2):
+            if s not in used:
+                return s
+    # Fallback / 3-4 player games → sequential 0,1,2,3
+    for s in range(t.get("max_players", 4)):
+        if s not in used:
+            return s
+    return len(used)  # should never reach here
+
+
 async def _fill_with_bots(table_id: str) -> None:
     t = await db.ludo_tables.find_one({"_id": table_id})
     if not t or t["status"] != "waiting":
@@ -458,7 +477,7 @@ async def _fill_with_bots(table_id: str) -> None:
 
     for i in range(remaining):
         bot_name = available[i] if i < len(available) else f"Bot{i+1}"
-        seat = len(t["players"])
+        seat = _next_seat(t)
         t["players"].append(_make_player_slot({"_id": None, "name": bot_name}, seat, is_bot=True))
         await _log_event(t, f"{bot_name} joined")
 
@@ -467,14 +486,16 @@ async def _fill_with_bots(table_id: str) -> None:
 
 # ---------- Movement helpers ----------
 def _movable_tokens(player: dict, dice: int) -> List[int]:
-    """Return list of token IDs that CAN move with `dice`."""
+    """Return list of token IDs that CAN move with `dice`.
+
+    Zupee Supreme style: yard tokens can release on ANY dice value (not just 6).
+    """
     ids = []
     for tok in player["tokens"]:
         p = tok["progress"]
-        # In yard: only 6 releases
+        # In yard: any dice releases the token
         if p == 0:
-            if dice == 6:
-                ids.append(tok["id"])
+            ids.append(tok["id"])
             continue
         # Already home
         if p >= FINAL_HOME_PROGRESS:
@@ -488,7 +509,7 @@ def _movable_tokens(player: dict, dice: int) -> List[int]:
 
 def _bot_choose_token(player: dict, dice: int, all_players: List[dict]) -> Optional[int]:
     """Simple heuristic: prefer capturing, then advancing furthest token,
-    then releasing if 6."""
+    then releasing from yard (any dice)."""
     movable = _movable_tokens(player, dice)
     if not movable:
         return None
@@ -496,8 +517,8 @@ def _bot_choose_token(player: dict, dice: int, all_players: List[dict]) -> Optio
     def capture_target_seats(tok_id: int) -> int:
         tok = player["tokens"][tok_id]
         p = tok["progress"]
-        # Only main-track landings can capture
-        new_prog = p + dice if p > 0 else 1
+        # On release (from yard), the token lands at progress=dice; else p+dice
+        new_prog = dice if p == 0 else p + dice
         if new_prog < 1 or new_prog > 51:
             return 0
         abs_pos = (player["start_pos"] + new_prog - 1) % MAIN_TRACK_LEN
@@ -521,11 +542,10 @@ def _bot_choose_token(player: dict, dice: int, all_players: List[dict]) -> Optio
         with_captures.sort(key=lambda x: -x[1])
         return with_captures[0][0]
 
-    # 2. Release from yard if any (6-roll only)
-    if dice == 6:
-        for tid in movable:
-            if player["tokens"][tid]["progress"] == 0:
-                return tid
+    # 2. Release from yard if any yard token — good early-game strategy
+    for tid in movable:
+        if player["tokens"][tid]["progress"] == 0:
+            return tid
 
     # 3. Advance the furthest-along token
     furthest = max(movable, key=lambda tid: player["tokens"][tid]["progress"])
@@ -533,13 +553,21 @@ def _bot_choose_token(player: dict, dice: int, all_players: List[dict]) -> Optio
 
 
 async def _apply_token_move(t: dict, seat: int, dice: int, token_id: int) -> Dict:
-    """Move `token_id` for `seat` player by `dice`. Handle capture + extras."""
+    """Move `token_id` for `seat` player by `dice`. Handle capture + extras.
+
+    Zupee Supreme style:
+      • Yard tokens release on ANY dice → new progress = dice (they land `dice`
+        squares onto the main track from their start).
+      • Capture = +50 points (via CAPTURE_BONUS_POINTS in score calc).
+      • Captured opponent token → progress=0 (all accumulated squares lost).
+    """
     p = t["players"][seat]
     tok = p["tokens"][token_id]
 
-    was_release = (tok["progress"] == 0 and dice == 6)
+    was_release = (tok["progress"] == 0)
     if was_release:
-        tok["progress"] = 1
+        # Any dice value: land on progress=dice (i.e., `dice` squares into the track)
+        tok["progress"] = min(FINAL_HOME_PROGRESS, dice)
         moved_from_yard = True
     else:
         tok["progress"] = min(FINAL_HOME_PROGRESS, tok["progress"] + dice)
@@ -809,7 +837,7 @@ async def join_table(table_id: str, request: Request):
         raise HTTPException(400, "आप पहले से एक टेबल में हैं / Already in a table")
 
     # NO immediate deduction — money is only deducted at match start.
-    seat = len(t["players"])
+    seat = _next_seat(t)
     t["players"].append(_make_player_slot(user, seat))
     await _log_event(t, f"{user.get('name','Player')} joined")
 

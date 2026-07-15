@@ -1,7 +1,29 @@
 # MATKA11 - Product Requirements Document
 
 
-## Latest Update (2026-02-15) — Ludo Config Tuning (Batch 3)
+## Latest Update (2026-02-15) — Ludo Zupee Supreme Rules (Batch 4)
+Complete rules overhaul to match Zupee Ludo Supreme style so users can understand and play easily:
+
+- **⏱ 5-minute match** (was 10 min): `MATCH_DURATION = 5 * 60`
+- **🎲 Yard release on ANY dice** (was 6-only): Tokens leave yard on any dice roll (1-6). New progress = dice value (e.g., dice 4 → token lands on square 4). `_movable_tokens` + `_apply_token_move` + `_bot_choose_token` all updated. Frontend movable-set derivation updated to match.
+- **💥 Capture bonus = +50 pts** (was +20): `CAPTURE_BONUS_POINTS = 50`. When your token gets captured, its `progress → 0` — all accumulated squares/points for that token reset (inherent because progress=0 contributes 0 to `_player_score`).
+- **🪑 2-player OPPOSITE seating**: For 2-player tables, first player = seat 0 (Red, top-left), second = seat 2 (Yellow, bottom-right) — DIAGONALLY OPPOSITE (verified via curl: `seat=0 Red Admin` vs `seat=2 Yellow Vishal Pandey`). 3-4 player games still use sequential seats. Added `_next_seat()` helper.
+- **🏆 Highest score wins** (was pass-through): Already score-based, but info card now clearly says "POINTS = WIN".
+- **📚 Info card explains rules**: Lobby now shows "*Zupee-style rules — koi bhi dice pe goti chalti hai · Capture = +50 pts · Highest score wins · 15s me bot join · Commission 10%*".
+
+**Files touched:**
+- `backend/routes/ludo_routes.py` — `MATCH_DURATION`, `CAPTURE_BONUS_POINTS`, `_movable_tokens`, `_apply_token_move`, `_bot_choose_token`, new `_next_seat()`, `join_table`, `_fill_with_bots`.
+- `frontend/src/pages/LudoLobbyPage.js` — header subtitle "5-MIN", stat labels "5 MIN MATCH" + "POINTS = WIN", Zupee rules info line.
+- `frontend/src/pages/LudoGamePage.js` — movable derivation removes `dice === 6` gate for yard release.
+
+**Testing (all curl-verified):**
+- ✅ `match_duration: 300 sec (5 min)`, `bot_fill_wait: 15 sec`
+- ✅ Rolled dice=4, all 4 yard tokens shown movable (previously needed 6)
+- ✅ Moved token from yard with dice=4 → progress became 4 exactly
+- ✅ 2-player table: seat 0 (Red creator) + seat 2 (Yellow bot) — opposite diagonal confirmed
+- ✅ Indian bot names still work (Vishal Pandey, Pallavi Naik seen)
+
+
 - **Entry Fee Slabs**: Restricted to exact 7 options — ₹100, ₹200, ₹500, ₹1K, ₹2K, ₹5K, ₹10K. No custom amounts. Server-side + client-side enforcement (`ENTRY_FEE_SLABS` in `ludo_routes.py`).
 - **Bot Wait Time**: Reduced from 60s → **15s**. Real user gets 15 seconds to join, after that a bot (with Indian name, 70% win-rate — from `TARGET_USER_WIN_RATE = 0.30`) auto-fills the table.
 - **Live Online Counter**: New endpoint `GET /api/ludo/online-count` returns a live-ish count blending real active players with a random floor in [1000, 2000]. Cached for 45s so number "breathes" but doesn't jitter. Displayed as green pulsing "🟢 1,469 online" pill in the Ludo Arena lobby's top-right of the info card.

@@ -179,7 +179,7 @@ const LudoLobbyPage = () => {
               <Zap className="w-4 h-4" style={{ color: THEME.cyan, filter: `drop-shadow(0 0 4px ${THEME.cyan})` }} />
             </h1>
             <p className="text-[10px] font-bold uppercase tracking-widest mt-0.5" style={{ color: THEME.neonSoft, opacity: 0.75 }}>
-              10-Min • Real Cash • 2-4 Players
+              5-Min • Real Cash • 2-4 Players
             </p>
           </div>
           <div
@@ -233,8 +233,8 @@ const LudoLobbyPage = () => {
           <div className="grid grid-cols-3 gap-2 text-center pt-6">
             {[
               { Icon: Users, label: '2-4 Players', color: THEME.neonBright },
-              { Icon: Clock, label: '10 Min', color: THEME.cyan },
-              { Icon: Trophy, label: 'Winner Takes', color: THEME.gold },
+              { Icon: Clock, label: '5 Min Match', color: THEME.cyan },
+              { Icon: Trophy, label: 'Points = Win', color: THEME.gold },
             ].map((s, i) => (
               <div key={i} className="flex flex-col items-center gap-1">
                 <div
@@ -251,7 +251,7 @@ const LudoLobbyPage = () => {
             ))}
           </div>
           <p className="text-[11px] mt-3 text-center leading-snug font-medium" style={{ color: THEME.neonSoft, opacity: 0.85 }}>
-            Paisa sirf match start hone par katega. 15s me real player na aaya to bot join karega. Commission: {config?.commission_pct || 10}%
+            <span className="text-emerald-300 font-black">Zupee-style</span> rules — koi bhi dice pe goti chalti hai · Capture = <span className="font-black" style={{ color: THEME.gold }}>+50 pts</span> · Highest score wins · 15s me bot join · Commission {config?.commission_pct || 10}%
           </p>
         </div>
 

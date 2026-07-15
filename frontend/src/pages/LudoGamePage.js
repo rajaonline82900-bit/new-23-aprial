@@ -470,12 +470,12 @@ const LudoGamePage = () => {
     if (!cp || cp.user_id !== myId) { setMovable([]); return; }
     const pending = state.pending_dice;
     if (!pending) { setMovable([]); return; }
-    // Compute movable locally (matches backend logic)
+    // Zupee Supreme style: yard tokens release on ANY dice value (not just 6).
     const dice = pending.value;
     const ids = [];
     for (const t of cp.tokens) {
       const p = t.progress;
-      if (p === 0) { if (dice === 6) ids.push(t.id); continue; }
+      if (p === 0) { ids.push(t.id); continue; }   // any dice releases from yard
       if (p >= 57) continue;
       if (p + dice > 57) continue;
       ids.push(t.id);
