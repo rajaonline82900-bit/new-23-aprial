@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { ArrowLeft, Users, Trophy, Clock, Plus, Wallet as WalletIcon, Zap, Sparkles } from 'lucide-react';
+import { ArrowLeft, Users, Trophy, Clock, Plus, Wallet as WalletIcon, Zap } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import FooterNav from '../components/FooterNav';
 
@@ -31,14 +31,16 @@ const LudoLobbyPage = () => {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
-  const [entryFee, setEntryFee] = useState(50);
+  const [entryFee, setEntryFee] = useState(100);
   const [maxPlayers, setMaxPlayers] = useState(2);
+  const [onlineCount, setOnlineCount] = useState(0);
 
   const fetchConfig = useCallback(async () => {
     try {
       const { data } = await axios.get(`${API_URL}/api/ludo/config`);
       setConfig(data);
-      setEntryFee(data.entry_fees[1] || 50);
+      // Default to the first fee slab (100)
+      setEntryFee((data.entry_fees && data.entry_fees[0]) || 100);
     } catch (e) {
       toast.error('Config load nahi hua');
     }
@@ -55,6 +57,13 @@ const LudoLobbyPage = () => {
     }
   }, []);
 
+  const fetchOnlineCount = useCallback(async () => {
+    try {
+      const { data } = await axios.get(`${API_URL}/api/ludo/online-count`);
+      setOnlineCount(data.count || 0);
+    } catch (e) { /* silent */ }
+  }, []);
+
   const checkActive = useCallback(async () => {
     try {
       const { data } = await axios.get(`${API_URL}/api/ludo/my-active`, { withCredentials: true });
@@ -67,10 +76,12 @@ const LudoLobbyPage = () => {
   useEffect(() => {
     fetchConfig();
     fetchTables();
+    fetchOnlineCount();
     checkActive();
     const iv = setInterval(fetchTables, 4000);
-    return () => clearInterval(iv);
-  }, [fetchConfig, fetchTables, checkActive]);
+    const iv2 = setInterval(fetchOnlineCount, 45000);
+    return () => { clearInterval(iv); clearInterval(iv2); };
+  }, [fetchConfig, fetchTables, fetchOnlineCount, checkActive]);
 
   const createTable = async () => {
     if (creating) return;
@@ -188,7 +199,7 @@ const LudoLobbyPage = () => {
       </header>
 
       <main className="px-3 py-4 space-y-4 relative" style={{ maxWidth: '480px', margin: '0 auto' }}>
-        {/* How it works — premium glass card with 3 stats */}
+        {/* How it works — premium glass card with 3 stats + LIVE online counter */}
         <div
           className="rounded-2xl p-4 relative overflow-hidden"
           style={{
@@ -198,10 +209,28 @@ const LudoLobbyPage = () => {
             boxShadow: `0 8px 32px rgba(59, 130, 246, 0.15), inset 0 1px 0 rgba(147,197,253,0.12)`,
           }}
         >
-          {/* Top corner sparkle */}
-          <Sparkles className="absolute top-2 right-2 w-3.5 h-3.5" style={{ color: THEME.cyan, opacity: 0.6 }} />
+          {/* Live online counter — top right */}
+          {onlineCount > 0 && (
+            <div
+              className="absolute top-2.5 right-2.5 flex items-center gap-1.5 px-2 py-1 rounded-full"
+              style={{
+                background: 'rgba(16, 185, 129, 0.12)',
+                border: '1px solid rgba(52, 211, 153, 0.5)',
+                boxShadow: '0 0 10px rgba(16, 185, 129, 0.25)',
+              }}
+              data-testid="ludo-online-count"
+            >
+              <span className="relative flex w-1.5 h-1.5">
+                <span className="absolute inline-flex w-full h-full rounded-full opacity-75 animate-ping" style={{ background: '#34D399' }} />
+                <span className="relative inline-flex w-1.5 h-1.5 rounded-full" style={{ background: '#34D399' }} />
+              </span>
+              <span className="text-[10px] font-black tabular-nums" style={{ color: '#34D399' }}>
+                {onlineCount.toLocaleString('en-IN')} online
+              </span>
+            </div>
+          )}
 
-          <div className="grid grid-cols-3 gap-2 text-center">
+          <div className="grid grid-cols-3 gap-2 text-center pt-6">
             {[
               { Icon: Users, label: '2-4 Players', color: THEME.neonBright },
               { Icon: Clock, label: '10 Min', color: THEME.cyan },
@@ -222,7 +251,7 @@ const LudoLobbyPage = () => {
             ))}
           </div>
           <p className="text-[11px] mt-3 text-center leading-snug font-medium" style={{ color: THEME.neonSoft, opacity: 0.85 }}>
-            Paisa sirf match start hone par katega. 60s me players na aayen to auto-fill. Commission: {config?.commission_pct || 10}%
+            Paisa sirf match start hone par katega. 15s me real player na aaya to bot join karega. Commission: {config?.commission_pct || 10}%
           </p>
         </div>
 
@@ -268,8 +297,10 @@ const LudoLobbyPage = () => {
                 Entry Fee
               </p>
               <div className="grid grid-cols-4 gap-2">
-                {(config?.entry_fees || [10, 50, 100, 500]).map((f) => {
+                {(config?.entry_fees || [100, 200, 500, 1000, 2000, 5000, 10000]).map((f) => {
                   const isActive = entryFee === f;
+                  // Format large numbers with K suffix for display
+                  const label = f >= 1000 ? `₹${(f / 1000).toString().replace(/\.0$/, '')}K` : `₹${f}`;
                   return (
                     <button
                       key={f}
@@ -291,7 +322,7 @@ const LudoLobbyPage = () => {
                             }
                       }
                     >
-                      ₹{f}
+                      {label}
                     </button>
                   );
                 })}
@@ -344,10 +375,10 @@ const LudoLobbyPage = () => {
                 Prize Pool
               </p>
               <p className="text-3xl font-black tabular-nums mt-0.5" style={{ color: THEME.gold, textShadow: `0 0 20px ${THEME.gold}80` }}>
-                ₹{Math.floor(entryFee * maxPlayers * (1 - (config?.commission_pct || 10) / 100))}
+                ₹{Math.floor(entryFee * maxPlayers * (1 - (config?.commission_pct || 10) / 100)).toLocaleString('en-IN')}
               </p>
               <p className="text-[10px] mt-0.5" style={{ color: THEME.neonSoft, opacity: 0.7 }}>
-                {maxPlayers} × ₹{entryFee} − {config?.commission_pct || 10}% commission
+                {maxPlayers} × ₹{entryFee.toLocaleString('en-IN')} − {config?.commission_pct || 10}% commission
               </p>
             </div>
             <button
@@ -361,7 +392,7 @@ const LudoLobbyPage = () => {
                 boxShadow: '0 6px 20px rgba(16, 185, 129, 0.55), inset 0 1px 0 rgba(255,255,255,0.25)',
               }}
             >
-              {creating ? 'Creating...' : `Confirm & Pay ₹${entryFee}`}
+              {creating ? 'Creating...' : `Confirm & Pay ₹${entryFee.toLocaleString('en-IN')}`}
             </button>
           </div>
         )}
@@ -439,7 +470,9 @@ const LudoLobbyPage = () => {
                       }}
                     >
                       <span className="text-[9px] leading-none opacity-80 uppercase tracking-wider text-white">Fee</span>
-                      <span className="text-base leading-none text-white mt-0.5">₹{t.entry_fee}</span>
+                      <span className="text-[13px] leading-none text-white mt-0.5">
+                        {t.entry_fee >= 1000 ? `₹${(t.entry_fee / 1000).toString().replace(/\.0$/, '')}K` : `₹${t.entry_fee}`}
+                      </span>
                     </div>
                     <div className="min-w-0">
                       <p className="font-black text-sm truncate text-white flex items-center gap-1.5">
@@ -451,7 +484,7 @@ const LudoLobbyPage = () => {
                       </p>
                       <p className="text-[10px] font-black flex items-center gap-1 mt-0.5" style={{ color: THEME.gold }}>
                         <Trophy className="w-2.5 h-2.5" fill={THEME.gold} />
-                        ₹{Math.floor(t.entry_fee * t.max_players * (1 - (config?.commission_pct || 10) / 100))}
+                        ₹{Math.floor(t.entry_fee * t.max_players * (1 - (config?.commission_pct || 10) / 100)).toLocaleString('en-IN')}
                       </p>
                     </div>
                   </div>

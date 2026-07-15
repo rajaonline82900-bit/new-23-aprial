@@ -1,7 +1,15 @@
 # MATKA11 - Product Requirements Document
 
 
-## Latest Update (2026-02-15) — Ludo Premium Upgrade (Batch 2)
+## Latest Update (2026-02-15) — Ludo Config Tuning (Batch 3)
+- **Entry Fee Slabs**: Restricted to exact 7 options — ₹100, ₹200, ₹500, ₹1K, ₹2K, ₹5K, ₹10K. No custom amounts. Server-side + client-side enforcement (`ENTRY_FEE_SLABS` in `ludo_routes.py`).
+- **Bot Wait Time**: Reduced from 60s → **15s**. Real user gets 15 seconds to join, after that a bot (with Indian name, 70% win-rate — from `TARGET_USER_WIN_RATE = 0.30`) auto-fills the table.
+- **Live Online Counter**: New endpoint `GET /api/ludo/online-count` returns a live-ish count blending real active players with a random floor in [1000, 2000]. Cached for 45s so number "breathes" but doesn't jitter. Displayed as green pulsing "🟢 1,469 online" pill in the Ludo Arena lobby's top-right of the info card.
+- **Number Formatting**: Large amounts show as K-suffix (₹1K, ₹2K) in buttons; full Indian number format (₹1,800) in prize pool and CTAs.
+- Files: `backend/routes/ludo_routes.py` (constants + `/ludo/online-count` endpoint), `frontend/src/pages/LudoLobbyPage.js` (7-fee grid, online counter, K/Indian formatting).
+- Testing: All backend changes curl-verified — config returns new slabs, online-count returns 1469, invalid ₹50 fee rejected with proper error. Frontend screenshot confirmed all UI updates.
+
+
 - **Premium Blue Gaming Theme**: Complete visual overhaul of Ludo Lobby + Game pages. Deep navy background with radial neon-blue glow, glassmorphism cards, cyan/blue gradient neon-glow buttons, animated grid overlay, gold trophy accents. Renamed from "LUDO RACE" → "LUDO ARENA" with electric zap icon.
 - **Emoji Reactions**: 8 quick-fire emojis (🔥😂😭👍💩🎉😎😡) that broadcast in real-time via WebSocket to all players. Floating ephemeral chips animate up from bottom, auto-fade in 2.6s. 2-second cooldown per user. New endpoint: `POST /api/ludo/tables/{table_id}/emoji`.
 - **3-2-1 GO Countdown**: Full-screen neon-blue pulse overlay when a match transitions from waiting → playing (triggered via `match_started` WS msg + status transition fallback).

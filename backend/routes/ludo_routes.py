@@ -43,13 +43,13 @@ TOKENS_PER_PLAYER = 4
 
 MATCH_DURATION = 10 * 60         # 10 minutes (Zupee-Supreme)
 TURN_DURATION = 15
-BOT_FILL_WAIT = 60               # 60s wait before bot autofill (per user request)
+BOT_FILL_WAIT = 15               # 15s wait for real user before bot autofill (user request)
 MAX_CONSECUTIVE_SIXES = 3
 MAX_AUTO_SKIPS = 3               # After 3 auto-plays in a row, user forfeits on 4th
-ENTRY_FEE_SLABS = [10, 50, 100, 500]
+ENTRY_FEE_SLABS = [100, 200, 500, 1000, 2000, 5000, 10000]
 PLAYER_COUNTS = [2, 3, 4]
 DEFAULT_COMMISSION_PCT = 10.0
-TARGET_USER_WIN_RATE = 0.30
+TARGET_USER_WIN_RATE = 0.30      # User wins ~30% → Bot wins ~70%
 
 CAPTURE_BONUS_POINTS = 20        # Score points added for each capture
 
@@ -1007,6 +1007,39 @@ async def my_history(request: Request, limit: int = 30):
     ).sort("ended_at", -1).limit(limit)
     games = await cur.to_list(limit)
     return {"games": games}
+
+
+# ---------- Online Count (fake social-proof ticker) ----------
+# Cache a value that varies slowly minute-by-minute in the 1000-2000 range so
+# users always see a healthy busy-lobby feel even during off-peak hours.
+_online_cache = {"count": 0, "ts": 0.0}
+_ONLINE_CACHE_TTL = 45  # seconds — refresh every 45s so the number "breathes"
+
+@router.get("/ludo/online-count")
+async def ludo_online_count():
+    """Return a live-ish online player count. Blends real active players with
+    a randomized floor (1000-2000) so the lobby always feels populated."""
+    now = time.time()
+    if now - _online_cache["ts"] < _ONLINE_CACHE_TTL and _online_cache["count"] > 0:
+        return {"count": _online_cache["count"]}
+    # Real players currently seated in waiting/playing tables (best-effort)
+    try:
+        cur = db.ludo_tables.find(
+            {"status": {"$in": ["waiting", "playing"]}},
+            {"_id": 0, "players": 1}
+        )
+        tables = await cur.to_list(500)
+        real = sum(1 for t in tables for p in (t.get("players") or []) if not p.get("is_bot"))
+    except Exception:
+        real = 0
+    # Randomized floor keeps count in [1000, 2000], nudged by real users
+    floor = random.randint(1000, 2000)
+    count = floor + real
+    if count > 2400:
+        count = random.randint(1900, 2200)
+    _online_cache["count"] = count
+    _online_cache["ts"] = now
+    return {"count": count}
 
 
 # ---------- Emoji Reactions ----------
