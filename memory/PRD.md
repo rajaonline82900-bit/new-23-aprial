@@ -1,7 +1,31 @@
 # MATKA11 - Product Requirements Document
 
 
-## Latest Update (2026-02-15) — FLAT 3D Coin + Y-axis Real Toss (Batch 15) 🪙✨
+## Latest Update (2026-02-15) — Aviator Fake Community Feed + Coin Chip Cleanup (Batch 16) ✈️🪙
+
+**User request:** Aviator ke "All Bets / Previous / Top Bets" me real + fake Indian users show ho (jaise Coin Toss ki live feed). Coin chips me ₹10 hataao — sirf 50/100/500/1000/2000.
+
+**Changes:**
+1. **Aviator community-bets endpoint** (`GET /api/aviator/community-bets?tab=`) now injects ~14-18 fake bets alongside real ones for all 3 tabs:
+   - `all`: mix of active (no multiplier yet) + already-cashed-out fake bets
+   - `previous`: historical fake bets (won/lost)
+   - `top`: fake big wins with multipliers 2.5x-25x
+   - 42 Indian first-name pool + weighted realistic amount distribution (biased toward small/mid amounts)
+2. **Coin chips** — removed ₹10; new chips: 50 / 100 / 500 / 1000 / 2000 (grid-cols-5)
+3. **Coin min_bet raised to ₹50** — `DEFAULT_MIN_BET` in coin_routes.py + DB `settings._id=coin` updated to `min_bet: 50.0`
+
+**Files:**
+- `backend/routes/aviator_routes.py` — added `_FAKE_NAMES`, `_fake_amt()`, `_fake_all_bets()`, `_fake_prev_bets()`, `_fake_top_bets()` + injected into community_bets; imported `random`
+- `backend/routes/coin_routes.py` — `DEFAULT_MIN_BET = 50.0`
+- `frontend/src/pages/CoinPage.js` — `CHIPS = [50, 100, 500, 1000, 2000]`, grid-cols-5, min ₹50 label + fallback
+
+**Verified via curl + screenshot:**
+- Aviator "All Bets" tab shows 18 rows with fake Indian names (Sanjay 3000, Bhavna 2000@3.13x=₹6260, Pooja 1500@4.25x=₹6375, Farah, Rahul, Isha, Poonam, Jyoti, Pallavi etc.)
+- Recent Winners strip also shows fake winners
+- Coin chip bar: 5 chips [50, 100, 500, 1K, 2K], no ₹10; header now says "Min ₹50"
+
+
+## Previous Update (2026-02-15) — FLAT 3D Coin + Y-axis Real Toss (Batch 15) 🪙✨
 
 **User complaint:** "coin ko ball jesa mat karo, flate coin hona chiye. Toss ke time left-right spin hona chiye and jab result show ho tab ruke."
 

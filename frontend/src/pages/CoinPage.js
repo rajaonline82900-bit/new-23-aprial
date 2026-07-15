@@ -24,7 +24,7 @@ const THEME = {
   tailColor: '#8B5CF6',    // violet for Tail
 };
 
-const CHIPS = [10, 50, 100, 500, 1000, 2000];
+const CHIPS = [50, 100, 500, 1000, 2000];
 
 const CoinPage = () => {
   const { user, refreshUser } = useAuth();
@@ -300,7 +300,7 @@ const CoinPage = () => {
               <Zap className="w-4 h-4" style={{ color: THEME.gold, filter: `drop-shadow(0 0 4px ${THEME.gold})` }} />
             </h1>
             <p className="text-[10px] font-bold uppercase tracking-widest mt-0.5" style={{ color: THEME.goldSoft, opacity: 0.75 }}>
-              हर 1 मिनट में Result • 2x Payout • Min ₹{Math.floor(config?.min_bet || 10)}
+              हर 1 मिनट में Result • 2x Payout • Min ₹{Math.floor(config?.min_bet || 50)}
             </p>
           </div>
           <button
@@ -493,7 +493,7 @@ const CoinPage = () => {
           <p className="text-[10px] mb-2 font-black uppercase tracking-widest" style={{ color: THEME.goldSoft }}>
             Bet Amount
           </p>
-          <div className="grid grid-cols-6 gap-1.5">
+          <div className="grid grid-cols-5 gap-1.5">
             {CHIPS.map((c) => {
               const isActive = amount === c;
               return (
@@ -501,7 +501,7 @@ const CoinPage = () => {
                   key={c}
                   onClick={() => setAmount(c)}
                   data-testid={`coin-chip-${c}`}
-                  disabled={c < (config?.min_bet || 10) || c > (config?.max_bet || 5000)}
+                  disabled={c < (config?.min_bet || 50) || c > (config?.max_bet || 5000)}
                   className="py-2 rounded-lg text-xs font-black active:scale-95 transition disabled:opacity-30"
                   style={isActive
                     ? {

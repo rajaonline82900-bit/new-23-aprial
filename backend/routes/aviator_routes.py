@@ -16,6 +16,7 @@ Provably fair:
 import asyncio
 import hashlib
 import math
+import random
 import secrets
 import time
 import uuid
@@ -337,10 +338,11 @@ async def active_bets():
 @router.get("/aviator/community-bets")
 async def community_bets(tab: str = "all", limit: int = 30):
     """Community feed for the bottom panel.
-    - tab="all":      current round's active bets (live)
-    - tab="previous": last completed round's settled bets
-    - tab="top":      highest-won bets across recent rounds
-    Returns masked names (e.g. 'd***9') for privacy.
+    - tab="all":      current round's active bets (live) + fake activity
+    - tab="previous": last completed round's settled bets + fake activity
+    - tab="top":      highest-won bets across recent rounds + fake big wins
+    Real user names are masked (e.g. 'd***9') for privacy; fake bets use
+    realistic Indian first names so the feed always looks active.
     """
     def _mask(name: str) -> str:
         if not name:
@@ -349,6 +351,84 @@ async def community_bets(tab: str = "all", limit: int = 30):
         if len(n) <= 2:
             return n[0] + "****"
         return f"{n[0].lower()}***{n[-1].lower()}"
+
+    # ---- Fake bet generators (Indian first-name pool + realistic amounts) ----
+    _FAKE_NAMES = [
+        "Rohit", "Priya", "Vikram", "Sneha", "Amit", "Kavya", "Rahul", "Anjali",
+        "Karan", "Divya", "Suresh", "Meena", "Arjun", "Pooja", "Manoj", "Ritu",
+        "Nikhil", "Shreya", "Deepak", "Aakash", "Neha", "Sanjay", "Isha",
+        "Ravi", "Jyoti", "Preeti", "Harsh", "Ajay", "Nitin", "Pallavi",
+        "Vishnu", "Shalini", "Sonia", "Kunal", "Simran", "Rakesh", "Farah",
+        "Yogesh", "Bhavna", "Ashish", "Tanvi", "Gaurav", "Poonam",
+    ]
+    def _fake_amt():
+        # Weighted toward small/mid amounts (realistic distribution)
+        return random.choices(
+            [50, 100, 200, 300, 500, 1000, 1500, 2000, 3000, 5000],
+            weights=[18, 22, 14, 10, 10, 10, 6, 5, 3, 2],
+            k=1,
+        )[0]
+
+    def _fake_all_bets(n: int):
+        """Fake bets during OPEN/betting phase — no multiplier yet OR
+        already cashed out mid-flight."""
+        out = []
+        for _ in range(n):
+            amt = _fake_amt()
+            # 45% still active, 55% already cashed out
+            if random.random() < 0.45:
+                out.append({
+                    "name": random.choice(_FAKE_NAMES),
+                    "amount": amt,
+                    "multiplier": None,
+                    "won": None,
+                })
+            else:
+                mult = round(random.uniform(1.10, 4.50), 2)
+                out.append({
+                    "name": random.choice(_FAKE_NAMES),
+                    "amount": amt,
+                    "multiplier": mult,
+                    "won": round(amt * mult, 2),
+                })
+        return out
+
+    def _fake_prev_bets(n: int):
+        """Historical bets — mix of won/lost. Crash was at some point."""
+        out = []
+        for _ in range(n):
+            amt = _fake_amt()
+            if random.random() < 0.5:
+                mult = round(random.uniform(1.15, 6.00), 2)
+                out.append({
+                    "name": random.choice(_FAKE_NAMES),
+                    "amount": amt,
+                    "multiplier": mult,
+                    "won": round(amt * mult, 2),
+                })
+            else:
+                out.append({
+                    "name": random.choice(_FAKE_NAMES),
+                    "amount": amt,
+                    "multiplier": None,   # crashed before cashout
+                    "won": None,
+                })
+        return out
+
+    def _fake_top_bets(n: int):
+        """Top winners — high multipliers, decent amounts."""
+        out = []
+        for _ in range(n):
+            amt = random.choices([100, 500, 1000, 2000, 3000, 5000],
+                                 weights=[10, 22, 25, 20, 15, 8], k=1)[0]
+            mult = round(random.uniform(2.50, 25.00), 2)
+            out.append({
+                "name": random.choice(_FAKE_NAMES),
+                "amount": amt,
+                "multiplier": mult,
+                "won": round(amt * mult, 2),
+            })
+        return out
 
     if tab == "all":
         items = []
@@ -359,20 +439,21 @@ async def community_bets(tab: str = "all", limit: int = 30):
                 "multiplier": b.get("cashed_out_at"),
                 "won": round(b["amount"] * b["cashed_out_at"], 2) if b.get("cashed_out_at") else None,
             })
-        # sort by bet amount desc
+        # Mix in ~18 fake bets so the feed always looks active
+        items.extend(_fake_all_bets(18))
         items.sort(key=lambda x: x["amount"], reverse=True)
         return {"bets": items[:limit], "phase": _state.phase}
 
     if tab == "previous":
         # last completed round
         last = await db.aviator_rounds.find_one({}, sort=[("created_at", -1)])
-        if not last:
-            return {"bets": []}
-        bets_cur = db.aviator_bets.find(
-            {"round_id": last["round_id"]},
-            {"_id": 0, "user_id": 1, "amount": 1, "cashout_multiplier": 1, "won_amount": 1, "status": 1}
-        ).sort("amount", -1).limit(limit)
-        bets = await bets_cur.to_list(limit)
+        bets = []
+        if last:
+            bets_cur = db.aviator_bets.find(
+                {"round_id": last["round_id"]},
+                {"_id": 0, "user_id": 1, "amount": 1, "cashout_multiplier": 1, "won_amount": 1, "status": 1}
+            ).sort("amount", -1).limit(limit)
+            bets = await bets_cur.to_list(limit)
         # join names
         user_ids = list({b["user_id"] for b in bets if b.get("user_id")})
         valid = [ObjectId(u) for u in user_ids]
@@ -384,9 +465,11 @@ async def community_bets(tab: str = "all", limit: int = 30):
             "multiplier": b.get("cashout_multiplier"),
             "won": b.get("won_amount") if b.get("status") == "won" else None,
         } for b in bets]
-        return {"bets": out, "crash_point": last.get("crash_point")}
+        out.extend(_fake_prev_bets(18))
+        out.sort(key=lambda x: x["amount"], reverse=True)
+        return {"bets": out[:limit], "crash_point": (last or {}).get("crash_point")}
 
-    # tab == "top": highest wins across recent bets
+    # tab == "top": highest wins across recent bets + fake big wins
     cur = db.aviator_bets.find(
         {"status": "won"},
         {"_id": 0, "user_id": 1, "amount": 1, "cashout_multiplier": 1, "won_amount": 1}
@@ -402,7 +485,9 @@ async def community_bets(tab: str = "all", limit: int = 30):
         "multiplier": b.get("cashout_multiplier"),
         "won": b.get("won_amount"),
     } for b in bets]
-    return {"bets": out}
+    out.extend(_fake_top_bets(14))
+    out.sort(key=lambda x: x.get("won") or 0, reverse=True)
+    return {"bets": out[:limit]}
 
 @router.post("/aviator/bet")
 async def place_bet(request: Request):
