@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import {
   ArrowLeft, Clock, CheckCircle2, XCircle, Coins, Loader2,
-  Trophy, Plane, Dice5, Sparkles,
+  Trophy, Plane, Dice5, Sparkles, Circle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import FooterNav from '../components/FooterNav';
@@ -27,9 +27,11 @@ const CAT_META = {
   kalyan:   { icon: Sparkles, color: '#EF4444', bg: 'rgba(239,68,68,0.12)', label: 'Kalyan' },
   gali:     { icon: Dice5, color: '#D4AF37', bg: 'rgba(212,175,55,0.12)', label: 'Gali/Disawar' },
   ludo:     { icon: Dice5, color: '#A78BFA', bg: 'rgba(167,139,250,0.12)', label: 'Ludo' },
+  coin:     { icon: Circle, color: '#FBBF24', bg: 'rgba(251,191,36,0.12)', label: 'Coin Toss' },
 };
 
 const getCatMeta = (bet) => {
+  if (bet.bet_type === 'coin' || bet.game_category === 'coin') return CAT_META.coin;
   if (bet.bet_type === 'aviator' || bet.game_category === 'aviator') return CAT_META.aviator;
   if (bet.game_category === 'ludo') return CAT_META.ludo;
   if (bet.game_category === 'kalyan') return CAT_META.kalyan;
@@ -106,8 +108,29 @@ const BetsPage = () => {
   const fetchBets = useCallback(async () => {
     try {
       setLoading(true);
-      const { data } = await axios.get(`${API_URL}/api/bets?limit=200`, { withCredentials: true });
-      setBets(data.bets || []);
+      // Fetch main bets + coin bets in parallel, then merge and sort by date
+      const [betsRes, coinRes] = await Promise.all([
+        axios.get(`${API_URL}/api/bets?limit=200`, { withCredentials: true }),
+        axios.get(`${API_URL}/api/coin/history?limit=100`, { withCredentials: true }).catch(() => ({ data: { bets: [] } })),
+      ]);
+      const mainBets = betsRes.data.bets || [];
+      const coinBets = (coinRes.data.bets || []).map((c) => ({
+        _id: c.bet_id,
+        bet_type: 'coin',
+        game_category: 'coin',
+        game_name: 'Coin Toss',
+        session: c.side ? c.side.toUpperCase() : '',
+        number: c.side === 'head' ? 'H' : 'T',
+        amount: c.amount,
+        winnings: c.status === 'won' ? c.payout : 0,
+        status: c.status === 'pending' ? 'pending' : c.status,
+        result: c.result_side ? (c.result_side === 'head' ? 'H' : 'T') : null,
+        created_at: c.created_at,
+      }));
+      const merged = [...mainBets, ...coinBets].sort(
+        (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)
+      );
+      setBets(merged);
     } catch (error) {
       toast.error('History load nahi hui');
     } finally {
@@ -127,18 +150,20 @@ const BetsPage = () => {
       if (activeFilter === 'kalyan') return meta === CAT_META.kalyan;
       if (activeFilter === 'gali') return meta === CAT_META.gali;
       if (activeFilter === 'ludo') return meta === CAT_META.ludo;
+      if (activeFilter === 'coin') return meta === CAT_META.coin;
       return true;
     });
   }, [bets, activeFilter]);
 
   // Category counts for pill badges
   const counts = useMemo(() => {
-    const c = { all: bets.length, aviator: 0, kalyan: 0, gali: 0, ludo: 0 };
+    const c = { all: bets.length, aviator: 0, kalyan: 0, gali: 0, ludo: 0, coin: 0 };
     bets.forEach((b) => {
       const m = getCatMeta(b);
       if (m === CAT_META.aviator) c.aviator++;
       else if (m === CAT_META.kalyan) c.kalyan++;
       else if (m === CAT_META.ludo) c.ludo++;
+      else if (m === CAT_META.coin) c.coin++;
       else c.gali++;
     });
     return c;
@@ -230,6 +255,14 @@ const BetsPage = () => {
             count={counts.ludo}
             activeColor="#A78BFA"
             activeGrad="linear-gradient(135deg, #C4B5FD 0%, #7C3AED 100%)"
+          />
+          <FilterChip
+            id="coin" label="Coin Toss" Icon={Circle}
+            active={activeFilter === 'coin'}
+            onClick={() => setActiveFilter('coin')}
+            count={counts.coin}
+            activeColor="#FBBF24"
+            activeGrad="linear-gradient(135deg, #FCD34D 0%, #B45309 100%)"
           />
           <FilterChip
             id="won" label="Won Amount" Icon={Trophy}

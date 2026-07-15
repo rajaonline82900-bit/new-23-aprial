@@ -19,6 +19,7 @@ from datetime import datetime, timezone
 from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Request
+from bson import ObjectId
 
 from database import db
 from auth import get_current_user
@@ -134,8 +135,8 @@ async def coin_place_bet(request: Request):
     if not r:
         raise HTTPException(400, "Betting closed for this round — wait for next")
 
-    # Deduct from balance
-    await db.users.update_one({"_id": user["_id"]}, {"$inc": {"balance": -amount}})
+    # Deduct from balance (user["_id"] is string from auth, convert to ObjectId)
+    await db.users.update_one({"_id": ObjectId(user["_id"])}, {"$inc": {"balance": -amount}})
 
     bet_doc = {
         "_id": uuid.uuid4().hex,
@@ -371,10 +372,12 @@ async def _run_one_round():
 
     # Sleep until result reveal time
     await asyncio.sleep(max(0.0, result_at - time.time()))
-    await db.coin_rounds.update_one({"_id": round_id}, {"$set": {"status": "result"}})
 
-    # Settle bets
+    # Settle bets FIRST so that when clients see status='result', balances are
+    # already updated. (Previously we set status=result then settled → clients
+    # refreshed balance too early and saw the old deducted amount.)
     await _settle_round(round_id, result_side)
+    await db.coin_rounds.update_one({"_id": round_id}, {"$set": {"status": "result"}})
 
     # Sleep until round officially ends
     await asyncio.sleep(max(0.0, ends_at - time.time()))
@@ -398,7 +401,7 @@ async def _settle_round(round_id: str, result_side: str):
                 {"_id": b["_id"]},
                 {"$set": {"status": "won", "payout": payout, "settled_at": datetime.now(timezone.utc)}}
             )
-            await db.users.update_one({"_id": b["user_id"]}, {"$inc": {"balance": payout}})
+            await db.users.update_one({"_id": ObjectId(b["user_id"])}, {"$inc": {"balance": payout}})
         else:
             await db.coin_bets.update_one(
                 {"_id": b["_id"]},

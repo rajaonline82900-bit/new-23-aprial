@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import FooterNav from '../components/FooterNav';
 import {
   playCoinFlip, playCoinSpin, playClockTick, playCoinWin,
-  setCoinMuted, isCoinMuted,
+  setCoinMuted, setCoinUserMuted, isCoinUserMuted, unlockCoinAudio,
 } from '../utils/coinAudio';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -37,11 +37,33 @@ const CoinPage = () => {
   const [placing, setPlacing] = useState(false);
   const [flipAnim, setFlipAnim] = useState(false);
   const [lastResult, setLastResult] = useState(null);
-  const [muted, setMuted] = useState(isCoinMuted());
+  const [muted, setMuted] = useState(isCoinUserMuted());
   const prevRoundIdRef = useRef(null);
   const prevPhaseRef = useRef(null);
   const spinIntervalRef = useRef(null);
   const lastTickSecRef = useRef(null);
+  const isActiveRef = useRef(true);
+
+  useEffect(() => {
+    isActiveRef.current = true;
+    // Enter coin page: sync playback mute to user preference (allow sounds)
+    setCoinMuted(isCoinUserMuted());
+    return () => {
+      // Leave coin page: hard-mute so no sounds leak to background pages
+      isActiveRef.current = false;
+      if (spinIntervalRef.current) {
+        clearInterval(spinIntervalRef.current);
+        spinIntervalRef.current = null;
+      }
+      setCoinMuted(true);
+    };
+  }, []);
+
+  const toggleMute = () => {
+    const nm = !muted;
+    setMuted(nm);
+    setCoinUserMuted(nm);
+  };
 
   const fetchConfig = useCallback(async () => {
     try {
@@ -85,10 +107,25 @@ const CoinPage = () => {
     fetchMyCurrent();
     fetchRecent();
     fetchLiveFeed();
-    const iv = setInterval(() => { fetchCurrent(); }, 800);
+    const iv = setInterval(() => { fetchCurrent(); }, 500);   // faster to catch phase transitions
     const iv2 = setInterval(() => { fetchMyCurrent(); fetchRecent(); }, 3000);
     const iv3 = setInterval(() => { fetchLiveFeed(); }, 4000);
-    return () => { clearInterval(iv); clearInterval(iv2); clearInterval(iv3); };
+
+    // Unlock Web Audio on first user gesture anywhere on the page.
+    // Mobile browsers block AudioContext until user interacts.
+    const unlockOnce = () => {
+      unlockCoinAudio();
+      document.removeEventListener('click', unlockOnce);
+      document.removeEventListener('touchstart', unlockOnce);
+    };
+    document.addEventListener('click', unlockOnce, { once: true });
+    document.addEventListener('touchstart', unlockOnce, { once: true });
+
+    return () => {
+      clearInterval(iv); clearInterval(iv2); clearInterval(iv3);
+      document.removeEventListener('click', unlockOnce);
+      document.removeEventListener('touchstart', unlockOnce);
+    };
   }, [fetchConfig, fetchCurrent, fetchMyCurrent, fetchRecent, fetchLiveFeed]);
 
   // Clock tick sound — last 10 seconds of betting phase
@@ -135,14 +172,31 @@ const CoinPage = () => {
       if (spinIntervalRef.current) { clearInterval(spinIntervalRef.current); spinIntervalRef.current = null; }
       // Final landing "ching"
       playCoinFlip();
-      // Fire refresh & bet reconciliation
+      // Immediate + delayed refreshes: backend settles bets right after status
+      // change, so first refresh may see old balance. Second refresh at 1.5s
+      // catches the settled payout.
       refreshUser();
       fetchMyCurrent();
       fetchRecent();
-      // Play win chime if user won this round
-      const myWon = myBets.find((b) => b.side === round.result_side);
-      if (myWon) {
-        setTimeout(() => playCoinWin(), 350);
+      setTimeout(() => {
+        refreshUser();
+        fetchMyCurrent();
+      }, 1500);
+      // Show WIN / LOSS toast based on user's bets in this round
+      if (myBets.length > 0) {
+        const won = myBets.filter((b) => b.side === round.result_side);
+        const lost = myBets.filter((b) => b.side !== round.result_side);
+        const totalWin = won.reduce((s, b) => s + (b.amount * (config?.payout_multiplier || 1.8)), 0);
+        const totalLost = lost.reduce((s, b) => s + b.amount, 0);
+        if (won.length > 0) {
+          toast.success(`🎉 आप जीते! +₹${Math.floor(totalWin).toLocaleString('en-IN')}`, { duration: 4000 });
+          setTimeout(() => playCoinWin(), 350);
+          try { navigator.vibrate?.([60, 30, 100, 30, 60]); } catch (_) { /* haptic */ }
+        }
+        if (lost.length > 0 && won.length === 0) {
+          toast.error(`😔 Loss! −₹${Math.floor(totalLost).toLocaleString('en-IN')}`, { duration: 4000 });
+          try { navigator.vibrate?.(80); } catch (_) { /* haptic */ }
+        }
       }
     }
 
@@ -153,12 +207,6 @@ const CoinPage = () => {
   useEffect(() => () => {
     if (spinIntervalRef.current) clearInterval(spinIntervalRef.current);
   }, []);
-
-  const toggleMute = () => {
-    const nm = !muted;
-    setMuted(nm);
-    setCoinMuted(nm);
-  };
 
   const placeBet = async (side) => {
     if (placing) return;

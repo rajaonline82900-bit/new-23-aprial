@@ -677,7 +677,7 @@ const DashboardPage = () => {
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 mb-5" data-testid="home-gateway-grid">
+              <div className="grid grid-cols-1 gap-3 mb-5" data-testid="home-gateway-grid">
                 {[
                   {
                     id: 'gali_disawar',
@@ -766,7 +766,7 @@ const DashboardPage = () => {
                         background: cat.bg,
                         border: `1.5px solid ${cat.border}`,
                         boxShadow: `0 4px 14px rgba(0,0,0,0.5), inset 0 1px 0 ${cat.border}30`,
-                        minHeight: '158px',
+                        minHeight: '132px',
                         transition: 'transform 180ms ease',
                         opacity: isDisabled ? 0.55 : 1,
                         filter: isDisabled ? 'grayscale(70%)' : 'none',

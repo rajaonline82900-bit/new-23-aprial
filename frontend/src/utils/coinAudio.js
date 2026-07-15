@@ -9,12 +9,36 @@ function ctx() {
       _ctx = new AC();
     } catch (_) { _ctx = null; }
   }
+  // Auto-resume if suspended (mobile browsers require user gesture)
+  if (_ctx && _ctx.state === 'suspended') {
+    try { _ctx.resume(); } catch (_) { /* silent */ }
+  }
   return _ctx;
 }
 
-let _muted = false;
+/** Call once from a user-gesture handler (click, tap) to unlock audio on
+ * iOS/Android browsers. Safe to call multiple times. */
+export function unlockCoinAudio() {
+  const c = ctx();
+  if (!c) return;
+  try {
+    if (c.state === 'suspended') c.resume();
+    // Play an inaudible silent tick to fully unlock the context
+    const o = c.createOscillator();
+    const g = c.createGain();
+    g.gain.value = 0.0001;
+    o.connect(g).connect(c.destination);
+    o.start();
+    o.stop(c.currentTime + 0.01);
+  } catch (_) { /* silent */ }
+}
+
+let _muted = false;         // component-mute (hard-off when not on coin page)
+let _userMuted = false;     // user's explicit preference (persists across mounts)
 export const setCoinMuted = (v) => { _muted = !!v; };
+export const setCoinUserMuted = (v) => { _userMuted = !!v; _muted = !!v; };
 export const isCoinMuted = () => _muted;
+export const isCoinUserMuted = () => _userMuted;
 
 /** Bright metallic "ching" — used when coin lands or is flipped. */
 export function playCoinFlip() {
@@ -66,25 +90,47 @@ export function playCoinSpin() {
   } catch (_) { /* audio unsupported */ }
 }
 
-/** Old-clock TICK — short, dry, mechanical. */
+/** Mechanical clock TICK — sharp attack, quick decay, alternating hi/lo pitch
+ *  to give a real "tick-tock" feel. */
+let _tickAlt = false;
 export function playClockTick() {
   if (_muted) return;
   const c = ctx();
   if (!c) return;
   try {
     const now = c.currentTime;
+    _tickAlt = !_tickAlt;
+    const isTock = _tickAlt;   // alternate every call
+
+    // Master gain envelope
+    const master = c.createGain();
+    master.gain.setValueAtTime(0.0001, now);
+    master.gain.linearRampToValueAtTime(0.32, now + 0.003);
+    master.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
+    master.connect(c.destination);
+
+    // Main pitched click (tick=high, tock=low)
     const o = c.createOscillator();
     o.type = 'square';
-    // Alternate hi/lo tick-tock feel via odd/even seconds
-    const hi = Math.floor(now * 10) % 2 === 0;
-    o.frequency.setValueAtTime(hi ? 2100 : 1700, now);
-    const g = c.createGain();
-    g.gain.setValueAtTime(0.0001, now);
-    g.gain.linearRampToValueAtTime(0.20, now + 0.005);
-    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.06);
-    o.connect(g).connect(c.destination);
+    const base = isTock ? 1400 : 2200;
+    o.frequency.setValueAtTime(base, now);
+    o.frequency.exponentialRampToValueAtTime(base * 0.4, now + 0.05);
+    o.connect(master);
     o.start(now);
-    o.stop(now + 0.07);
+    o.stop(now + 0.10);
+
+    // Add a short noise burst for the "click" attack (BufferSource of random noise)
+    const noiseBuf = c.createBuffer(1, Math.floor(c.sampleRate * 0.02), c.sampleRate);
+    const data = noiseBuf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * 0.6;
+    const noise = c.createBufferSource();
+    noise.buffer = noiseBuf;
+    const nGain = c.createGain();
+    nGain.gain.setValueAtTime(0.35, now);
+    nGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.03);
+    noise.connect(nGain).connect(c.destination);
+    noise.start(now);
+    noise.stop(now + 0.03);
   } catch (_) { /* audio unsupported */ }
 }
 

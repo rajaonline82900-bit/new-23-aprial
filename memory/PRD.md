@@ -1,7 +1,40 @@
 # MATKA11 - Product Requirements Document
 
 
-## Latest Update (2026-02-15) — Coin Toss V2 + Ludo Removed (Batch 8) 🎰
+## Latest Update (2026-02-15) — Coin Toss Critical Fixes (Batch 9) 🔧
+
+**User complaints fixed:**
+
+1. **💰 Balance not updating on win/loss** → **BUG FIXED**: `user["_id"]` is a string (converted by auth) but Mongo stores ObjectId. `db.users.update_one({"_id": user["_id"]}, ...)` was silently failing (no match, no error). Fixed both the bet-time deduction and settle-time credit by wrapping with `ObjectId(user["_id"])`. Curl-verified: ₹500 bet → balance 3000→2500. Won ₹100 tail → balance 2300→2430 (correct +₹180 payout).
+
+2. **🔔 Settlement order fixed**: Backend now settles bets BEFORE broadcasting status='result'. Previously status changed first, clients refreshed balance seeing old value, then settlement happened.
+
+3. **📢 Explicit WIN/LOSS toast**: When result phase begins, if user had bets: `toast.success('🎉 आप जीते! +₹180')` with 5-pattern vibration, or `toast.error('😔 Loss! -₹500')` with 80ms vibration. 4-second toast duration.
+
+4. **🔇 Background sounds silenced when navigating away**: Introduced `_userMuted` (user preference) vs `_muted` (component-active state). On CoinPage mount → sync playback to user preference. On unmount → hard-mute (`setCoinMuted(true)`) so ticks/spins don't leak. Re-mount restores user preference via `setCoinMuted(isCoinUserMuted())`.
+
+5. **⏰ Better clock tick sound**: Rebuilt `playClockTick` with 3-layer synthesis — main square oscillator (1400Hz tock / 2200Hz tick alternating), sharp exponential envelope, AND a noise burst for the "click" attack. Real mechanical clock feel.
+
+6. **📜 Coin bets in /bets History**: `BetsPage.js` now fetches `/api/coin/history` in parallel with regular bets and merges by `created_at`. New "Coin Toss" filter chip. Screenshot verified: 19 bets showing including "Coin Toss HEAD ₹500 LOSS", "Coin Toss TAIL ₹100 WIN +₹180" with 15 JUL · 06:02 PM timestamps.
+
+7. **📱 Vertical stacked bigger boxes on Dashboard**: `grid-cols-2` → `grid-cols-1`, `minHeight: 158px` → `132px`. Now 4 full-width tall boxes (Gali → Kalyan → Aviator → Coin Toss) matching the "old wide coin box" size the user liked.
+
+8. **🎯 More visible coin jump animation**: `coinFlipV2` keyframes now bounce up to `translateY(-80px)` (from -40px). Landing animations `coinLandHeadV2` / `coinLandTailV2` peak at -70px before settling. More dramatic physical toss.
+
+**Files touched:**
+- `backend/routes/coin_routes.py` — `ObjectId` imports + wrapping, settle-before-status order swap
+- `frontend/src/pages/CoinPage.js` — win/loss toast, isActiveRef, hard-mute on unmount
+- `frontend/src/utils/coinAudio.js` — user/component mute split, improved clock tick with noise burst
+- `frontend/src/pages/BetsPage.js` — parallel coin history fetch + merge + new Coin filter chip
+- `frontend/src/pages/DashboardPage.js` — grid-cols-1, minHeight 132px
+- `frontend/src/App.css` — bigger jump keyframes
+
+**Verified:**
+- ✅ Curl: bet ₹500 → balance 3000→2500 (deducted). Win ₹100 tail → +₹180 credited. Loss ₹500 → no change.
+- ✅ Dashboard: 4 vertical big boxes, Ludo hidden, Coin Toss with "1 MIN" badge
+- ✅ Bets page: 19 mixed bets including Coin Toss WIN (+₹180 green) and LOSS (-₹500 red) with 15 JUL 06:02 PM timestamps
+
+
 
 **User feedback**: "Coin Toss me Live Bet Feed add karo. User win chance 20% karo. Coin attractive bnao. Sikka uchhalna chiye + coin ki avaj + timer me ghadi ki sui ki avaj. Ludo section hta do."
 
