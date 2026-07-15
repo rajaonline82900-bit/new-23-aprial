@@ -1,7 +1,28 @@
 # MATKA11 - Product Requirements Document
 
 
-## Latest Update (2026-02-15) — Ludo Bot Play Bug Fix (Batch 5) 🚨
+## Latest Update (2026-02-15) — True Zupee-Style Turn Handling (Batch 6) 🎯
+**User complaint**: "Zupee me jo ludo tha time vala vese bnao bilkul. Isme 2-4 baar hi play kar pa raha hu, baad me baari nahi aati" — was getting stuck after 2-4 turns.
+
+**Root cause**: `MAX_AUTO_SKIPS = 3` meant if user took >15s per turn (very common while learning), they'd be AUTO-FORFEITED after 3 misses. Curl-verified: user forfeited on the 4th missed turn → match ended with bot as winner.
+
+**Fixes applied (Zupee-authentic)**:
+1. **No more auto-forfeit** — `MAX_AUTO_SKIPS = 999` (effectively disabled). User can miss unlimited turns, will never be kicked out.
+2. **Turn duration bumped**: `TURN_DURATION` 15s → **20s** (more forgiving for thinking players).
+3. **New skip semantics**: If real user times out WITHOUT rolling → turn just skips to next player (no forced dice roll, no forfeit). If they rolled but didn't pick token → auto-pick (dice was already consumed).
+4. **auto_skips resets** on any manual action (roll OR move).
+5. **New WS event**: `turn_skipped` broadcast when user misses roll, so frontend can show "You missed your turn" toast.
+
+**Curl-verified (90s stress test, 4 missed turns)**:
+- ✅ Admin `auto_skips=4, forfeited=False` — never eliminated
+- ✅ Match status still `playing` (would have ended before with old logic)
+- ✅ Bot keeps playing rounds even while user is idle
+- ✅ User can rejoin any time — dice roll button still works
+- ✅ Log shows clean "Admin — turn skipped (no roll)" entries
+
+**Files**: `backend/routes/ludo_routes.py` — `MAX_AUTO_SKIPS`, `TURN_DURATION`, `_auto_turn` rewrite, `move_token` resets `auto_skips`.
+
+
 **Critical fix**: Bot was NOT playing in 2-player games — user's earlier report "keval me play kar raha hu, bot bilkul play nahi kr rha" was a real bug.
 
 **Root cause**: In previous update (Batch 4), 2-player seating was changed to opposite (seats 0 & 2), but `_apply_token_move` at line 564 was doing `t["players"][seat]` — treating seat number as ARRAY INDEX. When seat=2 but players array only had 2 items (indices 0,1), the watchdog crashed with `IndexError: list index out of range`, silently every 2 seconds, so the bot never got to move.

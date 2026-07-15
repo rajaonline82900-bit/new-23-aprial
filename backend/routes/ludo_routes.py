@@ -42,10 +42,13 @@ FINAL_HOME_PROGRESS = MAIN_TRACK_LEN + HOME_COLUMN_LEN - 1  # = 57
 TOKENS_PER_PLAYER = 4
 
 MATCH_DURATION = 5 * 60          # 5 minutes (Zupee Supreme style)
-TURN_DURATION = 15
+TURN_DURATION = 20               # 20s per turn — more forgiving than Zupee's 15s
 BOT_FILL_WAIT = 15               # 15s wait for real user before bot autofill (user request)
 MAX_CONSECUTIVE_SIXES = 3
-MAX_AUTO_SKIPS = 3               # After 3 auto-plays in a row, user forfeits on 4th
+# Zupee-style: user is NEVER auto-forfeited for missing turns. They only lose
+# by leaving the game or having lower final score. Auto-skips are still tracked
+# so the watchdog can advance the game, but never eliminate the user.
+MAX_AUTO_SKIPS = 999             # Effectively disabled — no forfeit for slow play
 ENTRY_FEE_SLABS = [100, 200, 500, 1000, 2000, 5000, 10000]
 PLAYER_COUNTS = [2, 3, 4]
 DEFAULT_COMMISSION_PCT = 10.0
@@ -675,10 +678,15 @@ async def ludo_watchdog():
 
 
 async def _auto_turn(table_id: str) -> None:
-    """Roll + move for the current player (bot or timed-out user).
-    For real users: increments `auto_skips`. If auto_skips > MAX_AUTO_SKIPS,
-    that user is forfeited (loses) — matching the "3 auto-skips allowed,
-    4th means user loses" rule.
+    """Zupee-style auto-turn handler:
+      • For BOTS: always roll + move.
+      • For REAL USERS who timed out:
+          - If they haven't rolled yet (no pending_dice) → SKIP their turn
+            entirely (no forced roll, no forfeit). This is the Zupee behaviour
+            — you just lose the chance to play that turn, but never eliminated.
+          - If they rolled but didn't pick a token (pending_dice exists) →
+            auto-pick a token to move (dice was already consumed).
+      • Never auto-forfeit real users for slow play (MAX_AUTO_SKIPS = 999).
     """
     t = await db.ludo_tables.find_one({"_id": table_id})
     if not t or t["status"] != "playing":
@@ -688,27 +696,24 @@ async def _auto_turn(table_id: str) -> None:
         return
     is_bot = cp.get("is_bot", False)
 
-    # Real user auto-skip forfeit check (BEFORE this auto-play)
+    # ═══ Real user skip logic ═══
     if not is_bot:
-        current_skips = cp.get("auto_skips", 0)
-        # After this auto-play, skips will be current+1. If that would EXCEED
-        # the limit (i.e., 4th auto-skip), forfeit instead of auto-playing.
-        if current_skips >= MAX_AUTO_SKIPS:
-            cp["forfeited"] = True
-            cp["forfeit_reason"] = "auto_skip_limit"
-            await _log_event(t, f"{cp['name']} — {MAX_AUTO_SKIPS + 1}th miss, disqualified")
-            t["pending_dice"] = None
+        pending = t.get("pending_dice")
+        if not pending:
+            # User didn't roll in time → simply pass the turn to the next player.
+            # No dice roll, no token move, no forfeit. This is very forgiving
+            # (matches Zupee where you don't lose tokens for missing a roll).
+            await _log_event(t, f"{cp['name']} — turn skipped (no roll)")
+            cp["auto_skips"] = cp.get("auto_skips", 0) + 1
+            t["consecutive_sixes"] = 0
             t["current_turn_idx"] = _next_turn_idx(t, extra=False)
             t["current_turn_deadline"] = time.time() + TURN_DURATION
-            remaining = _active_players(t)
             await db.ludo_tables.update_one({"_id": table_id}, {"$set": t})
-            await _broadcast(table_id, {"type": "player_forfeited", "seat": cp["seat"],
+            await _broadcast(table_id, {"type": "turn_skipped", "seat": cp["seat"],
                                          "state": _public_table(t)})
-            if len(remaining) <= 1:
-                await _settle_table(table_id, "forfeit_end")
             return
-        # Otherwise increment counter for this auto-play
-        cp["auto_skips"] = current_skips + 1
+        # User rolled but didn't pick a token — auto-pick since dice was consumed
+        cp["auto_skips"] = cp.get("auto_skips", 0) + 1
 
     # If there's already a pending dice waiting to be consumed, resolve it
     pending = t.get("pending_dice")
@@ -994,6 +999,9 @@ async def move_token(table_id: str, request: Request):
     movable = _movable_tokens(cp, dice)
     if token_id not in movable:
         raise HTTPException(400, "This token cannot move with that dice")
+
+    # Reset auto-skip counter — user took manual action
+    cp["auto_skips"] = 0
 
     result = await _apply_token_move(t, cp["seat"], dice, token_id)
     extra = result["extra"]
