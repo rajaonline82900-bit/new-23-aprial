@@ -330,6 +330,10 @@ async def admin_game_transactions(
     user_id: str = "",        # filter by specific user
 ):
     """Return recent game-related wallet transactions across all users.
+    Merges:
+      * `transactions` collection (coin_*, ludo_*)
+      * `aviator_bets` (synthesized as aviator_bet + aviator_win/loss)
+      * `bets` (gali/kalyan matka — synthesized as matka_bet + matka_win/loss)
     Admin can see who won/lost what on which game with date + time + amount.
     """
     user = await get_current_user(request)
@@ -337,48 +341,132 @@ async def admin_game_transactions(
         raise HTTPException(403, "Admin only")
     limit = max(1, min(500, int(limit)))
 
-    # Build query — filter by game (via type prefix) and/or win/loss/bet suffix
-    type_prefixes = {
-        "coin": "coin_",
-        "ludo": "ludo_",
-        "aviator": "aviator_",
-        "kalyan": "matka_",
-        "gali": "matka_",
-    }
-    # Regex to match game-related transactions
-    if game and game.lower() in type_prefixes:
-        prefix = type_prefixes[game.lower()]
-        pattern = f"^{prefix}"
-    else:
-        pattern = "^(coin_|ludo_|aviator_|matka_)"
-    if type_filter:
-        # win/loss/bet — match suffix keyword (with or without a leading '_').
-        # Handles both 'coin_win' (prefix+keyword) and 'aviator_round_win' (prefix+_+keyword).
-        suffix = type_filter.lower()
-        if suffix in ("win", "loss", "bet"):
-            pattern = f"{pattern}.*{suffix}$"
-    query = {"type": {"$regex": pattern}}
-    if user_id:
-        query["user_id"] = user_id
+    game_l = (game or "").lower()
+    suffix_l = (type_filter or "").lower() if type_filter and type_filter.lower() in ("win", "loss", "bet") else ""
 
-    cur = db.transactions.find(query).sort("created_at", -1).limit(limit)
-    rows = await cur.to_list(limit)
-    out = []
-    for r in rows:
-        out.append({
-            "id": str(r.get("_id")),
-            "user_id": r.get("user_id"),
-            "name": r.get("name") or "-",
-            "type": r.get("type"),
-            "game_name": r.get("game_name") or _game_name_from_type(r.get("type", "")),
-            "amount": r.get("amount", 0.0),
-            "bet_amount": r.get("bet_amount"),
-            "side": r.get("side"),
-            "result_side": r.get("result_side"),
-            "created_at": r["created_at"].isoformat() if isinstance(r.get("created_at"), datetime) else r.get("created_at"),
-            "round_id": r.get("round_id") or r.get("table_id"),
-        })
-    return {"transactions": out, "count": len(out)}
+    # ---------- Source 1: transactions collection (coin_*, ludo_*) ----------
+    tx_prefixes_by_game = {
+        "coin": ["coin_"],
+        "ludo": ["ludo_"],
+        "aviator": [],            # aviator has no transactions rows
+        "kalyan": [],             # matka has no transactions rows
+        "gali": [],
+    }
+    if game_l in tx_prefixes_by_game:
+        prefixes = tx_prefixes_by_game[game_l]
+    else:
+        prefixes = ["coin_", "ludo_"]
+
+    tx_out = []
+    if prefixes:
+        pattern = f"^({'|'.join(prefixes)})"
+        if suffix_l:
+            pattern = f"{pattern}.*{suffix_l}$"
+        q = {"type": {"$regex": pattern}}
+        if user_id:
+            q["user_id"] = user_id
+        async for r in db.transactions.find(q).sort("created_at", -1).limit(limit):
+            tx_out.append({
+                "id": str(r.get("_id")),
+                "user_id": r.get("user_id"),
+                "name": r.get("name") or "-",
+                "type": r.get("type"),
+                "game_name": r.get("game_name") or _game_name_from_type(r.get("type", "")),
+                "amount": r.get("amount", 0.0),
+                "bet_amount": r.get("bet_amount"),
+                "side": r.get("side"),
+                "result_side": r.get("result_side"),
+                "created_at": r["created_at"].isoformat() if isinstance(r.get("created_at"), datetime) else r.get("created_at"),
+                "round_id": r.get("round_id") or r.get("table_id"),
+            })
+
+    # ---------- Source 2: aviator_bets (synthesized) ----------
+    av_out = []
+    if not game_l or game_l == "aviator":
+        aq = {}
+        if user_id:
+            aq["user_id"] = user_id
+        async for a in db.aviator_bets.find(aq).sort("created_at", -1).limit(limit):
+            amt = float(a.get("amount", 0) or 0)
+            status = a.get("status", "pending")
+            cashout = a.get("cashout_multiplier")
+            won_amount = float(a.get("won_amount", 0) or 0)
+            created_at = a.get("created_at")
+            base = {
+                "user_id": a.get("user_id"),
+                "name": "-",
+                "game_name": "Aviator",
+                "side": f"{cashout:.2f}x" if cashout else None,
+                "result_side": f"crash@{a.get('crash_point'):.2f}x" if a.get("crash_point") else None,
+                "round_id": a.get("round_id"),
+                "created_at": created_at.isoformat() if isinstance(created_at, datetime) else created_at,
+            }
+            # 1) bet debit
+            av_out.append({**base, "id": f"av-bet-{a.get('id') or a.get('round_id')}-{a.get('user_id')}", "type": "aviator_bet", "amount": -amt, "bet_amount": amt})
+            # 2) settled win/loss
+            if status == "won" and won_amount > 0:
+                av_out.append({**base, "id": f"av-win-{a.get('id') or a.get('round_id')}-{a.get('user_id')}", "type": "aviator_win", "amount": won_amount, "bet_amount": amt})
+            elif status == "lost":
+                av_out.append({**base, "id": f"av-loss-{a.get('id') or a.get('round_id')}-{a.get('user_id')}", "type": "aviator_loss", "amount": 0.0, "bet_amount": amt})
+
+    # ---------- Source 3: bets collection (gali/kalyan matka) ----------
+    matka_out = []
+    if not game_l or game_l in ("kalyan", "gali"):
+        bq = {}
+        if user_id:
+            bq["user_id"] = user_id
+        async for b in db.bets.find(bq).sort("created_at", -1).limit(limit):
+            amt = float(b.get("amount", 0) or 0)
+            status = b.get("status", "pending")
+            won_amount = float(b.get("won_amount", 0) or b.get("winnings", 0) or 0)
+            gid = b.get("game_id", "")
+            # Best-effort category tagging so admin can filter Kalyan vs Gali
+            game_cat = b.get("game_category") or ("kalyan" if "kalyan" in str(gid).lower() else "gali")
+            gname = b.get("game_name") or ("Kalyan" if game_cat == "kalyan" else "Gali/Disawar")
+            created_at = b.get("created_at")
+            base = {
+                "user_id": b.get("user_id"),
+                "name": "-",
+                "game_name": gname,
+                "side": b.get("bet_type"),
+                "result_side": b.get("digit") or b.get("number"),
+                "round_id": gid,
+                "created_at": created_at.isoformat() if isinstance(created_at, datetime) else created_at,
+            }
+            bid = str(b.get("_id") or b.get("id") or "")
+            matka_out.append({**base, "id": f"matka-bet-{bid}", "type": "matka_bet", "amount": -amt, "bet_amount": amt})
+            if status == "won" and won_amount > 0:
+                matka_out.append({**base, "id": f"matka-win-{bid}", "type": "matka_win", "amount": won_amount, "bet_amount": amt})
+            elif status == "lost":
+                matka_out.append({**base, "id": f"matka-loss-{bid}", "type": "matka_loss", "amount": 0.0, "bet_amount": amt})
+
+    # ---------- Merge + apply suffix filter (bet/win/loss) uniformly ----------
+    all_rows = tx_out + av_out + matka_out
+    if suffix_l:
+        all_rows = [r for r in all_rows if str(r.get("type", "")).endswith(suffix_l)]
+
+    # Enrich with user names in one batch
+    ids_needed = list({r["user_id"] for r in all_rows if r.get("user_id") and r.get("name") in (None, "", "-")})
+    if ids_needed:
+        oids = [ObjectId(u) for u in ids_needed]
+        name_map = {}
+        async for u in db.users.find({"_id": {"$in": oids}}, {"name": 1, "phone": 1}):
+            name_map[str(u["_id"])] = u.get("name") or u.get("phone") or "-"
+        for r in all_rows:
+            if r.get("name") in (None, "", "-") and r.get("user_id") in name_map:
+                r["name"] = name_map[r["user_id"]]
+
+    # Sort by created_at desc (safe parse for str + datetime)
+    def _ts(v):
+        if not v:
+            return ""
+        if hasattr(v, "isoformat"):
+            return v.isoformat()
+        return str(v)
+    all_rows.sort(key=lambda r: _ts(r.get("created_at")), reverse=True)
+    all_rows = all_rows[:limit]
+
+    return {"transactions": all_rows, "count": len(all_rows)}
 
 
 def _game_name_from_type(tp: str) -> str:

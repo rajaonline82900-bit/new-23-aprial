@@ -1,7 +1,30 @@
 # MATKA11 - Product Requirements Document
 
 
-## Latest Update (2026-02-15) — Aviator Fake Community Feed + Coin Chip Cleanup (Batch 16) ✈️🪙
+## Latest Update (2026-02-15) — Admin Wallet Tx: All Games Merged (Batch 17) 💼📊
+
+**User request:** Admin dashboard user details ke Wallet Transactions tab me kewal coin dikh raha tha. Sabhi games (Gali, Kalyan, Aviator, Ludo, Coin) ki transactions dikhni chahiye — jaise user ke apne app history me sabhi games dikhte hain.
+
+**Root cause:** Aviator (`aviator_bets`) aur Matka (`bets`) games apne dedicated collections me store hote hain — `transactions` collection me unke rows NAHI hote. Isliye admin endpoint sirf `coin_*` aur `ludo_*` transactions dikha raha tha (jo `transactions` me hain).
+
+**Fix:** `GET /api/admin/wallet/game-transactions` ab 3 sources merge karta hai:
+1. `transactions` collection (coin_*, ludo_*) — original
+2. `aviator_bets` — synthesize `aviator_bet` (-stake) + `aviator_win` (+won) OR `aviator_loss` per bet
+3. `bets` (gali/kalyan matka) — synthesize `matka_bet` + `matka_win`/`matka_loss` per bet
+
+Batch user-name enrichment. Suffix filter (win/loss/bet) applies uniformly post-merge. Sort desc by `created_at`. `game` filter routes to appropriate source(s).
+
+**Verified via curl:**
+- Ludo-only user: 10 ludo entries (ludo_entry, ludo_win, ludo_refund)
+- User with mixed: `{"Aviator": 2, "Ludo": 10}` sorted latest first — aviator_bet + aviator_win visible ✓
+- Matka user: 36 `matka_bet` entries showing Delhi Bazaar game_name + haruf_andar side ✓
+- Coin user (AuthTest): 4 coin transactions (2× bet, 1× win, 1× loss) ✓
+
+**Files:**
+- `backend/routes/coin_routes.py` — `admin_game_transactions` rewritten to merge 3 sources + batch name lookup
+
+
+## Previous Update (2026-02-15) — Aviator Fake Community Feed + Coin Chip Cleanup (Batch 16) ✈️🪙
 
 **User request:** Aviator ke "All Bets / Previous / Top Bets" me real + fake Indian users show ho (jaise Coin Toss ki live feed). Coin chips me ₹10 hataao — sirf 50/100/500/1000/2000.
 
