@@ -7,7 +7,7 @@ import { Label } from '../../components/ui/label';
 import { Badge } from '../../components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../components/ui/dialog';
-import { Eye, Loader2, Wallet, Plus, Minus, Trash2, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
+import { Eye, Loader2, Wallet, Plus, Minus, Trash2, ArrowDownLeft, ArrowUpRight, Receipt } from 'lucide-react';
 import { toast } from 'sonner';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -22,8 +22,11 @@ const AdminUsersTab = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [userModalOpen, setUserModalOpen] = useState(false);
   const [userDetailTab, setUserDetailTab] = useState('deposits');
-  const [userDetails, setUserDetails] = useState({ deposits: [], withdrawals: [], bets: [], winnings: [], stats: {} });
+  const [userDetails, setUserDetails] = useState({ deposits: [], withdrawals: [], bets: [], winnings: [], stats: {}, walletTx: [] });
   const [loadingUserDetails, setLoadingUserDetails] = useState(false);
+  const [loadingWalletTx, setLoadingWalletTx] = useState(false);
+  const [walletTxGameFilter, setWalletTxGameFilter] = useState('');
+  const [walletTxTypeFilter, setWalletTxTypeFilter] = useState('');
   const [deletingUser, setDeletingUser] = useState(false);
   const [walletModalOpen, setWalletModalOpen] = useState(false);
   const [walletAmount, setWalletAmount] = useState('');
@@ -35,13 +38,14 @@ const AdminUsersTab = () => {
     try {
       const { data } = await axios.get(`${API_URL}/api/admin/users?limit=100000`, { withCredentials: true });
       setUsers(data.users);
-    } catch (error) {}
+    } catch (error) { /* silent — user list fetch failure handled by empty state */ }
   }, []);
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
   const openUserDetails = async (u) => {
     setSelectedUser(u); setUserModalOpen(true); setLoadingUserDetails(true); setUserDetailTab('deposits');
+    setWalletTxGameFilter(''); setWalletTxTypeFilter('');
     try {
       const [depositsRes, withdrawalsRes, betsRes, winningsRes] = await Promise.all([
         axios.get(`${API_URL}/api/admin/users/${u._id}/deposits`, { withCredentials: true }),
@@ -53,11 +57,41 @@ const AdminUsersTab = () => {
         deposits: depositsRes.data.deposits, totalDeposited: depositsRes.data.total_deposited,
         withdrawals: withdrawalsRes.data.withdrawals, totalWithdrawn: withdrawalsRes.data.total_withdrawn, pendingWithdrawal: withdrawalsRes.data.pending_amount,
         bets: betsRes.data.bets, betStats: betsRes.data.stats,
-        winnings: winningsRes.data.winnings, totalWinnings: winningsRes.data.total_winnings
+        winnings: winningsRes.data.winnings, totalWinnings: winningsRes.data.total_winnings,
+        walletTx: [],
       });
     } catch (error) { toast.error('User details load नहीं हो पाए'); }
     finally { setLoadingUserDetails(false); }
   };
+
+  // Per-user wallet transactions (game-wise win/loss/bet ledger)
+  const fetchUserWalletTx = useCallback(async (userId, game = '', typeFilter = '') => {
+    if (!userId) return;
+    setLoadingWalletTx(true);
+    try {
+      const params = new URLSearchParams();
+      params.set('limit', 200);
+      params.set('user_id', userId);
+      if (game) params.set('game', game);
+      if (typeFilter) params.set('type_filter', typeFilter);
+      const { data } = await axios.get(
+        `${API_URL}/api/admin/wallet/game-transactions?${params.toString()}`,
+        { withCredentials: true }
+      );
+      setUserDetails((prev) => ({ ...prev, walletTx: data.transactions || [] }));
+    } catch (e) {
+      toast.error('Wallet Tx load failed');
+    } finally {
+      setLoadingWalletTx(false);
+    }
+  }, []);
+
+  // When the user opens the Wallet Tx tab or changes filter, refetch scoped to this user
+  useEffect(() => {
+    if (userModalOpen && selectedUser?._id && userDetailTab === 'wallet_tx') {
+      fetchUserWalletTx(selectedUser._id, walletTxGameFilter, walletTxTypeFilter);
+    }
+  }, [userModalOpen, selectedUser, userDetailTab, walletTxGameFilter, walletTxTypeFilter, fetchUserWalletTx]);
 
   const handleWalletAdjustment = async () => {
     if (!walletAmount || parseFloat(walletAmount) <= 0) { toast.error('Valid amount दर्ज करें'); return; }
@@ -279,11 +313,12 @@ const AdminUsersTab = () => {
               </div>
 
               <Tabs value={userDetailTab} onValueChange={setUserDetailTab}>
-                <TabsList className="bg-[#0A0A0C] border border-white/10 w-full grid grid-cols-4">
+                <TabsList className="bg-[#0A0A0C] border border-white/10 w-full grid grid-cols-5">
                   <TabsTrigger value="deposits" className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black text-xs">जमा</TabsTrigger>
                   <TabsTrigger value="withdrawals" className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black text-xs">निकासी</TabsTrigger>
                   <TabsTrigger value="bets" className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black text-xs">बेट्स</TabsTrigger>
                   <TabsTrigger value="winnings" className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black text-xs">जीत</TabsTrigger>
+                  <TabsTrigger value="wallet_tx" data-testid="user-detail-wallet-tx-tab" className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black text-xs">Wallet Tx</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="deposits" className="mt-4">
@@ -362,6 +397,119 @@ const AdminUsersTab = () => {
                           <span className="text-emerald-400 font-bold">+₹{w.won_amount}</span>
                         </div>
                       ))}
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="wallet_tx" className="mt-4">
+                  {/* Filters — game-wise + type-wise, scoped to this user only */}
+                  <div className="flex flex-wrap items-center gap-2 mb-3">
+                    <div className="flex items-center gap-1.5 text-gray-300 text-xs font-bold">
+                      <Receipt className="w-3.5 h-3.5" /> Filter:
+                    </div>
+                    <select
+                      value={walletTxGameFilter}
+                      onChange={(e) => setWalletTxGameFilter(e.target.value)}
+                      data-testid="user-wallet-tx-game-filter"
+                      className="bg-[#0A0A0C] border border-white/10 rounded-lg px-2 py-1 text-xs text-white"
+                    >
+                      <option value="">सभी गेम</option>
+                      <option value="coin">Coin Toss</option>
+                      <option value="ludo">Ludo</option>
+                      <option value="aviator">Aviator</option>
+                      <option value="kalyan">Kalyan/Gali</option>
+                    </select>
+                    <select
+                      value={walletTxTypeFilter}
+                      onChange={(e) => setWalletTxTypeFilter(e.target.value)}
+                      data-testid="user-wallet-tx-type-filter"
+                      className="bg-[#0A0A0C] border border-white/10 rounded-lg px-2 py-1 text-xs text-white"
+                    >
+                      <option value="">सभी</option>
+                      <option value="win">सिर्फ Win</option>
+                      <option value="loss">सिर्फ Loss</option>
+                      <option value="bet">सिर्फ Bet</option>
+                    </select>
+                    <button
+                      onClick={() => fetchUserWalletTx(selectedUser?._id, walletTxGameFilter, walletTxTypeFilter)}
+                      disabled={loadingWalletTx}
+                      data-testid="user-wallet-tx-refresh"
+                      className="ml-auto flex items-center gap-1 bg-[#D4AF37] text-black font-bold text-xs px-2.5 py-1 rounded-lg disabled:opacity-50"
+                    >
+                      {loadingWalletTx ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Refresh'}
+                    </button>
+                  </div>
+
+                  {/* Summary — this user's totals */}
+                  {(() => {
+                    const rows = userDetails.walletTx || [];
+                    const wins = rows.filter((r) => (r.type || '').endsWith('_win'));
+                    const losses = rows.filter((r) => (r.type || '').endsWith('_loss'));
+                    const totalWinAmt = wins.reduce((s, r) => s + Math.max(0, r.amount || 0), 0);
+                    const totalLossAmt = losses.reduce((s, r) => s + Math.abs(r.amount || 0), 0) +
+                      rows.filter((r) => (r.type || '').endsWith('_bet')).reduce((s, r) => s + Math.abs(r.amount || 0), 0);
+                    return (
+                      <div className="grid grid-cols-3 gap-2 mb-3">
+                        <div className="p-2 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-center">
+                          <p className="text-[9px] text-emerald-400 font-black uppercase">Wins Amount</p>
+                          <p className="text-sm font-black text-emerald-400 tabular-nums">+₹{Math.floor(totalWinAmt).toLocaleString('en-IN')}</p>
+                        </div>
+                        <div className="p-2 bg-red-500/10 border border-red-500/30 rounded-lg text-center">
+                          <p className="text-[9px] text-red-400 font-black uppercase">Losses / Stake</p>
+                          <p className="text-sm font-black text-red-400 tabular-nums">−₹{Math.floor(totalLossAmt).toLocaleString('en-IN')}</p>
+                        </div>
+                        <div className="p-2 bg-cyan-500/10 border border-cyan-500/30 rounded-lg text-center">
+                          <p className="text-[9px] text-cyan-400 font-black uppercase">Entries</p>
+                          <p className="text-sm font-black text-cyan-400 tabular-nums">{rows.length}</p>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {loadingWalletTx && (userDetails.walletTx || []).length === 0 ? (
+                    <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-[#D4AF37]" /></div>
+                  ) : (userDetails.walletTx || []).length === 0 ? (
+                    <p className="text-gray-400 text-center py-4">कोई game transaction नहीं</p>
+                  ) : (
+                    <div className="space-y-1 max-h-72 overflow-y-auto" data-testid="user-wallet-tx-list">
+                      {(userDetails.walletTx || []).map((r) => {
+                        const isWin = (r.type || '').endsWith('_win');
+                        const isLoss = (r.type || '').endsWith('_loss');
+                        const isBet = (r.type || '').endsWith('_bet');
+                        const amt = Math.abs(r.amount || 0);
+                        return (
+                          <div
+                            key={r.id}
+                            className="grid grid-cols-[1.1fr_0.9fr_0.5fr_0.9fr] gap-2 items-center px-2.5 py-2 bg-[#0A0A0C] rounded-lg border border-white/5"
+                            data-testid={`user-wallet-tx-row-${r.id}`}
+                          >
+                            <div>
+                              <p className="text-cyan-300 text-[11px] font-bold leading-tight">{r.game_name || '-'}</p>
+                              <p className="text-gray-500 text-[9px] tabular-nums leading-tight mt-0.5">
+                                {r.created_at ? new Date(r.created_at.endsWith?.('Z') ? r.created_at : r.created_at + 'Z').toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true }) : '-'}
+                              </p>
+                            </div>
+                            <div>
+                              <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded ${
+                                isWin ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' :
+                                isLoss ? 'bg-red-500/20 text-red-300 border border-red-500/40' :
+                                isBet ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/40' :
+                                'bg-gray-500/20 text-gray-300 border border-gray-500/40'
+                              }`}>
+                                {isWin ? 'WIN' : isLoss ? 'LOSS' : isBet ? 'BET' : (r.type || '').split('_').slice(-1)[0]?.toUpperCase()}
+                              </span>
+                            </div>
+                            <div className="text-[9px] text-gray-400 font-bold uppercase truncate">
+                              {r.side ? r.side : (r.result_side ? `→ ${r.result_side}` : '')}
+                            </div>
+                            <div className={`text-right font-black tabular-nums text-[12px] ${
+                              isWin ? 'text-emerald-400' : (isLoss || isBet) ? 'text-red-400' : 'text-gray-300'
+                            }`}>
+                              {isWin ? '+' : '−'}₹{Math.floor(amt).toLocaleString('en-IN')}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </TabsContent>

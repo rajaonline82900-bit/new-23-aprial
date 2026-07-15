@@ -1,0 +1,34 @@
+{
+  "summary": "Frontend-only refactor validated end-to-end. Verified (a) Admin top-level 'Wallet Tx' tab removed, (b) 'Wallet Tx' tab moved inside user-details modal (5 tabs total) with correct user_id scoping — verified per-user data isolation (AuthTest 6a3c0ad8d4fe24ed2d26087b shows only their coin_tx, Hzhs 6a54a75c1f430409890686aa shows only their ludo entries). Summary cards (Wins/Losses/Entries), game filter, type filter, refresh, and row rendering all working. AdminWalletTransactionsTab.js file deleted with no residual references. Bets page has new bets-refresh-btn (with spinning animation on load) and sort is desc by created_at using UTC-aware ts() helper.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/admin/wallet/game-transactions?type_filter=win", "issue": "Regex ^(coin_|ludo_|aviator_|matka_).*_win$ requires an underscore between prefix and _win, so short types like 'coin_win' don't match — the response returned 0 rows even though the user had a WIN transaction (Wins Amount card showed +₹100). Fix: change regex to ^(...).*_(win|loss|bet)$|^(...)(win|loss|bet)$ or split by suffix without the extra separator requirement. This is a pre-existing backend bug — E1's fix is purely frontend."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "BetsPage row", "issue": "data-testid rendered as 'bet-row-undefined' for coin-toss rows because bet.id is not set for coin bets (they only have _id from c.bet_id mapping). Cosmetic testing issue only; UI displays correctly.", "selector": "[data-testid='bet-row-undefined']", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "(Optional/minor) Fix backend regex in /app/backend/routes/coin_routes.py line 356 so type_filter=win/loss/bet correctly matches simple types like coin_win, coin_loss, ludo_entry. Currently the WIN filter returns 0 rows when transactions have types like 'coin_win'.",
+    "(Cosmetic) In /app/frontend/src/pages/BetsPage.js coin-bet mapping (line ~117), also set id: c.bet_id so bet-row testids are unique instead of 'bet-row-undefined'."
+  ],
+  "critical_code_review_comments": [
+    "AdminUsersTab.js — fetchUserWalletTx correctly builds query with encoded user_id and game/type_filter params; useEffect dependency array is comprehensive (userModalOpen, selectedUser, userDetailTab, walletTxGameFilter, walletTxTypeFilter, fetchUserWalletTx). Cross-user isolation is enforced server-side via user_id filter — no client-side leakage.",
+    "BetsPage.js — the ts() helper wraps utcDate() so mixed naive/ISO strings sort correctly; Object.entries preserves insertion order for string keys so latest date group appears first. Correct implementation.",
+    "AdminPage.js — 'wallet_tx' import + Trigger + Content removed cleanly; grid-cols count still works (other tabs count preserved)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (frontend-only task)", "frontend": "95%"},
+  "test_credentials": "Admin: admin@sattamatka.com / Admin@123 (via /admin-login); User: 9870012345 / Test@1234 (id 6a3c0ad8d4fe24ed2d26087b)",
+  "seed_data_creation": "None (used existing users AuthTest and Hzhs).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Both requested refactors are PASSING. Admin 'Wallet Tx' now lives inside user drawer and is scoped correctly with user_id. Bets page has refresh button and desc-by-created_at sort using utcDate. Note: could not place a fresh coin bet during test because the coin gateway flow (from dashboard) didn't behave as expected in the automation (clicking gateway-box-coin ended up on /bets — likely because coin game requires round countdown UI); sort correctness has been verified via code review of the ts() sort in fetchBets. Also flagged an orthogonal pre-existing backend regex bug where /api/admin/wallet/game-transactions with type_filter=win returns 0 rows for simple type names like 'coin_win'.",
+  "rca of the issue": "Backend regex: pattern = '^(coin_|ludo_|aviator_|matka_).*_win$' requires at least one '_' between the game prefix and '_win', so a type like 'coin_win' (prefix + 'win') fails to match because after consuming 'coin_' only 'win' remains and '.*_win$' needs '_win' at the end. Fix: use pattern like '^(coin_|ludo_|aviator_|matka_).*(win|loss|bet)$' matching just the suffix keyword (no leading underscore) OR pattern like '^(coin_|ludo_|aviator_|matka_)([a-z_]*_)?win$'."
+}

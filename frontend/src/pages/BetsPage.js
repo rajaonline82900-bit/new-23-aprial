@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import {
   ArrowLeft, Clock, CheckCircle2, XCircle, Coins, Loader2,
-  Trophy, Plane, Dice5, Sparkles, Circle,
+  Trophy, Plane, Dice5, Sparkles, Circle, RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import FooterNav from '../components/FooterNav';
@@ -127,9 +127,10 @@ const BetsPage = () => {
         result: c.result_side ? (c.result_side === 'head' ? 'H' : 'T') : null,
         created_at: c.created_at,
       }));
-      const merged = [...mainBets, ...coinBets].sort(
-        (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)
-      );
+      // Robust desc sort: parse with UTC-aware helper so mixed naive/ISO strings
+      // still compare correctly. Missing timestamps sink to bottom.
+      const ts = (v) => (v ? utcDate(v).getTime() : 0);
+      const merged = [...mainBets, ...coinBets].sort((a, b) => ts(b.created_at) - ts(a.created_at));
       setBets(merged);
     } catch (error) {
       toast.error('History load nahi hui');
@@ -210,6 +211,15 @@ const BetsPage = () => {
               Gali · Kalyan · Aviator · Coin
             </p>
           </div>
+          <button
+            onClick={fetchBets}
+            disabled={loading}
+            data-testid="bets-refresh-btn"
+            className="p-1.5 rounded-lg bg-[#141418] border border-white/10 text-gray-300 hover:text-[#D4AF37] disabled:opacity-50"
+            aria-label="Refresh bets"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
         </div>
       </header>
 
