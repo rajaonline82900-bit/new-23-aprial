@@ -1,7 +1,36 @@
 # MATKA11 - Product Requirements Document
 
 
-## Latest Update (2026-02-15) — Admin Wallet Tx moved to User Drawer + Bets Sort Fix (Batch 14) 🧑‍💼📋
+## Latest Update (2026-02-15) — FLAT 3D Coin + Y-axis Real Toss (Batch 15) 🪙✨
+
+**User complaint:** "coin ko ball jesa mat karo, flate coin hona chiye. Toss ke time left-right spin hona chiye and jab result show ho tab ruke."
+
+**Root cause found:** All my previous coin CSS was in `App.css` — but `App.js` only imports `index.css`. So the CSS was NEVER being applied to the app. The coin was rendering with default browser layout (both faces stacked vertically).
+
+**Fixes:**
+1. **Moved all coin CSS from App.css → index.css** (App.css was never imported into React app).
+2. **True flat 3D coin** — replaced the JS spinFace face-swap hack with proper CSS 3D:
+   - `.coin-perspective` container with `perspective: 1200px`
+   - `.coin-3d` inner with `transform-style: preserve-3d`
+   - Two `.coin-face` divs (H front, T back at `rotateY(180deg)`) with `backface-visibility: hidden`
+   - Static face driven by inline `transform: rotateY(0deg | 180deg)` based on `lastResult`
+3. **Y-axis spin during LOCKED phase** — `.coin-3d-spinning` class applies `animation: coinSpinY 0.9s linear infinite` = 4 full Y-axis rotations per second, coin looks like a real physical toss (edge-on visible mid-rotation).
+4. **Stops on result** — Removing the `.coin-3d-spinning` class + inline `transform: rotateY(0/180)` makes the coin snap to the winning face; short CSS transition eases the settle.
+5. **Flatter SVG face** — reduced radial gradient contrast + removed the big white ellipse highlight so the coin no longer looks spherical.
+
+**Files:**
+- `frontend/src/index.css` — appended coin-perspective, coin-3d, coin-face, coin-3d-spinning rules + related coinResultPop/coinClockTick/coinFeedScroll keyframes
+- `frontend/src/App.css` — orphan block removed (was never imported)
+- `frontend/src/pages/CoinPage.js` — coin visual replaced with two-face 3D DOM structure; spinFace state removed; inline rotateY driven by lastResult
+
+**Verified via automation:**
+- `position: absolute` now applied on `.coin-face` (was static before)
+- `transformStyle: preserve-3d` applied on `.coin-3d`
+- During FLIPPING phase: `class='coin-3d coin-3d-spinning'`, `animationName='coinSpinY'`, live matrix3d shows mid-rotation ellipse
+- On BETTING OPEN with last=tail: inline transform=`rotateY(180deg)`, T face visible, H face hidden via backface
+
+
+## Previous Update (2026-02-15) — Admin Wallet Tx moved to User Drawer + Bets Sort Fix (Batch 14) 🧑‍💼📋
 
 **User request:** Wallet transaction history admin panel me kewal user details ke andar dikhe (per-user, game name + win/lose + date/time). Bets history me latest bet sabse upar aana chahiye.
 
