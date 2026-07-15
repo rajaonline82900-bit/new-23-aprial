@@ -137,6 +137,18 @@ async def coin_place_bet(request: Request):
 
     # Deduct from balance (user["_id"] is string from auth, convert to ObjectId)
     await db.users.update_one({"_id": ObjectId(user["_id"])}, {"$inc": {"balance": -amount}})
+    # Log a debit transaction — admin visibility
+    await db.transactions.insert_one({
+        "user_id": user["_id"],
+        "name": user.get("name") or user.get("phone", "Player"),
+        "type": "coin_bet",
+        "game_name": "Coin Toss",
+        "side": side,
+        "amount": -amount,
+        "status": "completed",
+        "round_id": r["_id"],
+        "created_at": datetime.now(timezone.utc),
+    })
 
     bet_doc = {
         "_id": uuid.uuid4().hex,
@@ -307,6 +319,73 @@ async def admin_coin_update(request: Request):
     return await _get_coin_config()
 
 
+# ---------- Admin: Wallet Game Transactions History ----------
+@router.get("/admin/wallet/game-transactions")
+async def admin_game_transactions(
+    request: Request,
+    limit: int = 100,
+    game: str = "",           # 'coin', 'ludo', 'aviator', 'kalyan', 'gali', '' for all
+    type_filter: str = "",    # 'win' | 'loss' | 'bet' | '' for all
+    user_id: str = "",        # filter by specific user
+):
+    """Return recent game-related wallet transactions across all users.
+    Admin can see who won/lost what on which game with date + time + amount.
+    """
+    user = await get_current_user(request)
+    if user.get("role") != "admin":
+        raise HTTPException(403, "Admin only")
+    limit = max(1, min(500, int(limit)))
+
+    # Build query — filter by game (via type prefix) and/or win/loss/bet suffix
+    type_prefixes = {
+        "coin": "coin_",
+        "ludo": "ludo_",
+        "aviator": "aviator_",
+        "kalyan": "matka_",
+        "gali": "matka_",
+    }
+    # Regex to match game-related transactions
+    if game and game.lower() in type_prefixes:
+        prefix = type_prefixes[game.lower()]
+        pattern = f"^{prefix}"
+    else:
+        pattern = "^(coin_|ludo_|aviator_|matka_)"
+    if type_filter:
+        # win/loss/bet — attach suffix
+        pattern = f"{pattern}.*_{type_filter.lower()}$" if type_filter.lower() in ("win", "loss", "bet") else pattern
+    query = {"type": {"$regex": pattern}}
+    if user_id:
+        query["user_id"] = user_id
+
+    cur = db.transactions.find(query).sort("created_at", -1).limit(limit)
+    rows = await cur.to_list(limit)
+    out = []
+    for r in rows:
+        out.append({
+            "id": str(r.get("_id")),
+            "user_id": r.get("user_id"),
+            "name": r.get("name") or "-",
+            "type": r.get("type"),
+            "game_name": r.get("game_name") or _game_name_from_type(r.get("type", "")),
+            "amount": r.get("amount", 0.0),
+            "bet_amount": r.get("bet_amount"),
+            "side": r.get("side"),
+            "result_side": r.get("result_side"),
+            "created_at": r["created_at"].isoformat() if isinstance(r.get("created_at"), datetime) else r.get("created_at"),
+            "round_id": r.get("round_id") or r.get("table_id"),
+        })
+    return {"transactions": out, "count": len(out)}
+
+
+def _game_name_from_type(tp: str) -> str:
+    if not tp: return "-"
+    if tp.startswith("coin_"): return "Coin Toss"
+    if tp.startswith("ludo_"): return "Ludo"
+    if tp.startswith("aviator_"): return "Aviator"
+    if tp.startswith("matka_"): return "Matka"
+    return "-"
+
+
 # ==================== Background Round Loop ====================
 async def coin_round_loop():
     """Endless loop that creates a new round every ROUND_DURATION seconds and
@@ -402,11 +481,39 @@ async def _settle_round(round_id: str, result_side: str):
                 {"$set": {"status": "won", "payout": payout, "settled_at": datetime.now(timezone.utc)}}
             )
             await db.users.update_one({"_id": ObjectId(b["user_id"])}, {"$inc": {"balance": payout}})
+            # Log credit transaction
+            await db.transactions.insert_one({
+                "user_id": b["user_id"],
+                "name": b.get("name", "Player"),
+                "type": "coin_win",
+                "game_name": "Coin Toss",
+                "side": b["side"],
+                "result_side": result_side,
+                "amount": payout,
+                "bet_amount": b["amount"],
+                "status": "completed",
+                "round_id": round_id,
+                "created_at": datetime.now(timezone.utc),
+            })
         else:
             await db.coin_bets.update_one(
                 {"_id": b["_id"]},
                 {"$set": {"status": "lost", "payout": 0.0, "settled_at": datetime.now(timezone.utc)}}
             )
+            # Log a "coin_loss" audit entry (no balance change — already deducted at bet time)
+            await db.transactions.insert_one({
+                "user_id": b["user_id"],
+                "name": b.get("name", "Player"),
+                "type": "coin_loss",
+                "game_name": "Coin Toss",
+                "side": b["side"],
+                "result_side": result_side,
+                "amount": 0.0,
+                "bet_amount": b["amount"],
+                "status": "completed",
+                "round_id": round_id,
+                "created_at": datetime.now(timezone.utc),
+            })
 
 
 async def _cleanup_old():

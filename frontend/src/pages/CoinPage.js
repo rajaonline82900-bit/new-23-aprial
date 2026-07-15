@@ -357,8 +357,8 @@ const CoinPage = () => {
             </div>
           </div>
 
-          {/* Coin visual — larger, metallic 3D */}
-          <div className="flex flex-col items-center justify-center py-6">
+          {/* Coin visual — larger, metallic 3D. Perspective on wrapper. */}
+          <div className="flex flex-col items-center justify-center py-6" style={{ perspective: '900px' }}>
             <div
               className={`coin-3d-v2 ${flipAnim ? 'coin-flipping-v2' : ''} ${lastResult ? `coin-final-v2-${lastResult}` : ''}`}
               data-testid="coin-visual"

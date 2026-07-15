@@ -40,32 +40,71 @@ export const setCoinUserMuted = (v) => { _userMuted = !!v; _muted = !!v; };
 export const isCoinMuted = () => _muted;
 export const isCoinUserMuted = () => _userMuted;
 
-/** Bright metallic "ching" — used when coin lands or is flipped. */
+/** Realistic "coin flip" sound — combines a bright metallic ping with a warm
+ *  brass ring undertone. Sounds like a real ₹10 coin flipped on marble. */
 export function playCoinFlip() {
   if (_muted) return;
   const c = ctx();
   if (!c) return;
   try {
-    // First short high ping
     const now = c.currentTime;
+
+    // ── Master output with limiter-ish envelope
     const master = c.createGain();
     master.gain.setValueAtTime(0.001, now);
-    master.gain.linearRampToValueAtTime(0.35, now + 0.02);
-    master.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
+    master.gain.linearRampToValueAtTime(0.45, now + 0.005);
+    master.gain.exponentialRampToValueAtTime(0.0001, now + 0.85);
     master.connect(c.destination);
 
-    // Two overlapping detuned oscillators for a metallic sound
-    [1300, 1620].forEach((freq, i) => {
-      const o = c.createOscillator();
-      o.type = i === 0 ? 'triangle' : 'square';
-      o.frequency.setValueAtTime(freq, now);
-      o.frequency.exponentialRampToValueAtTime(freq * 0.55, now + 0.45);
-      const g = c.createGain();
-      g.gain.value = i === 0 ? 0.8 : 0.35;
-      o.connect(g).connect(master);
-      o.start(now);
-      o.stop(now + 0.5);
-    });
+    // ── Layer 1: Bright high ping (the "ching")
+    const ping = c.createOscillator();
+    ping.type = 'triangle';
+    ping.frequency.setValueAtTime(2400, now);
+    ping.frequency.exponentialRampToValueAtTime(1100, now + 0.4);
+    const pingGain = c.createGain();
+    pingGain.gain.value = 0.6;
+    ping.connect(pingGain).connect(master);
+    ping.start(now);
+    ping.stop(now + 0.5);
+
+    // ── Layer 2: Warm brass mid-tone
+    const brass = c.createOscillator();
+    brass.type = 'sine';
+    brass.frequency.setValueAtTime(1560, now);
+    brass.frequency.exponentialRampToValueAtTime(780, now + 0.55);
+    const brassGain = c.createGain();
+    brassGain.gain.setValueAtTime(0.0001, now);
+    brassGain.gain.linearRampToValueAtTime(0.4, now + 0.02);
+    brassGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.6);
+    brass.connect(brassGain).connect(master);
+    brass.start(now);
+    brass.stop(now + 0.65);
+
+    // ── Layer 3: Sub metallic body (low resonance)
+    const body = c.createOscillator();
+    body.type = 'square';
+    body.frequency.setValueAtTime(520, now);
+    body.frequency.exponentialRampToValueAtTime(290, now + 0.4);
+    const bodyGain = c.createGain();
+    bodyGain.gain.setValueAtTime(0.0001, now);
+    bodyGain.gain.linearRampToValueAtTime(0.18, now + 0.01);
+    bodyGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
+    body.connect(bodyGain).connect(master);
+    body.start(now);
+    body.stop(now + 0.42);
+
+    // ── Layer 4: Attack click (short noise burst)
+    const noiseBuf = c.createBuffer(1, Math.floor(c.sampleRate * 0.015), c.sampleRate);
+    const data = noiseBuf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1);
+    const noise = c.createBufferSource();
+    noise.buffer = noiseBuf;
+    const noiseGain = c.createGain();
+    noiseGain.gain.setValueAtTime(0.35, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.02);
+    noise.connect(noiseGain).connect(master);
+    noise.start(now);
+    noise.stop(now + 0.03);
   } catch (_) { /* audio unsupported */ }
 }
 
@@ -90,8 +129,8 @@ export function playCoinSpin() {
   } catch (_) { /* audio unsupported */ }
 }
 
-/** Mechanical clock TICK — sharp attack, quick decay, alternating hi/lo pitch
- *  to give a real "tick-tock" feel. */
+/** Gentle "pluck" chime — replaces the irritating clock tick.
+ *  Musical tone (D5 → A4 alternating) with soft harp-like attack + short reverb tail. */
 let _tickAlt = false;
 export function playClockTick() {
   if (_muted) return;
@@ -100,37 +139,34 @@ export function playClockTick() {
   try {
     const now = c.currentTime;
     _tickAlt = !_tickAlt;
-    const isTock = _tickAlt;   // alternate every call
+    // Musical note frequencies (D5=587.33, A4=440, F#4=369.99, D4=293.66)
+    const freq = _tickAlt ? 587.33 : 440.0;
 
-    // Master gain envelope
     const master = c.createGain();
     master.gain.setValueAtTime(0.0001, now);
-    master.gain.linearRampToValueAtTime(0.32, now + 0.003);
-    master.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
+    master.gain.linearRampToValueAtTime(0.18, now + 0.008);
+    master.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
     master.connect(c.destination);
 
-    // Main pitched click (tick=high, tock=low)
+    // Main harp-like tone
     const o = c.createOscillator();
-    o.type = 'square';
-    const base = isTock ? 1400 : 2200;
-    o.frequency.setValueAtTime(base, now);
-    o.frequency.exponentialRampToValueAtTime(base * 0.4, now + 0.05);
+    o.type = 'sine';
+    o.frequency.setValueAtTime(freq, now);
     o.connect(master);
     o.start(now);
-    o.stop(now + 0.10);
+    o.stop(now + 0.30);
 
-    // Add a short noise burst for the "click" attack (BufferSource of random noise)
-    const noiseBuf = c.createBuffer(1, Math.floor(c.sampleRate * 0.02), c.sampleRate);
-    const data = noiseBuf.getChannelData(0);
-    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * 0.6;
-    const noise = c.createBufferSource();
-    noise.buffer = noiseBuf;
-    const nGain = c.createGain();
-    nGain.gain.setValueAtTime(0.35, now);
-    nGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.03);
-    noise.connect(nGain).connect(c.destination);
-    noise.start(now);
-    noise.stop(now + 0.03);
+    // Subtle overtone (5th harmonic for warmth)
+    const overtone = c.createOscillator();
+    overtone.type = 'triangle';
+    overtone.frequency.setValueAtTime(freq * 3, now);
+    const ovGain = c.createGain();
+    ovGain.gain.setValueAtTime(0.0001, now);
+    ovGain.gain.linearRampToValueAtTime(0.06, now + 0.01);
+    ovGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.20);
+    overtone.connect(ovGain).connect(c.destination);
+    overtone.start(now);
+    overtone.stop(now + 0.22);
   } catch (_) { /* audio unsupported */ }
 }
 

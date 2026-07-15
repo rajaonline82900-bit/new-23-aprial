@@ -1,7 +1,45 @@
 # MATKA11 - Product Requirements Document
 
 
-## Latest Update (2026-02-15) — Coin Toss Critical Fixes (Batch 9) 🔧
+## Latest Update (2026-02-15) — Admin Wallet Tx + Coin Animation Fixes (Batch 10) 🎰
+
+**User complaints addressed:**
+
+1. **📊 Admin Wallet Transaction History** — New "Wallet Tx" tab in admin panel showing all game-related transactions (coin, ludo, aviator, matka).
+   - Backend: New `GET /api/admin/wallet/game-transactions?game=&type_filter=&user_id=&limit=` endpoint
+   - Coin bets now log to `db.transactions` (`coin_bet`, `coin_win`, `coin_loss` types) with user name, side, amount, round_id, timestamp
+   - Admin UI: `AdminWalletTransactionsTab.js` — filters by game + type, summary strip (Total Credit / Debit / Wins / Losses), sortable rows with Date/Time, User, Game, Type badge (WIN/LOSS/BET), Amount ± with side info
+   - Screenshot verified: showing Admin's Coin Toss BET ₹100 HEAD + 14 Ludo entries with timestamps
+
+2. **🎨 Coin ACTUALLY animates now** — Root cause: `.coin-3d-v2` had a `transition: transform 0.6s` that overrode the CSS animation on class changes. Also, no `perspective` on parent meant 3D rotation looked flat.
+   - Added `perspective: 900px` on coin wrapper div
+   - Added `coinIdleV2` — subtle continuous rotate/float animation during OPEN phase (so coin always looks alive, addresses "coin doesn't move" complaint)
+   - Bigger `coinFlipV2` amplitude — bounces up to `-90px` (was -80), 3600° total rotation (10 spins), more `rotateZ` tilt
+   - `coinLandHeadV2` / `coinLandTailV2` land at `-90px` then bounce to rest with pulse. Added `!important` to prevent idle animation override
+   - `.coin-flipping-v2` overrides idle animation during locked phase
+
+3. **🔊 Realistic coin flip sound** — Rebuilt `playCoinFlip` as 4-layer synth:
+   - Layer 1: Bright high triangle ping (2400→1100 Hz sweep)
+   - Layer 2: Warm sine brass mid-tone (1560→780 Hz)
+   - Layer 3: Sub metallic square body (520→290 Hz)
+   - Layer 4: Short white noise attack burst (15ms) for the "click"
+   - Sounds like a real ₹10 coin flipped on marble
+
+4. **🎵 Timer sound replaced (was irritating)** — Removed the mechanical clock tick. Now `playClockTick` fires a gentle musical pluck:
+   - Alternates between D5 (587Hz) and A4 (440Hz)
+   - Soft sine wave + subtle 3rd-harmonic overtone
+   - 280ms decay with reverb-like tail
+   - Feels like a music-box chime instead of an annoying tick
+
+**Files:**
+- `backend/routes/coin_routes.py` — transaction logging + admin endpoint
+- `frontend/src/pages/admin/AdminWalletTransactionsTab.js` (new)
+- `frontend/src/pages/AdminPage.js` — new "Wallet Tx" tab registration
+- `frontend/src/pages/CoinPage.js` — `perspective: 900px` on coin wrapper
+- `frontend/src/App.css` — new idle animation, bigger flip amplitude, `!important` on land animations
+- `frontend/src/utils/coinAudio.js` — 4-layer realistic coin sound + musical pluck timer
+
+
 
 **User complaints fixed:**
 
