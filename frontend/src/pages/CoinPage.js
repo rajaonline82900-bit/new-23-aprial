@@ -2,9 +2,13 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { ArrowLeft, Wallet as WalletIcon, Clock, Zap } from 'lucide-react';
+import { ArrowLeft, Wallet as WalletIcon, Clock, Zap, Volume2, VolumeX } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import FooterNav from '../components/FooterNav';
+import {
+  playCoinFlip, playCoinSpin, playClockTick, playCoinWin,
+  setCoinMuted, isCoinMuted,
+} from '../utils/coinAudio';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -29,11 +33,15 @@ const CoinPage = () => {
   const [amount, setAmount] = useState(50);
   const [myBets, setMyBets] = useState([]);
   const [recentRounds, setRecentRounds] = useState([]);
+  const [liveFeed, setLiveFeed] = useState([]);
   const [placing, setPlacing] = useState(false);
-  const [flipAnim, setFlipAnim] = useState(false);   // triggers coin flip CSS
-  const [lastResult, setLastResult] = useState(null); // last shown result for animation
+  const [flipAnim, setFlipAnim] = useState(false);
+  const [lastResult, setLastResult] = useState(null);
+  const [muted, setMuted] = useState(isCoinMuted());
   const prevRoundIdRef = useRef(null);
   const prevPhaseRef = useRef(null);
+  const spinIntervalRef = useRef(null);
+  const lastTickSecRef = useRef(null);
 
   const fetchConfig = useCallback(async () => {
     try {
@@ -64,46 +72,93 @@ const CoinPage = () => {
     } catch (e) { /* silent */ }
   }, []);
 
+  const fetchLiveFeed = useCallback(async () => {
+    try {
+      const { data } = await axios.get(`${API_URL}/api/coin/live-feed?limit=12`);
+      setLiveFeed(data.feed || []);
+    } catch (e) { /* silent */ }
+  }, []);
+
   useEffect(() => {
     fetchConfig();
     fetchCurrent();
     fetchMyCurrent();
     fetchRecent();
-    // Poll every 800ms for smooth timer + round transitions
+    fetchLiveFeed();
     const iv = setInterval(() => { fetchCurrent(); }, 800);
     const iv2 = setInterval(() => { fetchMyCurrent(); fetchRecent(); }, 3000);
-    return () => { clearInterval(iv); clearInterval(iv2); };
-  }, [fetchConfig, fetchCurrent, fetchMyCurrent, fetchRecent]);
+    const iv3 = setInterval(() => { fetchLiveFeed(); }, 4000);
+    return () => { clearInterval(iv); clearInterval(iv2); clearInterval(iv3); };
+  }, [fetchConfig, fetchCurrent, fetchMyCurrent, fetchRecent, fetchLiveFeed]);
 
-  // Detect phase transitions to trigger animations / balance refresh
+  // Clock tick sound — last 10 seconds of betting phase
+  useEffect(() => {
+    if (!round) return;
+    const sl = round.seconds_left;
+    // Only tick during OPEN phase, last 10 sec
+    if (round.phase === 'open' && sl > 0 && sl <= 10 && sl !== lastTickSecRef.current) {
+      playClockTick();
+      lastTickSecRef.current = sl;
+    }
+    if (round.phase !== 'open') {
+      lastTickSecRef.current = null;
+    }
+  }, [round]);
+
+  // Phase transition effects — flip animation + sounds
   useEffect(() => {
     if (!round) return;
     const prevRid = prevRoundIdRef.current;
     const prevPhase = prevPhaseRef.current;
 
-    // New round started → clear last result overlay & reset flip
+    // New round → reset UI
     if (round.round_id && prevRid && round.round_id !== prevRid) {
       setLastResult(null);
       setFlipAnim(false);
+      if (spinIntervalRef.current) { clearInterval(spinIntervalRef.current); spinIntervalRef.current = null; }
     }
 
-    // Transitioned into 'locked' → start flip animation
+    // Entering LOCKED → start flipping animation + spin whirr sound loop
     if (round.phase === 'locked' && prevPhase !== 'locked') {
       setFlipAnim(true);
+      setLastResult(null);
+      playCoinFlip();   // initial launch sound
+      // Loop spin whirr every ~180ms
+      if (spinIntervalRef.current) clearInterval(spinIntervalRef.current);
+      spinIntervalRef.current = setInterval(() => { playCoinSpin(); }, 180);
     }
 
-    // Transitioned into 'result' → show final side & refresh balance
+    // Entering RESULT → stop flip, show landing side + ching sound
     if (round.phase === 'result' && prevPhase !== 'result') {
       setFlipAnim(false);
       setLastResult(round.result_side);
+      if (spinIntervalRef.current) { clearInterval(spinIntervalRef.current); spinIntervalRef.current = null; }
+      // Final landing "ching"
+      playCoinFlip();
+      // Fire refresh & bet reconciliation
       refreshUser();
       fetchMyCurrent();
       fetchRecent();
+      // Play win chime if user won this round
+      const myWon = myBets.find((b) => b.side === round.result_side);
+      if (myWon) {
+        setTimeout(() => playCoinWin(), 350);
+      }
     }
 
     prevRoundIdRef.current = round.round_id;
     prevPhaseRef.current = round.phase;
-  }, [round, refreshUser, fetchMyCurrent, fetchRecent]);
+  }, [round, refreshUser, fetchMyCurrent, fetchRecent, myBets]);
+
+  useEffect(() => () => {
+    if (spinIntervalRef.current) clearInterval(spinIntervalRef.current);
+  }, []);
+
+  const toggleMute = () => {
+    const nm = !muted;
+    setMuted(nm);
+    setCoinMuted(nm);
+  };
 
   const placeBet = async (side) => {
     if (placing) return;
@@ -123,8 +178,10 @@ const CoinPage = () => {
         { withCredentials: true }
       );
       toast.success(`₹${amount} on ${side.toUpperCase()} placed!`);
+      try { navigator.vibrate?.(20); } catch (_) { /* haptic unavailable */ }
       await refreshUser();
       fetchMyCurrent();
+      fetchLiveFeed();
     } catch (e) {
       toast.error(e?.response?.data?.detail || 'Bet failed');
     } finally {
@@ -135,6 +192,13 @@ const CoinPage = () => {
   const secondsLeft = round?.seconds_left || 0;
   const phase = round?.phase || 'waiting';
   const isLocked = phase !== 'open';
+  const isLastTen = phase === 'open' && secondsLeft <= 10 && secondsLeft > 0;
+
+  const fmtTsAgo = (s) => {
+    if (s < 60) return `${s}s ago`;
+    const m = Math.floor(s / 60);
+    return `${m}m ago`;
+  };
 
   return (
     <div
@@ -155,7 +219,7 @@ const CoinPage = () => {
           borderBottom: `1px solid ${THEME.glassBorder}`,
         }}
       >
-        <div className="px-3 py-3 flex items-center gap-3" style={{ maxWidth: '480px', margin: '0 auto' }}>
+        <div className="px-3 py-3 flex items-center gap-2" style={{ maxWidth: '480px', margin: '0 auto' }}>
           <Link to="/dashboard">
             <button
               data-testid="coin-back-btn"
@@ -182,8 +246,16 @@ const CoinPage = () => {
               हर 1 मिनट में Result • 1.8x Payout • Min ₹{Math.floor(config?.min_bet || 10)}
             </p>
           </div>
+          <button
+            onClick={toggleMute}
+            data-testid="coin-mute-btn"
+            className="p-2 rounded-xl active:scale-90 transition"
+            style={{ background: 'rgba(251, 191, 36, 0.12)', border: `1px solid ${THEME.glassBorder}`, color: THEME.goldSoft }}
+          >
+            {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+          </button>
           <div
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl"
             style={{
               background: 'rgba(16, 185, 129, 0.10)',
               border: '1px solid rgba(16, 185, 129, 0.4)',
@@ -198,8 +270,8 @@ const CoinPage = () => {
         </div>
       </header>
 
-      <main className="px-3 py-4 space-y-4 relative" style={{ maxWidth: '480px', margin: '0 auto' }}>
-        {/* Live Coin Card */}
+      <main className="px-3 py-4 space-y-3 relative" style={{ maxWidth: '480px', margin: '0 auto' }}>
+        {/* Live Coin + Timer Card */}
         <div
           className="rounded-3xl p-5 relative overflow-hidden"
           style={{
@@ -223,67 +295,127 @@ const CoinPage = () => {
               <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: phase === 'open' ? '#34D399' : '#F87171' }} />
               {phase === 'open' ? 'BETTING OPEN' : phase === 'locked' ? 'FLIPPING...' : phase === 'result' ? `RESULT: ${(round?.result_side || '').toUpperCase()}` : 'WAITING'}
             </div>
-            <div className="flex items-center gap-1 font-black text-lg tabular-nums" style={{ color: THEME.gold }} data-testid="coin-timer">
-              <Clock className="w-4 h-4" />
+            {/* Clock timer with tick animation on last 10s */}
+            <div
+              className={`flex items-center gap-1 font-black text-lg tabular-nums ${isLastTen ? 'coin-timer-urgent' : ''}`}
+              style={{
+                color: isLastTen ? '#F87171' : THEME.gold,
+                textShadow: isLastTen ? '0 0 12px #EF4444' : 'none',
+              }}
+              data-testid="coin-timer"
+            >
+              <Clock className={`w-4 h-4 ${isLastTen ? 'coin-clock-tick' : ''}`} />
               {String(secondsLeft).padStart(2, '0')}s
             </div>
           </div>
 
-          {/* Coin visual */}
-          <div className="flex flex-col items-center justify-center py-4">
+          {/* Coin visual — larger, metallic 3D */}
+          <div className="flex flex-col items-center justify-center py-6">
             <div
-              className={`coin-3d ${flipAnim ? 'coin-flipping' : ''} ${lastResult ? `coin-final-${lastResult}` : ''}`}
+              className={`coin-3d-v2 ${flipAnim ? 'coin-flipping-v2' : ''} ${lastResult ? `coin-final-v2-${lastResult}` : ''}`}
               data-testid="coin-visual"
               style={{
-                width: 128,
-                height: 128,
+                width: 160,
+                height: 160,
                 position: 'relative',
                 transformStyle: 'preserve-3d',
-                filter: `drop-shadow(0 8px 24px ${THEME.gold}70)`,
+                filter: `drop-shadow(0 12px 32px ${THEME.gold}90)`,
               }}
             >
-              {/* HEAD face */}
+              {/* HEAD face — metallic gold */}
               <div
-                className="coin-face coin-head"
+                className="coin-face-v2"
                 style={{
                   position: 'absolute', inset: 0, borderRadius: '50%',
-                  background: `radial-gradient(circle at 30% 30%, ${THEME.goldBright} 0%, ${THEME.gold} 45%, #B45309 100%)`,
-                  border: '3px solid #78350F',
+                  background: `
+                    radial-gradient(circle at 32% 28%, #FEF9C3 0%, ${THEME.goldBright} 20%, ${THEME.gold} 55%, #B45309 85%, #78350F 100%),
+                    conic-gradient(from 0deg, #B45309, ${THEME.gold}, #FEF9C3, ${THEME.gold}, #B45309, ${THEME.gold}, #FEF9C3, ${THEME.gold}, #B45309)
+                  `,
+                  border: '5px double #78350F',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '2.75rem', fontWeight: 900, color: '#78350F',
-                  fontFamily: 'Outfit, sans-serif',
-                  boxShadow: `inset 0 4px 8px rgba(255,255,255,0.35), inset 0 -4px 8px rgba(120,53,15,0.35)`,
+                  boxShadow: `
+                    inset 0 6px 12px rgba(255,255,255,0.4),
+                    inset 0 -6px 12px rgba(120,53,15,0.5),
+                    0 0 30px ${THEME.gold}70
+                  `,
                   backfaceVisibility: 'hidden',
                   transform: 'rotateY(0deg)',
                 }}
               >
-                H
+                {/* Inner ridge ring */}
+                <div style={{
+                  position: 'absolute', inset: '6px', borderRadius: '50%',
+                  border: '2px dashed #78350F', opacity: 0.4,
+                }} />
+                <div style={{
+                  position: 'absolute', inset: '14px', borderRadius: '50%',
+                  border: '1.5px solid #78350F', opacity: 0.55,
+                  background: 'radial-gradient(circle at 40% 35%, rgba(255,255,255,0.35) 0%, transparent 55%)',
+                }} />
+                {/* H letter with shadow */}
+                <span style={{
+                  fontSize: '3.5rem', fontWeight: 900, color: '#78350F',
+                  fontFamily: 'Outfit, sans-serif',
+                  textShadow: '0 2px 3px rgba(255,255,255,0.5), 0 -1px 2px rgba(0,0,0,0.3)',
+                  letterSpacing: '-0.05em',
+                  zIndex: 1,
+                }}>
+                  H
+                </span>
+                {/* Corner sparkles */}
+                <span style={{ position: 'absolute', top: '18%', left: '20%', fontSize: '10px', color: '#FEF3C7', opacity: 0.8 }}>✦</span>
+                <span style={{ position: 'absolute', bottom: '20%', right: '22%', fontSize: '8px', color: '#FEF3C7', opacity: 0.7 }}>✦</span>
               </div>
-              {/* TAIL face */}
+
+              {/* TAIL face — metallic violet */}
               <div
-                className="coin-face coin-tail"
+                className="coin-face-v2"
                 style={{
                   position: 'absolute', inset: 0, borderRadius: '50%',
-                  background: `radial-gradient(circle at 30% 30%, #C4B5FD 0%, ${THEME.tailColor} 45%, #4C1D95 100%)`,
-                  border: '3px solid #2E1065',
+                  background: `
+                    radial-gradient(circle at 32% 28%, #DDD6FE 0%, #C4B5FD 20%, ${THEME.tailColor} 55%, #4C1D95 85%, #2E1065 100%)
+                  `,
+                  border: '5px double #2E1065',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '2.75rem', fontWeight: 900, color: '#2E1065',
-                  fontFamily: 'Outfit, sans-serif',
-                  boxShadow: `inset 0 4px 8px rgba(255,255,255,0.35), inset 0 -4px 8px rgba(46,16,101,0.35)`,
+                  boxShadow: `
+                    inset 0 6px 12px rgba(255,255,255,0.4),
+                    inset 0 -6px 12px rgba(46,16,101,0.5),
+                    0 0 30px ${THEME.tailColor}70
+                  `,
                   backfaceVisibility: 'hidden',
                   transform: 'rotateY(180deg)',
                 }}
               >
-                T
+                <div style={{
+                  position: 'absolute', inset: '6px', borderRadius: '50%',
+                  border: '2px dashed #2E1065', opacity: 0.4,
+                }} />
+                <div style={{
+                  position: 'absolute', inset: '14px', borderRadius: '50%',
+                  border: '1.5px solid #2E1065', opacity: 0.55,
+                  background: 'radial-gradient(circle at 40% 35%, rgba(255,255,255,0.35) 0%, transparent 55%)',
+                }} />
+                <span style={{
+                  fontSize: '3.5rem', fontWeight: 900, color: '#2E1065',
+                  fontFamily: 'Outfit, sans-serif',
+                  textShadow: '0 2px 3px rgba(255,255,255,0.4), 0 -1px 2px rgba(0,0,0,0.3)',
+                  letterSpacing: '-0.05em',
+                  zIndex: 1,
+                }}>
+                  T
+                </span>
+                <span style={{ position: 'absolute', top: '18%', left: '20%', fontSize: '10px', color: '#DDD6FE', opacity: 0.8 }}>✦</span>
+                <span style={{ position: 'absolute', bottom: '20%', right: '22%', fontSize: '8px', color: '#DDD6FE', opacity: 0.7 }}>✦</span>
               </div>
             </div>
+
             {/* Result text overlay */}
             {phase === 'result' && lastResult && (
               <p
-                className="text-2xl font-black mt-4 tracking-widest uppercase animate-pulse"
+                className="text-2xl font-black mt-4 tracking-widest uppercase coin-result-pop"
                 style={{
                   color: lastResult === 'head' ? THEME.headColor : THEME.tailColor,
-                  textShadow: `0 0 20px ${lastResult === 'head' ? THEME.headColor : THEME.tailColor}80`,
+                  textShadow: `0 0 24px ${lastResult === 'head' ? THEME.headColor : THEME.tailColor}90`,
                 }}
               >
                 {lastResult} WINS
@@ -385,7 +517,7 @@ const CoinPage = () => {
           </button>
         </div>
 
-        {/* My active bets in this round */}
+        {/* My active bets */}
         {myBets.length > 0 && (
           <div className="rounded-xl p-2 space-y-1"
             style={{ background: 'rgba(31, 22, 8, 0.6)', border: `1px solid ${THEME.glassBorder}` }}
@@ -409,6 +541,58 @@ const CoinPage = () => {
             ))}
           </div>
         )}
+
+        {/* ═══════════ LIVE BET FEED (real + fake mix) ═══════════ */}
+        <div className="rounded-2xl p-3 relative overflow-hidden"
+          style={{
+            background: THEME.cardBg,
+            border: `1px solid ${THEME.glassBorder}`,
+          }}
+          data-testid="coin-live-feed"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <span className="relative flex w-2 h-2">
+                <span className="absolute inline-flex w-full h-full rounded-full opacity-75 animate-ping" style={{ background: '#EF4444' }} />
+                <span className="relative inline-flex w-2 h-2 rounded-full" style={{ background: '#EF4444' }} />
+              </span>
+              <h3 className="text-white font-black text-[13px] uppercase tracking-widest">Live Bet Feed</h3>
+            </div>
+            <span className="text-[9px] font-black uppercase tracking-widest" style={{ color: THEME.goldSoft, opacity: 0.6 }}>
+              Auto refresh
+            </span>
+          </div>
+          <div className="coin-feed-scroll relative overflow-hidden" style={{ height: 128 }}>
+            <div className="coin-feed-track space-y-1.5">
+              {[...liveFeed, ...liveFeed].map((f, i) => (
+                <div key={i}
+                  className="flex items-center justify-between text-[12px] py-1.5 px-2 rounded-lg"
+                  style={{
+                    background: 'rgba(0,0,0,0.35)',
+                    border: `1px solid ${f.side === 'head' ? THEME.headColor : THEME.tailColor}30`,
+                  }}
+                >
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span
+                      className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0"
+                      style={{ background: f.side === 'head' ? THEME.headColor : THEME.tailColor, color: '#fff' }}
+                    >
+                      {f.side === 'head' ? 'H' : 'T'}
+                    </span>
+                    <span className="text-white font-bold truncate">{f.name}</span>
+                    <span className="text-[9px] font-bold uppercase" style={{ color: f.side === 'head' ? THEME.headColor : THEME.tailColor }}>
+                      {f.side}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-white font-black tabular-nums">₹{Math.floor(f.amount).toLocaleString('en-IN')}</span>
+                    <span className="text-[9px]" style={{ color: THEME.goldSoft, opacity: 0.6 }}>{fmtTsAgo(f.ts_ago_sec)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
 
         {/* Recent results ticker */}
         <div>
@@ -444,7 +628,7 @@ const CoinPage = () => {
           )}
         </div>
 
-        {/* Bottom info card */}
+        {/* Bottom info */}
         <div
           className="rounded-xl p-3 text-[10px] leading-relaxed"
           style={{
@@ -454,9 +638,9 @@ const CoinPage = () => {
             opacity: 0.85,
           }}
         >
-          <p>• Har 1 minute me naya round + auto result.</p>
+          <p>• Har 1 minute me naya round + auto flip animation with sound.</p>
           <p>• Win par <span className="font-black" style={{ color: THEME.gold }}>1.8x payout</span> ({config?.commission_pct || 10}% commission).</p>
-          <p>• Last 10 seconds locked (koi bet nahi).</p>
+          <p>• Last 10 seconds ⏰ clock tick sound + locked (koi bet nahi).</p>
           <p>• History → <Link to="/bets" className="underline font-black" style={{ color: THEME.goldBright }}>My Bets</Link> me date/time ke saath dekhein.</p>
         </div>
       </main>

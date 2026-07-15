@@ -726,22 +726,6 @@ const DashboardPage = () => {
                     linkTo: '/aviator',
                   },
                   {
-                    id: 'ludo',
-                    label: 'Ludo',
-                    hi: 'लूडो',
-                    Icon: LudoIcon,
-                    bg: 'linear-gradient(155deg, #2E1065 0%, #1A0A2E 55%, #0A0414 100%)',
-                    border: '#A855F7',
-                    accent: '#D8B4FE',
-                    badgeBg: 'linear-gradient(135deg, #C084FC 0%, #A855F7 55%, #6B21A8 100%)',
-                    badgeColor: '#FFFFFF',
-                    stripe: 'linear-gradient(90deg, #4C1D95 0%, #C084FC 50%, #4C1D95 100%)',
-                    liveLabel: 'PLAY',
-                    countSuffix: '4-Token Game',
-                    isLink: true,
-                    linkTo: '/ludo',
-                  },
-                  {
                     id: 'coin',
                     label: 'Coin Toss',
                     hi: 'सिक्का',
@@ -777,12 +761,12 @@ const DashboardPage = () => {
                         setGameCategory(cat.id);
                       }}
                       data-testid={`gateway-box-${cat.id}`}
-                      className={`rounded-2xl relative overflow-hidden text-left active:scale-[0.97] ${cat.id === 'coin' ? 'col-span-2' : ''}`}
+                      className="rounded-2xl relative overflow-hidden text-left active:scale-[0.97]"
                       style={{
                         background: cat.bg,
                         border: `1.5px solid ${cat.border}`,
                         boxShadow: `0 4px 14px rgba(0,0,0,0.5), inset 0 1px 0 ${cat.border}30`,
-                        minHeight: cat.id === 'coin' ? '120px' : '158px',
+                        minHeight: '158px',
                         transition: 'transform 180ms ease',
                         opacity: isDisabled ? 0.55 : 1,
                         filter: isDisabled ? 'grayscale(70%)' : 'none',
