@@ -357,128 +357,76 @@ const CoinPage = () => {
             </div>
           </div>
 
-          {/* Coin visual — beautiful ornate SVG coin with dramatic bottom-up toss. */}
-          <div className="flex flex-col items-center justify-center py-6" style={{ perspective: '900px' }}>
+          {/* Coin visual — simple robust approach: shows correct face at all times. */}
+          <div className="flex flex-col items-center justify-center py-6">
             <div
-              className={`coin-3d-v2 ${flipAnim ? 'coin-flipping-v2' : ''} ${lastResult ? `coin-final-v2-${lastResult}` : ''}`}
+              className={`coin-simple ${flipAnim ? 'coin-simple-flipping' : ''} ${phase === 'result' ? 'coin-simple-landed' : ''}`}
               data-testid="coin-visual"
+              data-face={flipAnim ? 'spin' : (lastResult || (round?.result_side) || 'head')}
               style={{
                 width: 170,
                 height: 170,
                 position: 'relative',
-                transformStyle: 'preserve-3d',
                 filter: `drop-shadow(0 12px 28px ${THEME.gold}90) drop-shadow(0 0 40px ${THEME.gold}45)`,
               }}
             >
-              {/* HEAD face — ornate gold coin */}
-              <div
-                className="coin-face-v2"
-                style={{
-                  position: 'absolute', inset: 0, borderRadius: '50%',
-                  overflow: 'hidden',
-                  backfaceVisibility: 'hidden',
-                  transform: 'rotateY(0deg)',
-                }}
-              >
-                <svg viewBox="0 0 200 200" width="100%" height="100%" style={{ display: 'block' }}>
-                  <defs>
-                    <radialGradient id="goldGrad" cx="35%" cy="30%">
-                      <stop offset="0%" stopColor="#FFFBEB" />
-                      <stop offset="15%" stopColor="#FEF3C7" />
-                      <stop offset="40%" stopColor="#FBBF24" />
-                      <stop offset="75%" stopColor="#D97706" />
-                      <stop offset="100%" stopColor="#78350F" />
-                    </radialGradient>
-                    <linearGradient id="goldRim" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#FEF3C7" />
-                      <stop offset="50%" stopColor="#D97706" />
-                      <stop offset="100%" stopColor="#78350F" />
-                    </linearGradient>
-                  </defs>
-                  {/* Outer thick rim */}
-                  <circle cx="100" cy="100" r="98" fill="url(#goldRim)" />
-                  <circle cx="100" cy="100" r="93" fill="#78350F" />
-                  {/* Ridge dots around rim (like real coin edges) */}
-                  {Array.from({ length: 48 }).map((_, i) => {
-                    const angle = (i * 360) / 48;
-                    const rad = (angle * Math.PI) / 180;
-                    const cx = 100 + 88 * Math.cos(rad);
-                    const cy = 100 + 88 * Math.sin(rad);
-                    return <circle key={i} cx={cx} cy={cy} r="2.2" fill="#FEF3C7" opacity="0.85" />;
-                  })}
-                  {/* Main coin body */}
-                  <circle cx="100" cy="100" r="82" fill="url(#goldGrad)" />
-                  {/* Inner double ring */}
-                  <circle cx="100" cy="100" r="72" fill="none" stroke="#78350F" strokeWidth="1.5" opacity="0.55" />
-                  <circle cx="100" cy="100" r="66" fill="none" stroke="#78350F" strokeWidth="0.8" strokeDasharray="3 3" opacity="0.55" />
-                  {/* Star decorations at 4 compass points */}
-                  {[0, 90, 180, 270].map((deg) => {
-                    const rad = ((deg - 90) * Math.PI) / 180;
-                    const cx = 100 + 74 * Math.cos(rad);
-                    const cy = 100 + 74 * Math.sin(rad);
-                    return <text key={deg} x={cx} y={cy + 4} textAnchor="middle" fontSize="9" fill="#78350F" opacity="0.75">★</text>;
-                  })}
-                  {/* Big H letter with embossed shadow */}
-                  <text x="100" y="126" textAnchor="middle" fontSize="95" fontWeight="900" fill="#78350F" fontFamily="Outfit, sans-serif"
-                    style={{ paintOrder: 'stroke fill', stroke: '#FEF3C7', strokeWidth: '2' }}>H</text>
-                  {/* Top shine highlight */}
-                  <ellipse cx="75" cy="55" rx="35" ry="14" fill="rgba(255,255,255,0.35)" transform="rotate(-25 75 55)" />
-                  {/* Sparkles */}
-                  <text x="45" y="65" fontSize="10" fill="#FEF9C3" opacity="0.9">✦</text>
-                  <text x="150" y="145" fontSize="8" fill="#FEF9C3" opacity="0.7">✦</text>
-                </svg>
-              </div>
-
-              {/* TAIL face — ornate violet coin */}
-              <div
-                className="coin-face-v2"
-                style={{
-                  position: 'absolute', inset: 0, borderRadius: '50%',
-                  overflow: 'hidden',
-                  backfaceVisibility: 'hidden',
-                  transform: 'rotateY(180deg)',
-                }}
-              >
-                <svg viewBox="0 0 200 200" width="100%" height="100%" style={{ display: 'block' }}>
-                  <defs>
-                    <radialGradient id="violetGrad" cx="35%" cy="30%">
-                      <stop offset="0%" stopColor="#F5F3FF" />
-                      <stop offset="15%" stopColor="#DDD6FE" />
-                      <stop offset="40%" stopColor="#8B5CF6" />
-                      <stop offset="75%" stopColor="#5B21B6" />
-                      <stop offset="100%" stopColor="#2E1065" />
-                    </radialGradient>
-                    <linearGradient id="violetRim" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#DDD6FE" />
-                      <stop offset="50%" stopColor="#5B21B6" />
-                      <stop offset="100%" stopColor="#2E1065" />
-                    </linearGradient>
-                  </defs>
-                  <circle cx="100" cy="100" r="98" fill="url(#violetRim)" />
-                  <circle cx="100" cy="100" r="93" fill="#2E1065" />
-                  {Array.from({ length: 48 }).map((_, i) => {
-                    const angle = (i * 360) / 48;
-                    const rad = (angle * Math.PI) / 180;
-                    const cx = 100 + 88 * Math.cos(rad);
-                    const cy = 100 + 88 * Math.sin(rad);
-                    return <circle key={i} cx={cx} cy={cy} r="2.2" fill="#DDD6FE" opacity="0.85" />;
-                  })}
-                  <circle cx="100" cy="100" r="82" fill="url(#violetGrad)" />
-                  <circle cx="100" cy="100" r="72" fill="none" stroke="#2E1065" strokeWidth="1.5" opacity="0.55" />
-                  <circle cx="100" cy="100" r="66" fill="none" stroke="#2E1065" strokeWidth="0.8" strokeDasharray="3 3" opacity="0.55" />
-                  {[0, 90, 180, 270].map((deg) => {
-                    const rad = ((deg - 90) * Math.PI) / 180;
-                    const cx = 100 + 74 * Math.cos(rad);
-                    const cy = 100 + 74 * Math.sin(rad);
-                    return <text key={deg} x={cx} y={cy + 4} textAnchor="middle" fontSize="9" fill="#2E1065" opacity="0.75">★</text>;
-                  })}
-                  <text x="100" y="126" textAnchor="middle" fontSize="95" fontWeight="900" fill="#2E1065" fontFamily="Outfit, sans-serif"
-                    style={{ paintOrder: 'stroke fill', stroke: '#DDD6FE', strokeWidth: '2' }}>T</text>
-                  <ellipse cx="75" cy="55" rx="35" ry="14" fill="rgba(255,255,255,0.35)" transform="rotate(-25 75 55)" />
-                  <text x="45" y="65" fontSize="10" fill="#F5F3FF" opacity="0.9">✦</text>
-                  <text x="150" y="145" fontSize="8" fill="#F5F3FF" opacity="0.7">✦</text>
-                </svg>
-              </div>
+              {/* Show HEAD when face=head OR spinning (odd frame) */}
+              <svg viewBox="0 0 200 200" width="100%" height="100%" style={{ display: 'block' }}>
+                <defs>
+                  <radialGradient id={`gradFace-${lastResult === 'tail' ? 't' : 'h'}`} cx="35%" cy="30%">
+                    {lastResult === 'tail' ? (
+                      <>
+                        <stop offset="0%" stopColor="#F5F3FF" />
+                        <stop offset="15%" stopColor="#DDD6FE" />
+                        <stop offset="40%" stopColor="#8B5CF6" />
+                        <stop offset="75%" stopColor="#5B21B6" />
+                        <stop offset="100%" stopColor="#2E1065" />
+                      </>
+                    ) : (
+                      <>
+                        <stop offset="0%" stopColor="#FFFBEB" />
+                        <stop offset="15%" stopColor="#FEF3C7" />
+                        <stop offset="40%" stopColor="#FBBF24" />
+                        <stop offset="75%" stopColor="#D97706" />
+                        <stop offset="100%" stopColor="#78350F" />
+                      </>
+                    )}
+                  </radialGradient>
+                </defs>
+                {(() => {
+                  const isTail = lastResult === 'tail';
+                  const rimColor = isTail ? '#2E1065' : '#78350F';
+                  const dotColor = isTail ? '#DDD6FE' : '#FEF3C7';
+                  const letterColor = isTail ? '#2E1065' : '#78350F';
+                  const strokeColor = isTail ? '#DDD6FE' : '#FEF3C7';
+                  const letter = isTail ? 'T' : 'H';
+                  return (
+                    <>
+                      <circle cx="100" cy="100" r="98" fill={rimColor} />
+                      <circle cx="100" cy="100" r="93" fill={rimColor} />
+                      {Array.from({ length: 48 }).map((_, i) => {
+                        const angle = (i * 360) / 48;
+                        const rad = (angle * Math.PI) / 180;
+                        const cx = 100 + 88 * Math.cos(rad);
+                        const cy = 100 + 88 * Math.sin(rad);
+                        return <circle key={i} cx={cx} cy={cy} r="2.2" fill={dotColor} opacity="0.85" />;
+                      })}
+                      <circle cx="100" cy="100" r="82" fill={`url(#gradFace-${isTail ? 't' : 'h'})`} />
+                      <circle cx="100" cy="100" r="72" fill="none" stroke={rimColor} strokeWidth="1.5" opacity="0.55" />
+                      <circle cx="100" cy="100" r="66" fill="none" stroke={rimColor} strokeWidth="0.8" strokeDasharray="3 3" opacity="0.55" />
+                      {[0, 90, 180, 270].map((deg) => {
+                        const rad = ((deg - 90) * Math.PI) / 180;
+                        const cx = 100 + 74 * Math.cos(rad);
+                        const cy = 100 + 74 * Math.sin(rad);
+                        return <text key={deg} x={cx} y={cy + 4} textAnchor="middle" fontSize="9" fill={letterColor} opacity="0.75">★</text>;
+                      })}
+                      <text x="100" y="126" textAnchor="middle" fontSize="95" fontWeight="900" fill={letterColor} fontFamily="Outfit, sans-serif"
+                        style={{ paintOrder: 'stroke fill', stroke: strokeColor, strokeWidth: 2 }}>{letter}</text>
+                      <ellipse cx="75" cy="55" rx="35" ry="14" fill="rgba(255,255,255,0.35)" transform="rotate(-25 75 55)" />
+                    </>
+                  );
+                })()}
+              </svg>
             </div>
 
             {/* Result text overlay */}

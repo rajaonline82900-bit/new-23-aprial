@@ -439,3 +439,39 @@
     animation: coinFeedScroll 24s linear infinite;
     will-change: transform;
 }
+
+/* ─────────── Coin Toss — Simple Robust Animation ─────────── */
+.coin-simple {
+    animation: coinSimpleIdle 3s ease-in-out infinite;
+    transform-origin: center center;
+    will-change: transform;
+}
+@keyframes coinSimpleIdle {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50%      { transform: translateY(-6px) rotate(2deg); }
+}
+@keyframes coinSimpleFlip {
+    /* Dramatic bottom-up toss: dip → soar 180px → arc → peak 140px → fall → bounce → settle */
+    0%   { transform: translateY(0) scale(1) rotate(0deg); }
+    5%   { transform: translateY(20px) scale(0.92) rotate(-20deg); }         /* anticipation dip */
+    20%  { transform: translateY(-180px) scale(1.08) rotate(720deg); }        /* peak 1 */
+    35%  { transform: translateY(-50px) scale(0.98) rotate(1440deg); }
+    50%  { transform: translateY(-140px) scale(1.05) rotate(2160deg); }       /* peak 2 */
+    65%  { transform: translateY(-20px) scale(0.98) rotate(2880deg); }
+    80%  { transform: translateY(15px) scale(0.88) rotate(3240deg); }         /* land impact */
+    92%  { transform: translateY(-6px) scale(1.04) rotate(3300deg); }         /* small hop */
+    100% { transform: translateY(0) scale(1) rotate(3600deg); }
+}
+.coin-simple-flipping {
+    animation: coinSimpleFlip 1.6s cubic-bezier(0.34, 1.56, 0.64, 1) infinite !important;
+}
+@keyframes coinSimpleLand {
+    0%   { transform: translateY(-180px) scale(1.1) rotate(720deg); }
+    50%  { transform: translateY(-40px) scale(1.15) rotate(360deg); }
+    75%  { transform: translateY(18px) scale(0.85) rotate(0deg); }
+    90%  { transform: translateY(-6px) scale(1.06) rotate(-3deg); }
+    100% { transform: translateY(0) scale(1) rotate(0deg); }
+}
+.coin-simple-landed {
+    animation: coinSimpleLand 1.1s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
