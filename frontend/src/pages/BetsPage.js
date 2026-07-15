@@ -207,7 +207,7 @@ const BetsPage = () => {
               History
             </h1>
             <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest leading-none mt-0.5">
-              Gali · Kalyan · Aviator
+              Gali · Kalyan · Aviator · Coin
             </p>
           </div>
         </div>
@@ -298,8 +298,9 @@ const BetsPage = () => {
               {group.map((bet) => {
                 const meta = getCatMeta(bet);
                 const isAviator = meta === CAT_META.aviator;
+                const isCoin = meta === CAT_META.coin;
                 const winAmount = bet.winnings || bet.won_amount || 0;
-                const serial = String(bet.id || '').slice(-6).toUpperCase();
+                const serial = String(bet.id || bet._id || '').slice(-6).toUpperCase();
                 const isWon = bet.status === 'won';
                 const isLost = bet.status === 'lost';
                 const isCancel = bet.status === 'cancelled' || bet.status === 'reversed';
@@ -307,6 +308,21 @@ const BetsPage = () => {
                 const primaryColor = isWon ? '#10B981' : isLost ? '#EF4444' : isCancel ? '#6B7280' : '#22D3EE';
                 const primaryTint = isWon ? 'rgba(16,185,129,0.10)' : isLost ? 'rgba(239,68,68,0.08)' : isCancel ? 'rgba(107,114,128,0.06)' : 'rgba(34,211,238,0.06)';
                 const statusText = isWon ? 'WIN' : isLost ? 'LOSS' : isCancel ? 'CANCELLED' : 'PLACED';
+
+                // Bet chip value: what did the user actually bet on?
+                let betChipVal = '—';
+                if (isCoin) {
+                  betChipVal = bet.number || (bet.session ? bet.session.charAt(0) : '—');
+                } else if (isAviator) {
+                  betChipVal = bet.digit || (isLost ? 'CRASH' : '—');
+                } else {
+                  betChipVal = bet.digit || bet.number || '—';
+                }
+                // Row-2 sub-line: category + optional session
+                let subLine = 'bet';
+                if (isCoin) subLine = 'Coin Toss';
+                else if (isAviator) subLine = 'Aviator';
+                else subLine = bet.bet_type?.replace(/_/g, ' ') || 'bet';
 
                 return (
                   <div
@@ -335,7 +351,7 @@ const BetsPage = () => {
                     {/* Row 2: bet meta — justify between */}
                     <div className="flex items-center justify-between gap-2 px-3 py-1.5 text-[9px] text-gray-400 font-bold uppercase tracking-wider">
                       <span className="truncate">
-                        {isAviator ? 'Aviator' : (bet.bet_type?.replace(/_/g, ' ') || 'bet')}
+                        {subLine}
                         {bet.session && ` · ${bet.session}`}
                       </span>
                       <span className="tabular-nums">
@@ -349,13 +365,24 @@ const BetsPage = () => {
                         <div className="ticket-bet-chip">
                           <span className="ticket-bet-chip-label">Bet</span>
                           <span className="ticket-bet-chip-val tabular-nums">
-                            {isAviator ? (bet.digit || (isLost ? 'CRASH' : '—')) : (bet.digit || bet.number || '—')}
+                            {betChipVal}
                           </span>
                         </div>
                         <div className="flex flex-col leading-tight">
                           <span className="text-[8px] text-gray-500 font-black uppercase tracking-wider">Stake</span>
                           <span className="text-[11px] text-white font-black tabular-nums">{fmtAmt(bet.amount)}</span>
                         </div>
+                        {isCoin && bet.result && (
+                          <div className="flex flex-col leading-tight">
+                            <span className="text-[8px] text-gray-500 font-black uppercase tracking-wider">Result</span>
+                            <span
+                              className="text-[11px] font-black tabular-nums"
+                              style={{ color: bet.result === 'H' ? '#F97316' : '#8B5CF6' }}
+                            >
+                              {bet.result === 'H' ? 'HEAD' : 'TAIL'}
+                            </span>
+                          </div>
+                        )}
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
                         {isWon && (

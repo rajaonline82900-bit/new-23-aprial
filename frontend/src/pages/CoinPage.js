@@ -36,11 +36,19 @@ const CoinPage = () => {
   const [liveFeed, setLiveFeed] = useState([]);
   const [placing, setPlacing] = useState(false);
   const [flipAnim, setFlipAnim] = useState(false);
-  const [lastResult, setLastResult] = useState(null);
+  // lastResult persists across rounds — face of the last winning side stays
+  // visible during the next betting phase until the coin flips again.
+  const [lastResult, setLastResult] = useState(() => {
+    try { return localStorage.getItem('coin_last_result') || null; } catch (_) { return null; }
+  });
+  // spinFace toggles rapidly during the LOCKED phase to simulate a real toss
+  // (visible face flip). It is only used for display while flipAnim is true.
+  const [spinFace, setSpinFace] = useState('head');
   const [muted, setMuted] = useState(isCoinUserMuted());
   const prevRoundIdRef = useRef(null);
   const prevPhaseRef = useRef(null);
   const spinIntervalRef = useRef(null);
+  const spinFaceIntervalRef = useRef(null);
   const lastTickSecRef = useRef(null);
   const isActiveRef = useRef(true);
 
@@ -54,6 +62,10 @@ const CoinPage = () => {
       if (spinIntervalRef.current) {
         clearInterval(spinIntervalRef.current);
         spinIntervalRef.current = null;
+      }
+      if (spinFaceIntervalRef.current) {
+        clearInterval(spinFaceIntervalRef.current);
+        spinFaceIntervalRef.current = null;
       }
       setCoinMuted(true);
     };
@@ -148,28 +160,30 @@ const CoinPage = () => {
     const prevRid = prevRoundIdRef.current;
     const prevPhase = prevPhaseRef.current;
 
-    // New round → reset UI
-    if (round.round_id && prevRid && round.round_id !== prevRid) {
-      setLastResult(null);
-      setFlipAnim(false);
-      if (spinIntervalRef.current) { clearInterval(spinIntervalRef.current); spinIntervalRef.current = null; }
-    }
-
-    // Entering LOCKED → start flipping animation + spin whirr sound loop
+    // Entering LOCKED → start flipping animation + spin whirr sound loop.
+    // Do NOT clear lastResult on new round — face persists until we actually
+    // toss again. Clear it only here, when the toss actually starts.
     if (round.phase === 'locked' && prevPhase !== 'locked') {
       setFlipAnim(true);
-      setLastResult(null);
       playCoinFlip();   // initial launch sound
       // Loop spin whirr every ~180ms
       if (spinIntervalRef.current) clearInterval(spinIntervalRef.current);
       spinIntervalRef.current = setInterval(() => { playCoinSpin(); }, 180);
+      // Rapidly toggle displayed face so user visibly sees the coin flipping.
+      if (spinFaceIntervalRef.current) clearInterval(spinFaceIntervalRef.current);
+      setSpinFace('head');
+      spinFaceIntervalRef.current = setInterval(() => {
+        setSpinFace((f) => (f === 'head' ? 'tail' : 'head'));
+      }, 90);
     }
 
     // Entering RESULT → stop flip, show landing side + ching sound
     if (round.phase === 'result' && prevPhase !== 'result') {
       setFlipAnim(false);
       setLastResult(round.result_side);
+      try { localStorage.setItem('coin_last_result', round.result_side); } catch (_) { /* ignore */ }
       if (spinIntervalRef.current) { clearInterval(spinIntervalRef.current); spinIntervalRef.current = null; }
+      if (spinFaceIntervalRef.current) { clearInterval(spinFaceIntervalRef.current); spinFaceIntervalRef.current = null; }
       // Final landing "ching"
       playCoinFlip();
       // Immediate + delayed refreshes: backend settles bets right after status
@@ -202,11 +216,23 @@ const CoinPage = () => {
 
     prevRoundIdRef.current = round.round_id;
     prevPhaseRef.current = round.phase;
-  }, [round, refreshUser, fetchMyCurrent, fetchRecent, myBets]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [round, refreshUser, fetchMyCurrent, fetchRecent, myBets, config]);
 
   useEffect(() => () => {
     if (spinIntervalRef.current) clearInterval(spinIntervalRef.current);
+    if (spinFaceIntervalRef.current) clearInterval(spinFaceIntervalRef.current);
   }, []);
+
+  // Seed lastResult from most recent settled round on first load so that when
+  // the user opens the page, coin already shows the previous winning face
+  // instead of defaulting to HEAD.
+  useEffect(() => {
+    if (!lastResult && recentRounds.length > 0 && recentRounds[0]?.result_side) {
+      setLastResult(recentRounds[0].result_side);
+      try { localStorage.setItem('coin_last_result', recentRounds[0].result_side); } catch (_) { /* ignore */ }
+    }
+  }, [recentRounds, lastResult]);
 
   const placeBet = async (side) => {
     if (placing) return;
@@ -357,77 +383,75 @@ const CoinPage = () => {
             </div>
           </div>
 
-          {/* Coin visual — simple robust approach: shows correct face at all times. */}
+          {/* Coin visual — face persists across rounds; swaps rapidly while flipping. */}
           <div className="flex flex-col items-center justify-center py-6">
-            <div
-              className={`coin-simple ${flipAnim ? 'coin-simple-flipping' : ''} ${phase === 'result' ? 'coin-simple-landed' : ''}`}
-              data-testid="coin-visual"
-              data-face={flipAnim ? 'spin' : (lastResult || (round?.result_side) || 'head')}
-              style={{
-                width: 170,
-                height: 170,
-                position: 'relative',
-                filter: `drop-shadow(0 12px 28px ${THEME.gold}90) drop-shadow(0 0 40px ${THEME.gold}45)`,
-              }}
-            >
-              {/* Show HEAD when face=head OR spinning (odd frame) */}
-              <svg viewBox="0 0 200 200" width="100%" height="100%" style={{ display: 'block' }}>
-                <defs>
-                  <radialGradient id={`gradFace-${lastResult === 'tail' ? 't' : 'h'}`} cx="35%" cy="30%">
-                    {lastResult === 'tail' ? (
-                      <>
-                        <stop offset="0%" stopColor="#F5F3FF" />
-                        <stop offset="15%" stopColor="#DDD6FE" />
-                        <stop offset="40%" stopColor="#8B5CF6" />
-                        <stop offset="75%" stopColor="#5B21B6" />
-                        <stop offset="100%" stopColor="#2E1065" />
-                      </>
-                    ) : (
-                      <>
-                        <stop offset="0%" stopColor="#FFFBEB" />
-                        <stop offset="15%" stopColor="#FEF3C7" />
-                        <stop offset="40%" stopColor="#FBBF24" />
-                        <stop offset="75%" stopColor="#D97706" />
-                        <stop offset="100%" stopColor="#78350F" />
-                      </>
-                    )}
-                  </radialGradient>
-                </defs>
-                {(() => {
-                  const isTail = lastResult === 'tail';
-                  const rimColor = isTail ? '#2E1065' : '#78350F';
-                  const dotColor = isTail ? '#DDD6FE' : '#FEF3C7';
-                  const letterColor = isTail ? '#2E1065' : '#78350F';
-                  const strokeColor = isTail ? '#DDD6FE' : '#FEF3C7';
-                  const letter = isTail ? 'T' : 'H';
-                  return (
-                    <>
-                      <circle cx="100" cy="100" r="98" fill={rimColor} />
-                      <circle cx="100" cy="100" r="93" fill={rimColor} />
-                      {Array.from({ length: 48 }).map((_, i) => {
-                        const angle = (i * 360) / 48;
-                        const rad = (angle * Math.PI) / 180;
-                        const cx = 100 + 88 * Math.cos(rad);
-                        const cy = 100 + 88 * Math.sin(rad);
-                        return <circle key={i} cx={cx} cy={cy} r="2.2" fill={dotColor} opacity="0.85" />;
-                      })}
-                      <circle cx="100" cy="100" r="82" fill={`url(#gradFace-${isTail ? 't' : 'h'})`} />
-                      <circle cx="100" cy="100" r="72" fill="none" stroke={rimColor} strokeWidth="1.5" opacity="0.55" />
-                      <circle cx="100" cy="100" r="66" fill="none" stroke={rimColor} strokeWidth="0.8" strokeDasharray="3 3" opacity="0.55" />
-                      {[0, 90, 180, 270].map((deg) => {
-                        const rad = ((deg - 90) * Math.PI) / 180;
-                        const cx = 100 + 74 * Math.cos(rad);
-                        const cy = 100 + 74 * Math.sin(rad);
-                        return <text key={deg} x={cx} y={cy + 4} textAnchor="middle" fontSize="9" fill={letterColor} opacity="0.75">★</text>;
-                      })}
-                      <text x="100" y="126" textAnchor="middle" fontSize="95" fontWeight="900" fill={letterColor} fontFamily="Outfit, sans-serif"
-                        style={{ paintOrder: 'stroke fill', stroke: strokeColor, strokeWidth: 2 }}>{letter}</text>
-                      <ellipse cx="75" cy="55" rx="35" ry="14" fill="rgba(255,255,255,0.35)" transform="rotate(-25 75 55)" />
-                    </>
-                  );
-                })()}
-              </svg>
-            </div>
+            {(() => {
+              const displayFace = flipAnim ? spinFace : (lastResult || 'head');
+              const isTail = displayFace === 'tail';
+              const rimColor = isTail ? '#2E1065' : '#78350F';
+              const dotColor = isTail ? '#DDD6FE' : '#FEF3C7';
+              const letterColor = isTail ? '#2E1065' : '#78350F';
+              const strokeColor = isTail ? '#DDD6FE' : '#FEF3C7';
+              const letter = isTail ? 'T' : 'H';
+              return (
+                <div
+                  className={`coin-simple ${flipAnim ? 'coin-simple-flipping' : ''} ${phase === 'result' ? 'coin-simple-landed' : ''}`}
+                  data-testid="coin-visual"
+                  data-face={displayFace}
+                  style={{
+                    width: 170,
+                    height: 170,
+                    position: 'relative',
+                    filter: `drop-shadow(0 12px 28px ${THEME.gold}90) drop-shadow(0 0 40px ${THEME.gold}45)`,
+                  }}
+                >
+                  <svg viewBox="0 0 200 200" width="100%" height="100%" style={{ display: 'block' }}>
+                    <defs>
+                      <radialGradient id={`gradFace-${isTail ? 't' : 'h'}`} cx="35%" cy="30%">
+                        {isTail ? (
+                          <>
+                            <stop offset="0%" stopColor="#F5F3FF" />
+                            <stop offset="15%" stopColor="#DDD6FE" />
+                            <stop offset="40%" stopColor="#8B5CF6" />
+                            <stop offset="75%" stopColor="#5B21B6" />
+                            <stop offset="100%" stopColor="#2E1065" />
+                          </>
+                        ) : (
+                          <>
+                            <stop offset="0%" stopColor="#FFFBEB" />
+                            <stop offset="15%" stopColor="#FEF3C7" />
+                            <stop offset="40%" stopColor="#FBBF24" />
+                            <stop offset="75%" stopColor="#D97706" />
+                            <stop offset="100%" stopColor="#78350F" />
+                          </>
+                        )}
+                      </radialGradient>
+                    </defs>
+                    <circle cx="100" cy="100" r="98" fill={rimColor} />
+                    <circle cx="100" cy="100" r="93" fill={rimColor} />
+                    {Array.from({ length: 48 }).map((_, i) => {
+                      const angle = (i * 360) / 48;
+                      const rad = (angle * Math.PI) / 180;
+                      const cx = 100 + 88 * Math.cos(rad);
+                      const cy = 100 + 88 * Math.sin(rad);
+                      return <circle key={i} cx={cx} cy={cy} r="2.2" fill={dotColor} opacity="0.85" />;
+                    })}
+                    <circle cx="100" cy="100" r="82" fill={`url(#gradFace-${isTail ? 't' : 'h'})`} />
+                    <circle cx="100" cy="100" r="72" fill="none" stroke={rimColor} strokeWidth="1.5" opacity="0.55" />
+                    <circle cx="100" cy="100" r="66" fill="none" stroke={rimColor} strokeWidth="0.8" strokeDasharray="3 3" opacity="0.55" />
+                    {[0, 90, 180, 270].map((deg) => {
+                      const rad = ((deg - 90) * Math.PI) / 180;
+                      const cx = 100 + 74 * Math.cos(rad);
+                      const cy = 100 + 74 * Math.sin(rad);
+                      return <text key={deg} x={cx} y={cy + 4} textAnchor="middle" fontSize="9" fill={letterColor} opacity="0.75">★</text>;
+                    })}
+                    <text x="100" y="126" textAnchor="middle" fontSize="95" fontWeight="900" fill={letterColor} fontFamily="Outfit, sans-serif"
+                      style={{ paintOrder: 'stroke fill', stroke: strokeColor, strokeWidth: 2 }}>{letter}</text>
+                    <ellipse cx="75" cy="55" rx="35" ry="14" fill="rgba(255,255,255,0.35)" transform="rotate(-25 75 55)" />
+                  </svg>
+                </div>
+              );
+            })()}
 
             {/* Result text overlay */}
             {phase === 'result' && lastResult && (

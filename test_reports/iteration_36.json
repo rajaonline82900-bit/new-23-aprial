@@ -1,0 +1,36 @@
+{
+  "summary": "All three P0 coin-toss bugs verified FIXED live on https://matka-numbers-bet.preview.emergentagent.com. (Bug 1 face persistence) On first load with no localStorage, coin seeded to 'tail' from recent settled rounds; monitored full ~60s round cycle: BETTING OPEN(face=tail) -> FLIPPING(face swaps rapidly, 11 swaps in ~8s locked phase, both 'head' and 'tail' faces observed on data-face attribute) -> RESULT: HEAD(face=head) -> next BETTING OPEN(face=head, PERSISTED). localStorage.coin_last_result correctly written to 'head' when result was HEAD. Full page reload: localStorage=head, displayed face=head, phase='BETTING OPEN' — persistence survives refresh. (Bug 2 real toss animation) During LOCKED phase, .coin-simple-flipping class is applied (coinSimpleFlip keyframe: translateY -220px peak + scale, no rotate) AND JS spinFaceIntervalRef toggles data-face every ~90ms so the H/T SVG face visibly swaps between orange-H and violet-T while the coin arcs up. Verified 11 visual face swaps + both faces attributes observed within one ~8s locked window. (Bug 3 BetsPage) Placed two coin bets (HEAD ₹50 won, TAIL ₹50 lost) via API on round 63594a614ec0 which settled HEAD. On /bets 'All Bet' filter both coin bets show up correctly: game name='Coin Toss', sub-line 'COIN TOSS · HEAD/TAIL', bet chip='H' or 'T' (NOT 'CRASH'), status WIN/LOSS, RESULT column shows 'HEAD' in orange (#F97316). Clicking 'Coin Toss' filter chip shows exactly 2 coin bets; scanned every rendered row — zero occurrences of 'CRASH' or 'Aviator' text inside any coin row. Aviator display path is preserved (isAviator branch still uses digit-or-CRASH fallback in BetsPage.js line 317). ",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/admin/users/{id}/wallet type=credit", "issue": "Response message says 'Balance deducted successfully' even on credit (should be 'Balance credited successfully'). new_balance value is correct. Cosmetic only."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/tmp/2_coin_initial.png",
+    "/tmp/bets_coin.png"
+  ],
+  "action_items": [
+    "Optional: fix credit/deduct message in adjust_user_wallet (admin_routes.py ~line 380) — hardcoded 'deducted' string. Not part of reported P0 bugs."
+  ],
+  "critical_code_review_comments": [
+    "CoinPage.js line 200 (myBets in RESULT phase useEffect): dependency array includes myBets which mutates every 3s from fetchMyCurrent — could cause the phase-transition effect to re-run unnecessarily. Currently guarded by prevPhaseRef so no functional bug, but eslint-disable-next-line masks the risk. Consider capturing myBets via a ref for cleaner semantics.",
+    "CoinPage.js: spinIntervalRef / spinFaceIntervalRef cleanup runs on unmount only. If backend skips the 'locked' phase in a fast transition (e.g., 500ms poll misses a 200ms locked window), intervals would never be cleared. Add safety: also clearInterval whenever phase becomes 'open' or 'result'.",
+    "BetsPage.js line 317: aviator 'CRASH' fallback fires only when bet.digit is falsy AND isLost — currently works because backend always sets a digit for successful aviator bets. If a placed aviator bet with digit=null and status=pending existed, chip would show '—'. Consider explicit multiplier/target rendering.",
+    "coinAudio.js not reviewed but referenced 6 times in CoinPage — ensure it defensively handles AudioContext not being available (SSR / older iOS) to avoid unhandled promise rejections during placeCoinFlip in the tight interval loop.",
+    "App.css coinSimpleFlip uses infinite animation with 1.4s cycle during LOCKED (~8s), which will render 5+ full toss arcs. Visually acceptable but each arc reaches translateY(-220px) — verify parent overflow-hidden so the coin doesn't clip out at the top on very small viewports (<300px height cards)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "User: phone 9870012345 / password Test@1234 (id 6a3c0ad8d4fe24ed2d26087b, name AuthTest). Admin: admin@sattamatka.com / Admin@123 via /api/auth/admin/login.",
+  "seed_data_creation": "Credited ₹1000 to test user 9870012345 via POST /api/admin/users/{id}/wallet, then placed two coin bets (HEAD ₹50, TAIL ₹50) which auto-settled in round 63594a614ec0. Balance now ~₹1050 after HEAD win.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All 3 reported P0 coin bugs are VERIFIED FIXED end-to-end via live UI + DOM inspection + localStorage checks + API validation. Key evidence: (1) data-testid='coin-visual' has data-face attribute that observably swaps between 'head' and 'tail' during LOCKED phase (11 swaps in 8s) — this is the visible face-flip user asked for. (2) After RESULT: HEAD -> next BETTING OPEN, coin still shows face=head — persistence across round boundary confirmed. (3) localStorage.getItem('coin_last_result')='head' after HEAD result, and survives page reload. (4) /bets 'All Bet' and 'Coin Toss' filters both display coin bets with 'Coin Toss' game name, 'COIN TOSS · HEAD' sub-line, chip 'H'/'T' (never 'CRASH'), and colored HEAD/TAIL result column. Aviator branch still correctly uses 'CRASH' fallback (only for aviator, isolated in ternary at BetsPage.js:317). Test coin bets f474257310d3470db3b3f2d75aeebb29 (HEAD/won) and fef86c808d104261859d950c2d11ca5c (TAIL/lost) available for future regressions.",
+  "rca_of_the_issue": "Previous forks likely missed one of three things: (a) not clearing spinFaceIntervalRef when result phase entered, causing stale swaps; (b) resetting lastResult on new round instead of only on entering LOCKED again; (c) BetsPage falling back to CRASH text for any lost bet without a digit — now explicitly branched by isCoin/isAviator. Current implementation in CoinPage.js (lines 158-220) correctly: sets lastResult+localStorage only when entering RESULT; toggles spinFace during LOCKED via 90ms interval; displays displayFace = flipAnim ? spinFace : (lastResult||'head'). BetsPage.js lines 300-320 explicitly compute betChipVal per bet type — coin ALWAYS gets H/T, never CRASH."
+}
