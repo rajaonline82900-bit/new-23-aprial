@@ -1,7 +1,31 @@
 # MATKA11 - Product Requirements Document
 
 
-## Latest Update (2026-02-15) — Coin Toss Persistence + Real Toss + BetsPage Fix (Batch 13) 🪙✅
+## Latest Update (2026-02-15) — Admin Wallet Tx moved to User Drawer + Bets Sort Fix (Batch 14) 🧑‍💼📋
+
+**User request:** Wallet transaction history admin panel me kewal user details ke andar dikhe (per-user, game name + win/lose + date/time). Bets history me latest bet sabse upar aana chahiye.
+
+**Changes:**
+1. **Admin: Wallet Tx moved inside User Details drawer** — removed the standalone top-level `wallet_tx` admin tab and deleted `AdminWalletTransactionsTab.js`. Added a new 5th tab inside the user modal (`user-detail-wallet-tx-tab`) that fetches `/api/admin/wallet/game-transactions?user_id=<id>&game=&type_filter=` — always scoped to the currently opened user. Includes:
+   - 3-card summary: Wins Amount (green), Losses/Stake (red), Entries (cyan)
+   - Game filter (Coin/Ludo/Aviator/Kalyan) + Type filter (Win/Loss/Bet) + Refresh
+   - Row shows: game_name · IST date/time · WIN/LOSS/BET badge · side · ±₹amount
+
+2. **Backend regex fix** — `type_filter=win/loss/bet` now correctly matches simple types like `coin_win`, `coin_loss`, `coin_bet` (previously required an extra `_` before the suffix).
+
+3. **BetsPage /bets** — Added Refresh button in header. Explicit UTC-aware `ts()` helper for robust desc sort by `created_at`. Latest date group appears first; within each group latest bet is on top. Coin bets now include `id` so row testids are unique.
+
+**Files:**
+- `frontend/src/pages/AdminPage.js` — removed wallet_tx import/tab/content
+- `frontend/src/pages/admin/AdminUsersTab.js` — added Wallet Tx tab inside modal with per-user fetch
+- `frontend/src/pages/admin/AdminWalletTransactionsTab.js` — DELETED
+- `frontend/src/pages/BetsPage.js` — RefreshCw button + utcDate-aware sort + coin id mapping
+- `backend/routes/coin_routes.py` — regex suffix match fixed (line ~354)
+
+**Testing:** iteration_37.json — frontend 95% pass. Cross-user data isolation verified (AuthTest shows only own coin_tx, Hzhs shows only own ludo). Regex fix verified via curl (coin_win, coin_loss, coin_bet all return correct rows).
+
+
+## Previous Update (2026-02-15) — Coin Toss Persistence + Real Toss + BetsPage Fix (Batch 13) 🪙✅
 
 **All 3 P0 complaints — VERIFIED FIXED (testing agent iteration_36, 100% pass):**
 

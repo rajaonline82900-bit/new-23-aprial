@@ -352,8 +352,11 @@ async def admin_game_transactions(
     else:
         pattern = "^(coin_|ludo_|aviator_|matka_)"
     if type_filter:
-        # win/loss/bet — attach suffix
-        pattern = f"{pattern}.*_{type_filter.lower()}$" if type_filter.lower() in ("win", "loss", "bet") else pattern
+        # win/loss/bet — match suffix keyword (with or without a leading '_').
+        # Handles both 'coin_win' (prefix+keyword) and 'aviator_round_win' (prefix+_+keyword).
+        suffix = type_filter.lower()
+        if suffix in ("win", "loss", "bet"):
+            pattern = f"{pattern}.*{suffix}$"
     query = {"type": {"$regex": pattern}}
     if user_id:
         query["user_id"] = user_id

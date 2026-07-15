@@ -116,6 +116,7 @@ const BetsPage = () => {
       const mainBets = betsRes.data.bets || [];
       const coinBets = (coinRes.data.bets || []).map((c) => ({
         _id: c.bet_id,
+        id: c.bet_id,
         bet_type: 'coin',
         game_category: 'coin',
         game_name: 'Coin Toss',
