@@ -1,5 +1,11 @@
 # MATKA11 - Product Requirements Document
 
+
+## Latest Update (2026-02-15)
+- **Dashboard Home Gateway**: Redesigned dashboard so that on app open, users no longer see game cards directly. Instead, a premium 2x2 grid of 4 category boxes (Gali Disawar, Kalyan Matka, Aviator, Ludo) is shown. Tapping a box opens that category's game list; a Back button returns to the gateway. Aviator & Ludo boxes navigate directly to their game pages.
+- Files: `frontend/src/pages/DashboardPage.js` (gameCategory initial state now `null`, 4-box gateway block + back button added; legacy 4-pill switcher hidden behind `{false && ...}` guard for future reuse).
+- Testing: Screenshot verified — gateway, Gali cards view (with back), Kalyan cards view (with back) all working.
+
 ## Original Problem Statement
 Migrate Matka11 satta app from Emergent preview environment to self-hosted Hostinger VPS at https://matka11.online with full feature parity and automatic result fetching from king.sattaapi.com.
 

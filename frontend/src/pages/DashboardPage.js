@@ -157,7 +157,9 @@ const DashboardPage = () => {
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [unreadChat, setUnreadChat] = useState(0);
-  const [gameCategory, setGameCategory] = useState(() => localStorage.getItem('game_category') || 'gali_disawar');
+  // Start at HOME (4-box gateway). User explicitly requested: app open par direct
+  // game cards nahi dikhne chahiye — pehle 4 box tiles dikhein, tap par category open ho.
+  const [gameCategory, setGameCategory] = useState(null);
   const [kalyanResults, setKalyanResults] = useState({});
   const [historyGame, setHistoryGame] = useState(null);
   const [jantriGame, setJantriGame] = useState(null);
@@ -635,18 +637,238 @@ const DashboardPage = () => {
             })()}
           </div>
 
-          {/* Section Header - Market + category toggle (Gali Disawar | Kalyan) */}
+          {/* ═══════════════════════════════════════════════════════════════
+              HOME GATEWAY — 2x2 premium box tiles for the 4 game categories.
+              User request: App open par direct game cards nahi, pehle 4 boxes
+              dikhein — tap par category open ho. Aviator/Ludo directly navigate.
+              ═══════════════════════════════════════════════════════════════ */}
+          {gameCategory === null && (
+            <>
+              {/* Gateway header */}
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-6 rounded-full" style={{ background: 'linear-gradient(180deg, #FFD700 0%, #D4AF37 50%, #B8860B 100%)' }}></span>
+                  <h3 className="text-xl font-black tracking-tight" style={{ color: '#FFFFFF' }}>Choose Game</h3>
+                </div>
+                <span className="text-[10px] px-2.5 py-1 rounded-full font-black tracking-widest uppercase" style={{ background: 'rgba(212, 175, 55, 0.15)', border: '1px solid rgba(212, 175, 55, 0.5)', color: '#FFD700' }}>
+                  खेल चुनें
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 mb-5" data-testid="home-gateway-grid">
+                {[
+                  {
+                    id: 'gali_disawar',
+                    label: 'Gali Disawar',
+                    hi: 'गली दिसावर',
+                    Icon: GaliDisawarIcon,
+                    bg: 'linear-gradient(155deg, #3A2708 0%, #1F1608 55%, #0A0704 100%)',
+                    border: '#FFD700',
+                    accent: '#FFD700',
+                    badgeBg: 'linear-gradient(135deg, #FFD700 0%, #D4AF37 55%, #B8860B 100%)',
+                    badgeColor: '#1A0F00',
+                    stripe: 'linear-gradient(90deg, #7B4D0A 0%, #FFD700 50%, #7B4D0A 100%)',
+                    count: games.filter(g => (g.category || 'gali_disawar') === 'gali_disawar').length,
+                    countSuffix: 'Games',
+                    isLink: false,
+                  },
+                  {
+                    id: 'kalyan',
+                    label: 'Kalyan Matka',
+                    hi: 'कल्याण मटका',
+                    Icon: KalyanIcon,
+                    bg: 'linear-gradient(155deg, #3A0A0A 0%, #1A0A14 55%, #0A0408 100%)',
+                    border: '#DC2626',
+                    accent: '#FCA5A5',
+                    badgeBg: 'linear-gradient(135deg, #F87171 0%, #DC2626 55%, #7F1D1D 100%)',
+                    badgeColor: '#FFFFFF',
+                    stripe: 'linear-gradient(90deg, #450A0A 0%, #DC2626 50%, #450A0A 100%)',
+                    count: games.filter(g => g.category === 'kalyan').length,
+                    countSuffix: 'Games',
+                    isLink: false,
+                  },
+                  {
+                    id: 'aviator',
+                    label: 'Aviator',
+                    hi: 'एविएटर',
+                    Icon: AviatorIcon,
+                    bg: 'linear-gradient(155deg, #082F49 0%, #0A1428 55%, #050810 100%)',
+                    border: '#22D3EE',
+                    accent: '#67E8F9',
+                    badgeBg: 'linear-gradient(135deg, #22D3EE 0%, #0891B2 55%, #164E63 100%)',
+                    badgeColor: '#FFFFFF',
+                    stripe: 'linear-gradient(90deg, #0C4A6E 0%, #22D3EE 50%, #0C4A6E 100%)',
+                    liveLabel: 'LIVE',
+                    countSuffix: 'Crash Game',
+                    isLink: true,
+                    linkTo: '/aviator',
+                  },
+                  {
+                    id: 'ludo',
+                    label: 'Ludo',
+                    hi: 'लूडो',
+                    Icon: LudoIcon,
+                    bg: 'linear-gradient(155deg, #2E1065 0%, #1A0A2E 55%, #0A0414 100%)',
+                    border: '#A855F7',
+                    accent: '#D8B4FE',
+                    badgeBg: 'linear-gradient(135deg, #C084FC 0%, #A855F7 55%, #6B21A8 100%)',
+                    badgeColor: '#FFFFFF',
+                    stripe: 'linear-gradient(90deg, #4C1D95 0%, #C084FC 50%, #4C1D95 100%)',
+                    liveLabel: 'PLAY',
+                    countSuffix: '4-Token Game',
+                    isLink: true,
+                    linkTo: '/ludo',
+                  },
+                ].map((cat) => {
+                  const isDisabled = gameToggles[cat.id] === false;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      disabled={isDisabled}
+                      onClick={() => {
+                        if (isDisabled) {
+                          toast.error(`${cat.label} abhi band hai`);
+                          return;
+                        }
+                        try { navigator.vibrate?.(15); } catch (_) { /* haptic api unavailable */ }
+                        if (cat.isLink) {
+                          navigate(cat.linkTo);
+                          return;
+                        }
+                        setGameCategory(cat.id);
+                      }}
+                      data-testid={`gateway-box-${cat.id}`}
+                      className="rounded-2xl relative overflow-hidden text-left active:scale-[0.97]"
+                      style={{
+                        background: cat.bg,
+                        border: `1.5px solid ${cat.border}`,
+                        boxShadow: `0 4px 14px rgba(0,0,0,0.5), inset 0 1px 0 ${cat.border}30`,
+                        minHeight: '158px',
+                        transition: 'transform 180ms ease',
+                        opacity: isDisabled ? 0.55 : 1,
+                        filter: isDisabled ? 'grayscale(70%)' : 'none',
+                        cursor: isDisabled ? 'not-allowed' : 'pointer',
+                        contain: 'content',
+                      }}
+                    >
+                      {/* Top accent stripe */}
+                      <div
+                        className="absolute top-0 left-0 right-0 h-1"
+                        style={{ background: cat.stripe, opacity: 0.9 }}
+                      />
+
+                      {/* BAND / LIVE badge (top right) */}
+                      {isDisabled ? (
+                        <span
+                          className="absolute top-2 right-2 px-1.5 py-0.5 rounded text-[8px] font-black tracking-widest z-10"
+                          style={{ background: '#DC2626', color: '#FFF', border: '1px solid #FCA5A5' }}
+                          data-testid={`gateway-${cat.id}-disabled-badge`}
+                        >
+                          BAND
+                        </span>
+                      ) : cat.liveLabel ? (
+                        <span
+                          className="absolute top-2 right-2 px-1.5 py-0.5 rounded-full text-[8px] font-black tracking-widest z-10 flex items-center gap-1"
+                          style={{
+                            background: 'rgba(0, 0, 0, 0.55)',
+                            color: cat.accent,
+                            border: `1px solid ${cat.border}80`,
+                          }}
+                          data-testid={`gateway-${cat.id}-live-badge`}
+                        >
+                          <span className="w-1 h-1 rounded-full" style={{ background: cat.accent, boxShadow: `0 0 4px ${cat.accent}` }} />
+                          {cat.liveLabel}
+                        </span>
+                      ) : null}
+
+                      {/* Icon in themed ring */}
+                      <div className="pt-5 flex items-center justify-center">
+                        <div
+                          className="flex items-center justify-center rounded-2xl"
+                          style={{
+                            width: 62,
+                            height: 62,
+                            background: `radial-gradient(circle at 30% 30%, ${cat.border}30 0%, ${cat.border}12 55%, rgba(0,0,0,0) 100%)`,
+                            border: `1.5px solid ${cat.border}80`,
+                            boxShadow: `inset 0 1px 0 ${cat.border}30`,
+                          }}
+                        >
+                          <cat.Icon size={40} active={false} />
+                        </div>
+                      </div>
+
+                      {/* Name */}
+                      <div className="px-3 pt-2.5 text-center">
+                        <div
+                          className="text-[14px] font-black tracking-tight leading-none"
+                          style={{ color: '#FFFFFF', fontFamily: 'Outfit, sans-serif' }}
+                        >
+                          {cat.label}
+                        </div>
+                        <div
+                          className="text-[10px] font-bold leading-none mt-1"
+                          style={{ color: cat.accent, fontFamily: 'Noto Sans Devanagari, sans-serif' }}
+                        >
+                          {cat.hi}
+                        </div>
+                      </div>
+
+                      {/* Bottom count badge */}
+                      <div className="px-3 pb-3 pt-2.5 flex items-center justify-center">
+                        <span
+                          className="text-[9px] font-black tracking-widest px-2.5 py-1 rounded-full uppercase leading-none"
+                          style={{
+                            background: cat.badgeBg,
+                            color: cat.badgeColor,
+                            boxShadow: `0 2px 6px ${cat.border}40`,
+                          }}
+                          data-testid={`gateway-${cat.id}-badge`}
+                        >
+                          {cat.isLink ? cat.countSuffix : `${cat.count} ${cat.countSuffix}`}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          {/* ═══════════════════════════════════════════════════════════════
+              CATEGORY VIEW — Back button + section header + games list
+              ═══════════════════════════════════════════════════════════════ */}
+          {gameCategory !== null && (
+          <>
+          {/* Back button + Section Header */}
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <span className="w-1.5 h-6 rounded-full" style={{ background: 'linear-gradient(180deg, #FFD700 0%, #D4AF37 50%, #B8860B 100%)' }}></span>
-              <h3 className="text-xl font-black tracking-tight" style={{ color: '#FFFFFF' }}>Market</h3>
+              <button
+                type="button"
+                onClick={() => { try { navigator.vibrate?.(10); } catch (_) { /* haptic api unavailable */ } setGameCategory(null); }}
+                data-testid="gateway-back-btn"
+                aria-label="Back to home"
+                className="w-9 h-9 rounded-full flex items-center justify-center active:scale-90"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(212, 175, 55, 0.22) 100%)',
+                  border: '1px solid rgba(212, 175, 55, 0.6)',
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFD700" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M15 18l-6-6 6-6" />
+                </svg>
+              </button>
+              <h3 className="text-lg font-black tracking-tight" style={{ color: '#FFFFFF' }}>
+                {gameCategory === 'gali_disawar' ? 'Gali Disawar' : gameCategory === 'kalyan' ? 'Kalyan Matka' : 'Market'}
+              </h3>
             </div>
             <span className="text-[#1A1A2E] text-[11px] px-3 py-1 rounded-full font-black tracking-wide" style={{ background: 'linear-gradient(135deg, #FFD700 0%, #D4AF37 100%)' }} data-testid="games-count">
               {games.filter(g => (g.category || 'gali_disawar') === gameCategory).length} Available
             </span>
           </div>
 
-          {/* Category Toggle - Premium 4-pill switcher with per-tab color themes */}
+          {/* Legacy 4-pill switcher retained (hidden) — logic kept for potential re-use */}
+          {false && (
           <div
             className="grid grid-cols-4 gap-1 p-1 rounded-2xl mb-3"
             style={{
@@ -762,6 +984,7 @@ const DashboardPage = () => {
               );
             })}
           </div>
+          )}
 
           {/* Games list */}
           {loading ? (
@@ -1173,6 +1396,8 @@ const DashboardPage = () => {
                 );
               })}
             </div>
+          )}
+          </>
           )}
         </div>
       </div>
