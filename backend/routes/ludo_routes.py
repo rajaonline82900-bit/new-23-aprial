@@ -560,8 +560,14 @@ async def _apply_token_move(t: dict, seat: int, dice: int, token_id: int) -> Dic
         squares onto the main track from their start).
       • Capture = +50 points (via CAPTURE_BONUS_POINTS in score calc).
       • Captured opponent token → progress=0 (all accumulated squares lost).
+
+    NOTE: `seat` is the player's SEAT NUMBER (may be 0,1,2,3 non-sequential
+    for 2-player games where seats are [0,2]). Do NOT index players[] by seat —
+    always look up by matching `p["seat"] == seat`.
     """
-    p = t["players"][seat]
+    p = next((pl for pl in t["players"] if pl["seat"] == seat), None)
+    if p is None:
+        raise HTTPException(status_code=400, detail=f"No player with seat {seat}")
     tok = p["tokens"][token_id]
 
     was_release = (tok["progress"] == 0)

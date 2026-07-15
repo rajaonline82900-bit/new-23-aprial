@@ -1,7 +1,22 @@
 # MATKA11 - Product Requirements Document
 
 
-## Latest Update (2026-02-15) — Ludo Zupee Supreme Rules (Batch 4)
+## Latest Update (2026-02-15) — Ludo Bot Play Bug Fix (Batch 5) 🚨
+**Critical fix**: Bot was NOT playing in 2-player games — user's earlier report "keval me play kar raha hu, bot bilkul play nahi kr rha" was a real bug.
+
+**Root cause**: In previous update (Batch 4), 2-player seating was changed to opposite (seats 0 & 2), but `_apply_token_move` at line 564 was doing `t["players"][seat]` — treating seat number as ARRAY INDEX. When seat=2 but players array only had 2 items (indices 0,1), the watchdog crashed with `IndexError: list index out of range`, silently every 2 seconds, so the bot never got to move.
+
+**Fix**: `_apply_token_move` now looks up player by matching `p["seat"] == seat` (via `next()` comprehension) instead of array indexing. Added a defensive HTTPException for safety.
+
+**Verification**:
+- ✅ Watchdog logs are clean (zero `list index out of range` errors after fix)
+- ✅ Full 5-round curl simulation: bot rolls dice, releases tokens on any value, moves them across the board. Bot went from [0,0,0,0] to [20,1,1,2] in 10 turns.
+- ✅ Capture logic verified: Admin captured Mohit Rathore's token → captures=1, victim token progress=0.
+- ✅ 2-player opposite seating (0↔2) preserved.
+
+**Files**: `backend/routes/ludo_routes.py` — `_apply_token_move` seat lookup rewritten.
+
+
 Complete rules overhaul to match Zupee Ludo Supreme style so users can understand and play easily:
 
 - **⏱ 5-minute match** (was 10 min): `MATCH_DURATION = 5 * 60`
