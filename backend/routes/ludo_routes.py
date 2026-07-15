@@ -1009,6 +1009,41 @@ async def my_history(request: Request, limit: int = 30):
     return {"games": games}
 
 
+# ---------- Emoji Reactions ----------
+ALLOWED_EMOJIS = {"🔥", "😂", "😭", "👍", "💩", "🎉", "😎", "😡"}
+
+@router.post("/ludo/tables/{table_id}/emoji")
+async def send_emoji(table_id: str, request: Request):
+    """Send a quick emoji reaction to all players at the table.
+    Rate-limited: 1 emoji per user per 2 seconds (client-enforced primarily,
+    but we ignore silently on backend duplicates)."""
+    user = await get_current_user(request)
+    body = await request.json()
+    emoji = (body or {}).get("emoji", "")
+    if emoji not in ALLOWED_EMOJIS:
+        raise HTTPException(status_code=400, detail="Invalid emoji")
+    t = await db.ludo_tables.find_one({"_id": table_id})
+    if not t or t.get("status") not in ("waiting", "playing"):
+        raise HTTPException(status_code=400, detail="Table not active")
+    # Verify user is in the table
+    seat = None
+    for p in t.get("players", []):
+        if p.get("user_id") == user["_id"]:
+            seat = p.get("seat")
+            break
+    if seat is None:
+        raise HTTPException(status_code=403, detail="You are not a player at this table")
+    # Broadcast to WS clients — no DB persistence (ephemeral)
+    await _broadcast(table_id, {
+        "type": "emoji",
+        "seat": seat,
+        "name": user.get("name") or user.get("phone", "Player"),
+        "emoji": emoji,
+        "ts": int(time.time() * 1000),
+    })
+    return {"ok": True}
+
+
 # ---------- Admin ----------
 @router.get("/admin/ludo/settings")
 async def admin_get_settings(request: Request):

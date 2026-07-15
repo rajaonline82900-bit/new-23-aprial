@@ -285,3 +285,25 @@
     font-size: 11px;
     box-shadow: 0 2px 6px rgba(16, 185, 129, 0.20);
 }
+
+/* ─────────── Ludo Premium Additions ─────────── */
+@keyframes ludoCountdownPulse {
+    0% { transform: scale(0.5); opacity: 0; }
+    30% { transform: scale(1.15); opacity: 1; }
+    70% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(1.3); opacity: 0; }
+}
+.ludo-countdown-pulse {
+    animation: ludoCountdownPulse 900ms ease-out forwards;
+}
+
+@keyframes ludoEmojiFloat {
+    0% { transform: translateY(20px) scale(0.6); opacity: 0; }
+    15% { transform: translateY(0) scale(1); opacity: 1; }
+    75% { transform: translateY(-6px) scale(1); opacity: 1; }
+    100% { transform: translateY(-30px) scale(0.9); opacity: 0; }
+}
+.ludo-emoji-float {
+    animation: ludoEmojiFloat 2600ms ease-out forwards;
+    will-change: transform, opacity;
+}

@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { ArrowLeft, Trophy, Clock, Dice5, LogOut, Volume2, VolumeX, AlertTriangle } from 'lucide-react';
+import confetti from 'canvas-confetti';
+import { ArrowLeft, Trophy, Clock, Dice5, LogOut, Volume2, VolumeX, AlertTriangle, Smile, X, Zap } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import {
   playDiceRoll, playTokenMove, playCapture, playTokenHome,
@@ -11,6 +12,22 @@ import {
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 const WS_URL = API_URL.replace(/^http/, 'ws');
+
+/* ═══════════ Premium Blue Gaming Theme ═══════════ */
+const THEME = {
+  bg: '#050B1F',
+  bgSoft: '#0A1330',
+  cardBg: 'linear-gradient(160deg, #0F1A38 0%, #0A1224 100%)',
+  glassBg: 'linear-gradient(135deg, rgba(37, 99, 235, 0.10) 0%, rgba(15, 23, 42, 0.55) 100%)',
+  glassBorder: 'rgba(96, 165, 250, 0.28)',
+  neon: '#3B82F6',
+  neonBright: '#60A5FA',
+  neonSoft: '#93C5FD',
+  cyan: '#22D3EE',
+  gold: '#FBBF24',
+};
+
+const EMOJI_LIST = ['🔥', '😂', '😭', '👍', '💩', '🎉', '😎', '😡'];
 
 // ============ Board geometry (Zupee-style classic Ludo) ============
 // 15x15 grid. Home yards in corners, cross-shaped track, center home.
@@ -307,6 +324,13 @@ const LudoGamePage = () => {
   const [botFillLeft, setBotFillLeft] = useState(0);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [muted, setMutedState] = useState(false);
+  const [emojiOpen, setEmojiOpen] = useState(false);
+  const [emojiFloats, setEmojiFloats] = useState([]);   // [{id, seat, emoji, name}]
+  const [emojiCooldown, setEmojiCooldown] = useState(0);
+  const [matchStartCountdown, setMatchStartCountdown] = useState(0); // 3,2,1 overlay
+  const [showResultModal, setShowResultModal] = useState(false);
+  const confettiFiredRef = useRef(false);
+  const prevStatusRef = useRef(null);
   const wsRef = useRef(null);
   const stateRef = useRef(null);
   stateRef.current = state;
@@ -339,6 +363,16 @@ const LudoGamePage = () => {
           if (msg.state) setState(msg.state);
           if (msg.type === 'match_started') {
             startMusic();
+            // Kick off 3-2-1 GO countdown overlay
+            setMatchStartCountdown(3);
+          }
+          if (msg.type === 'emoji') {
+            // Ephemeral floating emoji reaction
+            const id = `${msg.ts}-${msg.seat}-${Math.random()}`;
+            setEmojiFloats((f) => [...f, { id, seat: msg.seat, name: msg.name, emoji: msg.emoji }]);
+            setTimeout(() => {
+              setEmojiFloats((f) => f.filter((e) => e.id !== id));
+            }, 2600);
           }
           if (msg.type === 'dice_rolled') {
             setRolling(false);
@@ -365,12 +399,32 @@ const LudoGamePage = () => {
           if (msg.type === 'game_over') {
             stopMusic();
             const iWon = (msg.winner_ids || []).includes(myId);
+            setShowResultModal(true);
             if (iWon) {
-              toast.success(`🏆 Aap jeete! ₹${msg.per_winner}`);
               playWin();
               refreshUser();
+              // Fire confetti burst (guard against double fire)
+              if (!confettiFiredRef.current) {
+                confettiFiredRef.current = true;
+                try {
+                  const fire = (particleRatio, opts) => {
+                    confetti({
+                      origin: { y: 0.7 },
+                      spread: 90,
+                      startVelocity: 45,
+                      colors: ['#60A5FA', '#22D3EE', '#FBBF24', '#F97316', '#EC4899'],
+                      particleCount: Math.floor(180 * particleRatio),
+                      ...opts,
+                    });
+                  };
+                  fire(0.25, { spread: 26, startVelocity: 55 });
+                  fire(0.20, { spread: 60 });
+                  fire(0.35, { spread: 100, decay: 0.91 });
+                  fire(0.10, { spread: 120, startVelocity: 25, decay: 0.92 });
+                  fire(0.10, { spread: 120, startVelocity: 45 });
+                } catch (_) { /* confetti unavailable */ }
+              }
             } else {
-              toast.error('Match khatam! Better luck next time');
               playLose();
             }
           }
@@ -441,6 +495,47 @@ const LudoGamePage = () => {
 
   useEffect(() => () => { stopMusic(); }, []);
 
+  // 3-2-1 GO countdown ticker
+  useEffect(() => {
+    if (matchStartCountdown <= 0) return;
+    const t = setTimeout(() => setMatchStartCountdown((c) => c - 1), 900);
+    return () => clearTimeout(t);
+  }, [matchStartCountdown]);
+
+  // Emoji cooldown ticker (2 second cooldown between sends)
+  useEffect(() => {
+    if (emojiCooldown <= 0) return;
+    const t = setTimeout(() => setEmojiCooldown((c) => Math.max(0, c - 100)), 100);
+    return () => clearTimeout(t);
+  }, [emojiCooldown]);
+
+  // Fallback: detect status transition waiting → playing (in case match_started WS msg missed)
+  useEffect(() => {
+    const prev = prevStatusRef.current;
+    const cur = state?.status;
+    if (prev === 'waiting' && cur === 'playing') {
+      setMatchStartCountdown(3);
+      startMusic();
+    }
+    // Fallback: show result modal on status transition into 'completed'
+    if (prev && prev !== 'completed' && cur === 'completed') {
+      setShowResultModal(true);
+      const iWon = (state.winner_ids || []).includes(myId);
+      if (iWon && !confettiFiredRef.current) {
+        confettiFiredRef.current = true;
+        try {
+          confetti({
+            particleCount: 200,
+            spread: 100,
+            origin: { y: 0.6 },
+            colors: ['#60A5FA', '#22D3EE', '#FBBF24', '#F97316', '#EC4899'],
+          });
+        } catch (_) { /* confetti unavailable */ }
+      }
+    }
+    prevStatusRef.current = cur;
+  }, [state?.status, state?.winner_ids, myId]);
+
   const toggleMute = () => {
     const newMuted = !muted;
     setMutedState(newMuted);
@@ -493,6 +588,21 @@ const LudoGamePage = () => {
     }
   };
 
+  const sendEmoji = async (emoji) => {
+    if (emojiCooldown > 0) return;
+    try {
+      await axios.post(
+        `${API_URL}/api/ludo/tables/${tableId}/emoji`,
+        { emoji },
+        { withCredentials: true }
+      );
+      setEmojiCooldown(2000);
+      setEmojiOpen(false);
+    } catch (e) {
+      // silent — likely rate limit or disconnect
+    }
+  };
+
   const movableSet = useMemo(() => new Set(movable), [movable]);
 
   if (!state) {
@@ -514,50 +624,113 @@ const LudoGamePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0C] text-white pb-6 app-shell">
-      <header className="sticky top-0 z-40 backdrop-blur-lg bg-[#0A0A0C]/85 border-b border-purple-500/25">
-        <div className="px-3 py-3 flex items-center gap-2">
+    <div
+      className="min-h-screen text-white pb-6 app-shell relative overflow-hidden"
+      style={{
+        background: `
+          radial-gradient(ellipse 80% 50% at 50% -10%, rgba(59, 130, 246, 0.28) 0%, transparent 60%),
+          radial-gradient(ellipse 60% 40% at 80% 80%, rgba(34, 211, 238, 0.14) 0%, transparent 60%),
+          ${THEME.bg}
+        `,
+      }}
+    >
+      {/* Gaming grid overlay */}
+      <div
+        className="fixed inset-0 pointer-events-none opacity-25"
+        style={{
+          backgroundImage:
+            'linear-gradient(rgba(59,130,246,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,0.06) 1px, transparent 1px)',
+          backgroundSize: '32px 32px',
+          maskImage: 'radial-gradient(ellipse at center, black 30%, transparent 90%)',
+        }}
+      />
+      <header
+        className="sticky top-0 z-40 backdrop-blur-xl relative"
+        style={{
+          background: 'rgba(5, 11, 31, 0.75)',
+          borderBottom: `1px solid ${THEME.glassBorder}`,
+        }}
+      >
+        <div className="px-3 py-3 flex items-center gap-2" style={{ maxWidth: '480px', margin: '0 auto' }}>
           <Link to="/ludo">
-            <button data-testid="ludo-game-back" className="p-2 rounded-lg bg-[#141418] border border-white/10 text-gray-400">
+            <button data-testid="ludo-game-back" className="p-2 rounded-xl active:scale-90 transition"
+              style={{ background: 'rgba(59, 130, 246, 0.12)', border: `1px solid ${THEME.glassBorder}`, color: THEME.neonBright }}>
               <ArrowLeft className="w-5 h-5" />
             </button>
           </Link>
           <div className="flex-1 min-w-0">
-            <h1 className="text-lg font-black tracking-tight" style={{ background: 'linear-gradient(90deg,#C4B5FD,#7C3AED)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            <h1 className="text-lg font-black tracking-tight leading-none flex items-center gap-1.5"
+              style={{
+                background: `linear-gradient(90deg, ${THEME.neonBright} 0%, ${THEME.cyan} 100%)`,
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                filter: `drop-shadow(0 0 12px ${THEME.neon}66)`,
+              }}>
               LUDO • ₹{state.entry_fee}
+              <Zap className="w-3.5 h-3.5" style={{ color: THEME.cyan, filter: `drop-shadow(0 0 4px ${THEME.cyan})` }} />
             </h1>
-            <p className="text-[10px] text-purple-300/70 font-bold uppercase tracking-wider">
-              Prize ₹{Math.floor(state.prize_pool || state.entry_fee * state.max_players * 0.9)}
-              {state.status === 'playing' && matchLeft > 0 && <> • <Clock className="inline w-3 h-3 -mt-0.5" /> {fmtTime(matchLeft)}</>}
+            <p className="text-[10px] font-bold uppercase tracking-widest mt-0.5" style={{ color: THEME.neonSoft, opacity: 0.75 }}>
+              <Trophy className="inline w-2.5 h-2.5 -mt-0.5" fill={THEME.gold} style={{ color: THEME.gold }} /> Prize ₹{Math.floor(state.prize_pool || state.entry_fee * state.max_players * 0.9)}
+              {state.status === 'playing' && matchLeft > 0 && <> • <Clock className="inline w-2.5 h-2.5 -mt-0.5" /> {fmtTime(matchLeft)}</>}
             </p>
           </div>
           {state.status === 'playing' && (
-            <button
-              onClick={toggleMute}
-              data-testid="ludo-mute-btn"
-              className="p-2 rounded-lg bg-[#141418] border border-white/10 text-gray-300"
-            >
-              {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-            </button>
+            <>
+              {/* Emoji quick-open button */}
+              <button
+                onClick={() => setEmojiOpen((v) => !v)}
+                data-testid="ludo-emoji-btn"
+                className="p-2 rounded-xl active:scale-90 transition"
+                style={{
+                  background: emojiOpen ? `${THEME.neon}30` : 'rgba(59, 130, 246, 0.12)',
+                  border: `1px solid ${THEME.glassBorder}`,
+                  color: THEME.neonBright,
+                }}
+              >
+                <Smile className="w-4 h-4" />
+              </button>
+              <button
+                onClick={toggleMute}
+                data-testid="ludo-mute-btn"
+                className="p-2 rounded-xl active:scale-90 transition"
+                style={{ background: 'rgba(59, 130, 246, 0.12)', border: `1px solid ${THEME.glassBorder}`, color: THEME.neonSoft }}
+              >
+                {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+              </button>
+            </>
           )}
           {(state.status === 'waiting' || state.status === 'playing') && (
             <button onClick={requestLeave} data-testid="ludo-leave-btn"
-              className="p-2 rounded-lg bg-red-500/20 border border-red-500/40 text-red-300">
+              className="p-2 rounded-xl active:scale-90 transition"
+              style={{ background: 'rgba(220, 38, 38, 0.15)', border: '1px solid rgba(220, 38, 38, 0.45)', color: '#FCA5A5' }}>
               <LogOut className="w-4 h-4" />
             </button>
           )}
         </div>
       </header>
 
-      <main className="px-3 py-4 space-y-3">
+      <main className="px-3 py-4 space-y-3 relative" style={{ maxWidth: '480px', margin: '0 auto' }}>
         {/* Waiting */}
         {state.status === 'waiting' && (
-          <div className="rounded-2xl p-5 border border-purple-500/30 text-center" style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.15), rgba(59,7,100,0.25))' }}>
-            <div className="text-4xl mb-2">⏳</div>
-            <p className="text-lg font-black">Waiting for players...</p>
-            <p className="text-sm text-purple-200/80 mt-1">{state.players.length}/{state.max_players} joined</p>
+          <div className="rounded-2xl p-5 text-center relative overflow-hidden"
+            style={{
+              background: THEME.glassBg,
+              border: `1px solid ${THEME.glassBorder}`,
+              backdropFilter: 'blur(16px)',
+              boxShadow: `0 8px 32px rgba(59, 130, 246, 0.18), inset 0 1px 0 rgba(147,197,253,0.12)`,
+            }}>
+            <div className="w-14 h-14 rounded-full mx-auto mb-3 flex items-center justify-center animate-pulse"
+              style={{
+                background: `radial-gradient(circle, ${THEME.neon}55, transparent 70%)`,
+                border: `1px solid ${THEME.neonBright}`,
+                boxShadow: `0 0 24px ${THEME.neon}`,
+              }}>
+              <span className="text-2xl">⏳</span>
+            </div>
+            <p className="text-lg font-black" style={{ color: THEME.neonBright }}>Waiting for players...</p>
+            <p className="text-sm mt-1 font-bold" style={{ color: THEME.neonSoft, opacity: 0.85 }}>{state.players.length}/{state.max_players} joined</p>
             {botFillLeft > 0 && (
-              <p className="text-xs text-yellow-300 mt-2 font-bold">
+              <p className="text-xs mt-2 font-black" style={{ color: THEME.gold }}>
                 Auto-start in {botFillLeft}s
               </p>
             )}
@@ -649,18 +822,24 @@ const LudoGamePage = () => {
 
         {/* Dice control */}
         {state.status === 'playing' && (
-          <div className="rounded-2xl p-3 bg-[#141418] border border-white/10">
+          <div className="rounded-2xl p-3 relative overflow-hidden"
+            style={{
+              background: THEME.cardBg,
+              border: `1px solid ${THEME.glassBorder}`,
+              boxShadow: `0 4px 20px rgba(0,0,0,0.4), inset 0 1px 0 ${THEME.neonBright}22`,
+            }}>
             <div className="flex items-center justify-between mb-2">
               <div>
-                <p className="text-[9px] text-gray-400 uppercase font-bold">Turn</p>
+                <p className="text-[9px] uppercase font-black tracking-widest" style={{ color: THEME.neonSoft, opacity: 0.7 }}>Turn</p>
                 <p className="text-sm font-black flex items-center gap-1" style={{ color: currentPlayer?.color }}>
                   {currentPlayer?.name}
-                  {isMyTurn && <span className="text-emerald-400 text-[10px]">(Your Turn!)</span>}
+                  {isMyTurn && <span className="text-[10px] font-black" style={{ color: '#34D399' }}>(Your Turn!)</span>}
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-[9px] text-gray-400 uppercase font-bold">Time</p>
-                <p className={`text-base font-black tabular-nums ${countdown <= 5 ? 'text-red-400' : 'text-white'}`}>{countdown}s</p>
+                <p className="text-[9px] uppercase font-black tracking-widest" style={{ color: THEME.neonSoft, opacity: 0.7 }}>Time</p>
+                <p className={`text-base font-black tabular-nums ${countdown <= 5 ? 'text-red-400' : 'text-white'}`}
+                  style={countdown <= 5 ? { textShadow: '0 0 8px #EF4444' } : {}}>{countdown}s</p>
               </div>
             </div>
 
@@ -670,11 +849,16 @@ const LudoGamePage = () => {
                 onClick={rollDice}
                 disabled={!isMyTurn || rolling || hasPending}
                 data-testid="ludo-roll-btn"
-                className="px-5 py-3 rounded-xl font-black text-sm disabled:opacity-40"
+                className="px-5 py-3 rounded-xl font-black text-sm disabled:opacity-40 active:scale-[0.97] transition relative overflow-hidden"
                 style={{
-                  background: isMyTurn && !hasPending ? 'linear-gradient(135deg, #10B981, #059669)' : 'linear-gradient(135deg,#374151,#1F2937)',
+                  background: isMyTurn && !hasPending
+                    ? 'linear-gradient(135deg, #10B981, #047857)'
+                    : `linear-gradient(135deg, ${THEME.bgSoft}, #050B1F)`,
                   color: '#FFF',
-                  boxShadow: isMyTurn && !hasPending ? '0 4px 14px rgba(16,185,129,0.4)' : 'none',
+                  border: isMyTurn && !hasPending ? '1px solid #34D399' : `1px solid ${THEME.glassBorder}`,
+                  boxShadow: isMyTurn && !hasPending
+                    ? '0 6px 20px rgba(16,185,129,0.55), 0 0 12px rgba(52,211,153,0.4)'
+                    : 'none',
                 }}
               >
                 <Dice5 className="inline w-4 h-4 -mt-0.5 mr-1" />
@@ -682,48 +866,259 @@ const LudoGamePage = () => {
               </button>
             </div>
             {hasPending && movable.length > 0 && (
-              <p className="text-center text-[10px] text-yellow-300 font-bold">
+              <p className="text-center text-[10px] font-black tracking-wider" style={{ color: THEME.gold }}>
                 Choose a glowing token to move ({movable.length} available)
               </p>
             )}
           </div>
         )}
 
-        {/* Game Over */}
-        {state.status === 'completed' && (
-          <div className="rounded-2xl p-6 border border-yellow-400/40 text-center"
-            style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(180,83,9,0.2))' }}
-            data-testid="ludo-gameover">
-            <Trophy className="w-12 h-12 text-yellow-400 mx-auto mb-2" />
-            <p className="text-2xl font-black">
-              {state.winner_ids.includes(myId) ? '🏆 आप जीते!' : 'Game Over'}
-            </p>
-            <p className="text-yellow-300 mt-2 text-sm">
-              Winner: {state.winner_ids.map((wid) => state.players.find((p) => p.user_id === wid)?.name).join(', ')}
-            </p>
-            <p className="text-lg text-white mt-1 font-black">
-              ₹{state.per_winner || 0} {state.winner_ids.length > 1 && '(split)'}
-            </p>
-            <button
-              onClick={() => navigate('/ludo', { replace: true })}
-              data-testid="ludo-play-again"
-              className="mt-4 px-6 py-2.5 rounded-xl font-black text-white text-sm"
-              style={{ background: 'linear-gradient(135deg, #7C3AED, #5B21B6)' }}>
-              Play Again
-            </button>
-          </div>
-        )}
-
         {/* Log */}
         {(state.log || []).length > 0 && (
-          <div className="rounded-xl p-2 bg-[#0F0F14] border border-white/5 max-h-32 overflow-y-auto">
-            <p className="text-[9px] text-gray-500 uppercase tracking-wider font-bold mb-1">Live Log</p>
+          <div className="rounded-xl p-2 max-h-32 overflow-y-auto"
+            style={{ background: 'rgba(10, 19, 48, 0.6)', border: `1px solid ${THEME.glassBorder}` }}>
+            <p className="text-[9px] uppercase tracking-widest font-black mb-1" style={{ color: THEME.neonSoft, opacity: 0.6 }}>Live Log</p>
             {(state.log || []).slice().reverse().map((e, i) => (
-              <p key={i} className="text-[10px] text-gray-300 leading-tight py-0.5">{e.msg}</p>
+              <p key={i} className="text-[10px] leading-tight py-0.5" style={{ color: THEME.neonSoft, opacity: 0.85 }}>{e.msg}</p>
             ))}
           </div>
         )}
       </main>
+
+      {/* ═══════════ 3-2-1 GO Match Start Overlay ═══════════ */}
+      {matchStartCountdown > 0 && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center pointer-events-none"
+          style={{ background: 'rgba(5, 11, 31, 0.75)', backdropFilter: 'blur(8px)' }}
+          data-testid="ludo-start-countdown"
+        >
+          <div
+            key={matchStartCountdown}
+            className="ludo-countdown-pulse font-black tabular-nums"
+            style={{
+              fontSize: '9rem',
+              lineHeight: 1,
+              background: `linear-gradient(180deg, ${THEME.neonBright} 0%, ${THEME.cyan} 100%)`,
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              filter: `drop-shadow(0 0 30px ${THEME.neon}) drop-shadow(0 0 60px ${THEME.cyan})`,
+            }}
+          >
+            {matchStartCountdown}
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════ Floating Emoji Reactions ═══════════ */}
+      {emojiFloats.length > 0 && (
+        <div className="fixed inset-x-0 bottom-24 z-40 flex justify-center pointer-events-none" data-testid="ludo-emoji-floats">
+          <div className="flex flex-col-reverse gap-1.5 items-center">
+            {emojiFloats.slice(-4).map((e) => (
+              <div
+                key={e.id}
+                className="ludo-emoji-float flex items-center gap-1.5 px-3 py-1.5 rounded-full"
+                style={{
+                  background: 'rgba(5, 11, 31, 0.85)',
+                  border: `1px solid ${THEME.glassBorder}`,
+                  backdropFilter: 'blur(8px)',
+                  boxShadow: `0 4px 14px rgba(0,0,0,0.4)`,
+                }}
+              >
+                <span className="text-lg leading-none">{e.emoji}</span>
+                <span className="text-[11px] font-black" style={{ color: THEME.neonBright }}>{e.name?.split(' ')[0] || 'Player'}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════ Emoji Picker Popover ═══════════ */}
+      {emojiOpen && state.status === 'playing' && (
+        <div className="fixed inset-0 z-50" data-testid="ludo-emoji-picker">
+          <div className="absolute inset-0" onClick={() => setEmojiOpen(false)} />
+          <div
+            className="absolute top-16 right-3 rounded-2xl p-3"
+            style={{
+              background: 'rgba(5, 11, 31, 0.95)',
+              border: `1px solid ${THEME.glassBorder}`,
+              backdropFilter: 'blur(16px)',
+              boxShadow: `0 8px 32px rgba(0,0,0,0.6), 0 0 20px ${THEME.neon}40`,
+            }}
+          >
+            <div className="grid grid-cols-4 gap-2">
+              {EMOJI_LIST.map((e) => (
+                <button
+                  key={e}
+                  onClick={() => sendEmoji(e)}
+                  disabled={emojiCooldown > 0}
+                  data-testid={`ludo-emoji-${e}`}
+                  className="w-10 h-10 rounded-xl flex items-center justify-center text-xl active:scale-90 transition disabled:opacity-40"
+                  style={{
+                    background: 'rgba(59, 130, 246, 0.12)',
+                    border: `1px solid ${THEME.glassBorder}`,
+                  }}
+                >
+                  {e}
+                </button>
+              ))}
+            </div>
+            {emojiCooldown > 0 && (
+              <p className="text-[9px] text-center mt-2 font-black tracking-widest" style={{ color: THEME.neonSoft, opacity: 0.6 }}>
+                Wait {Math.ceil(emojiCooldown / 1000)}s...
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════ Match Result Modal (with confetti) ═══════════ */}
+      {showResultModal && state.status === 'completed' && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+          style={{ background: 'rgba(5, 11, 31, 0.85)', backdropFilter: 'blur(12px)' }}
+          data-testid="ludo-result-modal"
+        >
+          <div
+            className="w-full max-w-sm rounded-3xl overflow-hidden relative"
+            style={{
+              background: `linear-gradient(160deg, ${THEME.bgSoft} 0%, ${THEME.bg} 100%)`,
+              border: `1.5px solid ${state.winner_ids.includes(myId) ? THEME.gold : THEME.glassBorder}`,
+              boxShadow: state.winner_ids.includes(myId)
+                ? `0 20px 60px rgba(251, 191, 36, 0.4), 0 0 40px ${THEME.gold}60`
+                : `0 20px 60px rgba(0,0,0,0.6), 0 0 24px ${THEME.neon}40`,
+            }}
+          >
+            {/* Top winner banner strip */}
+            <div
+              className="py-4 relative overflow-hidden"
+              style={{
+                background: state.winner_ids.includes(myId)
+                  ? `linear-gradient(135deg, ${THEME.gold} 0%, #D97706 100%)`
+                  : `linear-gradient(135deg, ${THEME.neon} 0%, #1D4ED8 100%)`,
+              }}
+            >
+              {/* diagonal sheen */}
+              <div
+                className="absolute inset-0 opacity-25 pointer-events-none"
+                style={{
+                  backgroundImage: 'repeating-linear-gradient(45deg, transparent 0 8px, rgba(255,255,255,0.25) 8px 10px)',
+                }}
+              />
+              <div className="relative flex flex-col items-center">
+                <Trophy
+                  className={`w-14 h-14 ${state.winner_ids.includes(myId) ? 'text-white' : 'text-white/70'}`}
+                  fill={state.winner_ids.includes(myId) ? '#FFFFFF' : 'none'}
+                  strokeWidth={2}
+                  style={state.winner_ids.includes(myId) ? { filter: 'drop-shadow(0 0 12px rgba(255,255,255,0.6))' } : {}}
+                />
+                <p className="text-2xl font-black text-white mt-2 tracking-tight">
+                  {state.winner_ids.includes(myId) ? '🎉 आप जीते!' : 'Better Luck Next!'}
+                </p>
+                <p className="text-[11px] font-black uppercase tracking-widest text-white/85 mt-1">
+                  {state.winner_ids.includes(myId) ? 'Victory Royale' : 'Match Over'}
+                </p>
+              </div>
+            </div>
+
+            {/* Body — winner list + prize */}
+            <div className="p-5 space-y-4">
+              <div className="text-center">
+                <p className="text-[10px] uppercase font-black tracking-widest" style={{ color: THEME.neonSoft, opacity: 0.7 }}>
+                  Winner{state.winner_ids.length > 1 ? 's' : ''}
+                </p>
+                <p className="text-base font-black mt-1" style={{ color: THEME.neonBright }}>
+                  {state.winner_ids.map((wid) => state.players.find((p) => p.user_id === wid)?.name).join(' • ')}
+                </p>
+              </div>
+
+              {/* Prize pill */}
+              <div
+                className="rounded-2xl p-4 text-center relative overflow-hidden"
+                style={{
+                  background: `linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(180, 83, 9, 0.10) 100%)`,
+                  border: `1px solid ${THEME.gold}60`,
+                  boxShadow: `0 0 20px rgba(251, 191, 36, 0.2), inset 0 1px 0 rgba(255,255,255,0.1)`,
+                }}
+              >
+                <p className="text-[10px] uppercase font-black tracking-widest" style={{ color: THEME.gold }}>Prize Won</p>
+                <p className="text-4xl font-black tabular-nums mt-1"
+                  style={{ color: THEME.gold, textShadow: `0 0 24px ${THEME.gold}80` }}>
+                  ₹{state.per_winner || 0}
+                </p>
+                {state.winner_ids.length > 1 && (
+                  <p className="text-[10px] mt-1 font-bold" style={{ color: THEME.neonSoft, opacity: 0.6 }}>
+                    Split among {state.winner_ids.length} winners
+                  </p>
+                )}
+              </div>
+
+              {/* Scoreboard */}
+              <div className="space-y-1.5">
+                <p className="text-[10px] uppercase font-black tracking-widest" style={{ color: THEME.neonSoft, opacity: 0.6 }}>Final Scores</p>
+                {[...state.players].sort((a, b) => (b.score || 0) - (a.score || 0)).map((p, idx) => {
+                  const isWinner = state.winner_ids.includes(p.user_id);
+                  return (
+                    <div
+                      key={p.seat}
+                      className="flex items-center justify-between rounded-lg px-2.5 py-1.5"
+                      style={{
+                        background: isWinner ? `${THEME.gold}18` : 'rgba(15, 23, 42, 0.5)',
+                        border: `1px solid ${isWinner ? `${THEME.gold}55` : 'rgba(96, 165, 250, 0.15)'}`,
+                      }}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-[10px] font-black w-4 text-center" style={{ color: THEME.neonSoft, opacity: 0.7 }}>
+                          #{idx + 1}
+                        </span>
+                        <div
+                          className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black text-white shrink-0"
+                          style={{ background: p.color }}
+                        >
+                          {p.name.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="text-[12px] font-bold truncate text-white">
+                          {p.name} {p.user_id === myId && <span className="text-[9px]" style={{ color: '#34D399' }}>(You)</span>}
+                        </span>
+                      </div>
+                      <span className="text-[12px] font-black tabular-nums" style={{ color: isWinner ? THEME.gold : THEME.neonSoft }}>
+                        {p.score || 0}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* CTAs */}
+              <div className="grid grid-cols-2 gap-2 pt-2">
+                <button
+                  onClick={() => navigate('/dashboard', { replace: true })}
+                  data-testid="ludo-result-home"
+                  className="py-3 rounded-xl font-black text-sm active:scale-[0.97] transition"
+                  style={{
+                    background: 'rgba(15, 23, 42, 0.8)',
+                    color: THEME.neonSoft,
+                    border: `1px solid ${THEME.glassBorder}`,
+                  }}
+                >
+                  Home
+                </button>
+                <button
+                  onClick={() => navigate('/ludo', { replace: true })}
+                  data-testid="ludo-play-again"
+                  className="py-3 rounded-xl font-black text-white text-sm active:scale-[0.97] transition relative overflow-hidden"
+                  style={{
+                    background: `linear-gradient(135deg, ${THEME.neon} 0%, #1D4ED8 100%)`,
+                    border: `1px solid ${THEME.neonBright}`,
+                    boxShadow: `0 6px 20px ${THEME.neon}60, 0 0 12px ${THEME.neonBright}55`,
+                  }}
+                >
+                  Play Again
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Confirm-Leave modal (only when playing) */}
       {showLeaveModal && (

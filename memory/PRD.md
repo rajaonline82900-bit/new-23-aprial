@@ -1,10 +1,18 @@
 # MATKA11 - Product Requirements Document
 
 
-## Latest Update (2026-02-15)
-- **Dashboard Home Gateway**: Redesigned dashboard so that on app open, users no longer see game cards directly. Instead, a premium 2x2 grid of 4 category boxes (Gali Disawar, Kalyan Matka, Aviator, Ludo) is shown. Tapping a box opens that category's game list; a Back button returns to the gateway. Aviator & Ludo boxes navigate directly to their game pages.
-- Files: `frontend/src/pages/DashboardPage.js` (gameCategory initial state now `null`, 4-box gateway block + back button added; legacy 4-pill switcher hidden behind `{false && ...}` guard for future reuse).
-- Testing: Screenshot verified — gateway, Gali cards view (with back), Kalyan cards view (with back) all working.
+## Latest Update (2026-02-15) — Ludo Premium Upgrade (Batch 2)
+- **Premium Blue Gaming Theme**: Complete visual overhaul of Ludo Lobby + Game pages. Deep navy background with radial neon-blue glow, glassmorphism cards, cyan/blue gradient neon-glow buttons, animated grid overlay, gold trophy accents. Renamed from "LUDO RACE" → "LUDO ARENA" with electric zap icon.
+- **Emoji Reactions**: 8 quick-fire emojis (🔥😂😭👍💩🎉😎😡) that broadcast in real-time via WebSocket to all players. Floating ephemeral chips animate up from bottom, auto-fade in 2.6s. 2-second cooldown per user. New endpoint: `POST /api/ludo/tables/{table_id}/emoji`.
+- **3-2-1 GO Countdown**: Full-screen neon-blue pulse overlay when a match transitions from waiting → playing (triggered via `match_started` WS msg + status transition fallback).
+- **Confetti Winner Animation**: Multi-burst canvas-confetti (blue/cyan/gold/orange/pink colors) fires on victory. Guard against double-fire on re-renders.
+- **Match Result Modal**: Dedicated fullscreen modal with winner podium (gold gradient banner), prize pool showcase, ranked scoreboard with player avatars & seat colors, "Home" and "Play Again" CTAs.
+- Files: `backend/routes/ludo_routes.py` (added emoji endpoint), `frontend/src/pages/LudoLobbyPage.js` (full rewrite), `frontend/src/pages/LudoGamePage.js` (theme + emoji + countdown + result modal), `frontend/src/App.css` (new keyframes for countdown pulse + emoji float), added `canvas-confetti` npm package.
+- Testing: Backend emoji endpoint tested via curl (accepts allowed emojis, rejects invalid). Lobby + game waiting state screenshot verified. Confetti/countdown/result modal require live 2-player match to demo.
+
+## Previous Update (2026-02-15) — Dashboard Home Gateway
+- Redesigned dashboard so that on app open, users no longer see game cards directly. Instead, a premium 2x2 grid of 4 category boxes is shown. Tapping opens category; Back button returns.
+- Files: `frontend/src/pages/DashboardPage.js`.
 
 ## Original Problem Statement
 Migrate Matka11 satta app from Emergent preview environment to self-hosted Hostinger VPS at https://matka11.online with full feature parity and automatic result fetching from king.sattaapi.com.
