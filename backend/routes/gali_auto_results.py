@@ -71,6 +71,8 @@ NAME_TO_GAME_ID = {
     "ghaziabad": "ghaziabad",
     "shri ganesh": "shri_ganesh",
     "shreeganesh": "shri_ganesh",
+    "shree ganesh": "shri_ganesh",
+    "sri ganesh": "shri_ganesh",
     "shri_ganesh": "shri_ganesh",
     "delhi bazar": "delhi_bazaar",
     "delhi bazaar": "delhi_bazaar",
@@ -223,4 +225,4 @@ async def satta_auto_fetch_loop():
             except Exception as e:
                 logger.exception(f"[SattaAPI] loop error: {e}")
 
-            await asyncio.sleep(300)  # 5 min poll
+            await asyncio.sleep(60)  # 1 min poll (was 5 min — user asked for aggressive)

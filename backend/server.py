@@ -101,6 +101,15 @@ async def startup_event():
     await db.transactions.create_index([("user_id", 1), ("created_at", -1)])
     await db.games.create_index("game_id", unique=True)
 
+    # Seed default game display order (Delhi Bazar → Shreeganesh → Faridabad → Ghaziabad → Gali → Disawar)
+    # Only runs when the collection is empty — admin can override later via drag-drop UI.
+    if await db.game_order.count_documents({}) == 0:
+        DEFAULT_GALI_ORDER = ['delhi_bazaar', 'shri_ganesh', 'faridabad', 'ghaziabad', 'gali', 'disawar']
+        await db.game_order.insert_many([
+            {"game_id": gid, "display_order": i} for i, gid in enumerate(DEFAULT_GALI_ORDER)
+        ])
+        logger.info(f"Seeded default game display order: {DEFAULT_GALI_ORDER}")
+
     # Seed default games
     games_count = await db.games.count_documents({})
     if games_count == 0:
