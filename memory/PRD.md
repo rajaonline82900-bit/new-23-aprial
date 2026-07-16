@@ -1,7 +1,40 @@
 # MATKA11 - Product Requirements Document
 
 
-## Latest Update (2026-02-15) — Win Chance Locked at 35% (Batch 21) 🎯
+## Latest Update (2026-02-15) — Coin Pool Privacy + APK Update Robustness (Batch 22) 🔒🔁
+
+**User complaints:**
+1. Coin page pe "Head Pool ₹X / Tail Pool ₹Y" me sabhi users ka aggregate bet total dikh raha tha. Sirf apna bet dikhna chahiye.
+2. APK update deploy karne pe users logout ho jate the / app open nahi hota tha.
+
+**Fixes:**
+
+1. **Coin pool display — private** (`CoinPage.js`):
+   - Removed the aggregate "Head Pool / Tail Pool" block that used `round.totals.head/tail`.
+   - Added new "Aapka Head / Aapka Tail" tiles computed from `myBets` state (user's own bets only). Renders ONLY when user has placed at least 1 bet in current round.
+   - Zero data leakage of other players' bet amounts.
+
+2. **APK infinite-reload bug** (`versionCheck.js` + `App.js`):
+   - Root cause: on version mismatch, old code force-reloaded the WebView. If APK ships bundled JS (Capacitor/Cordova style), reload just re-loads the same old bundle → infinite loop → app never opens.
+   - Added `MAX_AUTO_RELOADS = 1` per session. After 1 attempt, if versions still don't match:
+     - **Never** reload again (breaks the loop)
+     - Set `window.__matka_needs_update` + dispatch `matka:update-available` CustomEvent
+     - `<UpdateAvailableBanner />` picks it up and shows soft bottom banner: "Naya APK Update Available — latest features paane ke liye APK update karein" with a dismissable "Bad me" button
+   - Version-mismatch fetch failures are silently swallowed (network error never breaks the app).
+   - Auth tokens (`matka11_token`, `matka11_user_cache`) are **never** cleared by version check. Only cache/service-worker asset caches get wiped. localStorage preserved.
+
+**Files:**
+- `frontend/src/pages/CoinPage.js` — replaced pool display with per-user tiles
+- `frontend/src/utils/versionCheck.js` — MAX_AUTO_RELOADS guard + soft-banner signal
+- `frontend/src/App.js` — added `UpdateAvailableBanner` component
+
+**Verified via screenshot:**
+- Coin page shows no "Head Pool"/"Tail Pool" text ✓
+- Live Bet Feed (community activity — different section) still works
+- User's own bet tiles show only after they bet
+
+
+## Previous Update (2026-02-15) — Win Chance Locked at 35% (Batch 21) 🎯
 
 **User request:** Aviator aur Coin dono ka win chance 35% set kro.
 

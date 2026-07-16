@@ -285,8 +285,49 @@ const AuthedOverlays = () => {
   return <ResultPopupListener />;
 };
 
+// Soft banner: shown when the bundled APK build lags behind the live backend
+// and auto-reload has been exhausted. Prevents the infinite-reload/blank-screen
+// state that killed APKs on version mismatch. Users can dismiss & keep using.
+const UpdateAvailableBanner = () => {
+  const [info, setInfo] = React.useState(null);
+  const [dismissed, setDismissed] = React.useState(false);
+  React.useEffect(() => {
+    // Pick up flag if already set before this component mounted
+    if (window.__matka_needs_update) setInfo(window.__matka_needs_update);
+    const on = (e) => setInfo(e.detail || window.__matka_needs_update);
+    window.addEventListener('matka:update-available', on);
+    return () => window.removeEventListener('matka:update-available', on);
+  }, []);
+  if (!info || dismissed) return null;
+  return (
+    <div
+      data-testid="update-available-banner"
+      style={{
+        position: 'fixed', bottom: 12, left: 12, right: 12, zIndex: 9999,
+        background: 'linear-gradient(90deg,#7C2D12,#B45309)',
+        color: '#FEF3C7', borderRadius: 14, padding: '10px 14px',
+        boxShadow: '0 8px 24px rgba(0,0,0,0.45)',
+        display: 'flex', alignItems: 'center', gap: 10, fontWeight: 700, fontSize: 12,
+      }}
+    >
+      <span style={{ fontSize: 18 }}>⬆️</span>
+      <div style={{ flex: 1, lineHeight: 1.25 }}>
+        <div style={{ fontWeight: 900 }}>Naya APK Update Available</div>
+        <div style={{ opacity: 0.9, fontSize: 10 }}>
+          Latest features paane ke liye Play Store / official link se APK update karein.
+        </div>
+      </div>
+      <button
+        onClick={() => setDismissed(true)}
+        style={{ background: 'rgba(0,0,0,0.3)', border: 'none', color: '#FEF3C7', borderRadius: 8, padding: '4px 10px', fontWeight: 800, fontSize: 11 }}
+      >Bad me</button>
+    </div>
+  );
+};
+
 function App() {
-  // Run version check on app boot — ALWAYS fires (no throttle) so cached APK WebView force-reloads to new bundle.
+  // Run version check on app boot — will attempt at most 1 auto-reload per
+  // session, then falls back to a soft banner (no more infinite reload loops).
   React.useEffect(() => {
     checkVersionAndMaybeReload({ isBoot: true });
     const onFocus = () => checkVersionAndMaybeReload();
@@ -301,6 +342,7 @@ function App() {
         <div className="App">
           <AppRoutes />
           <AuthedOverlays />
+          <UpdateAvailableBanner />
           <Toaster 
             position="bottom-right"
             toastOptions={{

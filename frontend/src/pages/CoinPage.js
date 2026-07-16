@@ -468,19 +468,25 @@ const CoinPage = () => {
             )}
           </div>
 
-          {/* Round pool split */}
-          {round && (round.totals?.head > 0 || round.totals?.tail > 0) && (
-            <div className="grid grid-cols-2 gap-2 mt-2">
-              <div className="text-center rounded-xl p-2" style={{ background: 'rgba(249, 115, 22, 0.10)', border: `1px solid ${THEME.headColor}50` }}>
-                <p className="text-[9px] font-black uppercase tracking-widest" style={{ color: THEME.headColor }}>Head Pool</p>
-                <p className="text-sm font-black tabular-nums text-white">₹{Math.floor(round.totals?.head || 0).toLocaleString('en-IN')}</p>
+          {/* Own bet split on current round — shows ONLY this user's bets,
+              never aggregated pool totals from other players. */}
+          {round && myBets.length > 0 && (() => {
+            const myHead = myBets.filter((b) => b.side === 'head').reduce((s, b) => s + (b.amount || 0), 0);
+            const myTail = myBets.filter((b) => b.side === 'tail').reduce((s, b) => s + (b.amount || 0), 0);
+            if (myHead === 0 && myTail === 0) return null;
+            return (
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                <div className="text-center rounded-xl p-2" style={{ background: 'rgba(249, 115, 22, 0.10)', border: `1px solid ${THEME.headColor}50` }} data-testid="coin-my-head-bet">
+                  <p className="text-[9px] font-black uppercase tracking-widest" style={{ color: THEME.headColor }}>Aapka Head</p>
+                  <p className="text-sm font-black tabular-nums text-white">₹{Math.floor(myHead).toLocaleString('en-IN')}</p>
+                </div>
+                <div className="text-center rounded-xl p-2" style={{ background: 'rgba(139, 92, 246, 0.10)', border: `1px solid ${THEME.tailColor}50` }} data-testid="coin-my-tail-bet">
+                  <p className="text-[9px] font-black uppercase tracking-widest" style={{ color: THEME.tailColor }}>Aapka Tail</p>
+                  <p className="text-sm font-black tabular-nums text-white">₹{Math.floor(myTail).toLocaleString('en-IN')}</p>
+                </div>
               </div>
-              <div className="text-center rounded-xl p-2" style={{ background: 'rgba(139, 92, 246, 0.10)', border: `1px solid ${THEME.tailColor}50` }}>
-                <p className="text-[9px] font-black uppercase tracking-widest" style={{ color: THEME.tailColor }}>Tail Pool</p>
-                <p className="text-sm font-black tabular-nums text-white">₹{Math.floor(round.totals?.tail || 0).toLocaleString('en-IN')}</p>
-              </div>
-            </div>
-          )}
+            );
+          })()}
         </div>
 
         {/* Amount selector */}
