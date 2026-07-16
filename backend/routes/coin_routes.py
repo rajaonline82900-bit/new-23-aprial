@@ -36,10 +36,12 @@ DEFAULT_MAX_BET = 5000.0
 COMMISSION_PCT = 0.0         # NO commission — winner gets full 2x payout
 HISTORY_KEEP = 200           # DB retention
 DISPLAY_HISTORY = 30         # UI list length
-USER_WIN_TARGET = 0.40       # 40% user win rate on skewed rounds (20% house edge on 2x payout).
-                             # Fair-random baseline: equal pools always flip 50/50.
-                             # When pools are lopsided, house has a mild ~20% edge
-                             # by favoring the smaller (fewer-winners) side.
+USER_WIN_TARGET = 0.35       # 35% target user win rate. On skewed pools the
+                             # majority-bet side wins 35% of the time; on equal
+                             # pools it's 50/50. Overall user win rate settles
+                             # around 35-45% depending on how lopsided the pools
+                             # are. Tune down (0.30) for more house edge or up
+                             # (0.50) for pure random flips.
 
 
 # ---------- Admin-configurable settings ----------
@@ -521,24 +523,26 @@ async def _run_one_round():
     # Sleep until lock time
     await asyncio.sleep(max(0.0, lock_at - time.time()))
 
-    # ═══ Fair-random with mild house edge ═══
-    # 1) No bets or equal pools → pure 50/50 (nothing to bias against).
-    # 2) Skewed pools → house has a MILD ~20% edge by tilting toward the
-    #    smaller (fewer-winners) side. USER_WIN_TARGET controls the fairness:
-    #    0.50 = pure random; 0.40 = 20% house edge; 0.30 = 40% house edge.
+    # ═══ Fair-random with configurable user win rate (~USER_WIN_TARGET) ═══
+    # Formula: pick winning side probability such that expected user win rate
+    # across the pool = USER_WIN_TARGET. If all users bet on one side, that
+    # side wins USER_WIN_TARGET × 100 % of the time. Equal pools → pure 50/50.
     fresh = await db.coin_rounds.find_one({"_id": round_id})
     total_head = float(fresh.get("total_head", 0.0))
     total_tail = float(fresh.get("total_tail", 0.0))
+    rng = secrets.SystemRandom()
     if total_head == 0 and total_tail == 0:
         result_side = secrets.choice(["head", "tail"])
     elif abs(total_head - total_tail) < 1e-6:
+        # Equal pools — no way to bias toward a target; do 50/50
         result_side = secrets.choice(["head", "tail"])
     else:
-        smaller = "tail" if total_head > total_tail else "head"
-        bigger = "head" if smaller == "tail" else "tail"
-        # secrets.SystemRandom for cryptographic randomness
-        rnd = secrets.SystemRandom().random()
-        result_side = bigger if rnd < USER_WIN_TARGET else smaller
+        total = total_head + total_tail
+        # Solve: p*H + (1-p)*T = target * (H + T)  →  p = (target*total - T) / (H - T)
+        p_head = (USER_WIN_TARGET * total - total_tail) / (total_head - total_tail)
+        # Clamp to [0, 1] for edge cases where target can't be hit exactly
+        p_head = max(0.0, min(1.0, p_head))
+        result_side = "head" if rng.random() < p_head else "tail"
 
     await db.coin_rounds.update_one(
         {"_id": round_id},

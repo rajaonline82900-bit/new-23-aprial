@@ -38,12 +38,12 @@ TICK_INTERVAL = 0.2          # broadcast WS ticks every 200ms — perf-friendly
                              # on low-end Android WebView (was 100ms, caused
                              # excessive React re-renders & jank).
 GROWTH_RATE = 0.06          # multiplier(t) = e^(GROWTH_RATE * t)
-HOUSE_EDGE_DIVISOR = 10     # 1 in 10 rounds is an instant 1.00x bust (~10%);
-                            # the rest use pure provably-fair bustabit formula.
-                            # Balanced result — random but house keeps a
-                            # sustainable ~13-15% edge (industry norm for
-                            # real-money crash games in the Indian market).
-                            # → Win rate @ 2x cashout: ~44%, RTP: ~85%.
+HOUSE_EDGE_DIVISOR = 3      # 1 in 3 rounds is an instant 1.00x bust (~33%);
+                            # rest use pure provably-fair bustabit formula.
+                            # → Win rate @ 2x cashout: ~33-35% (target ~35%).
+                            # → RTP: ~66%, house edge: ~34%.
+                            # Tune up (10 = 3% bust ≈ 45% win) for looser game,
+                            # down (2 = 50% bust ≈ 25% win) for tighter house.
 MIN_BET = 5.0               # DEFAULT — admin can override via settings.aviator.min_bet
 MAX_BET = 5000.0
 MAX_AUTO_CASHOUT = 1000.0

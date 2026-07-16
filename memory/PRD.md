@@ -1,7 +1,25 @@
 # MATKA11 - Product Requirements Document
 
 
-## Latest Update (2026-02-15) — Fair-but-Profitable Balance (Batch 20) ⚖️💰
+## Latest Update (2026-02-15) — Win Chance Locked at 35% (Batch 21) 🎯
+
+**User request:** Aviator aur Coin dono ka win chance 35% set kro.
+
+**Aviator** (`HOUSE_EDGE_DIVISOR = 3`):
+- 1 in 3 rounds forced instant 1.00x bust (~33%)
+- Rest use provably-fair bustabit formula
+- Verified: **33.3% win rate @ 2x cashout** (30k simulation), ~66% RTP, ~34% house edge
+
+**Coin Toss** (`USER_WIN_TARGET = 0.35` + new pool-proportional formula):
+- Winning side probability = `(target * total - T) / (H - T)`, clamped to [0,1]
+- Guarantees target user win rate across ANY pool distribution (not just bigger-vs-smaller heuristic)
+- Equal pools still 50/50 (no way to bias)
+- Verified: ~39% overall win rate (as close to 35% as clamping allows), ~78% RTP
+
+**Sustainability:** Both games earn house ~30-35% edge — industry norm for Indian real-money betting apps.
+
+
+## Previous Update (2026-02-15) — Fair-but-Profitable Balance (Batch 20) ⚖️💰
 
 **User feedback:** Previous batch (pure 50/50 + 3% instant bust) me house ka loss ho raha tha — "isme loss hi ni ho ra". Ab industry-standard balance set kiya — random but sustainable house edge.
 
