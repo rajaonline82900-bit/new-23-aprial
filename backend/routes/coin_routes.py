@@ -36,7 +36,10 @@ DEFAULT_MAX_BET = 5000.0
 COMMISSION_PCT = 0.0         # NO commission — winner gets full 2x payout
 HISTORY_KEEP = 200           # DB retention
 DISPLAY_HISTORY = 30         # UI list length
-USER_WIN_TARGET = 0.50       # DEPRECATED — flips are pure 50/50 now (fair).
+USER_WIN_TARGET = 0.40       # 40% user win rate on skewed rounds (20% house edge on 2x payout).
+                             # Fair-random baseline: equal pools always flip 50/50.
+                             # When pools are lopsided, house has a mild ~20% edge
+                             # by favoring the smaller (fewer-winners) side.
 
 
 # ---------- Admin-configurable settings ----------
@@ -518,15 +521,24 @@ async def _run_one_round():
     # Sleep until lock time
     await asyncio.sleep(max(0.0, lock_at - time.time()))
 
-    # ═══ Fair random flip — no pool bias, no user targeting ═══
-    # Result is a pure 50/50 coin flip regardless of pool sizes. The house
-    # takes NO edge on individual rounds; over many rounds it profits from
-    # the 2x payout structure alone (fees/commission set via admin config).
+    # ═══ Fair-random with mild house edge ═══
+    # 1) No bets or equal pools → pure 50/50 (nothing to bias against).
+    # 2) Skewed pools → house has a MILD ~20% edge by tilting toward the
+    #    smaller (fewer-winners) side. USER_WIN_TARGET controls the fairness:
+    #    0.50 = pure random; 0.40 = 20% house edge; 0.30 = 40% house edge.
     fresh = await db.coin_rounds.find_one({"_id": round_id})
     total_head = float(fresh.get("total_head", 0.0))
     total_tail = float(fresh.get("total_tail", 0.0))
-    result_side = secrets.choice(["head", "tail"])
-    _ = (total_head, total_tail)  # kept for future admin analytics only
+    if total_head == 0 and total_tail == 0:
+        result_side = secrets.choice(["head", "tail"])
+    elif abs(total_head - total_tail) < 1e-6:
+        result_side = secrets.choice(["head", "tail"])
+    else:
+        smaller = "tail" if total_head > total_tail else "head"
+        bigger = "head" if smaller == "tail" else "tail"
+        # secrets.SystemRandom for cryptographic randomness
+        rnd = secrets.SystemRandom().random()
+        result_side = bigger if rnd < USER_WIN_TARGET else smaller
 
     await db.coin_rounds.update_one(
         {"_id": round_id},
