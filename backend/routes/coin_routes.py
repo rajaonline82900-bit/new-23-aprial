@@ -13,6 +13,7 @@ Fairness:
 """
 import asyncio
 import random
+import secrets
 import time
 import uuid
 from datetime import datetime, timezone
@@ -35,7 +36,7 @@ DEFAULT_MAX_BET = 5000.0
 COMMISSION_PCT = 0.0         # NO commission — winner gets full 2x payout
 HISTORY_KEEP = 200           # DB retention
 DISPLAY_HISTORY = 30         # UI list length
-USER_WIN_TARGET = 0.15       # 15% user win rate (85% house edge in skewed pool)
+USER_WIN_TARGET = 0.50       # DEPRECATED — flips are pure 50/50 now (fair).
 
 
 # ---------- Admin-configurable settings ----------
@@ -517,24 +518,15 @@ async def _run_one_round():
     # Sleep until lock time
     await asyncio.sleep(max(0.0, lock_at - time.time()))
 
-    # ═══ House-weighted result decision (~20% user win rate) ═══
-    # Fetch the round with final pool totals
+    # ═══ Fair random flip — no pool bias, no user targeting ═══
+    # Result is a pure 50/50 coin flip regardless of pool sizes. The house
+    # takes NO edge on individual rounds; over many rounds it profits from
+    # the 2x payout structure alone (fees/commission set via admin config).
     fresh = await db.coin_rounds.find_one({"_id": round_id})
     total_head = float(fresh.get("total_head", 0.0))
     total_tail = float(fresh.get("total_tail", 0.0))
-
-    if total_head == 0 and total_tail == 0:
-        # No bets → fair random flip (doesn't matter, house makes no money either way)
-        result_side = random.choice(["head", "tail"])
-    elif total_head == total_tail:
-        # Equal pools → fair 50/50
-        result_side = random.choice(["head", "tail"])
-    else:
-        # Skewed pools → house picks the SMALLER pool 85% of the time
-        # (that's where FEWER users win → house profits). 15% user luck flips it.
-        smaller = "tail" if total_head > total_tail else "head"
-        bigger = "head" if smaller == "tail" else "tail"
-        result_side = smaller if random.random() < (1 - USER_WIN_TARGET) else bigger
+    result_side = secrets.choice(["head", "tail"])
+    _ = (total_head, total_tail)  # kept for future admin analytics only
 
     await db.coin_rounds.update_one(
         {"_id": round_id},

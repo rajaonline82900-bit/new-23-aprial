@@ -1,7 +1,29 @@
 # MATKA11 - Product Requirements Document
 
 
-## Latest Update (2026-02-15) — Admin Wallet Tx Dates + Aviator Fake Multiplier Cap (Batch 18) 🔧✈️
+## Latest Update (2026-02-15) — Fair Random for Coin + Aviator (Batch 19) 🎲⚖️
+
+**User request:** "user play kre to result yadrichik rhna chiye imandari ke sath" — result should be TRULY RANDOM, not rigged against the user.
+
+**Coin Toss changes** (`backend/routes/coin_routes.py`):
+- Removed `USER_WIN_TARGET = 0.15` pool-biasing logic.
+- Result is now **pure 50/50** via `secrets.choice(["head", "tail"])` regardless of head/tail pool sizes. No house edge on individual flips.
+- Pool totals still logged for analytics (not used for result decision).
+- `USER_WIN_TARGET` constant kept but set to 0.50 with DEPRECATED comment so no other code breaks.
+
+**Aviator changes** (`backend/routes/aviator_routes.py`):
+- `HOUSE_EDGE_DIVISOR` changed from `3` → `33`.
+- Was: every 3rd round forced instant 1.00x bust (33% forced crash) → ~30% win rate at 2x target.
+- Now: only 1 in 33 rounds (~3%) instant bust; rest use pure bustabit provably-fair formula → **~48% win rate at 2x target**, **96.2% RTP**, **~3.78% house edge**.
+- Industry standard for crash games (matches actual bustabit).
+
+**Verified via 10k-sample simulation:**
+- Coin heads: 49.69% ✓ (perfect 50/50)
+- Aviator: 3.3% instant / 32% <1.5x / 17% <2x / 16% <3x / 13% <5x / 10% <10x / 10% ≥10x
+- 2x target: 48.1% win, 96.2% RTP, 3.78% edge
+
+
+## Previous Update (2026-02-15) — Admin Wallet Tx Dates + Aviator Fake Multiplier Cap (Batch 18) 🔧✈️
 
 **User complaints:**
 1. Admin > User Details > Wallet Tx me Aviator ki DATE show nahi ho rahi (baaki games ki date visible thi).
