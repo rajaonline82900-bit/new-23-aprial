@@ -21,6 +21,11 @@ const AdminSettingsTab = () => {
   const [minBetCrossing, setMinBetCrossing] = useState(10);
   const [minDeposit, setMinDeposit] = useState(100);
   const [minWithdrawal, setMinWithdrawal] = useState(100);
+  // Kalyan per-bet-type min-bet (Single / Single Patti / Double Patti / Triple Patti / Jodi)
+  const [kalyanMins, setKalyanMins] = useState({
+    single_ank: 10, single_panna: 10, double_panna: 10, triple_panna: 10, kalyan_jodi: 10,
+  });
+  const [savingKalyanMins, setSavingKalyanMins] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
   const [pushTitle, setPushTitle] = useState('');
   const [pushBody, setPushBody] = useState('');
@@ -75,6 +80,13 @@ const AdminSettingsTab = () => {
     } catch (err) {
       console.error('push/stats load failed:', err?.message);
     }
+    // Kalyan per-bet-type min bets
+    try {
+      const { data } = await axios.get(`${API_URL}/api/admin/kalyan/min-bets`, { withCredentials: true });
+      if (data?.min_bets) setKalyanMins((prev) => ({ ...prev, ...data.min_bets }));
+    } catch (err) {
+      console.error('kalyan/min-bets load failed:', err?.message);
+    }
   }, []);
 
   useEffect(() => { fetchSettings(); }, [fetchSettings]);
@@ -91,6 +103,23 @@ const AdminSettingsTab = () => {
       toast.success('Settings saved!');
     } catch (error) { toast.error('Settings save नहीं हो पाई'); }
     finally { setSavingSettings(false); }
+  };
+
+  const handleSaveKalyanMins = async () => {
+    setSavingKalyanMins(true);
+    try {
+      const payload = {};
+      for (const k of ['single_ank', 'single_panna', 'double_panna', 'triple_panna', 'kalyan_jodi']) {
+        const v = parseInt(kalyanMins[k], 10);
+        if (Number.isFinite(v) && v >= 1) payload[k] = v;
+      }
+      await axios.put(`${API_URL}/api/admin/kalyan/min-bets`, payload, { withCredentials: true });
+      toast.success('Kalyan minimum bets updated!');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Kalyan min-bets save failed');
+    } finally {
+      setSavingKalyanMins(false);
+    }
   };
 
   const handleSendPushAll = async () => {
@@ -189,6 +218,50 @@ const AdminSettingsTab = () => {
         </div>
 
         <div className="border-t border-white/10 pt-4">
+          <h3 className="text-white font-bold mb-3">Kalyan / Milan — न्यूनतम बेट (Per Type)</h3>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div>
+              <Label className="text-gray-300 mb-2 block text-xs">Single (₹)</Label>
+              <Input type="number" min="1" value={kalyanMins.single_ank}
+                onChange={(e) => setKalyanMins((p) => ({ ...p, single_ank: e.target.value }))}
+                data-testid="kalyan-min-single" className="bg-[#0A0A0C] border-white/10 text-white" />
+            </div>
+            <div>
+              <Label className="text-gray-300 mb-2 block text-xs">Single Patti (₹)</Label>
+              <Input type="number" min="1" value={kalyanMins.single_panna}
+                onChange={(e) => setKalyanMins((p) => ({ ...p, single_panna: e.target.value }))}
+                data-testid="kalyan-min-sp" className="bg-[#0A0A0C] border-white/10 text-white" />
+            </div>
+            <div>
+              <Label className="text-gray-300 mb-2 block text-xs">Double Patti (₹)</Label>
+              <Input type="number" min="1" value={kalyanMins.double_panna}
+                onChange={(e) => setKalyanMins((p) => ({ ...p, double_panna: e.target.value }))}
+                data-testid="kalyan-min-dp" className="bg-[#0A0A0C] border-white/10 text-white" />
+            </div>
+            <div>
+              <Label className="text-gray-300 mb-2 block text-xs">Triple Patti (₹)</Label>
+              <Input type="number" min="1" value={kalyanMins.triple_panna}
+                onChange={(e) => setKalyanMins((p) => ({ ...p, triple_panna: e.target.value }))}
+                data-testid="kalyan-min-tp" className="bg-[#0A0A0C] border-white/10 text-white" />
+            </div>
+            <div>
+              <Label className="text-gray-300 mb-2 block text-xs">Jodi Open+Close (₹)</Label>
+              <Input type="number" min="1" value={kalyanMins.kalyan_jodi}
+                onChange={(e) => setKalyanMins((p) => ({ ...p, kalyan_jodi: e.target.value }))}
+                data-testid="kalyan-min-jodi" className="bg-[#0A0A0C] border-white/10 text-white" />
+            </div>
+          </div>
+          <Button onClick={handleSaveKalyanMins} disabled={savingKalyanMins} data-testid="kalyan-min-save"
+            className="mt-3 bg-[#D4AF37] hover:bg-[#D4AF37]/80 text-black font-bold">
+            {savingKalyanMins ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+            Kalyan Min-Bets Save
+          </Button>
+          <p className="text-gray-500 text-[11px] mt-2">
+            User app me har bet-type ke liye alag minimum enforce hoga. Manual amount input bhi is minimum se kam nahi ho sakta.
+          </p>
+        </div>
+
+        <div className="border-t border-white/10 pt-4">
           <h3 className="text-white font-bold mb-3">न्यूनतम जमा / निकासी</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -213,7 +286,7 @@ const AdminSettingsTab = () => {
           </div>
           
           <div className="mb-4 p-3 rounded-lg bg-[#0A0A0C] border border-white/5">
-            <p className="text-gray-400 text-xs mb-3">पहले "Test Push" से अपने device पे test करें, फिर सबको भेजें</p>
+            <p className="text-gray-400 text-xs mb-3">पहले {'"Test Push"'} से अपने device पे test करें, फिर सबको भेजें</p>
             <Button onClick={handleTestPush} disabled={testingPush} data-testid="test-push-btn" className="w-full mb-3 bg-blue-600 hover:bg-blue-700 text-white font-bold">
               {testingPush ? <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Testing...</span>
                 : <span className="flex items-center gap-2"><Bell className="w-4 h-4" /> Test Push (अपने Device पे)</span>}

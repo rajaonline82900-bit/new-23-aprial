@@ -16,7 +16,7 @@ const TYPE_DEFS = [
   { id: 'jodi',          api: 'kalyan_jodi',   label: 'JODI',          rate: 90,   icon: 'dice2'  },
 ];
 
-const AMOUNTS = [5, 10, 50, 100, 200, 500, 1000, 5000];
+const AMOUNTS = [10, 50, 100, 200, 500, 1000, 2000, 5000];
 
 // Compute valid panna lists once
 function computePannas() {
@@ -75,10 +75,22 @@ const KalyanGamePage = () => {
   const [activeType, setActiveType] = useState('single');
   const [session, setSession] = useState('open');
   const [amount, setAmount] = useState(null);
+  const [customAmount, setCustomAmount] = useState('');
+  const [minBets, setMinBets] = useState({});
   const [selected, setSelected] = useState({}); // { digit: stake }
   const [submitting, setSubmitting] = useState(false);
   const [showBets, setShowBets] = useState(false);
   const [myBets, setMyBets] = useState([]);
+
+  // Fetch per-bet-type minimum bet config (admin-configurable)
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await axios.get(`${API}/api/kalyan/min-bets`, { withCredentials: true });
+        setMinBets(data?.min_bets || {});
+      } catch (_) { /* fallback to defaults on server */ }
+    })();
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -166,9 +178,14 @@ const KalyanGamePage = () => {
   const clearAll = () => { setSelected({}); setAmount(null); };
 
   const submitBets = async () => {
-    const digits = Object.keys(selected).filter(d => Number(selected[d]) >= 5);
-    if (digits.length === 0) { toast.error('Koi digit select nahi'); return; }
-    if (digits.some(d => Number(selected[d]) < 5)) { toast.error('Har bet ₹5 se kam nahi'); return; }
+    const activeApi = (TYPE_DEFS.find(t => t.id === activeType) || {}).api;
+    const curMin = minBets[activeApi] || 10;
+    const digits = Object.keys(selected).filter(d => Number(selected[d]) >= curMin);
+    if (digits.length === 0) { toast.error(`Kam se kam ₹${curMin} ke digit select karo`); return; }
+    if (digits.some(d => Number(selected[d]) < curMin)) {
+      toast.error(`Har bet ₹${curMin} se kam nahi ho sakti`);
+      return;
+    }
     // Group by amount so we can use the batch endpoint efficiently
     setSubmitting(true);
     try {
@@ -397,15 +414,55 @@ const KalyanGamePage = () => {
 
       {/* Select Amounts */}
       <div className="px-4 mt-5">
-        <h3 className="text-center text-red-700 font-bold text-base mb-3">Select Amounts</h3>
+        <h3 className="text-center text-red-700 font-bold text-base mb-3">Select Amount</h3>
+        {/* Manual amount input — user can type any custom value */}
+        {(() => {
+          const activeApi = (TYPE_DEFS.find(t => t.id === activeType) || {}).api;
+          const curMin = minBets[activeApi] || 10;
+          return (
+            <div className="mb-3">
+              <div className="flex items-stretch gap-2">
+                <div className="flex-1 relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 font-bold text-sm">₹</span>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    min={curMin}
+                    step="1"
+                    value={customAmount}
+                    onChange={(e) => {
+                      const v = e.target.value.replace(/[^\d]/g, '');
+                      setCustomAmount(v);
+                      const num = parseInt(v, 10);
+                      setAmount(Number.isFinite(num) ? num : null);
+                    }}
+                    placeholder={`Manual amount (min ₹${curMin})`}
+                    data-testid="kalyan-custom-amount"
+                    className="w-full h-11 pl-8 pr-3 rounded-md border-2 text-base font-bold text-black"
+                    style={{ borderColor: '#2563EB', background: '#F8FAFC' }}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setCustomAmount(''); setAmount(null); }}
+                  className="h-11 px-3 rounded-md text-xs font-bold text-gray-700 border border-gray-300 bg-white"
+                >Clear</button>
+              </div>
+              <p className="text-[10px] text-gray-600 mt-1">
+                Minimum for <b>{(TYPE_DEFS.find(t => t.id === activeType) || {}).label}</b>: ₹{curMin}
+              </p>
+            </div>
+          );
+        })()}
         <div className="grid grid-cols-4 gap-2">
           {AMOUNTS.map(v => {
-            const active = amount === v;
+            const active = amount === v && !customAmount;
             return (
               <button
                 key={v}
                 type="button"
-                onClick={() => setAmount(v)}
+                onClick={() => { setAmount(v); setCustomAmount(''); }}
                 data-testid={`kalyan-amount-${v}`}
                 className="rounded-md py-2 text-center font-semibold text-sm active:scale-95"
                 style={active

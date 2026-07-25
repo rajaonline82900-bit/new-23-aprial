@@ -23,6 +23,32 @@ def get_ank(panna_str: str) -> str:
     return str(total % 10)
 
 
+# Default min-bet per Kalyan bet-type (admin can override via settings.kalyan_min_bets)
+DEFAULT_KALYAN_MIN_BETS = {
+    "single_ank":    10,   # SINGLE
+    "single_panna":  10,   # SINGLE PATTI
+    "double_panna":  10,   # DOUBLE PATTI
+    "triple_panna":  10,   # TRIPLE PATTI
+    "kalyan_jodi":   10,   # JODI (open + close)
+    "half_sangam":   10,
+    "full_sangam":   10,
+}
+
+
+async def _get_kalyan_min_bets() -> dict:
+    """Return the effective per-bet-type min-bet dict.
+    Admin can override via db.settings.kalyan_min_bets (partial or full).
+    Missing keys fall back to DEFAULT_KALYAN_MIN_BETS.
+    """
+    s = await db.settings.find_one({"_id": "kalyan_min_bets"})
+    merged = dict(DEFAULT_KALYAN_MIN_BETS)
+    if s:
+        for k, v in s.items():
+            if k in DEFAULT_KALYAN_MIN_BETS and isinstance(v, (int, float)) and v >= 1:
+                merged[k] = int(v)
+    return merged
+
+
 def categorize_panna(panna: str) -> str:
     """Single / Double / Triple panna based on digit repetition."""
     if len(panna) != 3 or not panna.isdigit():
@@ -136,8 +162,17 @@ async def place_kalyan_bet(request: Request):
         raise HTTPException(status_code=400, detail="Invalid bet type")
     if session not in ("open", "close"):
         raise HTTPException(status_code=400, detail="Invalid session")
-    if amount < 5:
-        raise HTTPException(status_code=400, detail="Minimum bet is ₹5")
+    # Per-bet-type minimum bet (admin-configurable)
+    min_bets = await _get_kalyan_min_bets()
+    type_min = min_bets.get(bet_type, 10)
+    if amount < type_min:
+        # Human-friendly labels for the error message
+        _labels = {
+            "single_ank": "Single", "single_panna": "Single Patti",
+            "double_panna": "Double Patti", "triple_panna": "Triple Patti",
+            "kalyan_jodi": "Jodi", "half_sangam": "Half Sangam", "full_sangam": "Full Sangam",
+        }
+        raise HTTPException(status_code=400, detail=f"{_labels.get(bet_type, bet_type)} ka minimum bet ₹{type_min} hai")
     if user.get("balance", 0) < amount:
         raise HTTPException(status_code=400, detail="Insufficient balance")
 
@@ -228,8 +263,16 @@ async def place_kalyan_bet_batch(request: Request):
         raise HTTPException(status_code=400, detail="Invalid bet type")
     if session not in ("open", "close"):
         raise HTTPException(status_code=400, detail="Invalid session")
-    if amount < 5:
-        raise HTTPException(status_code=400, detail="Minimum bet is ₹5")
+    # Per-bet-type minimum (admin-configurable)
+    min_bets = await _get_kalyan_min_bets()
+    type_min = min_bets.get(bet_type, 10)
+    if amount < type_min:
+        _labels = {
+            "single_ank": "Single", "single_panna": "Single Patti",
+            "double_panna": "Double Patti", "triple_panna": "Triple Patti",
+            "kalyan_jodi": "Jodi", "half_sangam": "Half Sangam", "full_sangam": "Full Sangam",
+        }
+        raise HTTPException(status_code=400, detail=f"{_labels.get(bet_type, bet_type)} ka minimum bet ₹{type_min} hai")
     if not isinstance(digits, list) or len(digits) == 0:
         raise HTTPException(status_code=400, detail="Select at least one digit")
 
@@ -554,3 +597,50 @@ async def admin_list_kalyan_results(request: Request, date: str = "", limit: int
         query["date"] = date
     results = await db.kalyan_results.find(query, {"_id": 0}).sort("date", -1).to_list(limit)
     return {"results": results}
+
+
+# ─────────────── Kalyan Min-Bet configuration ───────────────
+@router.get("/kalyan/min-bets")
+async def kalyan_min_bets():
+    """Public — user app reads current min-bets to display / validate."""
+    return {"min_bets": await _get_kalyan_min_bets(), "defaults": DEFAULT_KALYAN_MIN_BETS}
+
+
+@router.get("/admin/kalyan/min-bets")
+async def admin_get_kalyan_min_bets(request: Request):
+    await get_admin_user(request)
+    return {"min_bets": await _get_kalyan_min_bets(), "defaults": DEFAULT_KALYAN_MIN_BETS}
+
+
+@router.put("/admin/kalyan/min-bets")
+async def admin_set_kalyan_min_bets(request: Request):
+    """Update per-bet-type minimums. Body: {"single_ank": 20, "kalyan_jodi": 50, ...}
+    Unknown keys are ignored. Missing keys remain unchanged.
+    """
+    await get_admin_user(request)
+    body = await request.json()
+    if not isinstance(body, dict):
+        raise HTTPException(400, "Body must be an object")
+
+    updates = {}
+    for k, v in body.items():
+        if k not in DEFAULT_KALYAN_MIN_BETS:
+            continue
+        try:
+            iv = int(v)
+        except (TypeError, ValueError):
+            raise HTTPException(400, f"{k} must be an integer")
+        if iv < 1 or iv > 100000:
+            raise HTTPException(400, f"{k} must be between 1 and 100000")
+        updates[k] = iv
+
+    if not updates:
+        raise HTTPException(400, "No valid min-bet keys provided")
+
+    updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.settings.update_one(
+        {"_id": "kalyan_min_bets"},
+        {"$set": updates},
+        upsert=True,
+    )
+    return {"status": "OK", "min_bets": await _get_kalyan_min_bets()}

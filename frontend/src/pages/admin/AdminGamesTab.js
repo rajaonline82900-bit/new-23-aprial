@@ -106,7 +106,7 @@ const AdminGamesTab = () => {
   const openGameForm = (game = null) => {
     if (game) {
       setEditingGame(game.game_id);
-      setGameForm({ game_id: game.game_id, name: game.name, name_hi: game.name_hi, category: game.category || 'gali_disawar', start_time: game.start_time || '', end_time: game.end_time || game.time || '', display_time: game.display_time, is_active: game.is_active !== false });
+      setGameForm({ game_id: game.game_id, name: game.name, name_hi: game.name_hi, category: game.category || 'gali_disawar', start_time: (game.category === 'kalyan' ? (game.open_time || game.start_time) : game.start_time) || '', end_time: (game.category === 'kalyan' ? (game.close_time || game.end_time) : (game.end_time || game.time)) || '', display_time: game.display_time, is_active: game.is_active !== false });
     } else {
       setEditingGame(null);
       setGameForm({ game_id: '', name: '', name_hi: '', category: 'gali_disawar', start_time: '', end_time: '', display_time: '', is_active: true });
@@ -188,7 +188,11 @@ const AdminGamesTab = () => {
                 <div className="flex items-center gap-4">
                   <div className="text-right">
                     <p className="text-[#D4AF37] font-bold text-lg">{game.display_time}</p>
-                    <p className="text-gray-400 text-sm">{game.start_time || '--:--'} - {game.end_time || game.time || '--:--'}</p>
+                    <p className="text-gray-400 text-sm">
+                      {game.category === 'kalyan'
+                        ? `${game.open_time || game.start_time || '--:--'} - ${game.close_time || game.end_time || '--:--'}`
+                        : `${game.start_time || '--:--'} - ${game.end_time || game.time || '--:--'}`}
+                    </p>
                   </div>
                   <div className="flex gap-2">
                     <Button size="sm" variant="outline" onClick={() => openGameForm(game)} className="border-white/10 text-gray-300 hover:bg-white/10"><Edit className="w-4 h-4" /></Button>

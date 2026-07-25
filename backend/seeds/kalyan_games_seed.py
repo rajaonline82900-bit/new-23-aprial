@@ -21,21 +21,20 @@ logger = logging.getLogger(__name__)
 
 # The single source of truth for Kalyan games.
 # game_id must be lowercase snake_case, matches DP Boss auto-fetch mapping.
+# User-provided authoritative list (Feb 2026): 11 games with exact open/close times.
 KALYAN_GAMES = [
-    # (game_id,             display_name,          name_hi,               open_time, close_time, dpboss_market_id)
-    ("milan_morning",       "Milan Morning",       "मिलन मॉर्निंग",           "10:15",  "11:15",     2),
-    ("time_bazar_morning",  "Time Bazar Morning",  "टाइम बाज़ार मॉर्निंग",     "11:00",  "12:00",    10),
-    ("sridevi",             "Sridevi",             "श्रीदेवी",                 "11:35",  "12:35",     3),
-    ("madhuri_day",         "Madhuri Day",         "माधुरी डे",                "12:00",  "13:00",     5),
-    ("time_bazar",          "Time Bazar",          "टाइम बाज़ार",              "13:10",  "14:10",    12),
-    ("milan_day",           "Milan Day",           "मिलन डे",                  "15:00",  "17:00",    17),
-    ("kalyan_day",          "Kalyan Day",          "कल्याण डे",                "16:00",  "18:00",    21),
-    ("sridevi_night",       "Sridevi Night",       "श्रीदेवी नाइट",             "19:00",  "20:00",    22),
-    ("madhur_night",        "Madhur Night",        "मधुर नाइट",                "20:30",  "22:30",    43),
-    ("milan_night",         "Milan Night",         "मिलन नाइट",                "21:00",  "23:00",    27),
-    ("kalyan_night",        "Kalyan Night",        "कल्याण नाइट",              "21:30",  "23:30",    34),
-    ("rajdhani_night",      "Rajdhani Night",      "राजधानी नाइट",             "21:35",  "23:55",    28),
-    ("main_bazar",          "Main Bazar",          "मेन बाज़ार",                "21:40",  "00:05",    29),
+    # (game_id,          display_name,     name_hi,             open_time, close_time, dpboss_market_id)
+    ("sridevi",          "Sridevi",        "श्रीदेवी",           "11:35",  "12:35",     3),
+    ("time_bazar",       "Time Bazar",     "टाइम बाज़ार",         "13:10",  "14:10",    12),
+    ("madhur_day",       "Madhur Day",     "मधुर डे",             "13:30",  "15:30",     6),
+    ("milan_day",        "Milan Day",      "मिलन डे",             "15:00",  "17:00",    17),
+    ("rajdhani_day",     "Rajdhani Day",   "राजधानी डे",          "15:05",  "17:05",    18),
+    ("sridevi_night",    "Sridevi Night",  "श्रीदेवी नाइट",        "19:00",  "20:00",    22),
+    ("madhur_night",     "Madhur Night",   "मधुर नाइट",           "20:30",  "22:30",    43),
+    ("milan_night",      "Milan Night",    "मिलन नाइट",           "21:00",  "23:00",    27),
+    ("kalyan_night",     "Kalyan Night",   "कल्याण नाइट",          "21:25",  "23:35",    34),
+    ("rajdhani_night",   "Rajdhani Night", "राजधानी नाइट",        "21:30",  "23:45",    28),
+    ("main_bazar",       "Main Bazar",     "मेन बाज़ार",           "21:35",  "00:05",    29),
 ]
 
 # Betting window starts at 07:00 (per platform-wide rule) — Jodi/Open bets

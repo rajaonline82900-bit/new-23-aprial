@@ -1,7 +1,47 @@
 # MATKA11 - Product Requirements Document
 
 
-## Latest Update (2026-02-15) — Coin Pool Privacy + APK Update Robustness (Batch 22) 🔒🔁
+## Latest Update (2026-02-25) — Kalyan Games Refresh + Admin Time Split (Batch 23) 🎰
+
+**User request:**
+1. Purane Kalyan games hataao, in 11 exact games ko unke time ke saath add karo.
+2. Auto-result fetch dono side (open + close) ke liye kaam kare.
+3. Admin panel se new Kalyan games add karne ka option ho.
+
+**Games seeded (11 total, user's authoritative list):**
+| Game | Open | Close | DP Boss ID |
+|---|---|---|---|
+| Sridevi | 11:35 | 12:35 | 3 |
+| Time Bazar | 13:10 | 14:10 | 12 |
+| Madhur Day | 13:30 | 15:30 | 6 |
+| Milan Day | 15:00 | 17:00 | 17 |
+| Rajdhani Day | 15:05 | 17:05 | 18 |
+| Sridevi Night | 19:00 | 20:00 | 22 |
+| Madhur Night | 20:30 | 22:30 | 43 |
+| Milan Night | 21:00 | 23:00 | 27 |
+| Kalyan Night | 21:25 | 23:35 | 34 |
+| Rajdhani Night | 21:30 | 23:45 | 28 |
+| Main Bazar | 21:35 | 00:05 | 29 |
+
+**Changes:**
+1. `backend/seeds/kalyan_games_seed.py` — replaced game list. Old Kalyan Day / Milan Morning / Madhuri Day / Time Bazar Morning removed on startup.
+2. `backend/routes/admin_routes.py` — `POST /admin/games` and `PUT /admin/games/{id}` now split time fields for `category=kalyan`:
+   - form's `start_time` → stored as `open_time`
+   - form's `end_time` → stored as `close_time`
+   - `start_time` forced to `07:00` (betting window start)
+   - auto-generates `display_time` = "Open HH:MM • Close HH:MM" if empty
+3. `frontend/src/pages/admin/AdminGamesTab.js` — form preload + row display use `open_time` / `close_time` for Kalyan (labels already said "Open Time" / "Close Time" for kalyan).
+4. `AdminSettingsTab.js` — Kalyan-per-bet-type min UI section (Single/SP/DP/TP/Jodi) already present (Batch 22).
+
+**Auto-fetch (both sides):** The `kalyan_auto_fetch_loop` in `backend/routes/kalyan_auto_results.py` already iterates through `("open", "close")` for every mapped game every 3 minutes and calls `declare_kalyan_panna_internal` — so open AND close pannas both get declared automatically. Requires `DPBOSS_API_KEY` env var. Once key is set, jodi computes automatically as `open_ank + close_ank`.
+
+**Verified:**
+- `GET /api/games` returns exactly 11 kalyan games with correct open/close times ✓
+- `POST /admin/games` with `category:"kalyan"` correctly stores `open_time=14:00, close_time=16:00, start_time=07:00` ✓
+- Old games (Kalyan Day, Milan Morning etc.) purged on backend restart ✓
+
+
+## Previous Update (2026-02-15) — Coin Pool Privacy + APK Update Robustness (Batch 22) 🔒🔁
 
 **User complaints:**
 1. Coin page pe "Head Pool ₹X / Tail Pool ₹Y" me sabhi users ka aggregate bet total dikh raha tha. Sirf apna bet dikhna chahiye.

@@ -830,6 +830,18 @@ async def create_game(game: GameCreate, request: Request):
         "time": game.end_time, "display_time": game.display_time,
         "is_active": game.is_active, "created_at": datetime.now(timezone.utc)
     }
+    # Kalyan games need explicit open_time / close_time for result declaration
+    # and jodi computation. Admin UI passes the "Open Time" into start_time and
+    # "Close Time" into end_time. Normalise: start_time becomes fixed 07:00
+    # (betting-window start), and open_time / close_time preserve the user's
+    # chosen result declaration slots.
+    if game.category == "kalyan":
+        game_doc["open_time"] = game.start_time
+        game_doc["close_time"] = game.end_time
+        game_doc["start_time"] = "07:00"
+        game_doc["end_time"] = game.end_time
+        if not game_doc.get("display_time"):
+            game_doc["display_time"] = f"Open {game.start_time} • Close {game.end_time}"
     await db.games.insert_one(game_doc)
     await load_games()
     return {"message": "Game created successfully", "game_id": game.game_id}
@@ -847,6 +859,9 @@ async def update_game(game_id: str, game: GameUpdate, request: Request):
         else:
             raise HTTPException(status_code=404, detail="Game not found")
 
+    # Detect if this game is Kalyan (either current or being changed to)
+    is_kalyan = (game.category or (existing or {}).get("category")) == "kalyan"
+
     update_data = {}
     if game.name is not None:
         update_data["name"] = game.name
@@ -855,10 +870,17 @@ async def update_game(game_id: str, game: GameUpdate, request: Request):
     if game.category is not None:
         update_data["category"] = game.category
     if game.start_time is not None:
-        update_data["start_time"] = game.start_time
+        if is_kalyan:
+            # For Kalyan, form's "start_time" input = open_time.
+            update_data["open_time"] = game.start_time
+            update_data["start_time"] = "07:00"
+        else:
+            update_data["start_time"] = game.start_time
     if game.end_time is not None:
         update_data["end_time"] = game.end_time
         update_data["time"] = game.end_time
+        if is_kalyan:
+            update_data["close_time"] = game.end_time
     if game.display_time is not None:
         update_data["display_time"] = game.display_time
     if game.is_active is not None:
