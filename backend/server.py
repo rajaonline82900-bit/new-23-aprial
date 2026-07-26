@@ -148,25 +148,34 @@ async def startup_event():
     admin_email = os.environ.get("ADMIN_EMAIL", "admin@sattamatka.com")
     admin_password = os.environ.get("ADMIN_PASSWORD", "Admin@123")
 
-    existing = await db.users.find_one({"email": admin_email})
-    if existing is None:
-        hashed = hash_password(admin_password)
-        await db.users.insert_one({
-            "email": admin_email, "password_hash": hashed, "name": "Admin",
-            "role": "admin", "balance": 0.0, "created_at": datetime.now(timezone.utc)
-        })
-        logger.info(f"Admin user created: {admin_email}")
-    elif not verify_password(admin_password, existing["password_hash"]):
-        await db.users.update_one(
-            {"email": admin_email},
-            {"$set": {"password_hash": hash_password(admin_password)}}
-        )
-        logger.info("Admin password updated")
+    # Race-safe admin seed (with --workers >1 both workers race here)
+    try:
+        existing = await db.users.find_one({"email": admin_email})
+        if existing is None:
+            hashed = hash_password(admin_password)
+            await db.users.insert_one({
+                "email": admin_email, "password_hash": hashed, "name": "Admin",
+                "role": "admin", "balance": 0.0, "created_at": datetime.now(timezone.utc)
+            })
+            logger.info(f"Admin user created: {admin_email}")
+        elif not verify_password(admin_password, existing["password_hash"]):
+            await db.users.update_one(
+                {"email": admin_email},
+                {"$set": {"password_hash": hash_password(admin_password)}}
+            )
+            logger.info("Admin password updated")
+    except Exception as e:
+        # Duplicate key race between workers is expected & harmless
+        logger.info(f"Admin seed skipped: {e}")
 
-    # Write test credentials
-    Path("/app/memory").mkdir(exist_ok=True)
-    with open("/app/memory/test_credentials.md", "w") as f:
-        f.write(f"""# Test Credentials
+    # Write test credentials (dev-only convenience; skipped in prod if dir absent)
+    try:
+        cred_dir = Path("/app/memory")
+        if not cred_dir.exists():
+            return  # production VPS — skip writing dev cred file
+        cred_dir.mkdir(exist_ok=True)
+        with open(cred_dir / "test_credentials.md", "w") as f:
+            f.write(f"""# Test Credentials
 
 ## Admin Account
 - Email: {admin_email}
@@ -194,6 +203,8 @@ async def startup_event():
 - GET /api/admin/users
 - GET /api/admin/withdrawals
 """)
+    except Exception as e:
+        logger.info(f"Skipped writing dev cred file: {e}")
 
 
 @app.on_event("startup")
