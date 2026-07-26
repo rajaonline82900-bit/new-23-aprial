@@ -164,7 +164,7 @@ const AdminKalyanResultsTab = ({ games = [] }) => {
       </div>
 
       <div className="bg-pink-500/5 border border-pink-500/20 rounded-lg px-3 py-2 text-xs text-gray-300">
-        <span className="text-pink-400 font-bold">Auto-Fetch:</span> Background me har 3 min pe DP Boss API se result auto-declare hote hain.
+        <span className="text-pink-400 font-bold">Auto-Fetch:</span> Background me har 30 sec pe DP Boss API se result auto-declare hote hain.
         Instant fetch ke liye upar wala button dabao.
       </div>
 

@@ -644,3 +644,53 @@ async def admin_set_kalyan_min_bets(request: Request):
         upsert=True,
     )
     return {"status": "OK", "min_bets": await _get_kalyan_min_bets()}
+
+
+# ─────────────── Kalyan Result Chart (date-wise + year filter) ───────────────
+@router.get("/kalyan/chart/{game_id}")
+async def kalyan_chart(game_id: str, year: int = 0, month: int = 0, limit: int = 400):
+    """Date-wise Kalyan result chart.
+    Params:
+      year:  4-digit year (e.g. 2026). 0 = no filter (returns latest N).
+      month: 1-12. Requires year to be set. 0 = whole year.
+      limit: max rows (default 400).
+    Returns rows sorted DATE DESC with open_panna, jodi (open_ank+close_ank), close_panna.
+    """
+    q = {"game_id": game_id}
+    if year:
+        # Date stored as "YYYY-MM-DD" string → prefix match
+        if month:
+            prefix = f"{year:04d}-{month:02d}-"
+            q["date"] = {"$regex": f"^{prefix}"}
+        else:
+            q["date"] = {"$regex": f"^{year:04d}-"}
+    limit = max(1, min(1000, int(limit)))
+    rows = []
+    async for r in db.kalyan_results.find(q, {"_id": 0}).sort("date", -1).limit(limit):
+        # Fallback jodi computation if not stored
+        jodi = r.get("jodi") or (
+            f"{r.get('open_ank','')}{r.get('close_ank','')}"
+            if r.get("open_ank") and r.get("close_ank") else ""
+        )
+        rows.append({
+            "date":         r.get("date"),
+            "open_panna":   r.get("open_panna") or "",
+            "open_ank":     r.get("open_ank") or "",
+            "close_panna":  r.get("close_panna") or "",
+            "close_ank":    r.get("close_ank") or "",
+            "jodi":         jodi,
+        })
+    return {"game_id": game_id, "rows": rows, "count": len(rows)}
+
+
+@router.get("/kalyan/chart/{game_id}/years")
+async def kalyan_chart_years(game_id: str):
+    """Return list of distinct years available for this game's result history.
+    Used by the year-filter dropdown on the frontend chart page.
+    """
+    years = set()
+    async for r in db.kalyan_results.find({"game_id": game_id}, {"date": 1, "_id": 0}):
+        d = r.get("date") or ""
+        if len(d) >= 4 and d[:4].isdigit():
+            years.add(int(d[:4]))
+    return {"years": sorted(list(years), reverse=True)}

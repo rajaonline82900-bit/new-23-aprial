@@ -284,6 +284,13 @@ const KalyanGamePage = () => {
           BETS
         </button>
         <button
+          onClick={() => navigate(`/kalyan/${gameId}/chart`)}
+          className="text-white font-bold text-sm px-2 active:scale-95"
+          data-testid="kalyan-chart-link"
+        >
+          CHART
+        </button>
+        <button
           onClick={() => navigate('/dashboard')}
           className="bg-black text-white border-2 border-white rounded-lg px-3 py-1.5 flex items-center gap-1 active:scale-95"
           data-testid="kalyan-back"

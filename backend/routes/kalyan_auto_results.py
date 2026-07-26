@@ -1,7 +1,7 @@
 """
 Kalyan Auto Result Integration — DP Boss API (api.codehap.com/dp/)
 
-Polls DP Boss API every 3 minutes and auto-declares Open/Close panna
+Polls DP Boss API every 30 seconds and auto-declares Open/Close panna
 for our mapped Kalyan games. Uses declare_kalyan_panna_internal() from
 kalyan_routes.py so declaration + bet-settlement runs the exact same
 code path as the manual admin declare button.
@@ -29,7 +29,7 @@ DPBOSS_API_URL = os.environ.get("DPBOSS_API_URL", "https://api.codehap.com/dp/")
 # On the preview environment we leave this false so the paid DP Boss API
 # is not called; on the VPS the operator sets it to "true".
 AUTO_FETCH_ENABLED = os.environ.get("KALYAN_AUTO_FETCH_ENABLED", "false").strip().lower() in ("1", "true", "yes")
-POLL_INTERVAL_SEC = 180
+POLL_INTERVAL_SEC = 30
 
 # game_id → DP Boss market id — kept in sync with the authoritative seed
 # so a new Kalyan game only needs to be added in one place.

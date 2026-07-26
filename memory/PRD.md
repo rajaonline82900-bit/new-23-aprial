@@ -1,7 +1,35 @@
 # MATKA11 - Product Requirements Document
 
 
-## Latest Update (2026-02-25) — Kalyan Games Refresh + Admin Time Split (Batch 23) 🎰
+## Latest Update (2026-02-26) — Kalyan Chart + 30s Auto-Fetch (Batch 24) 📊⚡
+
+**User requests:**
+1. Auto-fetch interval 3 min → 30 sec.
+2. Kalyan bet history date/time ke saath dikhe.
+3. Kalyan result chart — date-wise, year+month filter, Open Panna + Jodi + Close Panna columns.
+
+**Changes:**
+1. **Auto-fetch to 30 seconds** —
+   - `kalyan_auto_results.py` → `POLL_INTERVAL_SEC = 30` (was 180)
+   - `gali_auto_results.py` → `asyncio.sleep(30)` (was 60)
+   - Admin panel help text updated ("har 30 sec pe")
+
+2. **Kalyan bets in /bets** — already works. `/api/bets` endpoint already returns kalyan bets (from the shared `bets` collection). BetsPage.js already has a "Kalyan" filter chip + date/time rendering via `fmtDate + fmtTime` on `created_at`. No code change needed; verified.
+
+3. **Kalyan Result Chart page** — NEW:
+   - Backend `GET /api/kalyan/chart/{game_id}?year=&month=&limit=` — returns date-wise rows with `open_panna, open_ank, close_panna, close_ank, jodi`
+   - Backend `GET /api/kalyan/chart/{game_id}/years` — returns list of distinct years for the year filter
+   - Frontend `KalyanChartPage.js` — new page at `/kalyan/:gameId/chart`. Year dropdown + month dropdown + row-count. Groups rows by YYYY-MM with a gold header, then table: Date | Open Panna (with ank in parens) | Jodi (bold gold) | Close Panna
+   - Kalyan game page header now has a **CHART** button next to BETS (`kalyan-chart-link` testid)
+
+**Verified:**
+- `/api/kalyan/chart/sridevi` returns rows ✓
+- `/api/kalyan/chart/sridevi/years` returns available years ✓
+- Screenshot: 15 seeded rows render with Feb-2026 group header, Open/Jodi/Close columns clearly separated by color (orange/gold/cyan)
+- After screenshot, seed data was cleaned up
+
+
+## Previous Update (2026-02-25) — Kalyan Games Refresh + Admin Time Split (Batch 23) 🎰
 
 **User request:**
 1. Purane Kalyan games hataao, in 11 exact games ko unke time ke saath add karo.

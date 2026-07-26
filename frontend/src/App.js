@@ -20,6 +20,7 @@ import AdminLoginPage from "./pages/AdminLoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import GamePage from "./pages/GamePage";
 import KalyanGamePage from "./pages/KalyanGamePage";
+import KalyanChartPage from "./pages/KalyanChartPage";
 import AviatorPage from "./pages/AviatorPage";
 import CoinPage from "./pages/CoinPage";
 import LudoLobbyPage from "./pages/LudoLobbyPage";
@@ -136,6 +137,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <KalyanGamePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/kalyan/:gameId/chart"
+        element={
+          <ProtectedRoute>
+            <KalyanChartPage />
           </ProtectedRoute>
         }
       />

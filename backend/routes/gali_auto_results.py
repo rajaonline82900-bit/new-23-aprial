@@ -225,4 +225,4 @@ async def satta_auto_fetch_loop():
             except Exception as e:
                 logger.exception(f"[SattaAPI] loop error: {e}")
 
-            await asyncio.sleep(60)  # 1 min poll (was 5 min — user asked for aggressive)
+            await asyncio.sleep(30)  # 30 sec poll (user request)
