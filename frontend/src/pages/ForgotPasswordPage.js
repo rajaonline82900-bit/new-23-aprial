@@ -46,25 +46,21 @@ const ForgotPasswordPage = () => {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-[#06060A] flex items-center justify-center p-4">
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute -top-32 -left-20 w-[420px] h-[420px] rounded-full bg-[#D4AF37]/15 blur-[120px]" />
-        <div className="absolute -bottom-32 -right-20 w-[420px] h-[420px] rounded-full bg-[#10B981]/15 blur-[120px]" />
-      </div>
-
+    <div className="min-h-screen relative overflow-hidden lucky-bg-animated lucky-sparkles flex items-center justify-center p-4" data-testid="forgot-password-page">
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center mb-3 relative">
-            <div className="absolute inset-0 bg-[#D4AF37]/30 rounded-full blur-2xl" />
-            <MatkaLogo size="lg" />
+          <div className="inline-flex flex-col items-center mb-3">
+            <MatkaLogo size="xl" showText={false} />
+            <div className="mt-3 flex items-baseline gap-1.5">
+              <span className="text-3xl font-black font-['Unbounded'] tracking-tight lucky-gold-text">LUCKY</span>
+              <span className="text-3xl font-black font-['Unbounded'] tracking-tight lucky-emerald-text">BET</span>
+            </div>
           </div>
-          <h1 className="text-white font-['Unbounded'] text-xl font-bold">पासवर्ड रीसेट</h1>
-          <p className="text-gray-400 text-xs mt-1">मोबाइल पर OTP भेजकर नया पासवर्ड सेट करें</p>
+          <h1 className="lucky-gold-text font-['Unbounded'] text-xl font-black mt-4">पासवर्ड रीसेट</h1>
+          <p className="text-gray-300 text-xs mt-1">मोबाइल पर OTP भेजकर नया पासवर्ड सेट करें</p>
         </div>
 
-        <div className="relative">
-          <div className="absolute -inset-px rounded-2xl bg-gradient-to-r from-[#D4AF37]/30 via-transparent to-[#10B981]/30 blur-sm" />
-          <div className="relative rounded-2xl bg-[#0F0F14]/95 border border-white/10 backdrop-blur-xl p-6">
+        <div className="lucky-glass-card p-6">
             <Link to="/login" className="inline-flex items-center gap-1 text-gray-400 hover:text-white text-xs mb-4">
               <ArrowLeft className="w-3.5 h-3.5" /> Login पर वापस
             </Link>
@@ -89,7 +85,7 @@ const ForgotPasswordPage = () => {
                   </div>
                 </div>
                 <Button type="submit" disabled={loading} data-testid="forgot-send-otp-btn"
-                  className="w-full h-11 bg-gradient-to-r from-[#D4AF37] via-[#FDE047] to-[#D4AF37] text-black font-bold shadow-[0_8px_24px_rgba(212,175,55,0.35)]">
+                  className="lucky-cta w-full h-11 rounded-xl border-0">
                   {loading ? 'भेज रहे हैं...' : 'OTP भेजें'}
                 </Button>
               </form>
@@ -128,7 +124,7 @@ const ForgotPasswordPage = () => {
                 </div>
 
                 <Button type="submit" disabled={loading} data-testid="forgot-reset-btn"
-                  className="w-full h-11 bg-gradient-to-r from-[#D4AF37] via-[#FDE047] to-[#D4AF37] text-black font-bold shadow-[0_8px_24px_rgba(212,175,55,0.35)]">
+                  className="lucky-cta w-full h-11 rounded-xl border-0">
                   {loading ? 'बदल रहे हैं...' : 'पासवर्ड बदलें'}
                 </Button>
 
@@ -138,7 +134,6 @@ const ForgotPasswordPage = () => {
                 </button>
               </form>
             )}
-          </div>
         </div>
       </div>
     </div>

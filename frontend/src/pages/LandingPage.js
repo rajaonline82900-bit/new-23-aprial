@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Download, Shield, Zap, Trophy, Star, ChevronRight, Smartphone } from 'lucide-react';
+import MatkaLogo from '../components/MatkaLogo';
 
 const LandingPage = () => {
   const { user } = useAuth();
@@ -64,29 +65,27 @@ const LandingPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#0A0A0C] relative overflow-hidden">
-      {/* Background Effects */}
-      <div className="fixed inset-0 -z-10">
-        <div className="absolute top-[-200px] left-1/2 -translate-x-1/2 w-[700px] h-[700px] bg-[#D4AF37]/[0.06] rounded-full blur-[150px]" />
-        <div className="absolute bottom-[-100px] left-[-100px] w-[400px] h-[400px] bg-purple-900/[0.08] rounded-full blur-[100px]" />
-        <div className="absolute top-1/2 right-[-100px] w-[300px] h-[300px] bg-blue-900/[0.05] rounded-full blur-[80px]" />
-      </div>
-
-      <div className="max-w-[480px] mx-auto px-5 py-8">
+    <div className="min-h-screen relative overflow-hidden lucky-bg-animated lucky-sparkles" data-testid="landing-page">
+      <div className="max-w-[480px] mx-auto px-5 py-8 relative z-10">
         {/* Logo Section */}
         <div className="text-center mb-10 pt-8">
-          <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#FDE047] shadow-2xl shadow-[#D4AF37]/30 mb-6">
-            <span className="text-black text-4xl font-black font-['Unbounded']">M</span>
+          <div className="inline-flex flex-col items-center mb-4">
+            <MatkaLogo size="xl" showText={false} />
+            <div className="mt-4 flex items-baseline gap-2">
+              <span className="text-4xl font-black font-['Unbounded'] tracking-tight lucky-gold-text drop-shadow-2xl">LUCKY</span>
+              <span className="text-4xl font-black font-['Unbounded'] tracking-tight lucky-emerald-text drop-shadow-2xl">BET</span>
+            </div>
           </div>
-          <h1 className="text-4xl font-black text-white font-['Unbounded'] mb-2" data-testid="landing-title">
-            MATKA <span className="text-[#D4AF37]">11</span>
-          </h1>
-          <p className="text-gray-400 text-sm">India's Most Trusted Matka Platform</p>
+          <h1 className="hidden" data-testid="landing-title">Lucky Bet</h1>
+          <p className="text-gray-300 text-sm font-semibold tracking-wide">India&apos;s Most Trusted Gaming Platform</p>
+          <p className="text-[10px] tracking-[0.32em] font-bold mt-2 uppercase" style={{ color: '#FFD700' }}>
+            More Bets • More Wins • More Luck
+          </p>
           <div className="flex items-center justify-center gap-1 mt-3">
             {[1,2,3,4,5].map(i => (
-              <Star key={i} className="w-4 h-4 text-[#D4AF37] fill-[#D4AF37]" />
+              <Star key={i} className="w-4 h-4 text-[#FFD700] fill-[#FFD700]" />
             ))}
-            <span className="text-gray-400 text-xs ml-1">4.9/5 Rating</span>
+            <span className="text-gray-300 text-xs ml-1 font-semibold">4.9/5 Rating</span>
           </div>
         </div>
 
@@ -291,7 +290,7 @@ const LandingPage = () => {
             </svg>
             www.matka11.online
           </a>
-          <p className="text-gray-600 text-[10px] mt-2">MATKA 11 &copy; 2026. All Rights Reserved.</p>
+          <p className="text-gray-600 text-[10px] mt-2">Lucky Bet &copy; 2026. All Rights Reserved.</p>
         </div>
       </div>
     </div>

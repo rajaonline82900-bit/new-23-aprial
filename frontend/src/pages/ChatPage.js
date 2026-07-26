@@ -157,7 +157,7 @@ const ChatPage = () => {
             <MessageCircle className="w-4 h-4 text-[#D4AF37]" />
           </div>
           <div>
-            <p className="text-white font-bold text-sm tracking-wide">MATKA11 CASTUMER SUPPORT</p>
+            <p className="text-white font-bold text-sm tracking-wide">LUCKY BET CUSTOMER SUPPORT</p>
             <p className="text-green-400 text-[10px]">Online</p>
           </div>
         </div>

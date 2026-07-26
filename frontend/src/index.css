@@ -156,12 +156,156 @@ aside *, [data-testid="sidebar-overlay"] * { color: #F5F5F7; }
 }
 .bg-\[\#D4AF37\] * { color: #1A1A2E !important; }
 
-@keyframes blink-warning {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
+/* ===== LUCKY BET — Vegas Casino Luxury Animated Backdrop ===== */
+/* Full-screen animated gradient used on Landing / Login / Signup pages.
+   Colors sampled directly from the Lucky Bet logo (gold + emerald + rich black). */
+@keyframes luckyBgShift {
+  0%   { background-position: 0% 50%, 100% 50%, 50% 0%; }
+  50%  { background-position: 100% 50%, 0% 50%, 50% 100%; }
+  100% { background-position: 0% 50%, 100% 50%, 50% 0%; }
 }
-.blink-warning {
-  animation: blink-warning 1s ease-in-out infinite;
+.lucky-bg-animated {
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 20%, rgba(255, 215, 0, 0.28) 0%, transparent 55%),
+    radial-gradient(ellipse 80% 60% at 80% 80%, rgba(20, 169, 76, 0.24) 0%, transparent 55%),
+    radial-gradient(ellipse 100% 80% at 50% 50%, rgba(255, 199, 0, 0.10) 0%, transparent 60%),
+    linear-gradient(135deg, #0A0A0F 0%, #14142B 50%, #0B0F0B 100%);
+  background-size: 200% 200%, 200% 200%, 250% 250%, 100% 100%;
+  animation: luckyBgShift 18s ease-in-out infinite;
+  will-change: background-position;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lucky-bg-animated { animation: none; }
+}
+
+/* Floating sparkle particles for auth screens (pure CSS, no JS) */
+.lucky-sparkles::before,
+.lucky-sparkles::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle 1.5px at 15% 20%, rgba(255,215,0,0.9), transparent 55%),
+    radial-gradient(circle 1px at 82% 35%, rgba(255,255,255,0.85), transparent 55%),
+    radial-gradient(circle 1.5px at 30% 75%, rgba(20,169,76,0.9), transparent 55%),
+    radial-gradient(circle 1px at 60% 15%, rgba(255,215,0,0.7), transparent 55%),
+    radial-gradient(circle 2px at 88% 70%, rgba(253,224,71,0.9), transparent 55%),
+    radial-gradient(circle 1px at 45% 90%, rgba(20,169,76,0.7), transparent 55%),
+    radial-gradient(circle 1.5px at 10% 60%, rgba(255,215,0,0.7), transparent 55%);
+  animation: luckySparkleTwinkle 4.5s ease-in-out infinite;
+}
+.lucky-sparkles::after {
+  animation-delay: 2.25s;
+  background-image:
+    radial-gradient(circle 1px at 25% 40%, rgba(255,255,255,0.85), transparent 55%),
+    radial-gradient(circle 1.5px at 70% 55%, rgba(20,169,76,0.75), transparent 55%),
+    radial-gradient(circle 1px at 50% 25%, rgba(255,215,0,0.85), transparent 55%),
+    radial-gradient(circle 2px at 90% 40%, rgba(253,224,71,0.75), transparent 55%);
+}
+@keyframes luckySparkleTwinkle {
+  0%, 100% { opacity: 0.35; }
+  50%      { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lucky-sparkles::before, .lucky-sparkles::after { animation: none; }
+}
+
+/* Glass card — premium frosted look for auth screens */
+.lucky-glass-card {
+  position: relative;
+  background: linear-gradient(135deg, rgba(20, 20, 43, 0.72) 0%, rgba(11, 15, 11, 0.78) 100%);
+  border: 1px solid rgba(255, 215, 0, 0.45);
+  box-shadow:
+    0 30px 70px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 rgba(255, 215, 0, 0.14),
+    inset 0 -1px 0 rgba(20, 169, 76, 0.12);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-radius: 20px;
+  isolation: isolate;
+}
+.lucky-glass-card::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 20px;
+  background: conic-gradient(from 180deg, transparent 0deg, #FFD700 60deg, transparent 120deg, transparent 180deg, #14A94C 240deg, transparent 300deg, transparent 360deg);
+  opacity: 0.55;
+  z-index: -1;
+  animation: luckyRingSpin 12s linear infinite;
+  filter: blur(6px);
+}
+@keyframes luckyRingSpin {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lucky-glass-card::before { animation: none; }
+}
+
+/* Primary CTA button — gold-emerald premium gradient with shimmer */
+.lucky-cta {
+  position: relative;
+  background: linear-gradient(135deg, #FFD700 0%, #FFE55C 30%, #FFD700 55%, #14A94C 55%, #0F9938 100%);
+  background-size: 200% 100%;
+  background-position: 0% 50%;
+  color: #0A0A0F !important;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  box-shadow:
+    0 12px 30px rgba(255, 215, 0, 0.35),
+    0 6px 16px rgba(20, 169, 76, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transition: background-position 0.6s ease, transform 0.15s ease, box-shadow 0.2s ease;
+  overflow: hidden;
+  isolation: isolate;
+}
+.lucky-cta::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0;
+  left: -60%;
+  width: 40%;
+  background: linear-gradient(105deg, transparent 20%, rgba(255,255,255,0.5) 45%, rgba(255,255,255,0.75) 50%, rgba(255,255,255,0.5) 55%, transparent 80%);
+  animation: luckyCtaShimmer 3.5s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes luckyCtaShimmer {
+  0%   { left: -60%; }
+  55%  { left: 140%; }
+  100% { left: 140%; }
+}
+.lucky-cta:hover {
+  background-position: 100% 50%;
+  transform: translateY(-1px);
+  box-shadow:
+    0 16px 40px rgba(255, 215, 0, 0.45),
+    0 8px 20px rgba(20, 169, 76, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+.lucky-cta:active { transform: translateY(0); }
+
+/* Emerald secondary accent utilities */
+.text-emerald-lucky { color: #14A94C !important; }
+.border-emerald-lucky { border-color: rgba(20, 169, 76, 0.5) !important; }
+.bg-emerald-lucky { background: linear-gradient(135deg, #0F9938 0%, #14A94C 100%) !important; }
+
+/* Gold text gradient — matches Lucky Bet "LUCKY" wordmark */
+.lucky-gold-text {
+  background: linear-gradient(135deg, #FFC700 0%, #FFD700 40%, #FDE047 70%, #FFC700 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+/* Emerald text gradient — matches Lucky Bet "BET" wordmark */
+.lucky-emerald-text {
+  background: linear-gradient(135deg, #0F9938 0%, #14A94C 40%, #22C55E 70%, #14A94C 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
 }
 
 :root {

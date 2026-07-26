@@ -35,7 +35,7 @@ const SignupPage = () => {
         name: name.trim(), phone, password, referral_code: refCode || undefined
       }, { withCredentials: true });
       if (resp.data?.token) localStorage.setItem('matka11_token', resp.data.token);
-      toast.success('अकाउंट बन गया! स्वागत है 🎉');
+      toast.success('अकाउंट बन गया! Lucky Bet में स्वागत है 🎉');
       await refreshUser();
       navigate('/dashboard');
     } catch (e) {
@@ -46,158 +46,154 @@ const SignupPage = () => {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4" style={{ background: 'linear-gradient(180deg, #0A0A14 0%, #14142B 50%, #0A0A14 100%)' }}>
-      {/* Decorative background */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute -top-32 -left-20 w-[420px] h-[420px] rounded-full blur-[120px]" style={{ background: 'radial-gradient(circle, #D4AF37 0%, transparent 70%)', opacity: 0.35 }} />
-        <div className="absolute -bottom-32 -right-20 w-[420px] h-[420px] rounded-full blur-[120px]" style={{ background: 'radial-gradient(circle, #FDE047 0%, transparent 70%)', opacity: 0.3 }} />
-        <div className="absolute top-1/3 right-10 w-2 h-2 rounded-full bg-[#FFD700] animate-pulse" />
-        <div className="absolute top-1/2 left-12 w-1.5 h-1.5 rounded-full bg-[#FDE047] animate-pulse" style={{ animationDelay: '0.4s' }} />
-      </div>
-
+    <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4 lucky-bg-animated lucky-sparkles" data-testid="signup-page">
       <div className="w-full max-w-md relative z-10">
-        {/* Hero Logo + Tagline */}
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center mb-3 relative">
-            <div className="absolute inset-0 rounded-full blur-2xl" style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #FDE047 100%)', opacity: 0.4 }} />
-            <MatkaLogo size="lg" />
+        {/* Hero Logo */}
+        <div className="text-center mb-5">
+          <div className="inline-flex flex-col items-center mb-3">
+            <MatkaLogo size="xl" showText={false} />
+            <div className="mt-3 flex items-baseline gap-1.5">
+              <span className="text-3xl font-black font-['Unbounded'] tracking-tight lucky-gold-text drop-shadow-2xl">LUCKY</span>
+              <span className="text-3xl font-black font-['Unbounded'] tracking-tight lucky-emerald-text drop-shadow-2xl">BET</span>
+            </div>
+            <p className="text-[10px] tracking-[0.28em] font-bold mt-1 uppercase" style={{ color: '#FFD700' }}>
+              More Bets • More Wins • More Luck
+            </p>
           </div>
-          <h1 className="font-['Unbounded'] text-2xl font-black tracking-tight">
-            <span className="text-transparent bg-clip-text" style={{ backgroundImage: 'linear-gradient(135deg, #B8860B 0%, #FFD700 30%, #FDE047 65%, #FDE047 100%)' }}>
-              जुड़िए, खेलिए, जीतिए
-            </span>
+          <h1 className="font-['Unbounded'] text-xl font-black tracking-tight mt-4">
+            <span className="lucky-gold-text">जुड़िए, खेलिए, </span>
+            <span className="lucky-emerald-text">जीतिए</span>
           </h1>
-          <p className="text-gray-600 text-sm mt-1">India's most trusted Matka platform</p>
+          <p className="text-gray-300 text-sm mt-1">India&apos;s most trusted gaming platform</p>
         </div>
 
-        {/* Perks pill row */}
-        <div className="flex justify-center gap-2 mb-4 text-[10px]">
-          <div className="px-2.5 py-1 rounded-full bg-[#FDE047]/10 border border-[#FDE047]/40 text-[#DB2777] flex items-center gap-1 font-bold">
+        {/* Perks pills */}
+        <div className="flex justify-center gap-2 mb-4 text-[10px] flex-wrap">
+          <div className="px-2.5 py-1 rounded-full flex items-center gap-1 font-bold" style={{ background: 'rgba(255, 215, 0, 0.15)', border: '1px solid rgba(255, 215, 0, 0.5)', color: '#FFD700' }}>
             <Sparkles className="w-3 h-3" /> Instant Withdraw
           </div>
-          <div className="px-2.5 py-1 rounded-full bg-[#10B981]/10 border border-[#10B981]/40 text-[#059669] flex items-center gap-1 font-bold">
+          <div className="px-2.5 py-1 rounded-full flex items-center gap-1 font-bold" style={{ background: 'rgba(20, 169, 76, 0.18)', border: '1px solid rgba(20, 169, 76, 0.5)', color: '#22C55E' }}>
             <Gift className="w-3 h-3" /> 5% Refer Bonus
           </div>
-          <div className="px-2.5 py-1 rounded-full bg-[#FFD700]/10 border border-[#FFD700]/40 text-[#FFD700] flex items-center gap-1 font-bold">
+          <div className="px-2.5 py-1 rounded-full flex items-center gap-1 font-bold" style={{ background: 'rgba(253, 224, 71, 0.15)', border: '1px solid rgba(253, 224, 71, 0.5)', color: '#FDE047' }}>
             <Trophy className="w-3 h-3" /> 24×7 Live
           </div>
         </div>
 
-        {/* Card */}
-        <div className="relative">
-          <div className="absolute -inset-px rounded-2xl blur-sm" style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #FDE047 100%)', opacity: 0.5 }} />
-          <div className="relative rounded-2xl p-6" style={{ background: 'linear-gradient(135deg, #14142B 0%, #1A1A2E 100%)', border: '1px solid rgba(212, 175, 55, 0.4)', boxShadow: '0 20px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(212, 175, 55, 0.1)' }}>
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <h2 className="text-[#FFD700] text-xl font-black font-['Unbounded']">नया अकाउंट</h2>
-                <p className="text-gray-400 text-xs mt-0.5">कुछ ही सेकंड में रजिस्टर करें</p>
-              </div>
-              <span className="text-[10px] px-2 py-1 rounded-md text-white font-black border-0" style={{ background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)' }}>FREE</span>
+        {/* Glass Card */}
+        <div className="lucky-glass-card p-6">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h2 className="lucky-gold-text text-xl font-black font-['Unbounded']">नया अकाउंट</h2>
+              <p className="text-gray-400 text-xs mt-0.5">कुछ ही सेकंड में रजिस्टर करें</p>
             </div>
+            <span className="text-[10px] px-2 py-1 rounded-md text-white font-black border-0" style={{ background: 'linear-gradient(135deg, #0F9938 0%, #14A94C 100%)' }}>FREE</span>
+          </div>
 
-            <form onSubmit={handleSignup} className="space-y-4">
-              {/* Name */}
-              <div className="space-y-1.5">
-                <Label className="text-[#FFD700] text-xs font-bold">नाम</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#D4AF37]" />
-                  <Input
-                    type="text"
-                    placeholder="आपका नाम"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                    data-testid="signup-name-input"
-                    className="pl-10 h-11 text-white text-[#FFD700] placeholder:text-gray-500 focus:border-[#FFD700] focus:ring-1 focus:ring-[#FFD700]/40"
-                  />
-                </div>
-              </div>
-
-              {/* Phone */}
-              <div className="space-y-1.5">
-                <Label className="text-[#FFD700] text-xs font-bold">मोबाइल नंबर</Label>
-                <div className="flex gap-2">
-                  <div className="flex items-center px-3 h-11 bg-[#0A0A14] border border-[#D4AF37]/30 rounded-md text-[#FFD700] text-sm font-bold">+91</div>
-                  <div className="relative flex-1">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#D4AF37]" />
-                    <Input
-                      type="tel"
-                      placeholder="10 अंकों का नंबर"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                      required
-                      maxLength={10}
-                      data-testid="signup-phone-input"
-                      className="pl-10 h-11 text-white text-[#FFD700] placeholder:text-gray-500 focus:border-[#FFD700] focus:ring-1 focus:ring-[#FFD700]/40"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Password */}
-              <div className="space-y-1.5">
-                <Label className="text-[#FFD700] text-xs font-bold">पासवर्ड</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#D4AF37]" />
-                  <Input
-                    type={showPwd ? 'text' : 'password'}
-                    placeholder="कम से कम 6 अक्षर"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={6}
-                    data-testid="signup-password-input"
-                    className="pl-10 pr-10 h-11 text-white text-[#FFD700] placeholder:text-gray-500 focus:border-[#FFD700] focus:ring-1 focus:ring-[#FFD700]/40"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPwd((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#FFD700] hover:text-[#FDE047]"
-                    data-testid="toggle-signup-password"
-                  >
-                    {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Referral */}
-              <div className="space-y-1.5">
-                <Label className="text-[#FFD700] text-xs font-bold">रेफरल कोड <span className="text-gray-500">(optional)</span></Label>
+          <form onSubmit={handleSignup} className="space-y-4">
+            {/* Name */}
+            <div className="space-y-1.5">
+              <Label className="text-[#FFD700] text-xs font-bold">नाम</Label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#FFD700]" />
                 <Input
                   type="text"
-                  placeholder="दोस्त का रेफरल कोड"
-                  value={refCode}
-                  onChange={(e) => setRefCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10))}
-                  maxLength={10}
-                  data-testid="signup-referral-input"
-                  disabled={!!urlRefCode}
-                  className="h-11 text-white text-[#FFD700] placeholder:text-gray-500 focus:border-[#FFD700] focus:ring-1 focus:ring-[#FFD700]/40 uppercase tracking-wide"
+                  placeholder="आपका नाम"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  data-testid="signup-name-input"
+                  className="pl-10 h-11 text-white placeholder:text-gray-500 focus:border-[#FFD700] focus:ring-1 focus:ring-[#FFD700]/40"
+                  style={{ background: 'rgba(10, 10, 20, 0.6)', borderColor: 'rgba(255, 215, 0, 0.35)' }}
                 />
-                {urlRefCode && (
-                  <p className="text-[#FFD700] text-[11px] font-bold">लिंक से रेफरल कोड लागू है: {urlRefCode}</p>
-                )}
               </div>
+            </div>
 
-              {/* Submit */}
-              <Button
-                type="submit"
-                disabled={loading}
-                data-testid="signup-submit-btn"
-                className="w-full h-11 text-white font-black tracking-wide hover:opacity-95 transition-all border-0"
-                style={{ background: 'linear-gradient(135deg, #B8860B 0%, #FFD700 30%, #FDE047 65%, #FDE047 100%)', boxShadow: '0 8px 28px rgba(168, 85, 247, 0.45)' }}
-              >
-                {loading ? 'अकाउंट बन रहा है...' : 'अकाउंट बनाएं →'}
-              </Button>
+            {/* Phone */}
+            <div className="space-y-1.5">
+              <Label className="text-[#FFD700] text-xs font-bold">मोबाइल नंबर</Label>
+              <div className="flex gap-2">
+                <div className="flex items-center px-3 h-11 rounded-md text-[#FFD700] text-sm font-bold" style={{ background: 'rgba(255, 215, 0, 0.12)', border: '1px solid rgba(255, 215, 0, 0.4)' }}>+91</div>
+                <div className="relative flex-1">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#FFD700]" />
+                  <Input
+                    type="tel"
+                    placeholder="10 अंकों का नंबर"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                    required
+                    maxLength={10}
+                    data-testid="signup-phone-input"
+                    className="pl-10 h-11 text-white placeholder:text-gray-500 focus:border-[#FFD700] focus:ring-1 focus:ring-[#FFD700]/40"
+                    style={{ background: 'rgba(10, 10, 20, 0.6)', borderColor: 'rgba(255, 215, 0, 0.35)' }}
+                  />
+                </div>
+              </div>
+            </div>
 
-              <p className="text-center text-gray-600 text-sm pt-1">
-                पहले से अकाउंट है?{' '}
-                <Link to="/login" className="text-[#FFD700] hover:text-[#FDE047] font-bold">लॉगिन करें</Link>
-              </p>
-            </form>
-          </div>
+            {/* Password */}
+            <div className="space-y-1.5">
+              <Label className="text-[#FFD700] text-xs font-bold">पासवर्ड</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#FFD700]" />
+                <Input
+                  type={showPwd ? 'text' : 'password'}
+                  placeholder="कम से कम 6 अक्षर"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  data-testid="signup-password-input"
+                  className="pl-10 pr-10 h-11 text-white placeholder:text-gray-500 focus:border-[#FFD700] focus:ring-1 focus:ring-[#FFD700]/40"
+                  style={{ background: 'rgba(10, 10, 20, 0.6)', borderColor: 'rgba(255, 215, 0, 0.35)' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPwd((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#FFD700] hover:text-[#FDE047]"
+                  data-testid="toggle-signup-password"
+                >
+                  {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Referral */}
+            <div className="space-y-1.5">
+              <Label className="text-[#14A94C] text-xs font-bold">रेफरल कोड <span className="text-gray-500">(optional)</span></Label>
+              <Input
+                type="text"
+                placeholder="दोस्त का रेफरल कोड"
+                value={refCode}
+                onChange={(e) => setRefCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10))}
+                maxLength={10}
+                data-testid="signup-referral-input"
+                disabled={!!urlRefCode}
+                className="h-11 text-white placeholder:text-gray-500 focus:border-[#14A94C] focus:ring-1 focus:ring-[#14A94C]/40 uppercase tracking-wide"
+                style={{ background: 'rgba(10, 10, 20, 0.6)', borderColor: 'rgba(20, 169, 76, 0.4)' }}
+              />
+              {urlRefCode && (
+                <p className="text-[#14A94C] text-[11px] font-bold">✓ लिंक से रेफरल कोड लागू है: {urlRefCode}</p>
+              )}
+            </div>
+
+            {/* Submit */}
+            <Button
+              type="submit"
+              disabled={loading}
+              data-testid="signup-submit-btn"
+              className="lucky-cta w-full h-12 rounded-xl border-0 text-base"
+            >
+              {loading ? 'अकाउंट बन रहा है...' : 'CREATE ACCOUNT →'}
+            </Button>
+
+            <p className="text-center text-gray-300 text-sm pt-1">
+              पहले से अकाउंट है?{' '}
+              <Link to="/login" className="lucky-gold-text font-black">Log In</Link>
+            </p>
+          </form>
         </div>
 
-        {/* Footer micro-trust */}
         <p className="text-center text-gray-500 text-[11px] mt-5">
           🔒 आपका डेटा 100% सुरक्षित है · End-to-end encrypted
         </p>

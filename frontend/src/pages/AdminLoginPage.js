@@ -46,13 +46,8 @@ const AdminLoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-[#0A0A0C]">
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#10B981]/5 rounded-full blur-3xl" />
-      </div>
-      
-      <Card className="w-full max-w-sm bg-[#141418] border-white/10 relative z-10">
+    <div className="min-h-screen flex items-center justify-center p-4 lucky-bg-animated lucky-sparkles" data-testid="admin-login-page">
+      <Card className="w-full max-w-sm lucky-glass-card border-0 relative z-10">
         <CardHeader className="space-y-3 text-center">
           <div className="flex justify-center">
             <MatkaLogo size="lg" />
@@ -106,9 +101,9 @@ const AdminLoginPage = () => {
               type="submit"
               disabled={loading}
               data-testid="admin-login-button"
-              className="w-full bg-[#D4AF37] hover:bg-[#FDE047] text-black font-bold transition-all duration-200"
+              className="lucky-cta w-full h-11 rounded-xl border-0"
             >
-              {loading ? 'लॉगिन हो रहा है...' : 'एडमिन लॉगिन'}
+              {loading ? 'लॉगिन हो रहा है...' : 'ADMIN LOGIN'}
             </Button>
           </form>
         </CardContent>

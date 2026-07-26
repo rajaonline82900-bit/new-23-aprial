@@ -163,7 +163,7 @@ const TelegramWelcomePopup = ({ telegramLink, isLoggedIn = false }) => {
             Join Telegram Channel
           </button>
 
-          {/* CTA: Download MATKA 11 APK */}
+          {/* CTA: Download Lucky Bet APK */}
           <button
             onClick={handleDownload}
             data-testid="telegram-welcome-download-apk-btn"
@@ -176,7 +176,7 @@ const TelegramWelcomePopup = ({ telegramLink, isLoggedIn = false }) => {
             }}
           >
             {creatingHandoff ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" strokeWidth={2.6} />}
-            Download MATKA 11 App
+            Download Lucky Bet App
           </button>
 
           {/* Auto-login intent link (only shown if logged-in user has a handoff token) */}
@@ -201,7 +201,7 @@ const TelegramWelcomePopup = ({ telegramLink, isLoggedIn = false }) => {
                   boxShadow: '0 3px 12px rgba(212, 175, 55, 0.4)',
                 }}
               >
-                Open MATKA 11 App with Auto-Login →
+                Open Lucky Bet App with Auto-Login →
               </a>
               <p className="text-[10px] text-gray-400 mt-1.5 leading-tight">
                 Valid for 10 minutes. Works only on Android after installing the APK.

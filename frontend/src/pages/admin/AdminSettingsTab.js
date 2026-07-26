@@ -296,7 +296,7 @@ const AdminSettingsTab = () => {
           <div className="space-y-3">
             <div>
               <Label className="text-gray-300 mb-2 block">Notification Title</Label>
-              <Input type="text" placeholder="जैसे: MATKA 11 - नया अपडेट!" value={pushTitle} onChange={(e) => setPushTitle(e.target.value)} data-testid="push-title-input" className="bg-[#0A0A0C] border-white/10 text-white" />
+              <Input type="text" placeholder="जैसे: Lucky Bet - नया अपडेट!" value={pushTitle} onChange={(e) => setPushTitle(e.target.value)} data-testid="push-title-input" className="bg-[#0A0A0C] border-white/10 text-white" />
             </div>
             <div>
               <Label className="text-gray-300 mb-2 block">Notification Message</Label>
