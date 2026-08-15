@@ -164,17 +164,126 @@ const ReferPage = () => {
               </div>
             </div>
 
-            {/* Stats grid */}
-            <div className="grid grid-cols-2 gap-2.5">
-              <div className="rounded-xl p-3 text-center" style={{ background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.18) 0%, rgba(14, 165, 233, 0.08) 100%)', border: '1px solid rgba(125, 211, 252, 0.35)' }}>
-                <Users className="w-5 h-5 text-[#7DD3FC] mx-auto mb-1" />
-                <p className="text-2xl font-black text-white tabular-nums" data-testid="refer-total-count">{referralInfo?.referred_count || 0}</p>
-                <p className="text-[10px] uppercase tracking-wider text-[#7DD3FC] font-bold mt-0.5">Total Referrals</p>
+            {/* Premium Vegas-style Stats grid — floating orb icons + 3D embossed cards */}
+            <div className="grid grid-cols-2 gap-3">
+              {/* Total Referrals */}
+              <div
+                className="relative rounded-2xl p-4 overflow-hidden"
+                style={{
+                  background:
+                    'linear-gradient(155deg, rgba(20, 169, 76, 0.22) 0%, rgba(10, 88, 44, 0.12) 60%, rgba(0, 0, 0, 0.6) 100%)',
+                  border: '1.5px solid rgba(34, 197, 94, 0.55)',
+                  boxShadow:
+                    'inset 0 1px 0 rgba(34, 197, 94, 0.3), inset 0 -2px 4px rgba(0, 0, 0, 0.4), 0 8px 20px rgba(20, 169, 76, 0.15)',
+                }}
+              >
+                <div
+                  className="absolute -top-6 -right-6 w-24 h-24 rounded-full pointer-events-none"
+                  style={{
+                    background:
+                      'radial-gradient(circle, rgba(34, 197, 94, 0.35) 0%, transparent 60%)',
+                    filter: 'blur(4px)',
+                  }}
+                />
+                <div className="relative flex items-start justify-between mb-3">
+                  <div
+                    className="w-11 h-11 rounded-full flex items-center justify-center"
+                    style={{
+                      background:
+                        'radial-gradient(circle at 30% 25%, rgba(255,255,255,0.4) 0%, transparent 45%), conic-gradient(from 180deg, #14A94C, #22C55E, #14A94C, #22C55E, #14A94C)',
+                      border: '2px solid #22C55E',
+                      boxShadow: '0 0 0 3px rgba(0,0,0,0.55), 0 6px 14px rgba(34,197,94,0.55)',
+                    }}
+                  >
+                    <div
+                      className="w-9 h-9 rounded-full flex items-center justify-center"
+                      style={{ background: 'radial-gradient(circle at 30% 30%, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.85) 100%)' }}
+                    >
+                      <Users className="w-4 h-4 text-[#22C55E]" strokeWidth={2.6} />
+                    </div>
+                  </div>
+                  <span
+                    className="text-[8px] px-1.5 py-0.5 rounded font-black tracking-widest uppercase"
+                    style={{ background: 'rgba(34,197,94,0.2)', color: '#4ADE80', border: '1px solid rgba(34,197,94,0.5)' }}
+                  >
+                    Team
+                  </span>
+                </div>
+                <p
+                  className="text-3xl font-black tabular-nums leading-none"
+                  data-testid="refer-total-count"
+                  style={{
+                    fontFamily: 'Unbounded, Outfit, sans-serif',
+                    backgroundImage: 'linear-gradient(135deg, #FFFFFF 0%, #4ADE80 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}
+                >
+                  {referralInfo?.referred_count || 0}
+                </p>
+                <p className="text-[10px] uppercase tracking-widest text-emerald-300/80 font-black mt-1.5">
+                  Total Referrals
+                </p>
               </div>
-              <div className="rounded-xl p-3 text-center" style={{ background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.18) 0%, rgba(5, 150, 105, 0.08) 100%)', border: '1px solid rgba(110, 231, 183, 0.35)' }}>
-                <IndianRupee className="w-5 h-5 text-[#6EE7B7] mx-auto mb-1" />
-                <p className="text-2xl font-black text-[#6EE7B7] tabular-nums" data-testid="refer-total-income">₹{(referralInfo?.total_earned || 0).toFixed(0)}</p>
-                <p className="text-[10px] uppercase tracking-wider text-[#6EE7B7] font-bold mt-0.5">Total Income</p>
+
+              {/* Total Income */}
+              <div
+                className="relative rounded-2xl p-4 overflow-hidden"
+                style={{
+                  background:
+                    'linear-gradient(155deg, rgba(255, 215, 0, 0.22) 0%, rgba(184, 134, 11, 0.12) 60%, rgba(0, 0, 0, 0.6) 100%)',
+                  border: '1.5px solid rgba(255, 215, 0, 0.55)',
+                  boxShadow:
+                    'inset 0 1px 0 rgba(255, 215, 0, 0.3), inset 0 -2px 4px rgba(0, 0, 0, 0.4), 0 8px 20px rgba(255, 215, 0, 0.15)',
+                }}
+              >
+                <div
+                  className="absolute -top-6 -right-6 w-24 h-24 rounded-full pointer-events-none"
+                  style={{
+                    background:
+                      'radial-gradient(circle, rgba(255, 215, 0, 0.35) 0%, transparent 60%)',
+                    filter: 'blur(4px)',
+                  }}
+                />
+                <div className="relative flex items-start justify-between mb-3">
+                  <div
+                    className="w-11 h-11 rounded-full flex items-center justify-center"
+                    style={{
+                      background:
+                        'radial-gradient(circle at 30% 25%, rgba(255,255,255,0.4) 0%, transparent 45%), conic-gradient(from 180deg, #B8860B, #FFD700, #B8860B, #FFD700, #B8860B)',
+                      border: '2px solid #FFD700',
+                      boxShadow: '0 0 0 3px rgba(0,0,0,0.55), 0 6px 14px rgba(255,215,0,0.55)',
+                    }}
+                  >
+                    <div
+                      className="w-9 h-9 rounded-full flex items-center justify-center"
+                      style={{ background: 'radial-gradient(circle at 30% 30%, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.85) 100%)' }}
+                    >
+                      <IndianRupee className="w-4 h-4 text-[#FFD700]" strokeWidth={2.8} />
+                    </div>
+                  </div>
+                  <span
+                    className="text-[8px] px-1.5 py-0.5 rounded font-black tracking-widest uppercase"
+                    style={{ background: 'rgba(255,215,0,0.2)', color: '#FDE047', border: '1px solid rgba(255,215,0,0.5)' }}
+                  >
+                    Earned
+                  </span>
+                </div>
+                <p
+                  className="text-3xl font-black tabular-nums leading-none"
+                  data-testid="refer-total-income"
+                  style={{
+                    fontFamily: 'Unbounded, Outfit, sans-serif',
+                    backgroundImage: 'linear-gradient(135deg, #FFFFFF 0%, #FDE047 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}
+                >
+                  ₹{(referralInfo?.total_earned || 0).toFixed(0)}
+                </p>
+                <p className="text-[10px] uppercase tracking-widest text-yellow-300/80 font-black mt-1.5">
+                  Total Income
+                </p>
               </div>
             </div>
 

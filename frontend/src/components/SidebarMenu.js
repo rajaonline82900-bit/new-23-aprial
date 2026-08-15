@@ -83,6 +83,7 @@ const SidebarMenu = ({ open, onClose }) => {
       onClick: () => setLangOpen(!langOpen),
       color: 'text-blue-400',
       bg: 'bg-blue-500/10',
+      hex: '#60A5FA',
     },
     {
       type: 'link',
@@ -91,6 +92,7 @@ const SidebarMenu = ({ open, onClose }) => {
       to: '/how-to-play',
       color: 'text-emerald-400',
       bg: 'bg-emerald-500/10',
+      hex: '#34D399',
     },
     {
       type: 'link',
@@ -99,6 +101,7 @@ const SidebarMenu = ({ open, onClose }) => {
       to: '/wallet',
       color: 'text-green-400',
       bg: 'bg-green-500/10',
+      hex: '#4ADE80',
     },
     {
       type: 'link',
@@ -107,6 +110,7 @@ const SidebarMenu = ({ open, onClose }) => {
       to: '/results',
       color: 'text-purple-400',
       bg: 'bg-purple-500/10',
+      hex: '#C084FC',
     },
     {
       type: 'link',
@@ -115,6 +119,7 @@ const SidebarMenu = ({ open, onClose }) => {
       to: '/refer',
       color: 'text-pink-400',
       bg: 'bg-pink-500/10',
+      hex: '#F472B6',
     },
     {
       type: 'link',
@@ -123,6 +128,7 @@ const SidebarMenu = ({ open, onClose }) => {
       to: '/rate-list',
       color: 'text-yellow-400',
       bg: 'bg-yellow-500/10',
+      hex: '#FACC15',
     },
   ];
 
@@ -173,18 +179,30 @@ const SidebarMenu = ({ open, onClose }) => {
                   <button
                     onClick={item.onClick}
                     data-testid={`sidebar-${item.label.toLowerCase().replace(/\s/g, '-')}`}
-                    className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-[#0A0A0C]/5 transition-all"
+                    className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-white/[0.03] transition-all active:scale-[0.98]"
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`w-9 h-9 rounded-lg ${item.bg} flex items-center justify-center`}>
-                        <Icon className={`w-4 h-4 ${item.color}`} />
+                      <div
+                        className="relative w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                        style={{
+                          background: `radial-gradient(circle at 30% 25%, rgba(255,255,255,0.25) 0%, transparent 45%), conic-gradient(from 180deg, ${item.hex}, ${item.hex}88, ${item.hex}, ${item.hex}88, ${item.hex})`,
+                          border: `1.5px solid ${item.hex}`,
+                          boxShadow: `0 0 0 2px rgba(0,0,0,0.6), 0 4px 10px ${item.hex}55`,
+                        }}
+                      >
+                        <div
+                          className="w-8 h-8 rounded-full flex items-center justify-center"
+                          style={{ background: 'radial-gradient(circle at 30% 30%, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.9) 100%)' }}
+                        >
+                          <Icon className="w-4 h-4" style={{ color: item.hex }} strokeWidth={2.4} />
+                        </div>
                       </div>
                       <div className="text-left">
-                        <p className="text-white text-sm font-medium">{item.label}</p>
+                        <p className="text-white text-sm font-bold">{item.label}</p>
                         {item.sublabel && <p className="text-gray-400 text-xs">{item.sublabel}</p>}
                       </div>
                     </div>
-                    <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${langOpen ? 'rotate-90' : ''}`} />
+                    <ChevronRight className={`w-4 h-4 text-gray-500 transition-transform ${langOpen ? 'rotate-90' : ''}`} />
                   </button>
 
                   {/* Language Dropdown */}
@@ -216,15 +234,27 @@ const SidebarMenu = ({ open, onClose }) => {
                 to={item.to}
                 onClick={onClose}
                 data-testid={`sidebar-${item.label.toLowerCase().replace(/\s/g, '-')}`}
-                className="flex items-center justify-between p-3 rounded-lg hover:bg-[#0A0A0C]/5 transition-all"
+                className="flex items-center justify-between p-2.5 rounded-xl hover:bg-white/[0.03] transition-all active:scale-[0.98]"
               >
                 <div className="flex items-center gap-3">
-                  <div className={`w-9 h-9 rounded-lg ${item.bg} flex items-center justify-center`}>
-                    <Icon className={`w-4 h-4 ${item.color}`} />
+                  <div
+                    className="relative w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                    style={{
+                      background: `radial-gradient(circle at 30% 25%, rgba(255,255,255,0.25) 0%, transparent 45%), conic-gradient(from 180deg, ${item.hex}, ${item.hex}88, ${item.hex}, ${item.hex}88, ${item.hex})`,
+                      border: `1.5px solid ${item.hex}`,
+                      boxShadow: `0 0 0 2px rgba(0,0,0,0.6), 0 4px 10px ${item.hex}55`,
+                    }}
+                  >
+                    <div
+                      className="w-8 h-8 rounded-full flex items-center justify-center"
+                      style={{ background: 'radial-gradient(circle at 30% 30%, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.9) 100%)' }}
+                    >
+                      <Icon className="w-4 h-4" style={{ color: item.hex }} strokeWidth={2.4} />
+                    </div>
                   </div>
-                  <p className="text-white text-sm font-medium">{item.label}</p>
+                  <p className="text-white text-sm font-bold">{item.label}</p>
                 </div>
-                <ChevronRight className="w-4 h-4 text-gray-400" />
+                <ChevronRight className="w-4 h-4 text-gray-500" />
               </Link>
             );
           })}
@@ -244,15 +274,27 @@ const SidebarMenu = ({ open, onClose }) => {
               rel="noopener noreferrer"
               onClick={onClose}
               data-testid="sidebar-support-telegram"
-              className="flex items-center justify-between p-3 rounded-lg hover:bg-[#0A0A0C]/5 transition-all"
+              className="flex items-center justify-between p-2.5 rounded-xl hover:bg-white/[0.03] transition-all active:scale-[0.98]"
             >
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-[#229ED9]/10 flex items-center justify-center">
-                  <Send className="w-4 h-4 text-[#229ED9]" />
+                <div
+                  className="relative w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                  style={{
+                    background: 'radial-gradient(circle at 30% 25%, rgba(255,255,255,0.25) 0%, transparent 45%), conic-gradient(from 180deg, #229ED9, #229ED988, #229ED9, #229ED988, #229ED9)',
+                    border: '1.5px solid #229ED9',
+                    boxShadow: '0 0 0 2px rgba(0,0,0,0.6), 0 4px 10px #229ED955',
+                  }}
+                >
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center"
+                    style={{ background: 'radial-gradient(circle at 30% 30%, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.9) 100%)' }}
+                  >
+                    <Send className="w-4 h-4 text-[#229ED9]" strokeWidth={2.4} />
+                  </div>
                 </div>
-                <p className="text-white text-sm font-medium">Telegram</p>
+                <p className="text-white text-sm font-bold">Telegram</p>
               </div>
-              <ChevronRight className="w-4 h-4 text-gray-400" />
+              <ChevronRight className="w-4 h-4 text-gray-500" />
             </a>
           )}
 
@@ -263,15 +305,27 @@ const SidebarMenu = ({ open, onClose }) => {
               rel="noopener noreferrer"
               onClick={onClose}
               data-testid="sidebar-support-whatsapp"
-              className="flex items-center justify-between p-3 rounded-lg hover:bg-[#0A0A0C]/5 transition-all"
+              className="flex items-center justify-between p-2.5 rounded-xl hover:bg-white/[0.03] transition-all active:scale-[0.98]"
             >
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-[#25D366]/10 flex items-center justify-center">
-                  <MessageCircle className="w-4 h-4 text-[#25D366]" />
+                <div
+                  className="relative w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                  style={{
+                    background: 'radial-gradient(circle at 30% 25%, rgba(255,255,255,0.25) 0%, transparent 45%), conic-gradient(from 180deg, #25D366, #25D36688, #25D366, #25D36688, #25D366)',
+                    border: '1.5px solid #25D366',
+                    boxShadow: '0 0 0 2px rgba(0,0,0,0.6), 0 4px 10px #25D36655',
+                  }}
+                >
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center"
+                    style={{ background: 'radial-gradient(circle at 30% 30%, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.9) 100%)' }}
+                  >
+                    <MessageCircle className="w-4 h-4 text-[#25D366]" strokeWidth={2.4} />
+                  </div>
                 </div>
-                <p className="text-white text-sm font-medium">WhatsApp</p>
+                <p className="text-white text-sm font-bold">WhatsApp</p>
               </div>
-              <ChevronRight className="w-4 h-4 text-gray-400" />
+              <ChevronRight className="w-4 h-4 text-gray-500" />
             </a>
           )}
         </div>
@@ -287,15 +341,27 @@ const SidebarMenu = ({ open, onClose }) => {
                 rel="noopener noreferrer"
                 onClick={onClose}
                 data-testid="sidebar-withdrawal-proof"
-                className="flex items-center justify-between p-3 rounded-lg hover:bg-[#0A0A0C]/5 transition-all"
+                className="flex items-center justify-between p-2.5 rounded-xl hover:bg-white/[0.03] transition-all active:scale-[0.98]"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-[#D4AF37]/10 flex items-center justify-center">
-                    <ShieldCheck className="w-4 h-4 text-[#D4AF37]" />
+                  <div
+                    className="relative w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                    style={{
+                      background: 'radial-gradient(circle at 30% 25%, rgba(255,255,255,0.25) 0%, transparent 45%), conic-gradient(from 180deg, #D4AF37, #FFD700, #D4AF37, #FFD700, #D4AF37)',
+                      border: '1.5px solid #D4AF37',
+                      boxShadow: '0 0 0 2px rgba(0,0,0,0.6), 0 4px 10px #D4AF3755',
+                    }}
+                  >
+                    <div
+                      className="w-8 h-8 rounded-full flex items-center justify-center"
+                      style={{ background: 'radial-gradient(circle at 30% 30%, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.9) 100%)' }}
+                    >
+                      <ShieldCheck className="w-4 h-4 text-[#D4AF37]" strokeWidth={2.4} />
+                    </div>
                   </div>
-                  <p className="text-white text-sm font-medium">Withdrawal Proof</p>
+                  <p className="text-white text-sm font-bold">Withdrawal Proof</p>
                 </div>
-                <ChevronRight className="w-4 h-4 text-gray-400" />
+                <ChevronRight className="w-4 h-4 text-gray-500" />
               </a>
             </div>
           </>

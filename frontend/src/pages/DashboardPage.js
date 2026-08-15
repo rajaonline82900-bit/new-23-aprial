@@ -1231,64 +1231,81 @@ const DashboardPage = () => {
                         isDisabled ? 'opacity-95 cursor-not-allowed' : 'active:scale-[0.98] cursor-pointer'
                       }`}
                       style={{
-                        background: 'linear-gradient(180deg, #14100A 0%, #0A0A0C 100%)',
-                        border: '1px solid rgba(255, 215, 0, 0.35)',
+                        background: 'linear-gradient(135deg, #0B0F1F 0%, #0A0A14 50%, #0F0B1E 100%)',
+                        border: '1px solid rgba(20, 169, 76, 0.4)',
                         boxShadow: isRunning
-                          ? '0 4px 18px rgba(255, 215, 0, 0.18), inset 0 1px 0 rgba(255, 215, 0, 0.15)'
+                          ? '0 6px 22px rgba(20, 169, 76, 0.22), inset 0 1px 0 rgba(20, 169, 76, 0.18), 0 0 0 1px rgba(255, 215, 0, 0.12)'
                           : '0 2px 8px rgba(0, 0, 0, 0.5)',
                         contain: 'content',
                       }}
                     >
-                      {/* ── TOP HEADER STRIP — golden ticket band with shimmer ── */}
+                      {/* Neon vertical accent bar (left edge) — replaces old gold band */}
                       <div
-                        className="gold-ticket-band relative flex items-center gap-2 px-3 py-2"
+                        className="absolute top-0 bottom-0 left-0 w-1"
                         style={{
-                          background:
-                            'linear-gradient(90deg, #7B4D0A 0%, #D4AF37 30%, #FFD700 50%, #D4AF37 70%, #7B4D0A 100%)',
+                          background: isRunning
+                            ? 'linear-gradient(180deg, #FFD700 0%, #14A94C 50%, #FFD700 100%)'
+                            : 'linear-gradient(180deg, #4B5563 0%, #1F2937 100%)',
+                          boxShadow: isRunning ? '0 0 12px rgba(20, 169, 76, 0.6)' : 'none',
                         }}
-                      >
-                        {/* Diagonal shine pattern overlay */}
-                        <div
-                          className="absolute inset-0 pointer-events-none opacity-25"
-                          style={{
-                            backgroundImage:
-                              'repeating-linear-gradient(45deg, transparent 0 6px, rgba(255,255,255,0.2) 6px 7px)',
-                          }}
-                        />
+                      />
+                      {/* Ambient glow orb (top-right) */}
+                      <div
+                        className="absolute -top-8 -right-8 w-24 h-24 rounded-full pointer-events-none"
+                        style={{
+                          background: isRunning
+                            ? 'radial-gradient(circle, rgba(20, 169, 76, 0.28) 0%, transparent 65%)'
+                            : 'radial-gradient(circle, rgba(107, 114, 128, 0.12) 0%, transparent 65%)',
+                          filter: 'blur(4px)',
+                        }}
+                      />
+
+                      {/* ── HEADER — Chart btn + Game name + Jantri chip ── */}
+                      <div className="relative flex items-center gap-2 px-3 pt-3 pb-2">
                         {/* Chart btn */}
                         <button
                           type="button"
                           onClick={(e) => { e.preventDefault(); e.stopPropagation(); setHistoryGame(game); }}
                           data-testid={`chart-btn-${game.id}`}
                           aria-label={`${game.name_hi} result chart`}
-                          className="relative w-7 h-7 rounded-full flex items-center justify-center shrink-0 active:scale-90 bg-black/20 border border-black/40"
+                          className="relative w-8 h-8 rounded-full flex items-center justify-center shrink-0 active:scale-90"
+                          style={{
+                            background: 'radial-gradient(circle at 30% 25%, rgba(255,255,255,0.2) 0%, transparent 45%), conic-gradient(from 180deg, #14A94C, #22C55E, #14A94C, #22C55E, #14A94C)',
+                            border: '1.5px solid #22C55E',
+                            boxShadow: '0 0 0 2px rgba(0,0,0,0.6), 0 3px 8px rgba(20, 169, 76, 0.5)',
+                          }}
                         >
-                          <BarChart3 className="w-3.5 h-3.5 text-[#1A0F00]" strokeWidth={3} />
+                          <div
+                            className="w-6 h-6 rounded-full flex items-center justify-center"
+                            style={{ background: 'radial-gradient(circle at 30% 30%, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.9) 100%)' }}
+                          >
+                            <BarChart3 className="w-3.5 h-3.5 text-[#4ADE80]" strokeWidth={2.8} />
+                          </div>
                         </button>
 
                         <h4
-                          className="relative text-[15px] font-black tracking-tight truncate flex-1"
+                          className="relative flex-1 text-[15px] font-black tracking-tight truncate"
                           style={{
-                            color: '#1A0F00',
+                            color: '#FFFFFF',
                             fontFamily: 'Outfit, Noto Sans Devanagari, sans-serif',
-                            textShadow: '0 1px 0 rgba(255,255,255,0.35)',
+                            textShadow: isRunning ? '0 0 8px rgba(20, 169, 76, 0.5)' : 'none',
                           }}
                           data-testid={`game-name-${game.id}`}
                         >
                           {game.name_hi}
                         </h4>
 
-                        {/* JANTRI chip — small pill next to game name */}
+                        {/* JANTRI chip */}
                         <button
                           type="button"
                           onClick={(e) => { e.preventDefault(); e.stopPropagation(); setJantriGame(game); }}
                           data-testid={`jantri-btn-${game.id}`}
                           aria-label={`${game.name_hi} jantri report`}
-                          className="relative shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-md active:scale-95 border"
+                          className="relative shrink-0 flex items-center gap-1 px-2 py-1 rounded-md active:scale-95 border"
                           style={{
-                            background: 'linear-gradient(180deg, #1A1408 0%, #0A0A0C 100%)',
-                            borderColor: 'rgba(255, 215, 0, 0.75)',
-                            boxShadow: '0 1px 3px rgba(0,0,0,0.5)',
+                            background: 'linear-gradient(180deg, rgba(255, 215, 0, 0.12) 0%, rgba(0, 0, 0, 0.5) 100%)',
+                            borderColor: 'rgba(255, 215, 0, 0.6)',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,215,0,0.15)',
                           }}
                         >
                           <Flame className="w-3 h-3 text-orange-400" strokeWidth={3} />
@@ -1298,30 +1315,37 @@ const DashboardPage = () => {
                         </button>
                       </div>
 
-                      {/* ── BODY — Yesterday/Today mega-numbers ── */}
-                      <div className="px-3 pt-3 pb-2 flex items-stretch gap-2">
-                        {/* Yesterday */}
+                      {/* ── BODY — LED-style Yesterday / Play / Today ── */}
+                      <div className="relative px-3 pt-1 pb-2 flex items-stretch gap-2">
+                        {/* Yesterday — LED emerald panel */}
                         <div
-                          className="flex-1 rounded-xl px-2 py-2 flex flex-col items-center justify-center relative overflow-hidden"
+                          className="flex-1 rounded-lg px-2 py-2 flex flex-col items-center justify-center relative overflow-hidden"
                           style={{
                             background:
-                              'linear-gradient(160deg, rgba(139, 92, 246, 0.18) 0%, rgba(76, 29, 149, 0.15) 100%)',
-                            border: '1px solid rgba(196, 181, 253, 0.28)',
+                              'linear-gradient(180deg, rgba(0, 0, 0, 0.7) 0%, rgba(6, 20, 12, 0.6) 100%)',
+                            border: '1px solid rgba(20, 169, 76, 0.45)',
+                            boxShadow: 'inset 0 2px 6px rgba(0, 0, 0, 0.7), inset 0 -1px 0 rgba(20, 169, 76, 0.2)',
                           }}
                           data-testid={`yesterday-result-${game.id}`}
                         >
-                          <span className="text-[7px] uppercase tracking-widest text-purple-300/80 leading-none font-black">
+                          <span className="text-[7px] uppercase tracking-widest text-emerald-400/70 leading-none font-black">
                             Yesterday
                           </span>
                           <span
-                            className="text-white font-black leading-none tabular-nums mt-1"
-                            style={{ fontFamily: 'Outfit, monospace', fontSize: '1.5rem', letterSpacing: '0.05em' }}
+                            className="font-black leading-none tabular-nums mt-1.5"
+                            style={{
+                              fontFamily: '"Digital-7", "Outfit", monospace',
+                              fontSize: '1.55rem',
+                              letterSpacing: '0.08em',
+                              color: '#4ADE80',
+                              textShadow: '0 0 10px rgba(74, 222, 128, 0.8), 0 0 20px rgba(20, 169, 76, 0.4)',
+                            }}
                           >
                             {game.yesterday_result?.jodi || '--'}
                           </span>
                         </div>
 
-                        {/* Center Play/Status button (BIG premium chip) */}
+                        {/* Center Play — Emerald+Gold gem chip */}
                         <div className="flex flex-col items-center justify-center w-16 shrink-0" data-testid={`play-status-${game.id}`}>
                           {game.is_holiday ? (
                             <div
@@ -1336,36 +1360,26 @@ const DashboardPage = () => {
                               className="play-btn-premium w-14 h-14 rounded-full flex items-center justify-center relative"
                               onClick={() => { try { navigator.vibrate?.([25, 10, 25]); } catch (_) { /* haptic api unavailable */ } speak('प्ले'); }}
                               data-testid={`play-btn-${game.id}`}
-                              style={{ filter: 'drop-shadow(0 6px 14px rgba(255,215,0,0.55))' }}
+                              style={{ filter: 'drop-shadow(0 6px 14px rgba(20, 169, 76, 0.7))' }}
                             >
-                              {/* Rotating chip-stripes outer ring (poker chip aesthetic) */}
-                              <div className="chip-stripes absolute inset-0 rounded-full" />
-                              {/* White inner ring separator */}
-                              <div
-                                className="absolute rounded-full"
-                                style={{
-                                  inset: '4px',
-                                  background: '#FFFFFF',
-                                }}
-                              />
-                              {/* Deep-red center disc (like casino chip logo circle) */}
+                              <div className="chip-stripes absolute inset-0 rounded-full" style={{ background: 'conic-gradient(from 45deg, #FFD700 0deg 45deg, #14A94C 45deg 90deg, #FFD700 90deg 135deg, #14A94C 135deg 180deg, #FFD700 180deg 225deg, #14A94C 225deg 270deg, #FFD700 270deg 315deg, #14A94C 315deg 360deg)' }} />
+                              <div className="absolute rounded-full" style={{ inset: '4px', background: '#FFFFFF' }} />
                               <div
                                 className="absolute rounded-full flex items-center justify-center"
                                 style={{
                                   inset: '6px',
                                   background:
-                                    'radial-gradient(circle at 35% 30%, #FF6B6B 0%, #DC2626 30%, #991B1B 70%, #4C0519 100%)',
+                                    'radial-gradient(circle at 35% 30%, #86EFAC 0%, #22C55E 30%, #14A94C 70%, #052E16 100%)',
                                   boxShadow:
-                                    'inset 0 2px 3px rgba(255,255,255,0.35), inset 0 -3px 5px rgba(0,0,0,0.4)',
+                                    'inset 0 2px 3px rgba(255,255,255,0.4), inset 0 -3px 5px rgba(0,0,0,0.4)',
                                 }}
                               >
-                                {/* Golden play triangle */}
                                 <Play
                                   className="w-6 h-6 ml-0.5 relative"
                                   fill="#FFD700"
                                   stroke="#FFF"
                                   strokeWidth={1.5}
-                                  style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.6))' }}
+                                  style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.7))' }}
                                 />
                               </div>
                             </div>
@@ -1386,57 +1400,64 @@ const DashboardPage = () => {
                           )}
                           <span
                             className={`text-[8px] font-black tracking-widest uppercase leading-none mt-1.5 ${
-                              game.is_holiday ? 'text-[#FBBF24]' : isRunning ? 'text-[#FFD700]' : 'text-[#F87171]'
+                              game.is_holiday ? 'text-[#FBBF24]' : isRunning ? 'text-[#4ADE80]' : 'text-[#F87171]'
                             }`}
                           >
                             {game.is_holiday ? statusLabel : isRunning ? statusLabel : 'Time Up'}
                           </span>
                         </div>
 
-                        {/* Today */}
+                        {/* Today — LED gold panel */}
                         <div
-                          className={`flex-1 rounded-xl px-2 py-2 flex flex-col items-center justify-center relative overflow-hidden ${flashGameIds.has(game.id) ? 'today-result-flash' : ''}`}
+                          className={`flex-1 rounded-lg px-2 py-2 flex flex-col items-center justify-center relative overflow-hidden ${flashGameIds.has(game.id) ? 'today-result-flash' : ''}`}
                           style={{
                             background:
-                              'linear-gradient(160deg, rgba(6, 182, 212, 0.20) 0%, rgba(14, 116, 144, 0.15) 100%)',
-                            border: `1px solid ${isRunning ? 'rgba(34, 211, 238, 0.55)' : 'rgba(125, 211, 252, 0.28)'}`,
+                              'linear-gradient(180deg, rgba(0, 0, 0, 0.7) 0%, rgba(20, 14, 6, 0.6) 100%)',
+                            border: `1px solid ${isRunning ? 'rgba(255, 215, 0, 0.65)' : 'rgba(255, 215, 0, 0.28)'}`,
+                            boxShadow: 'inset 0 2px 6px rgba(0, 0, 0, 0.7), inset 0 -1px 0 rgba(255, 215, 0, 0.2)',
                           }}
                           data-testid={`today-result-${game.id}`}
                         >
                           {isRunning && (
-                            <span className="absolute -top-1 -right-1 flex items-center gap-1 bg-red-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider leading-none shadow-lg">
+                            <span className="absolute -top-1.5 -right-1 flex items-center gap-1 bg-red-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider leading-none shadow-lg">
                               <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
                               Live
                             </span>
                           )}
-                          <span className="text-[7px] uppercase tracking-widest text-cyan-300/80 leading-none font-black">
+                          <span className="text-[7px] uppercase tracking-widest text-yellow-400/80 leading-none font-black">
                             Today
                           </span>
                           <span
-                            className="text-white font-black leading-none tabular-nums mt-1"
-                            style={{ fontFamily: 'Outfit, monospace', fontSize: '1.5rem', letterSpacing: '0.05em' }}
+                            className="font-black leading-none tabular-nums mt-1.5"
+                            style={{
+                              fontFamily: '"Digital-7", "Outfit", monospace',
+                              fontSize: '1.55rem',
+                              letterSpacing: '0.08em',
+                              color: '#FFD700',
+                              textShadow: '0 0 10px rgba(255, 215, 0, 0.8), 0 0 20px rgba(212, 175, 55, 0.4)',
+                            }}
                           >
                             {game.today_result?.jodi || '--'}
                           </span>
                         </div>
                       </div>
 
-                      {/* ── FOOTER — Time bar ── */}
+                      {/* ── FOOTER — Open / Close timeline ── */}
                       <div
                         className="flex items-center px-3 py-1.5 gap-3"
                         style={{
-                          background: 'rgba(0, 0, 0, 0.4)',
-                          borderTop: '1px dashed rgba(255, 215, 0, 0.25)',
+                          background: 'rgba(0, 0, 0, 0.55)',
+                          borderTop: '1px dashed rgba(20, 169, 76, 0.3)',
                         }}
                       >
                         <div className="flex items-center gap-1 flex-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" style={{ boxShadow: '0 0 5px #4ADE80' }} />
                           <span className="text-[8px] uppercase tracking-wider text-emerald-300 font-black leading-none">Open</span>
                           <span className="text-[10px] font-bold text-white tabular-nums leading-none">{openTimeStr}</span>
                         </div>
                         <div className="w-px h-3 bg-white/15" />
                         <div className="flex items-center gap-1 flex-1 justify-end">
-                          <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-red-400" style={{ boxShadow: '0 0 5px #F87171' }} />
                           <span className="text-[8px] uppercase tracking-wider text-red-300 font-black leading-none">Close</span>
                           <span className="text-[10px] font-bold text-white tabular-nums leading-none">{closeTimeStr}</span>
                         </div>
