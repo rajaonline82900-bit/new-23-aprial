@@ -17,19 +17,31 @@ const SplashScreen = () => (
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import AdminLoginPage from "./pages/AdminLoginPage";
+import DashboardPage from "./pages/DashboardPage";
+import GamePage from "./pages/GamePage";
+import KalyanGamePage from "./pages/KalyanGamePage";
+import KalyanChartPage from "./pages/KalyanChartPage";
+import AviatorPage from "./pages/AviatorPage";
 import CoinPage from "./pages/CoinPage";
+import LudoLobbyPage from "./pages/LudoLobbyPage";
+import LudoGamePage from "./pages/LudoGamePage";
 import WalletPage from "./pages/WalletPage";
+import BetsPage from "./pages/BetsPage";
+import ResultsPage from "./pages/ResultsPage";
 import ProfilePage from "./pages/ProfilePage";
 import AdminPage from "./pages/AdminPage";
 import NotificationsPage from "./pages/NotificationsPage";
+import JantriPage from "./pages/JantriPage";
 import HowToPlayPage from "./pages/HowToPlayPage";
 import ReferPage from "./pages/ReferPage";
+import RateListPage from "./pages/RateListPage";
 import HelpPage from "./pages/HelpPage";
 import ChatPage from "./pages/ChatPage";
+import LandingPage from "./pages/LandingPage";
+import SignupPage from "./pages/SignupPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import AuthCallback from "./pages/AuthCallback";
 import ResultPopupListener from "./components/ResultPopupListener";
-import SignupPage from "./pages/SignupPage";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -55,7 +67,7 @@ const PublicRoute = ({ children }) => {
   }
 
   if (user) {
-    return <Navigate to="/coin" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   return children;
@@ -105,17 +117,17 @@ function AppRoutes() {
 
       {/* Protected Routes */}
       {/* Legacy routes redirect to Coin — only Coin Toss game is active */}
-      <Route path="/dashboard" element={<Navigate to="/coin" replace />} />
-      <Route path="/game/:gameId" element={<Navigate to="/coin" replace />} />
-      <Route path="/kalyan/:gameId" element={<Navigate to="/coin" replace />} />
-      <Route path="/kalyan/:gameId/chart" element={<Navigate to="/coin" replace />} />
-      <Route path="/aviator" element={<Navigate to="/coin" replace />} />
-      <Route path="/ludo" element={<Navigate to="/coin" replace />} />
-      <Route path="/ludo/table/:tableId" element={<Navigate to="/coin" replace />} />
-      <Route path="/bets" element={<Navigate to="/coin" replace />} />
-      <Route path="/results" element={<Navigate to="/coin" replace />} />
-      <Route path="/jantri" element={<Navigate to="/coin" replace />} />
-      <Route path="/rate-list" element={<Navigate to="/coin" replace />} />
+      <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+      <Route path="/game/:gameId" element={<ProtectedRoute><GamePage /></ProtectedRoute>} />
+      <Route path="/kalyan/:gameId" element={<ProtectedRoute><KalyanGamePage /></ProtectedRoute>} />
+      <Route path="/kalyan/:gameId/chart" element={<ProtectedRoute><KalyanChartPage /></ProtectedRoute>} />
+      <Route path="/aviator" element={<ProtectedRoute><AviatorPage /></ProtectedRoute>} />
+      <Route path="/ludo" element={<ProtectedRoute><LudoLobbyPage /></ProtectedRoute>} />
+      <Route path="/ludo/table/:tableId" element={<ProtectedRoute><LudoGamePage /></ProtectedRoute>} />
+      <Route path="/bets" element={<ProtectedRoute><BetsPage /></ProtectedRoute>} />
+      <Route path="/results" element={<ProtectedRoute><ResultsPage /></ProtectedRoute>} />
+      <Route path="/jantri" element={<ProtectedRoute><JantriPage /></ProtectedRoute>} />
+      <Route path="/rate-list" element={<ProtectedRoute><RateListPage /></ProtectedRoute>} />
 
       <Route
         path="/coin"
