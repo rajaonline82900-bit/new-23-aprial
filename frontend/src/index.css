@@ -156,7 +156,45 @@ aside *, [data-testid="sidebar-overlay"] * { color: #F5F5F7; }
 }
 .bg-\[\#D4AF37\] * { color: #1A1A2E !important; }
 
-/* ===== LUCKY BET — Vegas Casino Luxury Animated Backdrop ===== */
+/* ===== Game Icon Medallion — always-spin conic ring + tap pulse ===== */
+@keyframes medallionRingSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes medallionPulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(0,0,0,0.55), 0 0 0 4px currentColor, 0 8px 20px currentColor, inset 0 2px 4px rgba(255,255,255,0.25), inset 0 -3px 6px rgba(0,0,0,0.4); }
+  50%      { box-shadow: 0 0 0 3px rgba(0,0,0,0.55), 0 0 0 6px currentColor, 0 12px 32px currentColor, inset 0 2px 4px rgba(255,255,255,0.35), inset 0 -3px 6px rgba(0,0,0,0.4); }
+}
+.game-medallion {
+  position: relative;
+  transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  animation: medallionPulse 3.2s ease-in-out infinite;
+}
+.game-medallion::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 9999px;
+  background: inherit;
+  filter: blur(6px);
+  opacity: 0.55;
+  z-index: -1;
+  animation: medallionRingSpin 8s linear infinite;
+}
+button:hover > div > .game-medallion,
+button:active > div > .game-medallion {
+  transform: scale(1.08) rotate(8deg);
+}
+button:active > div > .game-medallion {
+  transform: scale(0.94);
+  animation-duration: 0.6s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .game-medallion { animation: none; }
+  .game-medallion::before { animation: none; }
+}
+
+
 /* Full-screen animated gradient used on Landing / Login / Signup pages.
    Colors sampled directly from the Lucky Bet logo (gold + emerald + rich black). */
 @keyframes luckyBgShift {

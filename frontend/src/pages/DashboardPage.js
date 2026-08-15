@@ -821,23 +821,17 @@ const DashboardPage = () => {
                       {/* Round premium icon medallion */}
                       <div className="pt-6 flex items-center justify-center relative z-[1]">
                         <div
-                          className="flex items-center justify-center rounded-full relative"
+                          className="game-medallion flex items-center justify-center rounded-full"
                           style={{
                             width: 80,
                             height: 80,
+                            color: cat.border, /* used by CSS currentColor for glow */
                             background: `
                               radial-gradient(circle at 30% 25%, rgba(255,255,255,0.35) 0%, transparent 45%),
                               radial-gradient(circle at 70% 80%, ${cat.border}55 0%, transparent 60%),
                               conic-gradient(from 180deg, ${cat.border}, ${cat.accent}, ${cat.border}, ${cat.accent}, ${cat.border})
                             `,
                             border: `2px solid ${cat.border}`,
-                            boxShadow: `
-                              0 0 0 3px rgba(0,0,0,0.55),
-                              0 0 0 4px ${cat.border}55,
-                              0 8px 20px ${cat.border}66,
-                              inset 0 2px 4px rgba(255,255,255,0.25),
-                              inset 0 -3px 6px rgba(0,0,0,0.4)
-                            `,
                           }}
                         >
                           <div
