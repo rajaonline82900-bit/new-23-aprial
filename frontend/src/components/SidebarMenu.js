@@ -8,9 +8,7 @@ import {
   Globe,
   HelpCircle,
   ArrowDownLeft,
-  Trophy,
   Gift,
-  Star,
   MessageCircle,
   Send,
   ShieldCheck,
@@ -102,27 +100,11 @@ const SidebarMenu = ({ open, onClose }) => {
     },
     {
       type: 'link',
-      icon: Trophy,
-      label: t('result_history'),
-      to: '/results',
-      color: 'text-purple-400',
-      bg: 'bg-purple-500/10',
-    },
-    {
-      type: 'link',
       icon: Gift,
       label: t('refer_earn'),
       to: '/refer',
       color: 'text-pink-400',
       bg: 'bg-pink-500/10',
-    },
-    {
-      type: 'link',
-      icon: Star,
-      label: t('rate_list'),
-      to: '/rate-list',
-      color: 'text-yellow-400',
-      bg: 'bg-yellow-500/10',
     },
   ];
 

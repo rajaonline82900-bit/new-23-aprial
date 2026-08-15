@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { ArrowLeft, Wallet as WalletIcon, Clock, Zap, Volume2, VolumeX } from 'lucide-react';
+import { Wallet as WalletIcon, Clock, Zap, Volume2, VolumeX } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import FooterNav from '../components/FooterNav';
 import {
@@ -32,6 +31,8 @@ const CoinPage = () => {
   const [round, setRound] = useState(null);
   const [amount, setAmount] = useState(50);
   const [myBets, setMyBets] = useState([]);
+  const [betHistory, setBetHistory] = useState([]);
+  const [showAllHistory, setShowAllHistory] = useState(false);
   const [recentRounds, setRecentRounds] = useState([]);
   const [liveFeed, setLiveFeed] = useState([]);
   const [placing, setPlacing] = useState(false);
@@ -105,15 +106,24 @@ const CoinPage = () => {
     } catch (e) { /* silent */ }
   }, []);
 
+  const fetchBetHistory = useCallback(async () => {
+    try {
+      const { data } = await axios.get(`${API_URL}/api/coin/history?limit=50`, { withCredentials: true });
+      setBetHistory(data.bets || []);
+    } catch (e) { /* silent — not logged in */ }
+  }, []);
+
   useEffect(() => {
     fetchConfig();
     fetchCurrent();
     fetchMyCurrent();
     fetchRecent();
     fetchLiveFeed();
+    fetchBetHistory();
     const iv = setInterval(() => { fetchCurrent(); }, 500);   // faster to catch phase transitions
     const iv2 = setInterval(() => { fetchMyCurrent(); fetchRecent(); }, 3000);
     const iv3 = setInterval(() => { fetchLiveFeed(); }, 4000);
+    const iv4 = setInterval(() => { fetchBetHistory(); }, 6000);
 
     // Unlock Web Audio on first user gesture anywhere on the page.
     // Mobile browsers block AudioContext until user interacts.
@@ -126,11 +136,11 @@ const CoinPage = () => {
     document.addEventListener('touchstart', unlockOnce, { once: true });
 
     return () => {
-      clearInterval(iv); clearInterval(iv2); clearInterval(iv3);
+      clearInterval(iv); clearInterval(iv2); clearInterval(iv3); clearInterval(iv4);
       document.removeEventListener('click', unlockOnce);
       document.removeEventListener('touchstart', unlockOnce);
     };
-  }, [fetchConfig, fetchCurrent, fetchMyCurrent, fetchRecent, fetchLiveFeed]);
+  }, [fetchConfig, fetchCurrent, fetchMyCurrent, fetchRecent, fetchLiveFeed, fetchBetHistory]);
 
   // Clock tick sound — last 10 seconds of betting phase
   useEffect(() => {
@@ -277,26 +287,18 @@ const CoinPage = () => {
         }}
       >
         <div className="px-3 py-3 flex items-center gap-2" style={{ maxWidth: '480px', margin: '0 auto' }}>
-          <Link to="/dashboard">
-            <button
-              data-testid="coin-back-btn"
-              className="p-2 rounded-xl active:scale-90 transition"
-              style={{ background: 'rgba(251, 191, 36, 0.12)', border: `1px solid ${THEME.glassBorder}`, color: THEME.gold }}
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-          </Link>
+          <img src="/lucky-bet-logo.jpg" alt="Lucky Bet" className="w-10 h-10 rounded-full ring-2 ring-[#FFD700]/70 shadow-lg shadow-[#FFD700]/40" />
           <div className="flex-1">
             <h1
               className="text-xl font-black tracking-tight leading-none flex items-center gap-1.5"
               style={{
-                background: `linear-gradient(90deg, ${THEME.goldBright} 0%, ${THEME.headColor} 100%)`,
+                background: `linear-gradient(90deg, ${THEME.goldBright} 0%, #14A94C 100%)`,
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 filter: `drop-shadow(0 0 12px ${THEME.gold}88)`,
               }}
             >
-              COIN TOSS
+              LUCKY COIN
               <Zap className="w-4 h-4" style={{ color: THEME.gold, filter: `drop-shadow(0 0 4px ${THEME.gold})` }} />
             </h1>
             <p className="text-[10px] font-bold uppercase tracking-widest mt-0.5" style={{ color: THEME.goldSoft, opacity: 0.75 }}>
@@ -692,7 +694,154 @@ const CoinPage = () => {
           <p>• Har 1 minute me naya round + auto flip animation with sound.</p>
           <p>• Win par <span className="font-black" style={{ color: THEME.gold }}>2x payout</span> (no commission).</p>
           <p>• Last 10 seconds ⏰ clock tick sound + locked (koi bet nahi).</p>
-          <p>• History → <Link to="/bets" className="underline font-black" style={{ color: THEME.goldBright }}>My Bets</Link> me date/time ke saath dekhein.</p>
+        </div>
+
+        {/* ===== Casino-Style Bet History (ticket slips) ===== */}
+        <div className="mt-2" data-testid="coin-bet-history">
+          <div className="flex items-center justify-between mb-2 px-1">
+            <div className="flex items-center gap-2">
+              <span
+                className="w-1 h-5 rounded-full"
+                style={{ background: `linear-gradient(180deg, ${THEME.goldBright}, #14A94C)` }}
+              />
+              <h3 className="text-white font-black text-sm uppercase tracking-widest">Your Tickets</h3>
+              <span
+                className="text-[10px] px-2 py-0.5 rounded-full font-black"
+                style={{ background: 'rgba(255,215,0,0.15)', color: '#FFD700', border: '1px solid rgba(255,215,0,0.4)' }}
+              >
+                {betHistory.length}
+              </span>
+            </div>
+            {betHistory.length > 3 && (
+              <button
+                onClick={() => setShowAllHistory((v) => !v)}
+                className="text-[10px] font-black tracking-wider uppercase"
+                style={{ color: THEME.goldBright }}
+                data-testid="coin-history-toggle"
+              >
+                {showAllHistory ? 'Show Less' : `View All (${betHistory.length})`}
+              </button>
+            )}
+          </div>
+
+          {betHistory.length === 0 ? (
+            <div
+              className="rounded-xl py-6 text-center text-[11px]"
+              style={{
+                background: 'rgba(20, 20, 43, 0.5)',
+                border: `1px dashed ${THEME.glassBorder}`,
+                color: THEME.goldSoft,
+                opacity: 0.7,
+              }}
+            >
+              🎰 Koi ticket abhi tak nahi — pehla bet lagao aur casino ticket paayen!
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {(showAllHistory ? betHistory : betHistory.slice(0, 3)).map((b, idx) => {
+                const isWin = b.status === 'won' || (b.result_side && b.result_side === b.side);
+                const isPending = b.status === 'pending' || !b.result_side;
+                const isLoss = !isPending && !isWin;
+                const statusColor = isPending ? '#FBBF24' : isWin ? '#22C55E' : '#F87171';
+                const statusTint = isPending
+                  ? 'rgba(251, 191, 36, 0.12)'
+                  : isWin
+                  ? 'rgba(34, 197, 94, 0.12)'
+                  : 'rgba(248, 113, 113, 0.10)';
+                const statusText = isPending ? 'LIVE' : isWin ? 'WON' : 'LOST';
+                const serial = `LB-${String(b.bet_id || '').slice(-6).toUpperCase().padStart(6, '0')}`;
+                const dt = b.created_at ? new Date(b.created_at) : null;
+                const dateStr = dt
+                  ? `${dt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} • ${dt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}`
+                  : '';
+                return (
+                  <div
+                    key={b.bet_id || idx}
+                    className="ticket-slip-compact stagger-item"
+                    style={{ '--tk-color': statusColor, '--tk-tint': statusTint }}
+                    data-testid={`coin-ticket-${idx}`}
+                  >
+                    <div className="flex items-center gap-2 px-3 pt-2 pb-1">
+                      <span className="ticket-serial-sm">{serial}</span>
+                      <span
+                        className="ticket-status-badge-sm"
+                        style={{ background: statusColor, color: '#0A0A0F' }}
+                      >
+                        {statusText}
+                      </span>
+                      <span className="ml-auto text-[9px] font-bold tracking-wider" style={{ color: '#94A3B8' }}>
+                        {dateStr}
+                      </span>
+                    </div>
+
+                    <div className="ticket-perforation" />
+
+                    <div className="flex items-center justify-between px-3 py-2">
+                      <div className="flex items-center gap-2.5">
+                        {/* Side badge */}
+                        <div
+                          className="w-11 h-11 rounded-full flex items-center justify-center font-black text-lg shadow-lg"
+                          style={{
+                            background:
+                              b.side === 'head'
+                                ? `radial-gradient(circle, #FCD34D 0%, #F59E0B 70%, #78350F 100%)`
+                                : `radial-gradient(circle, #C4B5FD 0%, #8B5CF6 70%, #4C1D95 100%)`,
+                            color: b.side === 'head' ? '#78350F' : '#2E1065',
+                            border: `2px solid ${b.side === 'head' ? '#FEF3C7' : '#DDD6FE'}`,
+                            boxShadow: `0 2px 8px ${b.side === 'head' ? '#F97316' : '#8B5CF6'}55`,
+                          }}
+                        >
+                          {b.side === 'head' ? 'H' : 'T'}
+                        </div>
+                        <div>
+                          <p className="text-[9px] uppercase tracking-widest font-black" style={{ color: '#94A3B8' }}>
+                            Your Pick
+                          </p>
+                          <p className="text-sm font-black uppercase tracking-wide" style={{ color: b.side === 'head' ? '#F97316' : '#A78BFA' }}>
+                            {b.side}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Bet chip */}
+                      <div className="ticket-bet-chip">
+                        <span className="ticket-bet-chip-label">Bet</span>
+                        <span className="ticket-bet-chip-val">₹{Math.floor(b.amount).toLocaleString('en-IN')}</span>
+                      </div>
+                    </div>
+
+                    {/* Result footer */}
+                    {!isPending && (
+                      <>
+                        <div className="ticket-perforation" />
+                        <div className="flex items-center justify-between px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[9px] uppercase tracking-widest font-black" style={{ color: '#94A3B8' }}>Result</span>
+                            <div
+                              className="w-6 h-6 rounded-full flex items-center justify-center font-black text-[11px]"
+                              style={{
+                                background: b.result_side === 'head' ? '#F97316' : '#8B5CF6',
+                                color: '#fff',
+                              }}
+                            >
+                              {b.result_side === 'head' ? 'H' : 'T'}
+                            </div>
+                          </div>
+                          {isWin ? (
+                            <span className="ticket-win-chip-sm">🏆 +₹{Math.floor(b.payout || b.amount * 2).toLocaleString('en-IN')}</span>
+                          ) : (
+                            <span className="text-[10px] font-black" style={{ color: '#F87171' }}>
+                              — ₹{Math.floor(b.amount).toLocaleString('en-IN')}
+                            </span>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </main>
 
