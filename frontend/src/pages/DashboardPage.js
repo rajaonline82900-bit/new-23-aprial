@@ -677,7 +677,7 @@ const DashboardPage = () => {
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 gap-3 mb-5" data-testid="home-gateway-grid">
+              <div className="grid grid-cols-2 gap-3 mb-5" data-testid="home-gateway-grid">
                 {[
                   {
                     id: 'gali_disawar',
@@ -765,8 +765,8 @@ const DashboardPage = () => {
                       style={{
                         background: cat.bg,
                         border: `1.5px solid ${cat.border}`,
-                        boxShadow: `0 4px 14px rgba(0,0,0,0.5), inset 0 1px 0 ${cat.border}30`,
-                        minHeight: '132px',
+                        boxShadow: `0 6px 20px rgba(0,0,0,0.55), inset 0 1px 0 ${cat.border}30`,
+                        minHeight: '178px',
                         transition: 'transform 180ms ease',
                         opacity: isDisabled ? 0.55 : 1,
                         filter: isDisabled ? 'grayscale(70%)' : 'none',
@@ -778,6 +778,20 @@ const DashboardPage = () => {
                       <div
                         className="absolute top-0 left-0 right-0 h-1"
                         style={{ background: cat.stripe, opacity: 0.9 }}
+                      />
+
+                      {/* Soft radial glow behind icon */}
+                      <div
+                        className="absolute pointer-events-none"
+                        style={{
+                          top: '18%',
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          width: '110px',
+                          height: '110px',
+                          background: `radial-gradient(circle, ${cat.border}45 0%, ${cat.border}15 45%, transparent 75%)`,
+                          filter: 'blur(2px)',
+                        }}
                       />
 
                       {/* BAND / LIVE badge (top right) */}
@@ -804,26 +818,46 @@ const DashboardPage = () => {
                         </span>
                       ) : null}
 
-                      {/* Icon in themed ring */}
-                      <div className="pt-5 flex items-center justify-center">
+                      {/* Round premium icon medallion */}
+                      <div className="pt-6 flex items-center justify-center relative z-[1]">
                         <div
-                          className="flex items-center justify-center rounded-2xl"
+                          className="flex items-center justify-center rounded-full relative"
                           style={{
-                            width: 62,
-                            height: 62,
-                            background: `radial-gradient(circle at 30% 30%, ${cat.border}30 0%, ${cat.border}12 55%, rgba(0,0,0,0) 100%)`,
-                            border: `1.5px solid ${cat.border}80`,
-                            boxShadow: `inset 0 1px 0 ${cat.border}30`,
+                            width: 80,
+                            height: 80,
+                            background: `
+                              radial-gradient(circle at 30% 25%, rgba(255,255,255,0.35) 0%, transparent 45%),
+                              radial-gradient(circle at 70% 80%, ${cat.border}55 0%, transparent 60%),
+                              conic-gradient(from 180deg, ${cat.border}, ${cat.accent}, ${cat.border}, ${cat.accent}, ${cat.border})
+                            `,
+                            border: `2px solid ${cat.border}`,
+                            boxShadow: `
+                              0 0 0 3px rgba(0,0,0,0.55),
+                              0 0 0 4px ${cat.border}55,
+                              0 8px 20px ${cat.border}66,
+                              inset 0 2px 4px rgba(255,255,255,0.25),
+                              inset 0 -3px 6px rgba(0,0,0,0.4)
+                            `,
                           }}
                         >
-                          <cat.Icon size={40} active={false} />
+                          <div
+                            className="flex items-center justify-center rounded-full"
+                            style={{
+                              width: 66,
+                              height: 66,
+                              background: `radial-gradient(circle at 30% 30%, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.75) 100%)`,
+                              border: `1px solid ${cat.border}80`,
+                            }}
+                          >
+                            <cat.Icon size={42} active={false} />
+                          </div>
                         </div>
                       </div>
 
                       {/* Name */}
-                      <div className="px-3 pt-2.5 text-center">
+                      <div className="px-3 pt-3 text-center">
                         <div
-                          className="text-[14px] font-black tracking-tight leading-none"
+                          className="text-[13px] font-black tracking-tight leading-none"
                           style={{ color: '#FFFFFF', fontFamily: 'Outfit, sans-serif' }}
                         >
                           {cat.label}
