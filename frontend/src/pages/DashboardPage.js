@@ -20,109 +20,111 @@ import {
 } from 'lucide-react';
 
 /* ---------- Premium Casino-Style Category Icons (rich, illustrated) ---------- */
-// Gali Disawar — pair of dice mid-throw with poker chips + sparkle burst
+// Gali Disawar — Traditional Matka pot with lottery slips/numbers spilling + poker chips
 const GaliDisawarIcon = ({ size = 26 }) => (
   <svg width={size} height={size} viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
     <defs>
-      <linearGradient id="diceA" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#FEF3C7" />
-        <stop offset="45%" stopColor="#FBBF24" />
-        <stop offset="100%" stopColor="#B45309" />
-      </linearGradient>
-      <linearGradient id="diceB" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#FFFFFF" />
-        <stop offset="55%" stopColor="#FDE68A" />
-        <stop offset="100%" stopColor="#92400E" />
-      </linearGradient>
-      <radialGradient id="chipG" cx="35%" cy="30%">
-        <stop offset="0%" stopColor="#FCA5A5" />
-        <stop offset="60%" stopColor="#DC2626" />
-        <stop offset="100%" stopColor="#450A0A" />
+      <radialGradient id="matkaG1" cx="30%" cy="30%">
+        <stop offset="0%" stopColor="#FED7AA" />
+        <stop offset="35%" stopColor="#F59E0B" />
+        <stop offset="75%" stopColor="#92400E" />
+        <stop offset="100%" stopColor="#451A03" />
+      </radialGradient>
+      <radialGradient id="matkaMouth1" cx="50%" cy="30%">
+        <stop offset="0%" stopColor="#1F2937" />
+        <stop offset="100%" stopColor="#000000" />
       </radialGradient>
     </defs>
-    {/* Back poker chip */}
-    <circle cx="14" cy="46" r="8" fill="url(#chipG)" stroke="#7F1D1D" strokeWidth="1.2" />
-    <circle cx="14" cy="46" r="5" fill="none" stroke="#FEE2E2" strokeWidth="0.6" strokeDasharray="1.5 1" />
-    {/* Front poker chip (blue) */}
-    <circle cx="52" cy="48" r="7" fill="#1E3A8A" stroke="#0F172A" strokeWidth="1.2" />
-    <circle cx="52" cy="48" r="4.5" fill="none" stroke="#93C5FD" strokeWidth="0.6" strokeDasharray="1.5 1" />
-    {/* Dice #1 (large, tilted left) */}
-    <g transform="translate(8 14) rotate(-14)">
-      <rect x="0" y="0" width="24" height="24" rx="5" fill="url(#diceA)" stroke="#78350F" strokeWidth="1.4" />
-      <rect x="1.5" y="1.5" width="21" height="21" rx="4" fill="none" stroke="#FEF3C7" strokeWidth="0.6" opacity="0.6" />
-      {/* pip pattern: 5 */}
-      <circle cx="6" cy="6" r="2" fill="#7F1D1D" />
-      <circle cx="18" cy="6" r="2" fill="#7F1D1D" />
-      <circle cx="12" cy="12" r="2" fill="#7F1D1D" />
-      <circle cx="6" cy="18" r="2" fill="#7F1D1D" />
-      <circle cx="18" cy="18" r="2" fill="#7F1D1D" />
+    {/* Chip behind */}
+    <circle cx="10" cy="52" r="6" fill="#DC2626" stroke="#7F1D1D" strokeWidth="1" />
+    <circle cx="10" cy="52" r="3.5" fill="none" stroke="#FCA5A5" strokeWidth="0.6" strokeDasharray="1.2 0.8" />
+    <circle cx="54" cy="54" r="5" fill="#1E3A8A" stroke="#0F172A" strokeWidth="1" />
+    <circle cx="54" cy="54" r="2.8" fill="none" stroke="#93C5FD" strokeWidth="0.5" strokeDasharray="1 0.8" />
+    {/* Matka body (belly) */}
+    <path
+      d="M 16 30 Q 12 40 16 50 Q 20 58 32 58 Q 44 58 48 50 Q 52 40 48 30 Q 44 24 32 24 Q 20 24 16 30 Z"
+      fill="url(#matkaG1)"
+      stroke="#451A03"
+      strokeWidth="1.4"
+    />
+    {/* Matka rim/neck */}
+    <path d="M 22 24 Q 22 20 32 20 Q 42 20 42 24 Z" fill="#78350F" stroke="#451A03" strokeWidth="1.2" />
+    <ellipse cx="32" cy="20" rx="10" ry="2.5" fill="url(#matkaMouth1)" stroke="#451A03" strokeWidth="1" />
+    {/* Shine highlight on body */}
+    <ellipse cx="22" cy="34" rx="3.5" ry="8" fill="#FEF3C7" opacity="0.4" />
+    {/* Lottery slips coming out of matka */}
+    <g transform="translate(30 8) rotate(-15)">
+      <rect x="0" y="0" width="4" height="12" rx="0.5" fill="#FFFFFF" stroke="#B45309" strokeWidth="0.5" />
+      <text x="2" y="5" textAnchor="middle" fontSize="3" fontWeight="900" fill="#7F1D1D">42</text>
     </g>
-    {/* Dice #2 (front, tilted right) */}
-    <g transform="translate(30 22) rotate(18)">
-      <rect x="0" y="0" width="22" height="22" rx="5" fill="url(#diceB)" stroke="#78350F" strokeWidth="1.4" />
-      <rect x="1.5" y="1.5" width="19" height="19" rx="4" fill="none" stroke="#FFFFFF" strokeWidth="0.6" opacity="0.7" />
-      {/* pip pattern: 3 */}
-      <circle cx="5" cy="5" r="1.8" fill="#7F1D1D" />
-      <circle cx="11" cy="11" r="1.8" fill="#7F1D1D" />
-      <circle cx="17" cy="17" r="1.8" fill="#7F1D1D" />
+    <g transform="translate(28 10) rotate(20)">
+      <rect x="0" y="0" width="4" height="10" rx="0.5" fill="#FEF3C7" stroke="#B45309" strokeWidth="0.5" />
+      <text x="2" y="5" textAnchor="middle" fontSize="3" fontWeight="900" fill="#7F1D1D">79</text>
     </g>
-    {/* Sparkle burst top-right */}
-    <path d="M 54 8 L 56 14 L 62 16 L 56 18 L 54 24 L 52 18 L 46 16 L 52 14 Z" fill="#FDE047" opacity="0.95" />
-    <circle cx="42" cy="6" r="1.3" fill="#FEF3C7" />
-    <circle cx="58" cy="30" r="1" fill="#FEF3C7" opacity="0.8" />
+    {/* Center jodi number on belly */}
+    <text x="32" y="46" textAnchor="middle" fontSize="10" fontWeight="900" fill="#FEF3C7" style={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.6))' }} fontFamily="Outfit, sans-serif">
+      SM
+    </text>
+    {/* Sparkle */}
+    <path d="M 52 8 L 53 12 L 57 13 L 53 14 L 52 18 L 51 14 L 47 13 L 51 12 Z" fill="#FDE047" opacity="0.9" />
   </svg>
 );
 
-// Kalyan — Ornate royal crown on velvet cushion with jewels + laurel sparkle
+// Kalyan — Ornate MATKA pot with jewels + laurel crown (traditional Kalyan Matka)
 const KalyanIcon = ({ size = 26 }) => (
   <svg width={size} height={size} viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
     <defs>
-      <linearGradient id="crownBody" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stopColor="#FEF3C7" />
-        <stop offset="45%" stopColor="#FBBF24" />
-        <stop offset="100%" stopColor="#B45309" />
-      </linearGradient>
-      <linearGradient id="cushion" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stopColor="#DC2626" />
-        <stop offset="100%" stopColor="#7F1D1D" />
-      </linearGradient>
-      <radialGradient id="gemR" cx="35%" cy="30%">
+      <radialGradient id="matkaG2" cx="30%" cy="30%">
         <stop offset="0%" stopColor="#FCA5A5" />
-        <stop offset="70%" stopColor="#DC2626" />
+        <stop offset="35%" stopColor="#DC2626" />
+        <stop offset="75%" stopColor="#7F1D1D" />
         <stop offset="100%" stopColor="#450A0A" />
       </radialGradient>
-      <radialGradient id="gemB" cx="35%" cy="30%">
-        <stop offset="0%" stopColor="#93C5FD" />
-        <stop offset="70%" stopColor="#2563EB" />
-        <stop offset="100%" stopColor="#1E3A8A" />
+      <linearGradient id="crownK" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#FEF3C7" />
+        <stop offset="55%" stopColor="#FBBF24" />
+        <stop offset="100%" stopColor="#92400E" />
+      </linearGradient>
+      <radialGradient id="matkaMouth2" cx="50%" cy="30%">
+        <stop offset="0%" stopColor="#1F2937" />
+        <stop offset="100%" stopColor="#000000" />
       </radialGradient>
     </defs>
-    {/* Velvet cushion */}
-    <ellipse cx="32" cy="52" rx="24" ry="6" fill="url(#cushion)" stroke="#450A0A" strokeWidth="1" />
-    <ellipse cx="32" cy="50.5" rx="22" ry="4" fill="none" stroke="#7F1D1D" strokeWidth="0.6" opacity="0.6" />
-    {/* Crown body */}
+    {/* Golden mini-crown above matka (KALYAN = royal matka) */}
+    <g transform="translate(20 4)">
+      <path d="M 0 10 L 2 2 L 8 8 L 12 0 L 16 8 L 22 2 L 24 10 Z"
+            fill="url(#crownK)" stroke="#78350F" strokeWidth="1" strokeLinejoin="round" />
+      <circle cx="2" cy="2" r="1.2" fill="#DC2626" />
+      <circle cx="12" cy="0" r="1.6" fill="#DC2626" />
+      <circle cx="22" cy="2" r="1.2" fill="#DC2626" />
+    </g>
+    {/* Matka body (rich red for Kalyan) */}
     <path
-      d="M 10 44 L 12 18 L 22 30 L 32 10 L 42 30 L 52 18 L 54 44 Z"
-      fill="url(#crownBody)"
-      stroke="#78350F"
-      strokeWidth="1.8"
-      strokeLinejoin="round"
+      d="M 14 30 Q 10 42 14 52 Q 18 60 32 60 Q 46 60 50 52 Q 54 42 50 30 Q 46 24 32 24 Q 18 24 14 30 Z"
+      fill="url(#matkaG2)"
+      stroke="#450A0A"
+      strokeWidth="1.5"
     />
-    {/* Crown pattern lines */}
-    <path d="M 10 40 L 54 40" stroke="#78350F" strokeWidth="1.4" opacity="0.7" />
-    <path d="M 12 44 L 10 44 L 12 40 M 52 44 L 54 44 L 52 40" fill="none" stroke="#92400E" strokeWidth="0.6" />
-    {/* Peak gems */}
-    <circle cx="12" cy="18" r="3" fill="url(#gemB)" stroke="#78350F" strokeWidth="1" />
-    <circle cx="32" cy="10" r="4" fill="url(#gemR)" stroke="#78350F" strokeWidth="1.2" />
-    <circle cx="52" cy="18" r="3" fill="url(#gemB)" stroke="#78350F" strokeWidth="1" />
-    {/* Center band gem (row of 3) */}
-    <rect x="22" y="41" width="4" height="4" rx="1" fill="#FDE047" stroke="#78350F" strokeWidth="0.6" />
-    <rect x="30" y="41" width="4" height="4" rx="1" fill="#EF4444" stroke="#78350F" strokeWidth="0.6" />
-    <rect x="38" y="41" width="4" height="4" rx="1" fill="#FDE047" stroke="#78350F" strokeWidth="0.6" />
-    {/* Sparkles */}
-    <path d="M 32 3 L 33 7 L 37 8 L 33 9 L 32 13 L 31 9 L 27 8 L 31 7 Z" fill="#FEF3C7" />
-    <circle cx="6" cy="14" r="1.2" fill="#FDE047" opacity="0.9" />
-    <circle cx="58" cy="10" r="1" fill="#FDE047" opacity="0.85" />
+    {/* Matka neck */}
+    <path d="M 20 24 Q 20 18 32 18 Q 44 18 44 24 Z" fill="#7F1D1D" stroke="#450A0A" strokeWidth="1.2" />
+    <ellipse cx="32" cy="18" rx="12" ry="2.8" fill="url(#matkaMouth2)" stroke="#450A0A" strokeWidth="1" />
+    {/* Gold band decoration around matka belly */}
+    <path d="M 14 40 Q 32 44 50 40" fill="none" stroke="#FBBF24" strokeWidth="1.5" opacity="0.85" />
+    <path d="M 14 44 Q 32 48 50 44" fill="none" stroke="#FDE047" strokeWidth="0.8" opacity="0.6" />
+    {/* Jewel decorations on belly */}
+    <circle cx="22" cy="42" r="1.6" fill="#FDE047" stroke="#78350F" strokeWidth="0.4" />
+    <circle cx="32" cy="46" r="2" fill="#FDE047" stroke="#78350F" strokeWidth="0.5" />
+    <circle cx="42" cy="42" r="1.6" fill="#FDE047" stroke="#78350F" strokeWidth="0.4" />
+    {/* Shine highlight */}
+    <ellipse cx="20" cy="34" rx="3.5" ry="8" fill="#FCA5A5" opacity="0.5" />
+    {/* Lottery slip coming out */}
+    <g transform="translate(30 20) rotate(-10)">
+      <rect x="0" y="0" width="4" height="9" rx="0.5" fill="#FEF3C7" stroke="#7F1D1D" strokeWidth="0.5" />
+      <text x="2" y="5.5" textAnchor="middle" fontSize="3.2" fontWeight="900" fill="#7F1D1D">K</text>
+    </g>
+    {/* Sparkle */}
+    <path d="M 58 24 L 59 27 L 62 28 L 59 29 L 58 32 L 57 29 L 54 28 L 57 27 Z" fill="#FDE047" opacity="0.9" />
+    <circle cx="6" cy="28" r="1" fill="#FEF3C7" opacity="0.85" />
   </svg>
 );
 
