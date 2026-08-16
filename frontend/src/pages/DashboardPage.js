@@ -618,38 +618,90 @@ const DashboardPage = () => {
 
           {/* Quick Actions - Deposit / Withdrawal / Telegram / WhatsApp (lightweight, scroll-safe) */}
           <div className="grid grid-cols-4 gap-2.5 mb-5">
-            {/* DEPOSIT */}
+            {/* DEPOSIT — piggy jar with coin drop */}
             <Link to="/wallet?action=deposit" data-testid="deposit-quick-link">
               <div className="flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3 active:scale-95"
                 style={{ background: '#16162A', border: '1px solid rgba(212, 175, 55, 0.3)' }}>
-                <div className="w-11 h-11 rounded-2xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #34D399 0%, #10B981 50%, #047857 100%)' }}>
-                  <HandCoins className="w-6 h-6 text-white" strokeWidth={2.2} />
+                <div className="w-11 h-11 rounded-full flex items-center justify-center relative"
+                  style={{
+                    background: 'radial-gradient(circle at 30% 25%, rgba(255,255,255,0.35) 0%, transparent 45%), conic-gradient(from 180deg, #10B981, #34D399, #10B981, #34D399, #10B981)',
+                    border: '2px solid #34D399',
+                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.55), inset 0 1px 2px rgba(255,255,255,0.4)',
+                  }}
+                >
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center"
+                    style={{ background: 'radial-gradient(circle at 30% 30%, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.9) 100%)' }}>
+                    <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      {/* Falling coin */}
+                      <circle cx="18" cy="5" r="2.2" fill="#FBBF24" stroke="#F59E0B" strokeWidth="0.6" />
+                      <text x="18" y="6.5" textAnchor="middle" fontSize="2.8" fontWeight="900" fill="#78350F">₹</text>
+                      {/* Piggy body */}
+                      <ellipse cx="11" cy="15" rx="7.5" ry="5.2" fill="#34D399" stroke="#065F46" strokeWidth="0.8" />
+                      {/* Slot */}
+                      <rect x="9.5" y="10" width="3" height="0.8" fill="#065F46" />
+                      {/* Ear */}
+                      <path d="M6 11 L5 9 L7.5 10 Z" fill="#10B981" stroke="#065F46" strokeWidth="0.5" />
+                      {/* Eye */}
+                      <circle cx="8" cy="14" r="0.7" fill="#065F46" />
+                      {/* Legs */}
+                      <rect x="6.5" y="19.5" width="1.4" height="1.6" rx="0.4" fill="#065F46" />
+                      <rect x="13.5" y="19.5" width="1.4" height="1.6" rx="0.4" fill="#065F46" />
+                    </svg>
+                  </div>
                 </div>
-                <span className="text-[#FFD700] font-bold text-[10px] tracking-wide">Deposit</span>
+                <span className="text-[#34D399] font-bold text-[10px] tracking-wide">Deposit</span>
               </div>
             </Link>
 
-            {/* WITHDRAWAL */}
+            {/* WITHDRAWAL — cash bag with up arrow */}
             <Link to="/wallet?action=withdraw" data-testid="withdraw-quick-link">
               <div className="flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3 active:scale-95"
                 style={{ background: '#16162A', border: '1px solid rgba(212, 175, 55, 0.3)' }}>
-                <div className="w-11 h-11 rounded-2xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #FB923C 0%, #F97316 50%, #C2410C 100%)' }}>
-                  <BanknoteArrowUp className="w-6 h-6 text-white" strokeWidth={2.2} />
+                <div className="w-11 h-11 rounded-full flex items-center justify-center relative"
+                  style={{
+                    background: 'radial-gradient(circle at 30% 25%, rgba(255,255,255,0.35) 0%, transparent 45%), conic-gradient(from 180deg, #F97316, #FB923C, #F97316, #FB923C, #F97316)',
+                    border: '2px solid #FB923C',
+                    boxShadow: '0 4px 12px rgba(249, 115, 22, 0.55), inset 0 1px 2px rgba(255,255,255,0.4)',
+                  }}
+                >
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center"
+                    style={{ background: 'radial-gradient(circle at 30% 30%, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.9) 100%)' }}>
+                    <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      {/* Up arrow */}
+                      <path d="M12 3 L15 6 L13 6 L13 10 L11 10 L11 6 L9 6 Z" fill="#FBBF24" stroke="#78350F" strokeWidth="0.5" />
+                      {/* Cash bag */}
+                      <path d="M6 11 Q6 9 8 9 L16 9 Q18 9 18 11 L19 20 Q19 21.5 17.5 21.5 L6.5 21.5 Q5 21.5 5 20 Z"
+                            fill="#FB923C" stroke="#7C2D12" strokeWidth="0.8" />
+                      {/* Tie band */}
+                      <ellipse cx="12" cy="9.5" rx="5" ry="0.8" fill="#7C2D12" />
+                      {/* $ symbol */}
+                      <text x="12" y="17.5" textAnchor="middle" fontSize="6" fontWeight="900" fill="#FEF3C7">₹</text>
+                    </svg>
+                  </div>
                 </div>
-                <span className="text-[#FFD700] font-bold text-[10px] tracking-wide">Withdraw</span>
+                <span className="text-[#FB923C] font-bold text-[10px] tracking-wide">Withdraw</span>
               </div>
             </Link>
 
-            {/* TELEGRAM */}
+            {/* TELEGRAM — glossy paper plane */}
             <a href={telegramLink || '#'} target="_blank" rel="noopener noreferrer" data-testid="telegram-quick-link" onClick={(e) => { if (!telegramLink) e.preventDefault(); }}>
               <div className="flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3 active:scale-95"
                 style={{ background: '#16162A', border: '1px solid rgba(212, 175, 55, 0.3)' }}>
-                <div className="w-11 h-11 rounded-2xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #2AABEE 0%, #229ED9 100%)' }}>
-                  <svg viewBox="0 0 240 240" className="w-6 h-6" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M186.054 71.196 158.5 200.952c-2.08 9.184-7.512 11.464-15.232 7.144l-42.064-31-20.296 19.528c-2.248 2.248-4.128 4.128-8.456 4.128l3.024-42.864 78.04-70.504c3.392-3.024-.736-4.704-5.272-1.68L52.74 138.504l-41.512-12.984c-9.024-2.816-9.184-9.024 1.88-13.36L174.5 60.876c7.512-2.816 14.08 1.68 11.554 10.32Z" fill="#FFFFFF" />
-                  </svg>
+                <div className="w-11 h-11 rounded-full flex items-center justify-center relative"
+                  style={{
+                    background: 'radial-gradient(circle at 30% 25%, rgba(255,255,255,0.4) 0%, transparent 45%), conic-gradient(from 180deg, #229ED9, #2AABEE, #229ED9, #2AABEE, #229ED9)',
+                    border: '2px solid #38BDF8',
+                    boxShadow: '0 4px 12px rgba(42, 171, 238, 0.55), inset 0 1px 2px rgba(255,255,255,0.4)',
+                  }}
+                >
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center"
+                    style={{ background: 'radial-gradient(circle at 30% 30%, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.9) 100%)' }}>
+                    <svg viewBox="0 0 240 240" className="w-4 h-4" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M186.054 71.196 158.5 200.952c-2.08 9.184-7.512 11.464-15.232 7.144l-42.064-31-20.296 19.528c-2.248 2.248-4.128 4.128-8.456 4.128l3.024-42.864 78.04-70.504c3.392-3.024-.736-4.704-5.272-1.68L52.74 138.504l-41.512-12.984c-9.024-2.816-9.184-9.024 1.88-13.36L174.5 60.876c7.512-2.816 14.08 1.68 11.554 10.32Z" fill="#38BDF8" />
+                    </svg>
+                  </div>
                 </div>
-                <span className="text-[#FFD700] font-bold text-[10px] tracking-wide">Telegram</span>
+                <span className="text-[#38BDF8] font-bold text-[10px] tracking-wide">Telegram</span>
               </div>
             </a>
 
@@ -660,15 +712,23 @@ const DashboardPage = () => {
             >
               <div className="flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3 active:scale-95 relative"
                 style={{ background: '#16162A', border: '1px solid rgba(212, 175, 55, 0.3)' }}>
-                <div className="w-11 h-11 rounded-2xl flex items-center justify-center relative" style={{ background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)' }}>
-                  <svg viewBox="0 0 24 24" className="w-6 h-6" fill="#FFFFFF" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.297-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
-                  </svg>
+                <div className="w-11 h-11 rounded-full flex items-center justify-center relative"
+                  style={{
+                    background: 'radial-gradient(circle at 30% 25%, rgba(255,255,255,0.4) 0%, transparent 45%), conic-gradient(from 180deg, #128C7E, #25D366, #128C7E, #25D366, #128C7E)',
+                    border: '2px solid #25D366',
+                    boxShadow: '0 4px 12px rgba(37, 211, 102, 0.55), inset 0 1px 2px rgba(255,255,255,0.4)',
+                  }}>
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center"
+                    style={{ background: 'radial-gradient(circle at 30% 30%, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.9) 100%)' }}>
+                    <svg viewBox="0 0 24 24" className="w-4 h-4" fill="#25D366" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.297-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+                    </svg>
+                  </div>
                   {unreadChat > 0 && (
                     <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[8px] font-bold flex items-center justify-center border border-[#1A1A2E]" data-testid="chat-unread-badge">{unreadChat > 9 ? '9+' : unreadChat}</span>
                   )}
                 </div>
-                <span className="text-[#FFD700] font-bold text-[10px] tracking-wide">Live Chat</span>
+                <span className="text-[#25D366] font-bold text-[10px] tracking-wide">Live Chat</span>
               </div>
             </Link>
           </div>
