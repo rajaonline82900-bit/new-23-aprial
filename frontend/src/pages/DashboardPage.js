@@ -20,111 +20,118 @@ import {
 } from 'lucide-react';
 
 /* ---------- Premium Casino-Style Category Icons (rich, illustrated) ---------- */
-// Gali Disawar — Traditional Matka pot with lottery slips/numbers spilling + poker chips
+// Gali Disawar — Realistic clay Matka pot (photo-like earthen pot)
 const GaliDisawarIcon = ({ size = 26 }) => (
   <svg width={size} height={size} viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
     <defs>
-      <radialGradient id="matkaG1" cx="30%" cy="30%">
+      <radialGradient id="matkaG1" cx="35%" cy="35%">
         <stop offset="0%" stopColor="#FED7AA" />
-        <stop offset="35%" stopColor="#F59E0B" />
-        <stop offset="75%" stopColor="#92400E" />
-        <stop offset="100%" stopColor="#451A03" />
+        <stop offset="25%" stopColor="#F59E0B" />
+        <stop offset="55%" stopColor="#B45309" />
+        <stop offset="85%" stopColor="#78350F" />
+        <stop offset="100%" stopColor="#3F1E08" />
       </radialGradient>
       <radialGradient id="matkaMouth1" cx="50%" cy="30%">
-        <stop offset="0%" stopColor="#1F2937" />
+        <stop offset="0%" stopColor="#1F1108" />
+        <stop offset="70%" stopColor="#0A0704" />
         <stop offset="100%" stopColor="#000000" />
       </radialGradient>
+      <linearGradient id="matkaRim1" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#B45309" />
+        <stop offset="50%" stopColor="#78350F" />
+        <stop offset="100%" stopColor="#3F1E08" />
+      </linearGradient>
     </defs>
-    {/* Chip behind */}
-    <circle cx="10" cy="52" r="6" fill="#DC2626" stroke="#7F1D1D" strokeWidth="1" />
-    <circle cx="10" cy="52" r="3.5" fill="none" stroke="#FCA5A5" strokeWidth="0.6" strokeDasharray="1.2 0.8" />
-    <circle cx="54" cy="54" r="5" fill="#1E3A8A" stroke="#0F172A" strokeWidth="1" />
-    <circle cx="54" cy="54" r="2.8" fill="none" stroke="#93C5FD" strokeWidth="0.5" strokeDasharray="1 0.8" />
-    {/* Matka body (belly) */}
+    {/* Ground shadow */}
+    <ellipse cx="32" cy="60" rx="20" ry="2" fill="rgba(0,0,0,0.55)" />
+    {/* Matka body (bulbous belly) */}
     <path
-      d="M 16 30 Q 12 40 16 50 Q 20 58 32 58 Q 44 58 48 50 Q 52 40 48 30 Q 44 24 32 24 Q 20 24 16 30 Z"
+      d="M 14 30 Q 8 42 14 52 Q 20 60 32 60 Q 44 60 50 52 Q 56 42 50 30 Q 46 22 32 22 Q 18 22 14 30 Z"
       fill="url(#matkaG1)"
-      stroke="#451A03"
+      stroke="#3F1E08"
       strokeWidth="1.4"
     />
-    {/* Matka rim/neck */}
-    <path d="M 22 24 Q 22 20 32 20 Q 42 20 42 24 Z" fill="#78350F" stroke="#451A03" strokeWidth="1.2" />
-    <ellipse cx="32" cy="20" rx="10" ry="2.5" fill="url(#matkaMouth1)" stroke="#451A03" strokeWidth="1" />
-    {/* Shine highlight on body */}
-    <ellipse cx="22" cy="34" rx="3.5" ry="8" fill="#FEF3C7" opacity="0.4" />
-    {/* Lottery slips coming out of matka */}
-    <g transform="translate(30 8) rotate(-15)">
-      <rect x="0" y="0" width="4" height="12" rx="0.5" fill="#FFFFFF" stroke="#B45309" strokeWidth="0.5" />
-      <text x="2" y="5" textAnchor="middle" fontSize="3" fontWeight="900" fill="#7F1D1D">42</text>
-    </g>
-    <g transform="translate(28 10) rotate(20)">
-      <rect x="0" y="0" width="4" height="10" rx="0.5" fill="#FEF3C7" stroke="#B45309" strokeWidth="0.5" />
-      <text x="2" y="5" textAnchor="middle" fontSize="3" fontWeight="900" fill="#7F1D1D">79</text>
-    </g>
-    {/* Center jodi number on belly */}
-    <text x="32" y="46" textAnchor="middle" fontSize="10" fontWeight="900" fill="#FEF3C7" style={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.6))' }} fontFamily="Outfit, sans-serif">
-      SM
-    </text>
-    {/* Sparkle */}
-    <path d="M 52 8 L 53 12 L 57 13 L 53 14 L 52 18 L 51 14 L 47 13 L 51 12 Z" fill="#FDE047" opacity="0.9" />
+    {/* Neck rim (darker band) */}
+    <path d="M 20 22 L 20 18 Q 20 15 32 15 Q 44 15 44 18 L 44 22 Z" fill="url(#matkaRim1)" stroke="#3F1E08" strokeWidth="1" />
+    {/* Rim thickness ellipse (top) */}
+    <ellipse cx="32" cy="15" rx="12" ry="2.5" fill="#78350F" stroke="#3F1E08" strokeWidth="1" />
+    {/* Dark opening (inside) */}
+    <ellipse cx="32" cy="14.5" rx="9.5" ry="1.8" fill="url(#matkaMouth1)" />
+    {/* Body horizontal line (throw line) */}
+    <path d="M 12 36 Q 32 40 52 36" fill="none" stroke="#78350F" strokeWidth="0.8" opacity="0.5" />
+    <path d="M 12 44 Q 32 48 52 44" fill="none" stroke="#78350F" strokeWidth="0.6" opacity="0.35" />
+    {/* Left main highlight (shine) */}
+    <ellipse cx="22" cy="34" rx="4" ry="10" fill="#FEF3C7" opacity="0.35" />
+    <ellipse cx="21" cy="32" rx="1.5" ry="4" fill="#FEF3C7" opacity="0.55" />
+    {/* Right subtle highlight */}
+    <ellipse cx="44" cy="40" rx="2" ry="6" fill="#FEF3C7" opacity="0.18" />
+    {/* Rim highlight */}
+    <path d="M 22 16 Q 32 13 42 16" fill="none" stroke="#FEF3C7" strokeWidth="0.6" opacity="0.55" />
+    {/* Tiny crack/texture (adds realism) */}
+    <path d="M 30 30 Q 31 34 30 38" fill="none" stroke="#3F1E08" strokeWidth="0.4" opacity="0.4" />
+    <path d="M 38 44 Q 39 46 38 48" fill="none" stroke="#3F1E08" strokeWidth="0.3" opacity="0.35" />
   </svg>
 );
 
-// Kalyan — Ornate MATKA pot with jewels + laurel crown (traditional Kalyan Matka)
+// Kalyan — Realistic red/terracotta Matka pot with golden band
 const KalyanIcon = ({ size = 26 }) => (
   <svg width={size} height={size} viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
     <defs>
-      <radialGradient id="matkaG2" cx="30%" cy="30%">
-        <stop offset="0%" stopColor="#FCA5A5" />
-        <stop offset="35%" stopColor="#DC2626" />
-        <stop offset="75%" stopColor="#7F1D1D" />
-        <stop offset="100%" stopColor="#450A0A" />
+      <radialGradient id="matkaG2" cx="35%" cy="35%">
+        <stop offset="0%" stopColor="#FECACA" />
+        <stop offset="20%" stopColor="#F87171" />
+        <stop offset="50%" stopColor="#DC2626" />
+        <stop offset="80%" stopColor="#7F1D1D" />
+        <stop offset="100%" stopColor="#3B0808" />
       </radialGradient>
-      <linearGradient id="crownK" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stopColor="#FEF3C7" />
-        <stop offset="55%" stopColor="#FBBF24" />
-        <stop offset="100%" stopColor="#92400E" />
-      </linearGradient>
       <radialGradient id="matkaMouth2" cx="50%" cy="30%">
-        <stop offset="0%" stopColor="#1F2937" />
+        <stop offset="0%" stopColor="#1F0404" />
+        <stop offset="70%" stopColor="#0A0202" />
         <stop offset="100%" stopColor="#000000" />
       </radialGradient>
+      <linearGradient id="matkaRim2" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#991B1B" />
+        <stop offset="50%" stopColor="#7F1D1D" />
+        <stop offset="100%" stopColor="#450A0A" />
+      </linearGradient>
+      <linearGradient id="goldBand" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#FEF3C7" />
+        <stop offset="50%" stopColor="#FBBF24" />
+        <stop offset="100%" stopColor="#78350F" />
+      </linearGradient>
     </defs>
-    {/* Golden mini-crown above matka (KALYAN = royal matka) */}
-    <g transform="translate(20 4)">
-      <path d="M 0 10 L 2 2 L 8 8 L 12 0 L 16 8 L 22 2 L 24 10 Z"
-            fill="url(#crownK)" stroke="#78350F" strokeWidth="1" strokeLinejoin="round" />
-      <circle cx="2" cy="2" r="1.2" fill="#DC2626" />
-      <circle cx="12" cy="0" r="1.6" fill="#DC2626" />
-      <circle cx="22" cy="2" r="1.2" fill="#DC2626" />
-    </g>
-    {/* Matka body (rich red for Kalyan) */}
+    {/* Ground shadow */}
+    <ellipse cx="32" cy="60" rx="20" ry="2" fill="rgba(0,0,0,0.55)" />
+    {/* Matka body */}
     <path
-      d="M 14 30 Q 10 42 14 52 Q 18 60 32 60 Q 46 60 50 52 Q 54 42 50 30 Q 46 24 32 24 Q 18 24 14 30 Z"
+      d="M 14 30 Q 8 42 14 52 Q 20 60 32 60 Q 44 60 50 52 Q 56 42 50 30 Q 46 22 32 22 Q 18 22 14 30 Z"
       fill="url(#matkaG2)"
-      stroke="#450A0A"
-      strokeWidth="1.5"
+      stroke="#3B0808"
+      strokeWidth="1.4"
     />
-    {/* Matka neck */}
-    <path d="M 20 24 Q 20 18 32 18 Q 44 18 44 24 Z" fill="#7F1D1D" stroke="#450A0A" strokeWidth="1.2" />
-    <ellipse cx="32" cy="18" rx="12" ry="2.8" fill="url(#matkaMouth2)" stroke="#450A0A" strokeWidth="1" />
-    {/* Gold band decoration around matka belly */}
-    <path d="M 14 40 Q 32 44 50 40" fill="none" stroke="#FBBF24" strokeWidth="1.5" opacity="0.85" />
-    <path d="M 14 44 Q 32 48 50 44" fill="none" stroke="#FDE047" strokeWidth="0.8" opacity="0.6" />
-    {/* Jewel decorations on belly */}
-    <circle cx="22" cy="42" r="1.6" fill="#FDE047" stroke="#78350F" strokeWidth="0.4" />
-    <circle cx="32" cy="46" r="2" fill="#FDE047" stroke="#78350F" strokeWidth="0.5" />
-    <circle cx="42" cy="42" r="1.6" fill="#FDE047" stroke="#78350F" strokeWidth="0.4" />
-    {/* Shine highlight */}
-    <ellipse cx="20" cy="34" rx="3.5" ry="8" fill="#FCA5A5" opacity="0.5" />
-    {/* Lottery slip coming out */}
-    <g transform="translate(30 20) rotate(-10)">
-      <rect x="0" y="0" width="4" height="9" rx="0.5" fill="#FEF3C7" stroke="#7F1D1D" strokeWidth="0.5" />
-      <text x="2" y="5.5" textAnchor="middle" fontSize="3.2" fontWeight="900" fill="#7F1D1D">K</text>
-    </g>
-    {/* Sparkle */}
-    <path d="M 58 24 L 59 27 L 62 28 L 59 29 L 58 32 L 57 29 L 54 28 L 57 27 Z" fill="#FDE047" opacity="0.9" />
-    <circle cx="6" cy="28" r="1" fill="#FEF3C7" opacity="0.85" />
+    {/* Golden decorative band around widest part */}
+    <path d="M 8 42 Q 32 46 56 42 L 56 45 Q 32 49 8 45 Z" fill="url(#goldBand)" stroke="#78350F" strokeWidth="0.6" opacity="0.95" />
+    <path d="M 8 42 Q 32 46 56 42" fill="none" stroke="#FEF3C7" strokeWidth="0.4" opacity="0.6" />
+    {/* Gold jewels on band */}
+    <circle cx="18" cy="44" r="1.4" fill="#DC2626" stroke="#78350F" strokeWidth="0.4" />
+    <circle cx="32" cy="46" r="1.8" fill="#DC2626" stroke="#78350F" strokeWidth="0.5" />
+    <circle cx="46" cy="44" r="1.4" fill="#DC2626" stroke="#78350F" strokeWidth="0.4" />
+    {/* Neck rim */}
+    <path d="M 20 22 L 20 18 Q 20 15 32 15 Q 44 15 44 18 L 44 22 Z" fill="url(#matkaRim2)" stroke="#3B0808" strokeWidth="1" />
+    {/* Rim thickness */}
+    <ellipse cx="32" cy="15" rx="12" ry="2.5" fill="#7F1D1D" stroke="#3B0808" strokeWidth="1" />
+    {/* Dark opening */}
+    <ellipse cx="32" cy="14.5" rx="9.5" ry="1.8" fill="url(#matkaMouth2)" />
+    {/* Body throw lines */}
+    <path d="M 12 34 Q 32 38 52 34" fill="none" stroke="#450A0A" strokeWidth="0.8" opacity="0.5" />
+    <path d="M 12 52 Q 32 55 52 52" fill="none" stroke="#450A0A" strokeWidth="0.6" opacity="0.35" />
+    {/* Left highlight */}
+    <ellipse cx="22" cy="34" rx="4" ry="10" fill="#FECACA" opacity="0.4" />
+    <ellipse cx="21" cy="32" rx="1.5" ry="4" fill="#FEF3C7" opacity="0.65" />
+    {/* Right subtle highlight */}
+    <ellipse cx="44" cy="40" rx="2" ry="6" fill="#FECACA" opacity="0.22" />
+    {/* Rim highlight */}
+    <path d="M 22 16 Q 32 13 42 16" fill="none" stroke="#FECACA" strokeWidth="0.6" opacity="0.6" />
   </svg>
 );
 
@@ -875,32 +882,10 @@ const DashboardPage = () => {
 
                       {/* Horizontal layout: [icon] [text] [PLAY] */}
                       <div className="flex items-center gap-3 pl-4 pr-3 py-3 relative z-[1]">
-                        {/* Icon medallion (left) */}
-                        <div
-                          className="game-medallion flex items-center justify-center rounded-full shrink-0"
-                          style={{
-                            width: 72,
-                            height: 72,
-                            color: cat.border,
-                            background: `
-                              radial-gradient(circle at 30% 25%, rgba(255,255,255,0.35) 0%, transparent 45%),
-                              radial-gradient(circle at 70% 80%, ${cat.border}55 0%, transparent 60%),
-                              conic-gradient(from 180deg, ${cat.border}, ${cat.accent}, ${cat.border}, ${cat.accent}, ${cat.border})
-                            `,
-                            border: `2px solid ${cat.border}`,
-                          }}
-                        >
-                          <div
-                            className="flex items-center justify-center rounded-full"
-                            style={{
-                              width: 60,
-                              height: 60,
-                              background: `radial-gradient(circle at 30% 30%, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.75) 100%)`,
-                              border: `1px solid ${cat.border}80`,
-                            }}
-                          >
-                            <cat.Icon size={44} />
-                          </div>
+                        {/* Icon (left) — no round border, direct realistic illustration */}
+                        <div className="shrink-0 flex items-center justify-center"
+                             style={{ width: 72, height: 72, filter: `drop-shadow(0 4px 8px ${cat.border}88) drop-shadow(0 0 12px ${cat.border}44)` }}>
+                          <cat.Icon size={72} />
                         </div>
 
                         {/* Text (center) */}
