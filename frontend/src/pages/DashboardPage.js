@@ -15,7 +15,8 @@ import {
   BarChart3,
   Flame,
   Crown,
-  Lock
+  Lock,
+  MessageCircle
 } from 'lucide-react';
 
 /* ---------- Stylish custom SVG icons for category buttons ---------- */
@@ -448,6 +449,29 @@ const DashboardPage = () => {
                 <span className="text-sm font-black tabular-nums text-[#FFD700] leading-none" data-testid="header-balance-value">
                   ₹{user?.balance?.toFixed(2) || '0.00'}
                 </span>
+              </Link>
+
+              {/* Customer Care — floating chat icon */}
+              <Link
+                to="/chat"
+                data-testid="header-customer-care"
+                aria-label="Customer Care"
+              >
+                <button
+                  className="relative p-2 rounded-lg active:scale-95 transition-all"
+                  style={{
+                    background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
+                    boxShadow: '0 3px 10px rgba(37, 211, 102, 0.45)',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                  }}
+                >
+                  <MessageCircle className="w-4 h-4 text-white" strokeWidth={2.5} />
+                  {unreadChat > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center border border-[#0A0A14]" data-testid="header-chat-unread">
+                      {unreadChat > 9 ? '9+' : unreadChat}
+                    </span>
+                  )}
+                </button>
               </Link>
 
               {user?.role === 'admin' && (
@@ -1214,6 +1238,12 @@ const DashboardPage = () => {
                 };
                 const openTimeStr = fmt(game.start_time);
                 const closeTimeStr = fmt(game.end_time);
+                // Compute today & yesterday dates in dd/mm/yyyy for LED panels
+                const _todayDt = new Date();
+                const _ydayDt = new Date(_todayDt); _ydayDt.setDate(_todayDt.getDate() - 1);
+                const _fmtDate = (d) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+                const todayDateStr = _fmtDate(_todayDt);
+                const yesterdayDateStr = _fmtDate(_ydayDt);
                 return (
                   <CardWrapper key={game.id} {...cardProps}>
                     <div
@@ -1305,9 +1335,9 @@ const DashboardPage = () => {
                         </button>
                       </div>
 
-                      {/* ── BODY — LED-style Yesterday / Play / Today ── */}
+                      {/* ── BODY — LED-style Yesterday + Today (dates) with Play/Timeout on RIGHT side ── */}
                       <div className="relative px-3 pt-1 pb-2 flex items-stretch gap-2">
-                        {/* Yesterday — LED emerald panel */}
+                        {/* Yesterday panel (with date dd/mm/yyyy) */}
                         <div
                           className="flex-1 rounded-lg px-2 py-2 flex flex-col items-center justify-center relative overflow-hidden"
                           style={{
@@ -1318,8 +1348,8 @@ const DashboardPage = () => {
                           }}
                           data-testid={`yesterday-result-${game.id}`}
                         >
-                          <span className="text-[7px] uppercase tracking-widest text-emerald-400/70 leading-none font-black">
-                            Yesterday
+                          <span className="text-[8px] tracking-wider text-emerald-400/85 leading-none font-black tabular-nums">
+                            {yesterdayDateStr}
                           </span>
                           <span
                             className="font-black leading-none tabular-nums mt-1.5"
@@ -1335,69 +1365,7 @@ const DashboardPage = () => {
                           </span>
                         </div>
 
-                        {/* Center Play — Emerald+Gold gem chip */}
-                        <div className="flex flex-col items-center justify-center w-16 shrink-0" data-testid={`play-status-${game.id}`}>
-                          {game.is_holiday ? (
-                            <div
-                              className="w-14 h-14 rounded-full flex items-center justify-center"
-                              style={{ background: 'linear-gradient(135deg, #FBBF24 0%, #D97706 100%)', boxShadow: '0 4px 14px rgba(217,119,6,0.45)' }}
-                              data-testid={`holiday-btn-${game.id}`}
-                            >
-                              <span className="text-white font-black text-lg">H</span>
-                            </div>
-                          ) : isRunning ? (
-                            <div
-                              className="play-btn-premium w-14 h-14 rounded-full flex items-center justify-center relative"
-                              onClick={() => { try { navigator.vibrate?.([25, 10, 25]); } catch (_) { /* haptic api unavailable */ } speak('प्ले'); }}
-                              data-testid={`play-btn-${game.id}`}
-                              style={{ filter: 'drop-shadow(0 6px 14px rgba(20, 169, 76, 0.7))' }}
-                            >
-                              <div className="chip-stripes absolute inset-0 rounded-full" style={{ background: 'conic-gradient(from 45deg, #FFD700 0deg 45deg, #14A94C 45deg 90deg, #FFD700 90deg 135deg, #14A94C 135deg 180deg, #FFD700 180deg 225deg, #14A94C 225deg 270deg, #FFD700 270deg 315deg, #14A94C 315deg 360deg)' }} />
-                              <div className="absolute rounded-full" style={{ inset: '4px', background: '#FFFFFF' }} />
-                              <div
-                                className="absolute rounded-full flex items-center justify-center"
-                                style={{
-                                  inset: '6px',
-                                  background:
-                                    'radial-gradient(circle at 35% 30%, #86EFAC 0%, #22C55E 30%, #14A94C 70%, #052E16 100%)',
-                                  boxShadow:
-                                    'inset 0 2px 3px rgba(255,255,255,0.4), inset 0 -3px 5px rgba(0,0,0,0.4)',
-                                }}
-                              >
-                                <Play
-                                  className="w-6 h-6 ml-0.5 relative"
-                                  fill="#FFD700"
-                                  stroke="#FFF"
-                                  strokeWidth={1.5}
-                                  style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.7))' }}
-                                />
-                              </div>
-                            </div>
-                          ) : (
-                            <div
-                              className="time-up-btn w-14 h-14 rounded-full flex items-center justify-center relative"
-                              style={{
-                                background: 'radial-gradient(circle at 32% 28%, #FCA5A5 0%, #DC2626 30%, #991B1B 70%, #450A0A 100%)',
-                                border: '2px solid rgba(254, 202, 202, 0.6)',
-                                boxShadow: '0 6px 16px rgba(220,38,38,0.55), inset 0 2px 3px rgba(255,255,255,0.35), inset 0 -3px 4px rgba(0,0,0,0.35)',
-                                filter: 'drop-shadow(0 4px 8px rgba(220,38,38,0.45))',
-                              }}
-                              data-testid={`timeout-btn-${game.id}`}
-                              onClick={() => { try { navigator.vibrate?.(15); } catch (_) { /* haptic api unavailable */ } }}
-                            >
-                              <Lock className="w-6 h-6 text-white drop-shadow" strokeWidth={3} fill="rgba(255,255,255,0.2)" />
-                            </div>
-                          )}
-                          <span
-                            className={`text-[8px] font-black tracking-widest uppercase leading-none mt-1.5 ${
-                              game.is_holiday ? 'text-[#FBBF24]' : isRunning ? 'text-[#4ADE80]' : 'text-[#F87171]'
-                            }`}
-                          >
-                            {game.is_holiday ? statusLabel : isRunning ? statusLabel : 'Time Up'}
-                          </span>
-                        </div>
-
-                        {/* Today — LED gold panel */}
+                        {/* Today panel (with date dd/mm/yyyy) */}
                         <div
                           className={`flex-1 rounded-lg px-2 py-2 flex flex-col items-center justify-center relative overflow-hidden ${flashGameIds.has(game.id) ? 'today-result-flash' : ''}`}
                           style={{
@@ -1414,8 +1382,8 @@ const DashboardPage = () => {
                               Live
                             </span>
                           )}
-                          <span className="text-[7px] uppercase tracking-widest text-yellow-400/80 leading-none font-black">
-                            Today
+                          <span className="text-[8px] tracking-wider text-yellow-300/90 leading-none font-black tabular-nums">
+                            {todayDateStr}
                           </span>
                           <span
                             className="font-black leading-none tabular-nums mt-1.5"
@@ -1428,6 +1396,73 @@ const DashboardPage = () => {
                             }}
                           >
                             {game.today_result?.jodi || '--'}
+                          </span>
+                        </div>
+
+                        {/* Play / Timeout / Holiday — moved to RIGHT side */}
+                        <div className="flex flex-col items-center justify-center w-14 shrink-0" data-testid={`play-status-${game.id}`}>
+                          {game.is_holiday ? (
+                            <div
+                              className="w-12 h-12 rounded-full flex items-center justify-center"
+                              style={{ background: 'linear-gradient(135deg, #FBBF24 0%, #D97706 100%)', boxShadow: '0 4px 14px rgba(217,119,6,0.45)' }}
+                              data-testid={`holiday-btn-${game.id}`}
+                            >
+                              <span className="text-white font-black text-lg">H</span>
+                            </div>
+                          ) : isRunning ? (
+                            <div
+                              className="play-btn-premium w-12 h-12 rounded-full flex items-center justify-center relative"
+                              onClick={() => { try { navigator.vibrate?.([25, 10, 25]); } catch (_) { /* haptic api unavailable */ } speak('प्ले'); }}
+                              data-testid={`play-btn-${game.id}`}
+                              style={{ filter: 'drop-shadow(0 6px 14px rgba(20, 169, 76, 0.7))' }}
+                            >
+                              <div className="chip-stripes absolute inset-0 rounded-full" style={{ background: 'conic-gradient(from 45deg, #FFD700 0deg 45deg, #14A94C 45deg 90deg, #FFD700 90deg 135deg, #14A94C 135deg 180deg, #FFD700 180deg 225deg, #14A94C 225deg 270deg, #FFD700 270deg 315deg, #14A94C 315deg 360deg)' }} />
+                              <div className="absolute rounded-full" style={{ inset: '3px', background: '#FFFFFF' }} />
+                              <div
+                                className="absolute rounded-full flex items-center justify-center"
+                                style={{
+                                  inset: '5px',
+                                  background:
+                                    'radial-gradient(circle at 35% 30%, #86EFAC 0%, #22C55E 30%, #14A94C 70%, #052E16 100%)',
+                                  boxShadow:
+                                    'inset 0 2px 3px rgba(255,255,255,0.4), inset 0 -3px 5px rgba(0,0,0,0.4)',
+                                }}
+                              >
+                                <Play
+                                  className="w-5 h-5 ml-0.5 relative"
+                                  fill="#FFD700"
+                                  stroke="#FFF"
+                                  strokeWidth={1.5}
+                                  style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.7))' }}
+                                />
+                              </div>
+                            </div>
+                          ) : (
+                            // Casino-style TIME UP hourglass badge
+                            <div
+                              className="w-12 h-12 rounded-full flex items-center justify-center relative overflow-hidden"
+                              style={{
+                                background: 'radial-gradient(circle at 32% 28%, #4B5563 0%, #1F2937 40%, #0F172A 100%)',
+                                border: '2px solid rgba(148, 163, 184, 0.5)',
+                                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.5), inset 0 2px 3px rgba(255, 255, 255, 0.1), inset 0 -3px 4px rgba(0, 0, 0, 0.5)',
+                              }}
+                              data-testid={`timeout-btn-${game.id}`}
+                              onClick={() => { try { navigator.vibrate?.(15); } catch (_) { /* haptic api unavailable */ } }}
+                            >
+                              {/* Diagonal red stripes overlay */}
+                              <div className="absolute inset-0 opacity-20 pointer-events-none"
+                                   style={{ background: 'repeating-linear-gradient(45deg, transparent 0 3px, #DC2626 3px 4px)' }} />
+                              <svg viewBox="0 0 24 24" className="w-6 h-6 relative" fill="none" stroke="#FCA5A5" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M17 2v4.172a2 2 0 0 1-.586 1.414L12 12 7.586 7.586A2 2 0 0 1 7 6.172V2" />
+                              </svg>
+                            </div>
+                          )}
+                          <span
+                            className={`text-[8px] font-black tracking-widest uppercase leading-none mt-1 ${
+                              game.is_holiday ? 'text-[#FBBF24]' : isRunning ? 'text-[#4ADE80]' : 'text-[#F87171]'
+                            }`}
+                          >
+                            {game.is_holiday ? statusLabel : isRunning ? statusLabel : 'Time Up'}
                           </span>
                         </div>
                       </div>
