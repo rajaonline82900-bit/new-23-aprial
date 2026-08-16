@@ -747,7 +747,7 @@ const DashboardPage = () => {
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 mb-5" data-testid="home-gateway-grid">
+              <div className="grid grid-cols-1 gap-3 mb-5" data-testid="home-gateway-grid">
                 {[
                   {
                     id: 'gali_disawar',
@@ -831,12 +831,11 @@ const DashboardPage = () => {
                         setGameCategory(cat.id);
                       }}
                       data-testid={`gateway-box-${cat.id}`}
-                      className="rounded-2xl relative overflow-hidden text-left active:scale-[0.97]"
+                      className="w-full rounded-2xl relative overflow-hidden text-left active:scale-[0.98]"
                       style={{
                         background: cat.bg,
                         border: `1.5px solid ${cat.border}`,
                         boxShadow: `0 6px 20px rgba(0,0,0,0.55), inset 0 1px 0 ${cat.border}30`,
-                        minHeight: '210px',
                         transition: 'transform 180ms ease',
                         opacity: isDisabled ? 0.55 : 1,
                         filter: isDisabled ? 'grayscale(70%)' : 'none',
@@ -844,27 +843,15 @@ const DashboardPage = () => {
                         contain: 'content',
                       }}
                     >
-                      {/* Top accent stripe */}
-                      <div
-                        className="absolute top-0 left-0 right-0 h-1"
-                        style={{ background: cat.stripe, opacity: 0.9 }}
-                      />
+                      {/* Left accent bar */}
+                      <div className="absolute top-0 bottom-0 left-0 w-1"
+                           style={{ background: cat.stripe, opacity: 0.9 }} />
 
-                      {/* Soft radial glow behind icon */}
-                      <div
-                        className="absolute pointer-events-none"
-                        style={{
-                          top: '18%',
-                          left: '50%',
-                          transform: 'translateX(-50%)',
-                          width: '110px',
-                          height: '110px',
-                          background: `radial-gradient(circle, ${cat.border}45 0%, ${cat.border}15 45%, transparent 75%)`,
-                          filter: 'blur(2px)',
-                        }}
-                      />
+                      {/* Ambient side glow */}
+                      <div className="absolute -top-8 -left-8 w-32 h-32 rounded-full pointer-events-none"
+                           style={{ background: `radial-gradient(circle, ${cat.border}45 0%, transparent 65%)`, filter: 'blur(2px)' }} />
 
-                      {/* BAND / LIVE badge (top right) */}
+                      {/* BAND / LIVE badge */}
                       {isDisabled ? (
                         <span
                           className="absolute top-2 right-2 px-1.5 py-0.5 rounded text-[8px] font-black tracking-widest z-10"
@@ -876,11 +863,7 @@ const DashboardPage = () => {
                       ) : cat.liveLabel ? (
                         <span
                           className="absolute top-2 right-2 px-1.5 py-0.5 rounded-full text-[8px] font-black tracking-widest z-10 flex items-center gap-1"
-                          style={{
-                            background: 'rgba(0, 0, 0, 0.55)',
-                            color: cat.accent,
-                            border: `1px solid ${cat.border}80`,
-                          }}
+                          style={{ background: 'rgba(0, 0, 0, 0.55)', color: cat.accent, border: `1px solid ${cat.border}80` }}
                           data-testid={`gateway-${cat.id}-live-badge`}
                         >
                           <span className="w-1 h-1 rounded-full" style={{ background: cat.accent, boxShadow: `0 0 4px ${cat.accent}` }} />
@@ -888,14 +871,15 @@ const DashboardPage = () => {
                         </span>
                       ) : null}
 
-                      {/* Round premium icon medallion */}
-                      <div className="pt-5 flex items-center justify-center relative z-[1]">
+                      {/* Horizontal layout: [icon] [text] [PLAY] */}
+                      <div className="flex items-center gap-3 pl-4 pr-3 py-3 relative z-[1]">
+                        {/* Icon medallion (left) */}
                         <div
-                          className="game-medallion flex items-center justify-center rounded-full relative"
+                          className="game-medallion flex items-center justify-center rounded-full shrink-0"
                           style={{
-                            width: 92,
-                            height: 92,
-                            color: cat.border, /* used by CSS currentColor for glow */
+                            width: 72,
+                            height: 72,
+                            color: cat.border,
                             background: `
                               radial-gradient(circle at 30% 25%, rgba(255,255,255,0.35) 0%, transparent 45%),
                               radial-gradient(circle at 70% 80%, ${cat.border}55 0%, transparent 60%),
@@ -907,64 +891,57 @@ const DashboardPage = () => {
                           <div
                             className="flex items-center justify-center rounded-full"
                             style={{
-                              width: 78,
-                              height: 78,
+                              width: 60,
+                              height: 60,
                               background: `radial-gradient(circle at 30% 30%, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.75) 100%)`,
                               border: `1px solid ${cat.border}80`,
                             }}
                           >
-                            <cat.Icon size={58} active={false} />
+                            <cat.Icon size={44} />
                           </div>
                         </div>
-                      </div>
 
-                      {/* PLAY pill button — bigger, clearer, "PLAY" text with icon */}
-                      <div className="flex items-center justify-center mt-2">
-                        {isDisabled ? null : (
+                        {/* Text (center) */}
+                        <div className="flex-1 min-w-0">
                           <div
-                            className="flex items-center gap-1 px-3 py-1 rounded-full"
+                            className="text-[15px] font-black tracking-tight leading-tight truncate"
+                            style={{ color: '#FFFFFF', fontFamily: 'Outfit, sans-serif' }}
+                          >
+                            {cat.label}
+                          </div>
+                          <div
+                            className="text-[11px] font-bold tracking-tight leading-tight mt-0.5 truncate"
+                            style={{ color: cat.accent, fontFamily: 'Noto Sans Devanagari, Outfit, sans-serif' }}
+                          >
+                            {cat.hi}
+                          </div>
+                          <div className="mt-1.5 inline-flex items-center px-2 py-0.5 rounded-full"
+                               style={{
+                                 background: cat.badgeBg || cat.stripe,
+                                 border: `1px solid ${cat.border}80`,
+                                 boxShadow: `0 2px 6px ${cat.border}55`,
+                               }}>
+                            <span className="text-[9px] font-black tracking-widest leading-none" style={{ color: cat.badgeColor || '#0A0A14' }}>
+                              {cat.count != null ? `${cat.count} ${cat.countSuffix}` : cat.countSuffix}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* PLAY button (right) */}
+                        {!isDisabled && (
+                          <div
+                            className="shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-full"
                             style={{
                               background: 'linear-gradient(135deg, #16A34A 0%, #22C55E 50%, #16A34A 100%)',
                               border: '1.5px solid #FDE047',
-                              boxShadow: '0 4px 10px rgba(34, 197, 94, 0.55), inset 0 1px 2px rgba(255,255,255,0.35)',
+                              boxShadow: '0 4px 12px rgba(34, 197, 94, 0.55), inset 0 1px 2px rgba(255,255,255,0.35)',
                             }}
                             data-testid={`gateway-${cat.id}-play-pill`}
                           >
-                            <Play className="w-2.5 h-2.5" fill="#FFF" stroke="#FFF" strokeWidth={2} />
-                            <span className="text-[10px] font-black text-white tracking-widest">PLAY</span>
+                            <Play className="w-3 h-3" fill="#FFF" stroke="#FFF" strokeWidth={2} />
+                            <span className="text-[11px] font-black text-white tracking-widest">PLAY</span>
                           </div>
                         )}
-                      </div>
-
-                      {/* Name */}
-                      <div className="px-3 pt-3 text-center">
-                        <div
-                          className="text-[13px] font-black tracking-tight leading-none"
-                          style={{ color: '#FFFFFF', fontFamily: 'Outfit, sans-serif' }}
-                        >
-                          {cat.label}
-                        </div>
-                        <div
-                          className="text-[10px] font-bold leading-none mt-1"
-                          style={{ color: cat.accent, fontFamily: 'Noto Sans Devanagari, sans-serif' }}
-                        >
-                          {cat.hi}
-                        </div>
-                      </div>
-
-                      {/* Bottom count badge */}
-                      <div className="px-3 pb-3 pt-2.5 flex items-center justify-center">
-                        <span
-                          className="text-[9px] font-black tracking-widest px-2.5 py-1 rounded-full uppercase leading-none"
-                          style={{
-                            background: cat.badgeBg,
-                            color: cat.badgeColor,
-                            boxShadow: `0 2px 6px ${cat.border}40`,
-                          }}
-                          data-testid={`gateway-${cat.id}-badge`}
-                        >
-                          {cat.isLink ? cat.countSuffix : `${cat.count} ${cat.countSuffix}`}
-                        </span>
                       </div>
                     </button>
                   );
