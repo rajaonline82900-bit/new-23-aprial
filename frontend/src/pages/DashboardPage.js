@@ -19,147 +19,226 @@ import {
   MessageCircle
 } from 'lucide-react';
 
-/* ---------- Stylish custom SVG icons for category buttons ---------- */
-// Gali Disawar — 3D dice with glow + sparkle
-const GaliDisawarIcon = ({ size = 26, active = false }) => (
-  <svg width={size} height={size} viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+/* ---------- Premium Casino-Style Category Icons (rich, illustrated) ---------- */
+// Gali Disawar — pair of dice mid-throw with poker chips + sparkle burst
+const GaliDisawarIcon = ({ size = 26 }) => (
+  <svg width={size} height={size} viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
     <defs>
-      <linearGradient id="diceG" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor={active ? '#1A0F00' : '#FBBF24'} />
-        <stop offset="100%" stopColor={active ? '#1A0F00' : '#F59E0B'} />
+      <linearGradient id="diceA" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#FEF3C7" />
+        <stop offset="45%" stopColor="#FBBF24" />
+        <stop offset="100%" stopColor="#B45309" />
       </linearGradient>
+      <linearGradient id="diceB" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#FFFFFF" />
+        <stop offset="55%" stopColor="#FDE68A" />
+        <stop offset="100%" stopColor="#92400E" />
+      </linearGradient>
+      <radialGradient id="chipG" cx="35%" cy="30%">
+        <stop offset="0%" stopColor="#FCA5A5" />
+        <stop offset="60%" stopColor="#DC2626" />
+        <stop offset="100%" stopColor="#450A0A" />
+      </radialGradient>
     </defs>
-    {/* Dice 1 (back, tilted) */}
-    <g transform="translate(2 9) rotate(-10)">
-      <rect x="0" y="0" width="18" height="18" rx="4" fill="url(#diceG)" stroke={active ? '#1A0F00' : '#92400E'} strokeWidth="1.2" />
-      <circle cx="5" cy="5" r="1.8" fill={active ? '#FDE047' : '#7F1D1D'} />
-      <circle cx="13" cy="13" r="1.8" fill={active ? '#FDE047' : '#7F1D1D'} />
-      <circle cx="9" cy="9" r="1.8" fill={active ? '#FDE047' : '#7F1D1D'} />
+    {/* Back poker chip */}
+    <circle cx="14" cy="46" r="8" fill="url(#chipG)" stroke="#7F1D1D" strokeWidth="1.2" />
+    <circle cx="14" cy="46" r="5" fill="none" stroke="#FEE2E2" strokeWidth="0.6" strokeDasharray="1.5 1" />
+    {/* Front poker chip (blue) */}
+    <circle cx="52" cy="48" r="7" fill="#1E3A8A" stroke="#0F172A" strokeWidth="1.2" />
+    <circle cx="52" cy="48" r="4.5" fill="none" stroke="#93C5FD" strokeWidth="0.6" strokeDasharray="1.5 1" />
+    {/* Dice #1 (large, tilted left) */}
+    <g transform="translate(8 14) rotate(-14)">
+      <rect x="0" y="0" width="24" height="24" rx="5" fill="url(#diceA)" stroke="#78350F" strokeWidth="1.4" />
+      <rect x="1.5" y="1.5" width="21" height="21" rx="4" fill="none" stroke="#FEF3C7" strokeWidth="0.6" opacity="0.6" />
+      {/* pip pattern: 5 */}
+      <circle cx="6" cy="6" r="2" fill="#7F1D1D" />
+      <circle cx="18" cy="6" r="2" fill="#7F1D1D" />
+      <circle cx="12" cy="12" r="2" fill="#7F1D1D" />
+      <circle cx="6" cy="18" r="2" fill="#7F1D1D" />
+      <circle cx="18" cy="18" r="2" fill="#7F1D1D" />
     </g>
-    {/* Dice 2 (front, tilted opposite) */}
-    <g transform="translate(18 14) rotate(15)">
-      <rect x="0" y="0" width="18" height="18" rx="4" fill="url(#diceG)" stroke={active ? '#1A0F00' : '#92400E'} strokeWidth="1.2" />
-      <circle cx="9" cy="9" r="2.2" fill={active ? '#FDE047' : '#7F1D1D'} />
+    {/* Dice #2 (front, tilted right) */}
+    <g transform="translate(30 22) rotate(18)">
+      <rect x="0" y="0" width="22" height="22" rx="5" fill="url(#diceB)" stroke="#78350F" strokeWidth="1.4" />
+      <rect x="1.5" y="1.5" width="19" height="19" rx="4" fill="none" stroke="#FFFFFF" strokeWidth="0.6" opacity="0.7" />
+      {/* pip pattern: 3 */}
+      <circle cx="5" cy="5" r="1.8" fill="#7F1D1D" />
+      <circle cx="11" cy="11" r="1.8" fill="#7F1D1D" />
+      <circle cx="17" cy="17" r="1.8" fill="#7F1D1D" />
     </g>
-    {/* Sparkle */}
-    <g opacity={active ? 1 : 0.85}>
-      <path d="M 33 5 L 34 8 L 37 9 L 34 10 L 33 13 L 32 10 L 29 9 L 32 8 Z" fill={active ? '#1A0F00' : '#FDE047'} />
-    </g>
+    {/* Sparkle burst top-right */}
+    <path d="M 54 8 L 56 14 L 62 16 L 56 18 L 54 24 L 52 18 L 46 16 L 52 14 Z" fill="#FDE047" opacity="0.95" />
+    <circle cx="42" cy="6" r="1.3" fill="#FEF3C7" />
+    <circle cx="58" cy="30" r="1" fill="#FEF3C7" opacity="0.8" />
   </svg>
 );
 
-// Kalyan — Crown with gem + radiating star
-const KalyanIcon = ({ size = 26, active = false }) => (
-  <svg width={size} height={size} viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+// Kalyan — Ornate royal crown on velvet cushion with jewels + laurel sparkle
+const KalyanIcon = ({ size = 26 }) => (
+  <svg width={size} height={size} viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
     <defs>
-      <linearGradient id="crownG" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stopColor={active ? '#1A0F00' : '#FCA5A5'} />
-        <stop offset="100%" stopColor={active ? '#1A0F00' : '#DC2626'} />
+      <linearGradient id="crownBody" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#FEF3C7" />
+        <stop offset="45%" stopColor="#FBBF24" />
+        <stop offset="100%" stopColor="#B45309" />
       </linearGradient>
+      <linearGradient id="cushion" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#DC2626" />
+        <stop offset="100%" stopColor="#7F1D1D" />
+      </linearGradient>
+      <radialGradient id="gemR" cx="35%" cy="30%">
+        <stop offset="0%" stopColor="#FCA5A5" />
+        <stop offset="70%" stopColor="#DC2626" />
+        <stop offset="100%" stopColor="#450A0A" />
+      </radialGradient>
+      <radialGradient id="gemB" cx="35%" cy="30%">
+        <stop offset="0%" stopColor="#93C5FD" />
+        <stop offset="70%" stopColor="#2563EB" />
+        <stop offset="100%" stopColor="#1E3A8A" />
+      </radialGradient>
     </defs>
+    {/* Velvet cushion */}
+    <ellipse cx="32" cy="52" rx="24" ry="6" fill="url(#cushion)" stroke="#450A0A" strokeWidth="1" />
+    <ellipse cx="32" cy="50.5" rx="22" ry="4" fill="none" stroke="#7F1D1D" strokeWidth="0.6" opacity="0.6" />
     {/* Crown body */}
     <path
-      d="M 6 22 L 8 12 L 14 18 L 20 8 L 26 18 L 32 12 L 34 22 Z"
-      fill="url(#crownG)"
-      stroke={active ? '#1A0F00' : '#7F1D1D'}
-      strokeWidth="1.4"
+      d="M 10 44 L 12 18 L 22 30 L 32 10 L 42 30 L 52 18 L 54 44 Z"
+      fill="url(#crownBody)"
+      stroke="#78350F"
+      strokeWidth="1.8"
       strokeLinejoin="round"
     />
-    {/* Base band */}
-    <rect x="6" y="22" width="28" height="5" rx="1.5" fill={active ? '#1A0F00' : '#991B1B'} stroke={active ? '#1A0F00' : '#7F1D1D'} strokeWidth="0.8" />
-    {/* Gems on peaks */}
-    <circle cx="8" cy="12" r="2" fill={active ? '#FDE047' : '#FBBF24'} stroke={active ? '#1A0F00' : '#7F1D1D'} strokeWidth="0.6" />
-    <circle cx="20" cy="8" r="2.4" fill={active ? '#FDE047' : '#FACC15'} stroke={active ? '#1A0F00' : '#7F1D1D'} strokeWidth="0.6" />
-    <circle cx="32" cy="12" r="2" fill={active ? '#FDE047' : '#FBBF24'} stroke={active ? '#1A0F00' : '#7F1D1D'} strokeWidth="0.6" />
-    {/* Center band gem */}
-    <rect x="18" y="23" width="4" height="3" rx="0.5" fill={active ? '#FDE047' : '#FACC15'} />
+    {/* Crown pattern lines */}
+    <path d="M 10 40 L 54 40" stroke="#78350F" strokeWidth="1.4" opacity="0.7" />
+    <path d="M 12 44 L 10 44 L 12 40 M 52 44 L 54 44 L 52 40" fill="none" stroke="#92400E" strokeWidth="0.6" />
+    {/* Peak gems */}
+    <circle cx="12" cy="18" r="3" fill="url(#gemB)" stroke="#78350F" strokeWidth="1" />
+    <circle cx="32" cy="10" r="4" fill="url(#gemR)" stroke="#78350F" strokeWidth="1.2" />
+    <circle cx="52" cy="18" r="3" fill="url(#gemB)" stroke="#78350F" strokeWidth="1" />
+    {/* Center band gem (row of 3) */}
+    <rect x="22" y="41" width="4" height="4" rx="1" fill="#FDE047" stroke="#78350F" strokeWidth="0.6" />
+    <rect x="30" y="41" width="4" height="4" rx="1" fill="#EF4444" stroke="#78350F" strokeWidth="0.6" />
+    <rect x="38" y="41" width="4" height="4" rx="1" fill="#FDE047" stroke="#78350F" strokeWidth="0.6" />
+    {/* Sparkles */}
+    <path d="M 32 3 L 33 7 L 37 8 L 33 9 L 32 13 L 31 9 L 27 8 L 31 7 Z" fill="#FEF3C7" />
+    <circle cx="6" cy="14" r="1.2" fill="#FDE047" opacity="0.9" />
+    <circle cx="58" cy="10" r="1" fill="#FDE047" opacity="0.85" />
   </svg>
 );
 
-// Aviator — Stylish sky-blue plane with motion streak (LIVE/Real Available)
-const AviatorIcon = ({ size = 26, active = false }) => (
-  <svg width={size} height={size} viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+// Aviator — 3D plane climbing with rocket fire trail + multiplier "x" chart curve
+const AviatorIcon = ({ size = 26 }) => (
+  <svg width={size} height={size} viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
     <defs>
-      <linearGradient id="planeG" x1="0%" y1="100%" x2="100%" y2="0%">
-        <stop offset="0%" stopColor={active ? '#FFFFFF' : '#67E8F9'} />
-        <stop offset="100%" stopColor={active ? '#E0F2FE' : '#06B6D4'} />
+      <linearGradient id="planeBody" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#FFFFFF" />
+        <stop offset="55%" stopColor="#7DD3FC" />
+        <stop offset="100%" stopColor="#0369A1" />
+      </linearGradient>
+      <linearGradient id="fireTrail" x1="0%" y1="50%" x2="100%" y2="50%">
+        <stop offset="0%" stopColor="#DC2626" stopOpacity="0" />
+        <stop offset="30%" stopColor="#F59E0B" stopOpacity="0.7" />
+        <stop offset="70%" stopColor="#FDE047" stopOpacity="0.9" />
+        <stop offset="100%" stopColor="#FFFFFF" />
+      </linearGradient>
+      <linearGradient id="chartLine" x1="0%" y1="100%" x2="100%" y2="0%">
+        <stop offset="0%" stopColor="#22C55E" />
+        <stop offset="100%" stopColor="#FDE047" />
       </linearGradient>
     </defs>
-    {/* Motion streak */}
+    {/* Rising curve chart */}
     <path
-      d="M 4 32 Q 14 30 22 22"
-      stroke={active ? '#BAE6FD' : '#0891B2'}
-      strokeWidth="2"
+      d="M 6 56 Q 22 54 32 40 T 56 12"
       fill="none"
+      stroke="url(#chartLine)"
+      strokeWidth="2.5"
       strokeLinecap="round"
-      opacity="0.7"
+      strokeDasharray="0 0"
     />
-    <path
-      d="M 6 36 Q 12 34 18 30"
-      stroke={active ? '#E0F2FE' : '#22D3EE'}
-      strokeWidth="1.5"
-      fill="none"
-      strokeLinecap="round"
-      opacity="0.45"
-    />
-    {/* Plane body — pointing up-right */}
-    <g transform="translate(20 18) rotate(-30)">
-      <path
-        d="M -10 0 L 10 -2 L 14 0 L 10 2 L -10 0 Z"
-        fill="url(#planeG)"
-        stroke={active ? '#0C4A6E' : '#0E7490'}
-        strokeWidth="0.8"
-      />
-      {/* wing */}
-      <path d="M -2 -1 L 4 -7 L 8 -7 L 2 -1 Z" fill={active ? '#E0F2FE' : '#0891B2'} stroke={active ? '#0C4A6E' : '#0E7490'} strokeWidth="0.6" />
-      <path d="M -2 1 L 4 7 L 8 7 L 2 1 Z" fill={active ? '#E0F2FE' : '#0891B2'} stroke={active ? '#0C4A6E' : '#0E7490'} strokeWidth="0.6" />
-      {/* tail */}
-      <path d="M -10 0 L -13 -3 L -10 -1 Z" fill={active ? '#BAE6FD' : '#155E75'} />
-      <path d="M -10 0 L -13 3 L -10 1 Z" fill={active ? '#BAE6FD' : '#155E75'} />
+    {/* Fire trail behind plane */}
+    <path d="M 8 54 Q 18 48 30 34" fill="none" stroke="url(#fireTrail)" strokeWidth="6" strokeLinecap="round" opacity="0.85" />
+    <path d="M 12 56 Q 22 50 32 38" fill="none" stroke="#FBBF24" strokeWidth="2.5" strokeLinecap="round" opacity="0.7" />
+    {/* Plane body (angled up-right) */}
+    <g transform="translate(34 30) rotate(-38)">
+      {/* Fuselage */}
+      <ellipse cx="0" cy="0" rx="16" ry="3.5" fill="url(#planeBody)" stroke="#0C4A6E" strokeWidth="1" />
+      {/* Cockpit window */}
+      <ellipse cx="10" cy="-0.5" rx="3.5" ry="1.8" fill="#0369A1" stroke="#0C4A6E" strokeWidth="0.5" />
+      <ellipse cx="10" cy="-1" rx="3" ry="0.9" fill="#7DD3FC" opacity="0.8" />
+      {/* Main wing (top) */}
+      <path d="M -4 -2 L 4 -10 L 10 -10 L 4 -2 Z" fill="#0891B2" stroke="#0C4A6E" strokeWidth="0.8" />
+      {/* Main wing (bottom) */}
+      <path d="M -4 2 L 4 10 L 10 10 L 4 2 Z" fill="#0369A1" stroke="#0C4A6E" strokeWidth="0.8" />
+      {/* Tail fin */}
+      <path d="M -13 0 L -16 -6 L -13 -1 Z" fill="#0891B2" stroke="#0C4A6E" strokeWidth="0.8" />
+      <path d="M -13 0 L -16 6 L -13 1 Z" fill="#0369A1" stroke="#0C4A6E" strokeWidth="0.8" />
+      {/* Nose highlight */}
+      <path d="M 14 -1 L 17 0 L 14 1 Z" fill="#FEF3C7" />
     </g>
-    {/* Up-arrow sparkle (top-right) */}
-    <path d="M 32 6 L 35 10 L 32 9 L 32 13 L 30 13 L 30 9 L 28 10 Z" fill={active ? '#FFFFFF' : '#67E8F9'} opacity="0.9" />
+    {/* Multiplier badge in top-right */}
+    <g transform="translate(50 6)">
+      <rect x="0" y="0" width="14" height="10" rx="3" fill="#FDE047" stroke="#78350F" strokeWidth="0.8" />
+      <text x="7" y="7.5" textAnchor="middle" fontSize="7" fontWeight="900" fill="#78350F" fontFamily="Outfit, sans-serif">2x</text>
+    </g>
+    {/* Small sparkle particles */}
+    <circle cx="52" cy="24" r="1.2" fill="#FEF3C7" />
+    <circle cx="20" cy="14" r="1" fill="#7DD3FC" opacity="0.8" />
+    <circle cx="42" cy="42" r="0.8" fill="#FDE047" opacity="0.9" />
   </svg>
 );
+// Legacy Ludo icon kept (may still be referenced elsewhere)
 const LudoIcon = ({ size = 26, active = false }) => (
   <svg width={size} height={size} viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-    {/* Board frame */}
     <rect x="4" y="4" width="32" height="32" rx="5" fill={active ? '#FFFFFF' : '#1F2937'} stroke={active ? '#1F2937' : '#4B5563'} strokeWidth="1.5" />
-    {/* 4 colored home quadrants */}
     <rect x="6" y="6" width="12" height="12" rx="2" fill="#EF4444" />
     <rect x="22" y="6" width="12" height="12" rx="2" fill="#3B82F6" />
     <rect x="6" y="22" width="12" height="12" rx="2" fill="#10B981" />
     <rect x="22" y="22" width="12" height="12" rx="2" fill="#F59E0B" />
-    {/* Center star */}
     <path d="M 20 15 L 22 19 L 26 19 L 23 22 L 24 26 L 20 24 L 16 26 L 17 22 L 14 19 L 18 19 Z"
           fill={active ? '#FFFFFF' : '#F9FAFB'} stroke={active ? '#7C3AED' : '#111827'} strokeWidth="0.8" />
-    {/* Tokens (small dots) */}
-    <circle cx="10" cy="10" r="1.8" fill="#FFFFFF" stroke="#7F1D1D" strokeWidth="0.5" />
-    <circle cx="28" cy="10" r="1.8" fill="#FFFFFF" stroke="#1E3A8A" strokeWidth="0.5" />
-    <circle cx="10" cy="28" r="1.8" fill="#FFFFFF" stroke="#064E3B" strokeWidth="0.5" />
-    <circle cx="28" cy="28" r="1.8" fill="#FFFFFF" stroke="#78350F" strokeWidth="0.5" />
   </svg>
 );
-const CoinIcon = ({ size = 26, active = false }) => (
-  <svg width={size} height={size} viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-    {/* Outer glow ring */}
-    <circle cx="20" cy="20" r="18" fill={active ? '#FFFFFF' : '#78350F'} stroke={active ? '#78350F' : '#B45309'} strokeWidth="1" />
-    {/* Coin face */}
-    <circle cx="20" cy="20" r="15" fill="url(#coinGrad)" />
+// Coin Toss — realistic spinning gold coin with H/T sides visible + sparkle burst
+const CoinIcon = ({ size = 26 }) => (
+  <svg width={size} height={size} viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
     <defs>
-      <radialGradient id="coinGrad" cx="30%" cy="30%">
+      <radialGradient id="coinFace" cx="35%" cy="30%">
         <stop offset="0%" stopColor="#FEF3C7" />
-        <stop offset="50%" stopColor="#FBBF24" />
-        <stop offset="100%" stopColor="#B45309" />
+        <stop offset="35%" stopColor="#FBBF24" />
+        <stop offset="75%" stopColor="#B45309" />
+        <stop offset="100%" stopColor="#78350F" />
       </radialGradient>
+      <linearGradient id="coinEdge" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#FDE047" />
+        <stop offset="50%" stopColor="#B45309" />
+        <stop offset="100%" stopColor="#78350F" />
+      </linearGradient>
     </defs>
-    {/* Inner ring */}
-    <circle cx="20" cy="20" r="12" fill="none" stroke="#78350F" strokeWidth="0.8" opacity="0.4" />
-    {/* ₹ symbol */}
-    <text x="20" y="26" textAnchor="middle" fontSize="15" fontWeight="900" fill="#78350F" fontFamily="Outfit, sans-serif">₹</text>
-    {/* Tiny stars for premium feel */}
-    <circle cx="10" cy="12" r="1" fill="#FEF3C7" opacity="0.7" />
-    <circle cx="30" cy="28" r="1" fill="#FEF3C7" opacity="0.7" />
+    {/* Second coin (behind, side-view showing thickness) */}
+    <g transform="translate(6 40) rotate(-15)">
+      <ellipse cx="10" cy="6" rx="10" ry="5" fill="url(#coinEdge)" stroke="#78350F" strokeWidth="1" />
+      <ellipse cx="10" cy="4" rx="10" ry="5" fill="url(#coinFace)" stroke="#78350F" strokeWidth="1" />
+      <text x="10" y="7" textAnchor="middle" fontSize="6" fontWeight="900" fill="#78350F">T</text>
+    </g>
+    {/* Front main coin */}
+    <g transform="translate(32 28)">
+      {/* Coin edge shadow */}
+      <circle cx="0" cy="2" r="22" fill="rgba(0,0,0,0.35)" />
+      {/* Coin body */}
+      <circle cx="0" cy="0" r="22" fill="url(#coinFace)" stroke="#78350F" strokeWidth="2" />
+      {/* Inner ring */}
+      <circle cx="0" cy="0" r="18" fill="none" stroke="#78350F" strokeWidth="1" opacity="0.6" />
+      <circle cx="0" cy="0" r="14" fill="none" stroke="#FEF3C7" strokeWidth="0.8" opacity="0.6" strokeDasharray="1.5 1" />
+      {/* Highlight shine */}
+      <ellipse cx="-6" cy="-10" rx="6" ry="3" fill="#FFFFFF" opacity="0.5" />
+      {/* ₹ symbol */}
+      <text x="0" y="8" textAnchor="middle" fontSize="20" fontWeight="900" fill="#78350F" fontFamily="Outfit, sans-serif">₹</text>
+    </g>
+    {/* Sparkle burst around coin */}
+    <path d="M 56 12 L 57 16 L 61 17 L 57 18 L 56 22 L 55 18 L 51 17 L 55 16 Z" fill="#FDE047" opacity="0.95" />
+    <circle cx="8" cy="14" r="1.5" fill="#FEF3C7" />
+    <circle cx="58" cy="46" r="1.2" fill="#FDE047" opacity="0.9" />
+    <circle cx="14" cy="8" r="1" fill="#FEF3C7" opacity="0.85" />
   </svg>
 );
 import FooterNav from '../components/FooterNav';
