@@ -298,11 +298,9 @@ const SidebarMenu = ({ open, onClose }) => {
             </a>
           )}
 
-          {settings.whatsapp_link && (
-            <a
-              href={settings.whatsapp_link}
-              target="_blank"
-              rel="noopener noreferrer"
+          {/* Live Chat — always visible, routes to internal chat page linked to admin panel */}
+          <Link
+              to="/chat"
               onClick={onClose}
               data-testid="sidebar-support-whatsapp"
               className="flex items-center justify-between p-2.5 rounded-xl hover:bg-white/[0.03] transition-all active:scale-[0.98]"
@@ -323,11 +321,13 @@ const SidebarMenu = ({ open, onClose }) => {
                     <MessageCircle className="w-4 h-4 text-[#25D366]" strokeWidth={2.4} />
                   </div>
                 </div>
-                <p className="text-white text-sm font-bold">WhatsApp</p>
+                <div className="text-left">
+                  <p className="text-white text-sm font-bold">Live Chat</p>
+                  <p className="text-emerald-400 text-[10px] font-bold">Admin से सीधे बात करें</p>
+                </div>
               </div>
               <ChevronRight className="w-4 h-4 text-gray-500" />
-            </a>
-          )}
+            </Link>
         </div>
 
         {/* Withdrawal Proof */}

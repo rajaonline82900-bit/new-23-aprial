@@ -629,18 +629,10 @@ const DashboardPage = () => {
               </div>
             </a>
 
-            {/* WHATSAPP */}
-            {(() => {
-              const cleanNum = (whatsappNumber || '').replace(/[^0-9]/g, '');
-              const waHref = cleanNum ? `https://wa.me/${cleanNum}` : (whatsappLink || '#');
-              const waDisabled = !cleanNum && !whatsappLink;
-              return (
-            <a
-              href={waHref}
-              target="_blank"
-              rel="noopener noreferrer"
+            {/* WHATSAPP → Internal Live Chat (all messages visible in admin panel) */}
+            <Link
+              to="/chat"
               data-testid="whatsapp-quick-link"
-              onClick={(e) => { if (waDisabled) e.preventDefault(); }}
             >
               <div className="flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3 active:scale-95 relative"
                 style={{ background: '#16162A', border: '1px solid rgba(212, 175, 55, 0.3)' }}>
@@ -652,11 +644,9 @@ const DashboardPage = () => {
                     <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[8px] font-bold flex items-center justify-center border border-[#1A1A2E]" data-testid="chat-unread-badge">{unreadChat > 9 ? '9+' : unreadChat}</span>
                   )}
                 </div>
-                <span className="text-[#FFD700] font-bold text-[10px] tracking-wide">WhatsApp</span>
+                <span className="text-[#FFD700] font-bold text-[10px] tracking-wide">Live Chat</span>
               </div>
-            </a>
-              );
-            })()}
+            </Link>
           </div>
 
           {/* ═══════════════════════════════════════════════════════════════
