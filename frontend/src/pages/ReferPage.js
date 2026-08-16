@@ -149,146 +149,165 @@ const ReferPage = () => {
       </header>
 
       <main className="px-3 py-4 space-y-4 relative">
-        {/* Premium Hero — user name + stats */}
-        <Card className="border-0 overflow-hidden" style={{ background: 'linear-gradient(135deg, #1F1638 0%, #14102A 100%)', border: '2px solid transparent', backgroundImage: 'linear-gradient(135deg, #1F1638 0%, #14102A 100%), linear-gradient(135deg, #FFD700 0%, #D4AF37 100%)', backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box', boxShadow: '0 8px 28px rgba(212, 175, 55, 0.25)' }}>
-          <CardContent className="p-5">
-            {/* User row */}
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-14 h-14 rounded-full flex items-center justify-center text-2xl font-black text-[#1A0F00]" style={{ background: 'linear-gradient(135deg, #FFD700 0%, #FDE047 35%, #D4AF37 70%, #B8860B 100%)', boxShadow: '0 4px 18px rgba(255, 215, 0, 0.55)' }}>
-                {(user?.name || 'U').charAt(0).toUpperCase()}
+        {(() => {
+          const refCount = referralInfo?.referred_count || 0;
+          const earned = referralInfo?.total_earned || 0;
+          // Determine tier by referral count
+          const tiers = [
+            { name: 'BRONZE',   min: 0,   next: 5,   color: '#CD7F32', accent: '#F4A261', icon: '🥉' },
+            { name: 'SILVER',   min: 5,   next: 15,  color: '#C0C0C0', accent: '#E5E7EB', icon: '🥈' },
+            { name: 'GOLD',     min: 15,  next: 30,  color: '#FFD700', accent: '#FDE047', icon: '🥇' },
+            { name: 'PLATINUM', min: 30,  next: 60,  color: '#00CFFF', accent: '#7DD3FC', icon: '💎' },
+            { name: 'DIAMOND',  min: 60,  next: 999, color: '#A78BFA', accent: '#DDD6FE', icon: '👑' },
+          ];
+          const tier = [...tiers].reverse().find(t => refCount >= t.min) || tiers[0];
+          const idx = tiers.indexOf(tier);
+          const nextTier = tiers[idx + 1] || tier;
+          const progressPct = tier.next === 999 ? 100 : Math.min(100, Math.round(((refCount - tier.min) / (tier.next - tier.min)) * 100));
+          const untilNext = Math.max(0, tier.next - refCount);
+          // Circular ring math (SVG)
+          const radius = 42;
+          const circ = 2 * Math.PI * radius;
+          const dashOffset = circ - (progressPct / 100) * circ;
+
+          return (
+        <Card
+          className="border-0 overflow-hidden relative"
+          style={{
+            background: 'linear-gradient(135deg, #1F1638 0%, #14102A 100%)',
+            border: `2px solid ${tier.color}55`,
+            boxShadow: `0 10px 30px ${tier.color}22, inset 0 1px 0 ${tier.color}22`,
+          }}
+        >
+          <CardContent className="p-5 relative">
+            {/* Ambient glow */}
+            <div className="absolute -top-12 -right-12 w-40 h-40 rounded-full pointer-events-none opacity-40"
+                 style={{ background: `radial-gradient(circle, ${tier.color}77 0%, transparent 65%)`, filter: 'blur(6px)' }} />
+
+            {/* Player header — Avatar in progress ring + rank chip */}
+            <div className="flex items-center gap-4 mb-4 relative">
+              {/* Circular level ring */}
+              <div className="relative" style={{ width: 96, height: 96 }}>
+                <svg width="96" height="96" viewBox="0 0 96 96" className="absolute inset-0 -rotate-90">
+                  <circle cx="48" cy="48" r={radius} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="5" />
+                  <circle cx="48" cy="48" r={radius} fill="none" stroke={tier.color} strokeWidth="5"
+                          strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={dashOffset}
+                          style={{ transition: 'stroke-dashoffset 1s ease', filter: `drop-shadow(0 0 6px ${tier.color})` }} />
+                </svg>
+                <div className="absolute inset-2 rounded-full flex items-center justify-center text-2xl font-black text-[#1A0F00]"
+                     style={{
+                       background: `radial-gradient(circle at 30% 25%, rgba(255,255,255,0.35) 0%, transparent 45%), linear-gradient(135deg, ${tier.color} 0%, ${tier.accent} 100%)`,
+                       boxShadow: `inset 0 1px 3px rgba(255,255,255,0.4), inset 0 -3px 5px rgba(0,0,0,0.3)`,
+                     }}>
+                  {(user?.name || 'U').charAt(0).toUpperCase()}
+                </div>
+                {/* Tier badge floating at bottom */}
+                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full flex items-center gap-1 text-[9px] font-black tracking-widest shadow-lg"
+                     style={{ background: `linear-gradient(135deg, ${tier.color} 0%, ${tier.accent} 100%)`, color: '#0A0A14', border: '1.5px solid rgba(0,0,0,0.4)' }}>
+                  {tier.icon} {tier.name}
+                </div>
               </div>
+
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] uppercase tracking-widest text-[#D4AF37] font-bold flex items-center gap-1"><Crown className="w-3 h-3" /> Welcome back</p>
-                <h2 className="text-white text-lg font-black truncate" data-testid="refer-user-name">{user?.name || 'User'}</h2>
+                <p className="text-[10px] uppercase tracking-widest font-black flex items-center gap-1" style={{ color: tier.color }}>
+                  <Crown className="w-3 h-3" /> Rank
+                </p>
+                <h2 className="text-white text-lg font-black truncate" data-testid="refer-user-name">{user?.name || 'Player'}</h2>
                 <p className="text-gray-400 text-[11px]">{user?.phone || ''}</p>
+                {untilNext > 0 && untilNext < 999 && (
+                  <p className="mt-1 text-[10px] font-bold" style={{ color: nextTier.color }}>
+                    {untilNext} more → {nextTier.name}
+                  </p>
+                )}
               </div>
             </div>
 
-            {/* Premium Vegas-style Stats grid — floating orb icons + 3D embossed cards */}
-            <div className="grid grid-cols-2 gap-3">
-              {/* Total Referrals */}
-              <div
-                className="relative rounded-2xl p-4 overflow-hidden"
-                style={{
-                  background:
-                    'linear-gradient(155deg, rgba(20, 169, 76, 0.22) 0%, rgba(10, 88, 44, 0.12) 60%, rgba(0, 0, 0, 0.6) 100%)',
-                  border: '1.5px solid rgba(34, 197, 94, 0.55)',
-                  boxShadow:
-                    'inset 0 1px 0 rgba(34, 197, 94, 0.3), inset 0 -2px 4px rgba(0, 0, 0, 0.4), 0 8px 20px rgba(20, 169, 76, 0.15)',
-                }}
-              >
-                <div
-                  className="absolute -top-6 -right-6 w-24 h-24 rounded-full pointer-events-none"
-                  style={{
-                    background:
-                      'radial-gradient(circle, rgba(34, 197, 94, 0.35) 0%, transparent 60%)',
-                    filter: 'blur(4px)',
-                  }}
+            {/* XP-style progress bar */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-1 text-[10px] uppercase tracking-widest font-black">
+                <span style={{ color: tier.color }}>Level Progress</span>
+                <span className="text-white tabular-nums">{progressPct}%</span>
+              </div>
+              <div className="h-2 rounded-full overflow-hidden relative"
+                   style={{ background: 'rgba(255,255,255,0.05)', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.5)' }}>
+                <div className="h-full rounded-full relative overflow-hidden"
+                     style={{
+                       width: `${progressPct}%`,
+                       background: `linear-gradient(90deg, ${tier.color} 0%, ${tier.accent} 50%, ${tier.color} 100%)`,
+                       backgroundSize: '200% 100%',
+                       animation: 'bgGoldDrift 2s linear infinite',
+                       boxShadow: `0 0 8px ${tier.color}`,
+                     }}
                 />
-                <div className="relative flex items-start justify-between mb-3">
-                  <div
-                    className="w-11 h-11 rounded-full flex items-center justify-center"
-                    style={{
-                      background:
-                        'radial-gradient(circle at 30% 25%, rgba(255,255,255,0.4) 0%, transparent 45%), conic-gradient(from 180deg, #14A94C, #22C55E, #14A94C, #22C55E, #14A94C)',
-                      border: '2px solid #22C55E',
-                      boxShadow: '0 0 0 3px rgba(0,0,0,0.55), 0 6px 14px rgba(34,197,94,0.55)',
-                    }}
-                  >
-                    <div
-                      className="w-9 h-9 rounded-full flex items-center justify-center"
-                      style={{ background: 'radial-gradient(circle at 30% 30%, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.85) 100%)' }}
-                    >
-                      <Users className="w-4 h-4 text-[#22C55E]" strokeWidth={2.6} />
-                    </div>
-                  </div>
-                  <span
-                    className="text-[8px] px-1.5 py-0.5 rounded font-black tracking-widest uppercase"
-                    style={{ background: 'rgba(34,197,94,0.2)', color: '#4ADE80', border: '1px solid rgba(34,197,94,0.5)' }}
-                  >
-                    Team
-                  </span>
+              </div>
+            </div>
+
+            {/* Gamified Stat tiles */}
+            <div className="grid grid-cols-2 gap-3">
+              {/* Referrals */}
+              <div className="relative rounded-xl p-3 overflow-hidden text-center"
+                   style={{
+                     background: 'linear-gradient(160deg, rgba(20, 169, 76, 0.25) 0%, rgba(0,0,0,0.5) 100%)',
+                     border: '1.5px solid rgba(34, 197, 94, 0.55)',
+                     boxShadow: 'inset 0 1px 0 rgba(34,197,94,0.3), 0 4px 12px rgba(20,169,76,0.15)',
+                   }}>
+                <div className="w-9 h-9 mx-auto rounded-full flex items-center justify-center mb-1"
+                     style={{ background: 'conic-gradient(from 180deg, #14A94C, #22C55E, #14A94C)', border: '2px solid #22C55E', boxShadow: '0 0 8px #22C55E88' }}>
+                  <Users className="w-4 h-4 text-white" strokeWidth={2.5} />
                 </div>
-                <p
-                  className="text-3xl font-black tabular-nums leading-none"
-                  data-testid="refer-total-count"
-                  style={{
-                    fontFamily: 'Unbounded, Outfit, sans-serif',
-                    backgroundImage: 'linear-gradient(135deg, #FFFFFF 0%, #4ADE80 100%)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                  }}
-                >
-                  {referralInfo?.referred_count || 0}
-                </p>
-                <p className="text-[10px] uppercase tracking-widest text-emerald-300/80 font-black mt-1.5">
-                  Total Referrals
-                </p>
+                <p className="text-2xl font-black text-white tabular-nums leading-none" data-testid="refer-total-count">{refCount}</p>
+                <p className="text-[9px] uppercase tracking-widest text-emerald-300 font-black mt-1">Team Size</p>
               </div>
 
-              {/* Total Income */}
-              <div
-                className="relative rounded-2xl p-4 overflow-hidden"
-                style={{
-                  background:
-                    'linear-gradient(155deg, rgba(255, 215, 0, 0.22) 0%, rgba(184, 134, 11, 0.12) 60%, rgba(0, 0, 0, 0.6) 100%)',
-                  border: '1.5px solid rgba(255, 215, 0, 0.55)',
-                  boxShadow:
-                    'inset 0 1px 0 rgba(255, 215, 0, 0.3), inset 0 -2px 4px rgba(0, 0, 0, 0.4), 0 8px 20px rgba(255, 215, 0, 0.15)',
-                }}
-              >
-                <div
-                  className="absolute -top-6 -right-6 w-24 h-24 rounded-full pointer-events-none"
-                  style={{
-                    background:
-                      'radial-gradient(circle, rgba(255, 215, 0, 0.35) 0%, transparent 60%)',
-                    filter: 'blur(4px)',
-                  }}
-                />
-                <div className="relative flex items-start justify-between mb-3">
-                  <div
-                    className="w-11 h-11 rounded-full flex items-center justify-center"
-                    style={{
-                      background:
-                        'radial-gradient(circle at 30% 25%, rgba(255,255,255,0.4) 0%, transparent 45%), conic-gradient(from 180deg, #B8860B, #FFD700, #B8860B, #FFD700, #B8860B)',
-                      border: '2px solid #FFD700',
-                      boxShadow: '0 0 0 3px rgba(0,0,0,0.55), 0 6px 14px rgba(255,215,0,0.55)',
-                    }}
-                  >
-                    <div
-                      className="w-9 h-9 rounded-full flex items-center justify-center"
-                      style={{ background: 'radial-gradient(circle at 30% 30%, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.85) 100%)' }}
-                    >
-                      <IndianRupee className="w-4 h-4 text-[#FFD700]" strokeWidth={2.8} />
-                    </div>
-                  </div>
-                  <span
-                    className="text-[8px] px-1.5 py-0.5 rounded font-black tracking-widest uppercase"
-                    style={{ background: 'rgba(255,215,0,0.2)', color: '#FDE047', border: '1px solid rgba(255,215,0,0.5)' }}
-                  >
-                    Earned
-                  </span>
+              {/* Earnings */}
+              <div className="relative rounded-xl p-3 overflow-hidden text-center"
+                   style={{
+                     background: 'linear-gradient(160deg, rgba(255, 215, 0, 0.25) 0%, rgba(0,0,0,0.5) 100%)',
+                     border: '1.5px solid rgba(255, 215, 0, 0.55)',
+                     boxShadow: 'inset 0 1px 0 rgba(255,215,0,0.3), 0 4px 12px rgba(255,215,0,0.15)',
+                   }}>
+                <div className="w-9 h-9 mx-auto rounded-full flex items-center justify-center mb-1"
+                     style={{ background: 'conic-gradient(from 180deg, #B8860B, #FFD700, #B8860B)', border: '2px solid #FFD700', boxShadow: '0 0 8px #FFD70088' }}>
+                  <IndianRupee className="w-4 h-4 text-white" strokeWidth={2.8} />
                 </div>
-                <p
-                  className="text-3xl font-black tabular-nums leading-none"
-                  data-testid="refer-total-income"
-                  style={{
-                    fontFamily: 'Unbounded, Outfit, sans-serif',
-                    backgroundImage: 'linear-gradient(135deg, #FFFFFF 0%, #FDE047 100%)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                  }}
-                >
-                  ₹{(referralInfo?.total_earned || 0).toFixed(0)}
+                <p className="text-2xl font-black tabular-nums leading-none"
+                   style={{ backgroundImage: 'linear-gradient(135deg, #FFFFFF 0%, #FDE047 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
+                   data-testid="refer-total-income">
+                  ₹{earned.toFixed(0)}
                 </p>
-                <p className="text-[10px] uppercase tracking-widest text-yellow-300/80 font-black mt-1.5">
-                  Total Income
-                </p>
+                <p className="text-[9px] uppercase tracking-widest text-yellow-300 font-black mt-1">Total Earned</p>
               </div>
+            </div>
+
+            {/* Achievement badges row */}
+            <div className="mt-4 flex items-center justify-between px-1">
+              {tiers.map((t, i) => {
+                const unlocked = refCount >= t.min;
+                return (
+                  <div key={t.name} className="flex flex-col items-center gap-1" title={`${t.name} (${t.min}+)`}>
+                    <div
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-sm transition-all"
+                      style={{
+                        background: unlocked
+                          ? `radial-gradient(circle at 30% 25%, rgba(255,255,255,0.35) 0%, transparent 45%), linear-gradient(135deg, ${t.color} 0%, ${t.accent} 100%)`
+                          : 'rgba(255,255,255,0.05)',
+                        border: unlocked ? `1.5px solid ${t.color}` : '1.5px solid rgba(255,255,255,0.1)',
+                        boxShadow: unlocked ? `0 0 8px ${t.color}` : 'none',
+                        filter: unlocked ? 'none' : 'grayscale(1) opacity(0.4)',
+                      }}
+                    >
+                      {t.icon}
+                    </div>
+                    <span className="text-[8px] font-black tracking-wider uppercase" style={{ color: unlocked ? t.color : '#6B7280' }}>
+                      {t.name}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Earn-rate banner */}
-            <div className="mt-3 rounded-xl p-3 flex items-center gap-3" style={{ background: 'rgba(255, 215, 0, 0.08)', border: '1px dashed rgba(212, 175, 55, 0.5)' }}>
+            <div className="mt-4 rounded-xl p-3 flex items-center gap-3" style={{ background: 'rgba(255, 215, 0, 0.08)', border: '1px dashed rgba(212, 175, 55, 0.5)' }}>
               <div className="w-10 h-10 rounded-full bg-[#D4AF37]/20 flex items-center justify-center shrink-0">
                 <Gift className="w-5 h-5 text-[#FFD700]" />
               </div>
@@ -299,6 +318,8 @@ const ReferPage = () => {
             </div>
           </CardContent>
         </Card>
+          );
+        })()}
 
         {/* Your Referral Code */}
         <Card className="bg-[#141418] border-white/10">

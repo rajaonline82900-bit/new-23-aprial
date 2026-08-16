@@ -835,7 +835,7 @@ const DashboardPage = () => {
                       {/* Round premium icon medallion */}
                       <div className="pt-6 flex items-center justify-center relative z-[1]">
                         <div
-                          className="game-medallion flex items-center justify-center rounded-full"
+                          className="game-medallion flex items-center justify-center rounded-full relative"
                           style={{
                             width: 80,
                             height: 80,
@@ -859,6 +859,21 @@ const DashboardPage = () => {
                           >
                             <cat.Icon size={42} active={false} />
                           </div>
+
+                          {/* Casino Play badge — small chip on bottom-right */}
+                          {!isDisabled && (
+                            <div
+                              className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center"
+                              style={{
+                                background: 'radial-gradient(circle at 35% 30%, #86EFAC 0%, #22C55E 40%, #14A94C 80%, #052E16 100%)',
+                                border: '2px solid #FFD700',
+                                boxShadow: '0 2px 6px rgba(20, 169, 76, 0.65), inset 0 1px 2px rgba(255,255,255,0.4)',
+                              }}
+                              data-testid={`gateway-${cat.id}-play-badge`}
+                            >
+                              <Play className="w-3 h-3 ml-0.5" fill="#FFD700" stroke="#FFF" strokeWidth={1.5} />
+                            </div>
+                          )}
                         </div>
                       </div>
 

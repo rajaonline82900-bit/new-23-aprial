@@ -1,12 +1,13 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { LanguageProvider } from "./context/LanguageContext";
 import { Toaster } from "./components/ui/sonner";
 import { checkVersionAndMaybeReload } from "./utils/versionCheck";
+import LuckyBetSplash from "./components/SplashScreen";
 import "./index.css";
 
-// Simple Loader - transparent overlay so background shows through
+// Simple Loader shown while auth is bootstrapping (not the branded splash)
 const SplashScreen = () => (
   <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(140deg, #0B0420 0%, #1A0B3D 50%, #0B0420 100%)' }}>
     <div className="w-12 h-12 border-4 border-[#D4AF37] border-t-transparent rounded-full animate-spin" />
@@ -260,9 +261,12 @@ const UpdateAvailableBanner = () => {
 };
 
 function App() {
+  // Show Lucky Bet branded splash once per session load
+  const [splashDone, setSplashDone] = useState(false);
+
   // Run version check on app boot — will attempt at most 1 auto-reload per
   // session, then falls back to a soft banner (no more infinite reload loops).
-  React.useEffect(() => {
+  useEffect(() => {
     checkVersionAndMaybeReload({ isBoot: true });
     const onFocus = () => checkVersionAndMaybeReload();
     window.addEventListener('focus', onFocus);
@@ -274,6 +278,7 @@ function App() {
       <AuthProvider>
         <LanguageProvider>
         <div className="App">
+          {!splashDone && <LuckyBetSplash onDone={() => setSplashDone(true)} />}
           <AppRoutes />
           <AuthedOverlays />
           <UpdateAvailableBanner />
