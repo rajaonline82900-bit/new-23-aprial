@@ -31,6 +31,7 @@ from routes.aviator_routes import router as aviator_router, aviator_round_loop, 
 from routes.coin_routes import router as coin_router, coin_round_loop
 from routes.dragon_tiger_routes import router as dt_router, dragon_tiger_round_loop
 from routes.color_game_routes import router as color_game_router, color_game_round_loop
+from routes.chicken_road_routes import router as chicken_road_router
 from routes.ludo_routes import router as ludo_router, ludo_watchdog
 from routes.game_toggles import router as game_toggles_router
 from routes.fake_ticker import router as fake_ticker_router
@@ -68,6 +69,7 @@ api_router.include_router(aviator_router)
 api_router.include_router(coin_router)
 api_router.include_router(dt_router)
 api_router.include_router(color_game_router)
+api_router.include_router(chicken_road_router)
 api_router.include_router(ludo_router)
 api_router.include_router(game_toggles_router)
 api_router.include_router(fake_ticker_router)

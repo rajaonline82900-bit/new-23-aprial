@@ -333,6 +333,61 @@ const ColorGameIcon = ({ size = 26 }) => (
     <circle cx="54" cy="46" r="1.2" fill="#FCA5A5" opacity="0.9" />
   </svg>
 );
+
+const ChickenRoadIcon = ({ size = 26 }) => (
+  <svg width={size} height={size} viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="crRoad" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#4B5563" />
+        <stop offset="100%" stopColor="#1F2937" />
+      </linearGradient>
+      <radialGradient id="crChickenBody" cx="35%" cy="30%">
+        <stop offset="0%" stopColor="#FFFBEB" />
+        <stop offset="60%" stopColor="#FDE047" />
+        <stop offset="100%" stopColor="#B45309" />
+      </radialGradient>
+    </defs>
+    {/* Road */}
+    <rect x="4" y="26" width="56" height="24" rx="2" fill="url(#crRoad)" stroke="#0F172A" strokeWidth="1" />
+    {/* Road dashed center line */}
+    <line x1="4" y1="38" x2="60" y2="38" stroke="#FDE047" strokeWidth="1.5" strokeDasharray="4 3" opacity="0.85" />
+    {/* Car (right side, coming) */}
+    <g transform="translate(42 28)">
+      <rect x="0" y="4" width="14" height="8" rx="2" fill="#DC2626" stroke="#0F172A" strokeWidth="1" />
+      <rect x="2" y="1" width="10" height="5" rx="1.5" fill="#F87171" stroke="#0F172A" strokeWidth="0.8" />
+      <circle cx="3" cy="12" r="1.8" fill="#0F172A" />
+      <circle cx="11" cy="12" r="1.8" fill="#0F172A" />
+      <rect x="12" y="6" width="2" height="1.5" fill="#FDE047" /> {/* headlight */}
+    </g>
+    {/* Chicken (left side) */}
+    <g transform="translate(10 20)">
+      {/* Body */}
+      <ellipse cx="8" cy="14" rx="7" ry="6" fill="url(#crChickenBody)" stroke="#78350F" strokeWidth="1" />
+      {/* Head */}
+      <circle cx="8" cy="7" r="5" fill="url(#crChickenBody)" stroke="#78350F" strokeWidth="1" />
+      {/* Comb (red crest) */}
+      <path d="M5 4 Q6 1 7 4 Q8 1 9 4 Q10 1 11 4 Z" fill="#DC2626" stroke="#7F1D1D" strokeWidth="0.5" />
+      {/* Beak */}
+      <path d="M12 7 L15 8 L12 9 Z" fill="#F97316" stroke="#78350F" strokeWidth="0.5" />
+      {/* Eye */}
+      <circle cx="10" cy="6" r="1" fill="#0F172A" />
+      <circle cx="10.4" cy="5.7" r="0.35" fill="#FFF" />
+      {/* Feet */}
+      <line x1="6" y1="20" x2="6" y2="23" stroke="#78350F" strokeWidth="1.2" />
+      <line x1="10" y1="20" x2="10" y2="23" stroke="#78350F" strokeWidth="1.2" />
+      <path d="M4 23 L8 23 M8 23 L12 23" stroke="#78350F" strokeWidth="1.2" fill="none" />
+    </g>
+    {/* Multiplier badge */}
+    <g transform="translate(30 6)">
+      <rect x="0" y="0" width="20" height="12" rx="3" fill="#FDE047" stroke="#78350F" strokeWidth="1" />
+      <text x="10" y="9" textAnchor="middle" fontSize="8" fontWeight="900" fill="#7F1D1D" fontFamily="Outfit, sans-serif">2x</text>
+    </g>
+    {/* Sparkles */}
+    <circle cx="6" cy="10" r="1.2" fill="#FDE047" />
+    <circle cx="58" cy="16" r="1.4" fill="#FDE047" opacity="0.9" />
+    <path d="M 54 54 L 55 56 L 57 57 L 55 58 L 54 60 L 53 58 L 51 57 L 53 56 Z" fill="#FDE047" opacity="0.9" />
+  </svg>
+);
 import FooterNav from '../components/FooterNav';
 import { speak } from '../utils/voice';
 import SidebarMenu from '../components/SidebarMenu';
@@ -934,6 +989,22 @@ const DashboardPage = () => {
                     countSuffix: '2x / 4.5x Payout',
                     isLink: true,
                     linkTo: '/color-game',
+                  },
+                  {
+                    id: 'chicken_road',
+                    label: 'Chicken Road',
+                    hi: 'चिकन रोड',
+                    Icon: ChickenRoadIcon,
+                    bg: 'linear-gradient(155deg, #3A2708 0%, #1A0F04 55%, #0A0602 100%)',
+                    border: '#F97316',
+                    accent: '#FED7AA',
+                    badgeBg: 'linear-gradient(135deg, #F97316 0%, #7C2D12 100%)',
+                    badgeColor: '#FEF3C7',
+                    stripe: 'linear-gradient(90deg, #7C2D12 0%, #F97316 50%, #FBBF24 100%)',
+                    liveLabel: 'CRASH',
+                    countSuffix: 'Up to 20.67x',
+                    isLink: true,
+                    linkTo: '/chicken-road',
                   },
                 ].map((cat) => {
                   const isDisabled = gameToggles[cat.id] === false;

@@ -70,13 +70,24 @@
 - **Icon**: `ColorGameIcon` in DashboardPage — three overlapping RGB gradient balls with sparkles
 - **Registered**: `color_game_router` in `server.py`, `color_game_round_loop` background task, route `/color-game` in `App.js`, card in dashboard
 
-## Games currently in codebase (6 total)
+## ✅ Feb 2026 — Chicken Road Game Added (7th game)
+- **Backend**: `/app/backend/routes/chicken_road_routes.py` — provably-fair crash game with per-user active session
+- **Mechanics**: User places bet → chicken on lane 0 (1.00x) → click STEP to advance (25 lanes max, multipliers 1.10x → 20.67x) → CASHOUT any time to lock in multiplier × bet, OR crash if step_num == hidden crash_step
+- **Crash distribution** (~35% house edge): 40% crash within steps 1-3, 30% within 4-7, 20% within 8-15, 10% within 16-25
+- **Endpoints**: `GET /api/chicken-road/{config,active,history,live-feed}`, `POST /api/chicken-road/{start,step,cashout}`
+- **Frontend**: `/app/frontend/src/pages/ChickenRoadPage.js` — animated road scene (sky, 7-lane preview, finish line), hopping chicken, crashing car + death animation on bust, live multiplier ticker, cashout + step controls
+- **Icon**: `ChickenRoadIcon` — SVG of chicken next to red car on dashed road with 2x badge
+- **Registered**: `chicken_road_router` in `server.py`, route `/chicken-road` in `App.js`, card in dashboard
+- **Verified**: E2E flow via curl — balance 4900 → START -100 → STEP 1.10x → CASHOUT +110 → balance 4910 ✓; also crash scenario at step 6 correctly settles
+
+## Games currently in codebase (7 total)
 1. Gali/Disawar (Kalyan-style single number bets)
 2. Kalyan Matka (Jodi/Panna)
 3. Aviator (crash multiplier)
 4. Coin Toss (Head/Tail)
 5. Dragon Tiger (30s cards)
-6. **Color Prediction (NEW — Feb 2026)**
+6. Color Prediction (30s Wingo)
+7. **Chicken Road (NEW — Feb 2026)**
 
 ## Credentials
 - Admin: `admin@sattamatka.com` / `Admin@123`

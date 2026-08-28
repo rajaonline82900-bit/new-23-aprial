@@ -26,6 +26,7 @@ import AviatorPage from "./pages/AviatorPage";
 import CoinPage from "./pages/CoinPage";
 import DragonTigerPage from "./pages/DragonTigerPage";
 import ColorGamePage from "./pages/ColorGamePage";
+import ChickenRoadPage from "./pages/ChickenRoadPage";
 import LudoLobbyPage from "./pages/LudoLobbyPage";
 import LudoGamePage from "./pages/LudoGamePage";
 import WalletPage from "./pages/WalletPage";
@@ -153,6 +154,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <ColorGamePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/chicken-road"
+        element={
+          <ProtectedRoute>
+            <ChickenRoadPage />
           </ProtectedRoute>
         }
       />
