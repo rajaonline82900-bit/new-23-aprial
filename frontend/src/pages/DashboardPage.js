@@ -250,6 +250,51 @@ const CoinIcon = ({ size = 26 }) => (
     <circle cx="14" cy="8" r="1" fill="#FEF3C7" opacity="0.85" />
   </svg>
 );
+
+const DragonTigerIcon = ({ size = 26 }) => (
+  <svg width={size} height={size} viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="dtDragonG" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#FCA5A5" />
+        <stop offset="50%" stopColor="#DC2626" />
+        <stop offset="100%" stopColor="#7F1D1D" />
+      </linearGradient>
+      <linearGradient id="dtTigerG" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#FED7AA" />
+        <stop offset="50%" stopColor="#F97316" />
+        <stop offset="100%" stopColor="#7C2D12" />
+      </linearGradient>
+      <linearGradient id="dtCardG" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#FEFCE8" />
+        <stop offset="100%" stopColor="#FDE68A" />
+      </linearGradient>
+    </defs>
+    {/* Dragon card (left, slight tilt) */}
+    <g transform="translate(6 14) rotate(-12 15 20)">
+      <rect x="0" y="0" width="26" height="40" rx="4" fill="url(#dtCardG)" stroke="#B45309" strokeWidth="1.5" />
+      <text x="4" y="10" fontSize="9" fontWeight="900" fill="#DC2626" fontFamily="Outfit, sans-serif">A</text>
+      <text x="4" y="18" fontSize="8" fill="#DC2626">♥</text>
+      <text x="13" y="28" textAnchor="middle" fontSize="14" fill="url(#dtDragonG)" fontWeight="900">🐉</text>
+    </g>
+    {/* Tiger card (right, slight tilt) */}
+    <g transform="translate(32 14) rotate(12 15 20)">
+      <rect x="0" y="0" width="26" height="40" rx="4" fill="url(#dtCardG)" stroke="#B45309" strokeWidth="1.5" />
+      <text x="4" y="10" fontSize="9" fontWeight="900" fill="#0F172A" fontFamily="Outfit, sans-serif">K</text>
+      <text x="4" y="18" fontSize="8" fill="#0F172A">♠</text>
+      <text x="13" y="28" textAnchor="middle" fontSize="14" fill="url(#dtTigerG)" fontWeight="900">🐯</text>
+    </g>
+    {/* VS badge */}
+    <g transform="translate(32 34)">
+      <circle cx="0" cy="0" r="8" fill="#FFD700" stroke="#78350F" strokeWidth="1.5" />
+      <text x="0" y="3" textAnchor="middle" fontSize="8" fontWeight="900" fill="#7F1D1D" fontFamily="Outfit, sans-serif">VS</text>
+    </g>
+    {/* Sparkles */}
+    <circle cx="10" cy="8" r="1.4" fill="#FDE047" />
+    <circle cx="55" cy="10" r="1.2" fill="#FDE047" opacity="0.9" />
+    <circle cx="56" cy="54" r="1.3" fill="#FCA5A5" opacity="0.85" />
+    <path d="M 6 56 L 7 58 L 9 59 L 7 60 L 6 62 L 5 60 L 3 59 L 5 58 Z" fill="#FDE047" opacity="0.9" />
+  </svg>
+);
 import FooterNav from '../components/FooterNav';
 import { speak } from '../utils/voice';
 import SidebarMenu from '../components/SidebarMenu';
