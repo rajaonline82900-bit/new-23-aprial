@@ -61,12 +61,22 @@
   - Cast `user['_id']` and `b['user_id']` to `ObjectId` in `db.users` queries/updates
 - **Testing**: Backend testing agent — **16/16 pytest tests passed** (config, round loop, bet validation, e2e settlement with balance credit, history, live feed, regression on games/coin/results). Test file: `/app/backend/tests/test_dragon_tiger.py`
 
-## Games currently in codebase
+## ✅ Feb 2026 — Color Prediction Game Added (6th game)
+- **Backend**: `/app/backend/routes/color_game_routes.py` — 25s betting + 5s reveal = 30s round loop, `_pick_result` draws number 0-9, biases away from majority-bet color with 35% probability
+- **Number → Color mapping**: 0 = Red+Violet, 5 = Green+Violet, odd (1,3,7,9) = Red, even (2,4,6,8) = Green
+- **Payouts**: Red 2x, Green 2x, Violet 4.5x, min bet ₹50
+- **Endpoints**: `GET /api/color-game/{config,current,history,recent-rounds,live-feed}`, `POST /api/color-game/bet`
+- **Frontend**: `/app/frontend/src/pages/ColorGamePage.js` — spinning tricolor ring reveal ball, glossy 3D color buttons, rainbow chip selector, casino ticket history
+- **Icon**: `ColorGameIcon` in DashboardPage — three overlapping RGB gradient balls with sparkles
+- **Registered**: `color_game_router` in `server.py`, `color_game_round_loop` background task, route `/color-game` in `App.js`, card in dashboard
+
+## Games currently in codebase (6 total)
 1. Gali/Disawar (Kalyan-style single number bets)
 2. Kalyan Matka (Jodi/Panna)
 3. Aviator (crash multiplier)
 4. Coin Toss (Head/Tail)
-5. **Dragon Tiger (NEW — Feb 2026)**
+5. Dragon Tiger (30s cards)
+6. **Color Prediction (NEW — Feb 2026)**
 
 ## Credentials
 - Admin: `admin@sattamatka.com` / `Admin@123`

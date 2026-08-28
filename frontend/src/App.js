@@ -25,6 +25,7 @@ import KalyanChartPage from "./pages/KalyanChartPage";
 import AviatorPage from "./pages/AviatorPage";
 import CoinPage from "./pages/CoinPage";
 import DragonTigerPage from "./pages/DragonTigerPage";
+import ColorGamePage from "./pages/ColorGamePage";
 import LudoLobbyPage from "./pages/LudoLobbyPage";
 import LudoGamePage from "./pages/LudoGamePage";
 import WalletPage from "./pages/WalletPage";
@@ -144,6 +145,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <DragonTigerPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/color-game"
+        element={
+          <ProtectedRoute>
+            <ColorGamePage />
           </ProtectedRoute>
         }
       />
