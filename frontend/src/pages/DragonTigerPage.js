@@ -10,125 +10,132 @@ const CHIPS = [50, 100, 500, 1000, 5000];
 const SUIT_COLOR = { '♠': '#0F172A', '♣': '#0F172A', '♥': '#DC2626', '♦': '#DC2626' };
 const RANK_LABEL = (r) => ({ 1: 'A', 11: 'J', 12: 'Q', 13: 'K' })[r] || String(r);
 
-// Animated casino dealer girl — SVG illustration (no external assets)
+// Realistic casino dealer girl — Unsplash photo with idle bob + deal animation
+const DEALER_IMG = 'https://images.unsplash.com/photo-1787676415039-711a133e88c7?fm=jpg&q=75&w=280&h=360&fit=crop&crop=faces';
 const DealerGirl = ({ dealing }) => (
-  <div className="relative" style={{ width: 88, height: 110 }}>
+  <div className="relative" style={{ width: 92, height: 118 }}>
     <style>{`
-      @keyframes lb-dealer-idle { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-3px) } }
-      @keyframes lb-dealer-blink { 0%,92%,100% { transform: scaleY(1) } 95% { transform: scaleY(0.08) } }
-      @keyframes lb-arm-left { 0%,100% { transform: rotate(-10deg) } 50% { transform: rotate(-38deg) } }
-      @keyframes lb-arm-right { 0%,100% { transform: rotate(10deg) } 50% { transform: rotate(38deg) } }
-      @keyframes lb-sparkle { 0%,100% { opacity: 0.2; transform: scale(0.8) } 50% { opacity: 1; transform: scale(1.15) } }
-      .lb-dealer-body { animation: lb-dealer-idle 3s ease-in-out infinite; transform-origin: center bottom }
-      .lb-eye { animation: lb-dealer-blink 4s ease-in-out infinite; transform-origin: center }
-      .lb-arm-l { transform-origin: 30px 58px; animation: lb-arm-left 2s ease-in-out infinite }
-      .lb-arm-r { transform-origin: 58px 58px; animation: lb-arm-right 2s ease-in-out infinite }
-      .lb-sparkle { animation: lb-sparkle 1.4s ease-in-out infinite }
-      .lb-dealer-dealing .lb-arm-l, .lb-dealer-dealing .lb-arm-r { animation-duration: 0.7s }
-      .lb-dealer-dealing .lb-dealer-body { animation-duration: 1.2s }
+      @keyframes lb-dealer-idle { 0%,100% { transform: translateY(0) rotate(0deg) } 50% { transform: translateY(-4px) rotate(-1deg) } }
+      @keyframes lb-dealer-deal { 0% { transform: translateY(0) scale(1) } 30% { transform: translateY(-6px) scale(1.03) rotate(-3deg) } 60% { transform: translateY(-2px) scale(1.02) rotate(3deg) } 100% { transform: translateY(0) scale(1) rotate(0deg) } }
+      @keyframes lb-halo { 0%,100% { opacity:0.35; transform: scale(1) } 50% { opacity:0.7; transform: scale(1.1) } }
+      .lb-dealer-photo { animation: lb-dealer-idle 3.2s ease-in-out infinite; transform-origin: center bottom }
+      .lb-dealer-photo.dealing { animation: lb-dealer-deal 0.9s ease-in-out infinite }
+      .lb-halo { animation: lb-halo 2.4s ease-in-out infinite }
     `}</style>
-    <svg
-      viewBox="0 0 88 110"
-      width="88" height="110"
-      className={dealing ? 'lb-dealer-dealing' : ''}
-      style={{ filter: 'drop-shadow(0 6px 12px rgba(255,215,0,0.35))' }}
-    >
-      {/* sparkles */}
-      <g className="lb-sparkle" style={{ transformOrigin: '12px 20px' }}>
-        <path d="M12 16 L13 20 L17 21 L13 22 L12 26 L11 22 L7 21 L11 20 Z" fill="#FDE047"/>
-      </g>
-      <g className="lb-sparkle" style={{ transformOrigin: '76px 32px', animationDelay: '0.6s' }}>
-        <path d="M76 28 L77 32 L81 33 L77 34 L76 38 L75 34 L71 33 L75 32 Z" fill="#FDE047"/>
-      </g>
-
-      <g className="lb-dealer-body">
-        {/* Hair back */}
-        <path d="M22 30 Q22 12 44 12 Q66 12 66 30 L66 46 Q66 40 60 40 L28 40 Q22 40 22 46 Z" fill="#1E1B4B"/>
-        {/* Neck */}
-        <rect x="40" y="38" width="8" height="8" fill="#F3D5B5"/>
-        {/* Face */}
-        <ellipse cx="44" cy="30" rx="15" ry="17" fill="#F8D5B0"/>
-        {/* Hair front bangs */}
-        <path d="M29 22 Q34 12 44 12 Q54 12 59 22 Q54 20 44 20 Q34 20 29 22 Z" fill="#1E1B4B"/>
-        {/* Side hair strands */}
-        <path d="M29 22 Q26 30 28 42 L30 42 Q30 32 32 24 Z" fill="#1E1B4B"/>
-        <path d="M59 22 Q62 30 60 42 L58 42 Q58 32 56 24 Z" fill="#1E1B4B"/>
-        {/* Eyes */}
-        <ellipse className="lb-eye" cx="38" cy="30" rx="1.6" ry="2.2" fill="#0F172A"/>
-        <ellipse className="lb-eye" cx="50" cy="30" rx="1.6" ry="2.2" fill="#0F172A"/>
-        {/* Cheeks */}
-        <circle cx="34" cy="34" r="1.6" fill="#F9A8D4" opacity="0.7"/>
-        <circle cx="54" cy="34" r="1.6" fill="#F9A8D4" opacity="0.7"/>
-        {/* Lips */}
-        <path d="M40 37 Q44 40 48 37 Q44 38 40 37 Z" fill="#DC2626"/>
-        {/* Earrings */}
-        <circle cx="29" cy="32" r="1.5" fill="#FFD700"/>
-        <circle cx="59" cy="32" r="1.5" fill="#FFD700"/>
-        {/* Vest / body */}
-        <path d="M28 46 L60 46 L64 90 L24 90 Z" fill="#0F172A"/>
-        {/* Vest gold trim */}
-        <path d="M28 46 L60 46 L61 52 L27 52 Z" fill="#FFD700"/>
-        {/* White shirt collar */}
-        <path d="M38 46 L50 46 L48 58 L44 62 L40 58 Z" fill="#FFFFFF"/>
-        {/* Bow tie */}
-        <path d="M40 48 L44 51 L48 48 L48 54 L44 51 L40 54 Z" fill="#DC2626"/>
-        <circle cx="44" cy="51" r="1.2" fill="#FDE047"/>
-        {/* Gold buttons */}
-        <circle cx="44" cy="66" r="1.6" fill="#FFD700"/>
-        <circle cx="44" cy="74" r="1.6" fill="#FFD700"/>
-        <circle cx="44" cy="82" r="1.6" fill="#FFD700"/>
-        {/* Left arm (reaches to dragon) */}
-        <g className="lb-arm-l">
-          <path d="M28 54 Q18 66 14 78 L20 82 Q26 70 32 60 Z" fill="#0F172A"/>
-          <ellipse cx="16" cy="80" rx="4" ry="3.5" fill="#F8D5B0"/>
-        </g>
-        {/* Right arm (reaches to tiger) */}
-        <g className="lb-arm-r">
-          <path d="M60 54 Q70 66 74 78 L68 82 Q62 70 56 60 Z" fill="#0F172A"/>
-          <ellipse cx="72" cy="80" rx="4" ry="3.5" fill="#F8D5B0"/>
-        </g>
-      </g>
-      {/* Table shadow */}
-      <ellipse cx="44" cy="104" rx="26" ry="3" fill="rgba(0,0,0,0.4)"/>
-    </svg>
+    {/* Gold halo */}
+    <div className="lb-halo absolute inset-0 rounded-full" style={{
+      background: 'radial-gradient(circle at 50% 45%, rgba(255,215,0,0.55) 0%, rgba(255,215,0,0) 65%)',
+      filter: 'blur(6px)'
+    }} />
+    <div className={`lb-dealer-photo ${dealing ? 'dealing' : ''} relative w-full h-full`}>
+      <img
+        src={DEALER_IMG}
+        alt="Casino Dealer"
+        loading="lazy"
+        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+        style={{
+          width: '100%', height: '100%',
+          objectFit: 'cover', objectPosition: 'center 20%',
+          borderRadius: '50% 50% 45% 45% / 55% 55% 45% 45%',
+          border: '2.5px solid #FDE047',
+          boxShadow: '0 8px 20px rgba(220,38,38,0.35), 0 0 0 2px rgba(0,0,0,0.4), inset 0 -20px 25px rgba(0,0,0,0.35)',
+        }}
+      />
+    </div>
+    {/* Dealer name plate */}
+    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-[8px] font-black tracking-widest"
+      style={{
+        background: 'linear-gradient(90deg, #78350F 0%, #FBBF24 50%, #78350F 100%)',
+        color: '#1A0F00',
+        border: '1px solid #FDE047',
+        whiteSpace: 'nowrap',
+      }}>DEALER</div>
   </div>
 );
 
-const CardFace = ({ card, flipped, delay = 0 }) => (
-  <div className="relative" style={{ width: 90, height: 130, perspective: 800 }}>
-    <div className="absolute inset-0" style={{
-      transformStyle: 'preserve-3d',
-      transition: `transform 0.7s cubic-bezier(0.4, 0, 0.2, 1) ${delay}ms`,
-      transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
-    }}>
-      {/* Back */}
-      <div className="absolute inset-0 rounded-xl flex items-center justify-center"
-        style={{
-          backfaceVisibility: 'hidden',
-          background: 'linear-gradient(135deg, #B45309 0%, #78350F 50%, #451A03 100%)',
-          border: '3px solid #FDE047',
-          boxShadow: '0 8px 20px rgba(0,0,0,0.6), inset 0 1px 2px rgba(255,215,0,0.4)',
-        }}>
-        <div className="w-14 h-14 rounded-full flex items-center justify-center text-2xl" style={{ background: '#FEF3C7', border: '2px solid #78350F' }}>🐉</div>
-      </div>
-      {/* Front */}
-      <div className="absolute inset-0 rounded-xl flex flex-col items-center justify-center bg-white"
-        style={{
-          backfaceVisibility: 'hidden',
-          transform: 'rotateY(180deg)',
-          border: '3px solid #FDE047',
-          boxShadow: '0 8px 20px rgba(0,0,0,0.5)',
-        }}>
-        {card ? (
-          <>
-            <div className="text-4xl font-black" style={{ color: SUIT_COLOR[card.suit] }}>{RANK_LABEL(card.rank)}</div>
-            <div className="text-4xl" style={{ color: SUIT_COLOR[card.suit] }}>{card.suit}</div>
-          </>
-        ) : <div className="text-6xl">?</div>}
+// Realistic poker card — corner labels (top-left + bottom-right rotated) + big center pip
+const CardFace = ({ card, flipped, delay = 0, side = 'dragon' }) => {
+  const isDragon = side === 'dragon';
+  const backBg = isDragon
+    ? 'linear-gradient(135deg, #7F1D1D 0%, #450a0a 55%, #1F0505 100%)'
+    : 'linear-gradient(135deg, #7C2D12 0%, #431407 55%, #1C0503 100%)';
+  const backAccent = isDragon ? '#DC2626' : '#F97316';
+  const backGlyph = isDragon ? '🐉' : '🐯';
+  const rank = card ? RANK_LABEL(card.rank) : '';
+  const suit = card ? card.suit : '';
+  const suitColor = card ? SUIT_COLOR[card.suit] : '#0F172A';
+  return (
+    <div className="relative" style={{ width: 92, height: 132, perspective: 900 }}>
+      <div className="absolute inset-0" style={{
+        transformStyle: 'preserve-3d',
+        transition: `transform 0.75s cubic-bezier(0.4, 0, 0.2, 1) ${delay}ms`,
+        transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+      }}>
+        {/* Back — dragon/tiger themed */}
+        <div className="absolute inset-0 rounded-xl overflow-hidden"
+          style={{
+            backfaceVisibility: 'hidden',
+            background: backBg,
+            border: '3px solid #FDE047',
+            boxShadow: '0 10px 22px rgba(0,0,0,0.65), inset 0 1px 2px rgba(255,215,0,0.4)',
+          }}>
+          {/* Inner double-border frame */}
+          <div className="absolute inset-1.5 rounded-lg" style={{
+            border: `1.5px solid ${backAccent}`,
+            background: `repeating-linear-gradient(45deg, rgba(255,215,0,0.06) 0 4px, transparent 4px 8px)`,
+          }} />
+          {/* Central medallion */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="rounded-full flex items-center justify-center"
+              style={{
+                width: 58, height: 58,
+                background: `radial-gradient(circle at 35% 30%, #FEF3C7 0%, #FBBF24 45%, ${backAccent} 100%)`,
+                border: `2.5px solid #FDE047`,
+                boxShadow: `0 4px 10px rgba(0,0,0,0.5), inset 0 -6px 12px rgba(0,0,0,0.3)`,
+                fontSize: 30,
+                lineHeight: 1,
+              }}>{backGlyph}</div>
+          </div>
+          {/* Corner filigree dots */}
+          <div className="absolute top-1.5 left-1.5 w-1.5 h-1.5 rounded-full" style={{ background: '#FDE047' }} />
+          <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full" style={{ background: '#FDE047' }} />
+          <div className="absolute bottom-1.5 left-1.5 w-1.5 h-1.5 rounded-full" style={{ background: '#FDE047' }} />
+          <div className="absolute bottom-1.5 right-1.5 w-1.5 h-1.5 rounded-full" style={{ background: '#FDE047' }} />
+        </div>
+        {/* Front — real poker card layout */}
+        <div className="absolute inset-0 rounded-xl bg-white overflow-hidden"
+          style={{
+            backfaceVisibility: 'hidden',
+            transform: 'rotateY(180deg)',
+            border: '2.5px solid #E5E7EB',
+            boxShadow: '0 10px 22px rgba(0,0,0,0.55), inset 0 -8px 16px rgba(0,0,0,0.05)',
+            background: 'linear-gradient(180deg, #FFFFFF 0%, #F9FAFB 100%)',
+          }}>
+          {card ? (
+            <>
+              {/* Top-left corner */}
+              <div className="absolute top-1.5 left-2 flex flex-col items-center leading-none" style={{ color: suitColor }}>
+                <span className="font-black" style={{ fontSize: 18, fontFamily: 'Georgia, serif' }}>{rank}</span>
+                <span style={{ fontSize: 14, marginTop: 1 }}>{suit}</span>
+              </div>
+              {/* Bottom-right corner (rotated 180) */}
+              <div className="absolute bottom-1.5 right-2 flex flex-col items-center leading-none" style={{ color: suitColor, transform: 'rotate(180deg)' }}>
+                <span className="font-black" style={{ fontSize: 18, fontFamily: 'Georgia, serif' }}>{rank}</span>
+                <span style={{ fontSize: 14, marginTop: 1 }}>{suit}</span>
+              </div>
+              {/* Big center suit pip */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span style={{ fontSize: 54, color: suitColor, lineHeight: 1, textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>{suit}</span>
+              </div>
+            </>
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center text-6xl text-gray-300">?</div>
+          )}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const DragonTigerPage = () => {
   const { user, refreshUser } = useAuth();
@@ -255,17 +262,16 @@ const DragonTigerPage = () => {
         }}>
           <div className="flex flex-col items-center gap-2">
             <span className="text-[10px] font-black tracking-widest uppercase" style={{ color: '#DC2626' }}>🐉 Dragon</span>
-            <CardFace card={revealCards.dragon} flipped={flip.d} />
+            <CardFace card={revealCards.dragon} flipped={flip.d} side="dragon" />
             {revealCards.winner === 'dragon' && flip.d && <span className="text-[10px] font-black text-[#FDE047] animate-pulse">WINNER 🏆</span>}
           </div>
           <div className="flex flex-col items-center">
             <DealerGirl dealing={!isBetting} />
-            <span className="text-[9px] text-yellow-300 tracking-widest font-bold uppercase mt-1">Dealer</span>
-            {revealCards.winner === 'tie' && flip.d && flip.t && <span className="text-[9px] text-[#FDE047] font-black mt-1 animate-pulse">TIE! 50x</span>}
+            {revealCards.winner === 'tie' && flip.d && flip.t && <span className="text-[9px] text-[#FDE047] font-black mt-2 animate-pulse">TIE! 50x</span>}
           </div>
           <div className="flex flex-col items-center gap-2">
             <span className="text-[10px] font-black tracking-widest uppercase" style={{ color: '#F97316' }}>🐯 Tiger</span>
-            <CardFace card={revealCards.tiger} flipped={flip.t} delay={700} />
+            <CardFace card={revealCards.tiger} flipped={flip.t} delay={700} side="tiger" />
             {revealCards.winner === 'tiger' && flip.t && <span className="text-[10px] font-black text-[#FDE047] animate-pulse">WINNER 🏆</span>}
           </div>
         </div>
