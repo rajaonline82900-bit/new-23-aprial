@@ -820,6 +820,22 @@ const DashboardPage = () => {
                     isLink: true,
                     linkTo: '/coin',
                   },
+                  {
+                    id: 'dragon_tiger',
+                    label: 'Dragon Tiger',
+                    hi: 'ड्रैगन टाइगर',
+                    Icon: DragonTigerIcon,
+                    bg: 'linear-gradient(155deg, #3B0808 0%, #1A0404 55%, #0A0202 100%)',
+                    border: '#DC2626',
+                    accent: '#FCA5A5',
+                    badgeBg: 'linear-gradient(135deg, #DC2626 0%, #7F1D1D 100%)',
+                    badgeColor: '#FEF3C7',
+                    stripe: 'linear-gradient(90deg, #7F1D1D 0%, #DC2626 50%, #7F1D1D 100%)',
+                    liveLabel: '30 SEC',
+                    countSuffix: '2x / 50x Payout',
+                    isLink: true,
+                    linkTo: '/dragon-tiger',
+                  },
                 ].map((cat) => {
                   const isDisabled = gameToggles[cat.id] === false;
                   return (

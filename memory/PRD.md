@@ -46,12 +46,32 @@
 - DB: MongoDB `matka_prod`
 
 ## Pending / Optional
-- [ ] **Deploy to VPS**: `cd /var/www/new-23-aprial && git pull && cd frontend && CI=false yarn build && sudo systemctl reload nginx`
+- [ ] **Deploy to VPS**: `cd /var/www/new-23-aprial && git pull && cd frontend && CI=false yarn build && sudo systemctl reload nginx && sudo systemctl restart matka-backend`
 - [ ] Remove unused old page components (DashboardPage, KalyanGamePage, AviatorPage, LudoLobbyPage, LudoGamePage, BetsPage, ResultsPage, JantriPage, RateListPage, GamePage, KalyanChartPage) — cleanup only, not blocking
+
+## ✅ Feb 2026 — Dragon Tiger Game Added (5th game)
+- **Backend**: `/app/backend/routes/dragon_tiger_routes.py` — 25s betting + 5s reveal = 30s round loop, `_pick_result` with 35% house-edge bias against majority side, D/T pays 2x, Tie pays 50x, min bet ₹50
+- **Endpoints**: `GET /api/dragon-tiger/{config,current,history,recent-rounds,live-feed}`, `POST /api/dragon-tiger/bet`
+- **Frontend**: `/app/frontend/src/pages/DragonTigerPage.js` — 3D card flip animation, chip selector, live timer, casino ticket history
+- **Dealer**: Animated SVG casino dealer girl (idle sway + blinking eyes + arms reaching to cards, faster during reveal) — no external asset
+- **Registered**: `dt_router` in `server.py:68`, `dragon_tiger_round_loop` started at line 240, route `/dragon-tiger` in `App.js:143`, card in `DashboardPage.js` line ~824
+- **Bugfixes applied in this session**:
+  - Fixed `ImportError: cannot import name 'require_auth'` → use `get_current_user`
+  - Refactored `place_bet` and `my_history` from `Depends(require_auth)` to `Request` + `await get_current_user(request)`
+  - Cast `user['_id']` and `b['user_id']` to `ObjectId` in `db.users` queries/updates
+- **Testing**: Backend testing agent — **16/16 pytest tests passed** (config, round loop, bet validation, e2e settlement with balance credit, history, live feed, regression on games/coin/results). Test file: `/app/backend/tests/test_dragon_tiger.py`
+
+## Games currently in codebase
+1. Gali/Disawar (Kalyan-style single number bets)
+2. Kalyan Matka (Jodi/Panna)
+3. Aviator (crash multiplier)
+4. Coin Toss (Head/Tail)
+5. **Dragon Tiger (NEW — Feb 2026)**
 
 ## Credentials
 - Admin: `admin@sattamatka.com` / `Admin@123`
 - Admin URL: `/admin-login`
+
 
 ## Key Files Changed (Coin-only simplification, Feb 2026)
 - `frontend/src/App.js` — routes for removed games now redirect to `/coin`, unused imports removed

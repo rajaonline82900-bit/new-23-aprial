@@ -36,7 +36,7 @@ class TestJantriReportAPI:
         # Logout after tests
         try:
             self.session.post(f"{BASE_URL}/api/auth/logout")
-        except:
+        except Exception:
             pass
     
     def test_jantri_report_requires_auth(self):

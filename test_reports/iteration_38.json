@@ -1,0 +1,34 @@
+{
+  "summary": "Dragon Tiger backend fully validated. All 16 pytest tests passed (config, current round, bet validation, e2e settlement with balance credit, history, live feed, recent rounds, and regression on games/coin/results).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_dragon_tiger.py",
+    "/app/test_reports/pytest/dragon_tiger_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "_settle_round sleeps 4s (ROUND_TOTAL - BET_WINDOW - 1 = 4) then settles — leaves ~1s slack; if event loop is busy under load, bets could settle slightly after next round starts. Consider anchoring settlement to absolute wall-clock ends_at.",
+    "House-edge algorithm in _pick_result uses `while` loops that redraw both cards inside dragon/tiger branches — the tiger branch redraws BOTH tiger and dragon, which can accidentally cause dragon > tiger and thus fail to bias away from majority tiger side. Minor logic quirk but only visible statistically.",
+    "live-feed does not filter status — bets from earlier rounds (already settled) also show up masked, which is fine but consider sorting by round.",
+    "No max-bet cap enforced; large balance users can place unbounded bets. Consider adding max_bet to config.",
+    "dragon_tiger_rounds documents accumulate forever with no TTL / cleanup. Consider retention policy."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_dragon_tiger.py"
+  ],
+  "success_rate": {"backend": "100%", "frontend": "N/A"},
+  "test_credentials": "admin@sattamatka.com / Admin@123 (unused — test user registered fresh per run and cleaned up)",
+  "seed_data_creation": "Registers a new TEST_dt_<uuid>@example.com user per module, tops up balance directly in MongoDB, and cleans up user + bets on teardown.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Test file at /app/backend/tests/test_dragon_tiger.py is idempotent and can be re-run. Round is 25s bet + 5s reveal; settlement takes up to ~35s. Direct MongoDB balance top-up is used because no admin balance-credit endpoint was needed for testing.",
+  "rca of the issue": "N/A — no bugs found. Prior ImportError (require_auth) and ObjectId casting fixes are working correctly: bets deduct balance, winners are credited (verified 10000 → 9950 → 10050 flow for a 'won' tiger bet)."
+}
