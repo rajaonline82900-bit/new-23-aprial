@@ -22,39 +22,46 @@ from auth import get_current_user
 router = APIRouter()
 
 # Step index -> multiplier reached AFTER completing that step
-# Step 0 = start (1.00x), Step 1 = first crossing
-MULTIPLIERS = [
-    1.00, 1.10, 1.24, 1.40, 1.58, 1.79,
-    2.02, 2.28, 2.58, 2.92, 3.30, 3.73,
-    4.21, 4.76, 5.38, 6.08, 6.87, 7.77,
-    8.79, 9.93, 11.22, 12.68, 14.33, 16.19,
-    18.29, 20.67,
-]
-MAX_STEP = len(MULTIPLIERS) - 1  # 25
+# Step 0 = start (1.00x), Step 1..8 = successive lane crossings, Step 8 = FINISH (20x)
+MULTIPLIERS = [1.00, 1.20, 1.50, 2.00, 3.00, 5.00, 8.00, 12.00, 20.00]
+MAX_STEP = len(MULTIPLIERS) - 1  # 8
 
 
 class StartBet(BaseModel):
     amount: float = Field(gt=0)
+    difficulty: str = 'Easy'
 
 
 async def _get_config():
     doc = await db.chicken_road_config.find_one({'_id': 'config'})
     if not doc:
-        doc = {'_id': 'config', 'min_bet': 50, 'enabled': True}
+        doc = {'_id': 'config', 'min_bet': 20, 'enabled': True}
         await db.chicken_road_config.insert_one(doc)
     return doc
 
 
-def _pick_crash_step():
-    """Heavy low-bias distribution (~35% house edge overall)."""
+def _pick_crash_step(difficulty: str = 'Easy'):
+    """Distribution shifts with difficulty. Easy = friendlier, Hard = harsher.
+    All roughly ~30-40% house edge on average.
+    """
     r = random.random()
-    if r < 0.40:
-        return random.randint(1, 3)     # 40% crash within first 3 steps
-    if r < 0.70:
-        return random.randint(4, 7)     # 30% crash between 4-7
-    if r < 0.90:
-        return random.randint(8, 15)    # 20% crash between 8-15
-    return random.randint(16, MAX_STEP) # 10% crash between 16-25
+    if difficulty == 'Hard':
+        # Harsh: 55% crash in 1-2, 25% 3-4, 15% 5-6, 5% 7-8
+        if r < 0.55:  return random.randint(1, 2)
+        if r < 0.80:  return random.randint(3, 4)
+        if r < 0.95:  return random.randint(5, 6)
+        return random.randint(7, MAX_STEP)
+    if difficulty == 'Medium':
+        # Balanced: 40% crash in 1-2, 30% 3-4, 20% 5-6, 10% 7-8
+        if r < 0.40:  return random.randint(1, 2)
+        if r < 0.70:  return random.randint(3, 4)
+        if r < 0.90:  return random.randint(5, 6)
+        return random.randint(7, MAX_STEP)
+    # Easy: 25% crash in 1-2, 30% 3-4, 25% 5-6, 20% 7-8
+    if r < 0.25:  return random.randint(1, 2)
+    if r < 0.55:  return random.randint(3, 4)
+    if r < 0.80:  return random.randint(5, 6)
+    return random.randint(7, MAX_STEP)
 
 
 @router.get('/chicken-road/config')
@@ -97,7 +104,7 @@ async def start_game(body: StartBet, request: Request):
         raise HTTPException(400, 'insufficient balance')
     await db.users.update_one({'_id': ObjectId(user['_id'])}, {'$inc': {'balance': -body.amount}})
     game_id = secrets.token_hex(6)
-    crash_step = _pick_crash_step()
+    crash_step = _pick_crash_step(body.difficulty)
     doc = {
         'game_id': game_id,
         'user_id': user['_id'],
