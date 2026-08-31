@@ -1,0 +1,188 @@
+"""Crazy Time — Evolution-style money wheel.
+
+Mechanics:
+- Round = 30 s (25 s betting + 5 s reveal)
+- Wheel has 8 segments with weighted probability (house edge)
+- Bets: '1', '2', '5', '10', 'coin_flip', 'cash_hunt', 'pachinko', 'crazy_time'
+- Payouts (total return, includes stake): 2x, 3x, 6x, 11x, 10x, 20x, 40x, 45x
+"""
+import asyncio
+import random
+import time
+import secrets
+from datetime import datetime, timezone
+
+from fastapi import APIRouter, HTTPException, Request
+from pydantic import BaseModel, Field
+from bson import ObjectId
+
+from database import db
+from auth import get_current_user
+
+router = APIRouter()
+
+# Segment name -> (weight, payout multiplier)
+SEGMENTS = {
+    '1':          (23, 2),
+    '2':          (15, 3),
+    '5':          (7,  6),
+    '10':         (4,  11),
+    'coin_flip':  (3,  10),
+    'cash_hunt':  (2,  20),
+    'pachinko':   (1,  40),
+    'crazy_time': (1,  45),
+}
+SEG_NAMES = list(SEGMENTS.keys())
+SEG_WEIGHTS = [SEGMENTS[k][0] for k in SEG_NAMES]
+
+ROUND_TOTAL = 30
+BET_WINDOW = 25
+_current_round_cache = {}
+
+
+class CTBet(BaseModel):
+    segment: str
+    amount: float = Field(gt=0)
+
+
+async def _get_config():
+    doc = await db.crazy_time_config.find_one({'_id': 'config'})
+    if not doc:
+        doc = {'_id': 'config', 'min_bet': 20, 'enabled': True}
+        await db.crazy_time_config.insert_one(doc)
+    return doc
+
+
+def _pick_result():
+    return random.choices(SEG_NAMES, weights=SEG_WEIGHTS, k=1)[0]
+
+
+@router.get('/crazy-time/config')
+async def get_config():
+    seg_info = [{'name': k, 'payout': v[1]} for k, v in SEGMENTS.items()]
+    cfg = await _get_config()
+    return {**cfg, 'segments': seg_info}
+
+
+@router.get('/crazy-time/current')
+async def get_current():
+    now = time.time()
+    cache = _current_round_cache.get('round')
+    if cache and cache['ends_at'] > now:
+        remaining = int(cache['ends_at'] - now)
+        phase = 'betting' if remaining > (ROUND_TOTAL - BET_WINDOW) else 'reveal'
+        return {'round_id': cache['round_id'], 'phase': phase, 'remaining': remaining, 'ends_at': cache['ends_at']}
+    return {'round_id': None, 'phase': 'waiting', 'remaining': 0, 'ends_at': None}
+
+
+@router.post('/crazy-time/bet')
+async def place_bet(bet: CTBet, request: Request):
+    user = await get_current_user(request)
+    if bet.segment not in SEGMENTS:
+        raise HTTPException(400, 'invalid segment')
+    cfg = await _get_config()
+    if not cfg.get('enabled', True):
+        raise HTTPException(400, 'game disabled')
+    if bet.amount < cfg.get('min_bet', 20):
+        raise HTTPException(400, f'min bet ₹{cfg.get("min_bet", 20)}')
+    now = time.time()
+    cache = _current_round_cache.get('round')
+    if not cache or cache['ends_at'] <= now:
+        raise HTTPException(400, 'no active round')
+    remaining = cache['ends_at'] - now
+    if remaining <= (ROUND_TOTAL - BET_WINDOW):
+        raise HTTPException(400, 'betting closed')
+    user_doc = await db.users.find_one({'_id': ObjectId(user['_id'])})
+    if not user_doc or user_doc.get('balance', 0) < bet.amount:
+        raise HTTPException(400, 'insufficient balance')
+    await db.users.update_one({'_id': ObjectId(user['_id'])}, {'$inc': {'balance': -bet.amount}})
+    bet_id = secrets.token_hex(6)
+    doc = {
+        'bet_id': bet_id,
+        'round_id': cache['round_id'],
+        'user_id': user['_id'],
+        'user_name': user_doc.get('name', 'Player'),
+        'segment': bet.segment,
+        'amount': bet.amount,
+        'status': 'pending',
+        'created_at': datetime.now(timezone.utc).isoformat(),
+    }
+    await db.crazy_time_bets.insert_one(doc)
+    return {'ok': True, 'bet_id': bet_id}
+
+
+@router.get('/crazy-time/history')
+async def my_history(request: Request, limit: int = 30):
+    user = await get_current_user(request)
+    cursor = db.crazy_time_bets.find({'user_id': user['_id']}).sort('created_at', -1).limit(limit)
+    bets = []
+    async for b in cursor:
+        b['_id'] = str(b.get('_id', ''))
+        bets.append(b)
+    return {'bets': bets}
+
+
+@router.get('/crazy-time/recent-rounds')
+async def recent_rounds(limit: int = 15):
+    cursor = db.crazy_time_rounds.find({'winner': {'$exists': True}}).sort('created_at', -1).limit(limit)
+    rounds = []
+    async for r in cursor:
+        r['_id'] = str(r.get('_id', ''))
+        rounds.append(r)
+    return {'rounds': rounds}
+
+
+@router.get('/crazy-time/live-feed')
+async def live_feed(limit: int = 10):
+    cursor = db.crazy_time_bets.find({}).sort('created_at', -1).limit(limit)
+    feed = []
+    async for b in cursor:
+        name = b.get('user_name') or 'Player'
+        feed.append({'name': name[:3] + '***', 'segment': b.get('segment'), 'amount': b.get('amount')})
+    return {'feed': feed}
+
+
+async def _settle_round(round_id: str, winner: str):
+    payout_mult = SEGMENTS[winner][1]
+    cursor = db.crazy_time_bets.find({'round_id': round_id, 'status': 'pending'})
+    async for b in cursor:
+        won = b.get('segment') == winner
+        payout = float(b['amount']) * payout_mult if won else 0
+        if won and payout > 0:
+            await db.users.update_one({'_id': ObjectId(b['user_id'])}, {'$inc': {'balance': payout}})
+        await db.crazy_time_bets.update_one(
+            {'_id': b['_id']},
+            {'$set': {
+                'status': 'won' if won else 'lost',
+                'winner': winner,
+                'payout': payout,
+                'settled_at': datetime.now(timezone.utc).isoformat(),
+            }}
+        )
+
+
+async def crazy_time_round_loop():
+    while True:
+        try:
+            round_id = secrets.token_hex(8)
+            ends_at = time.time() + ROUND_TOTAL
+            _current_round_cache['round'] = {'round_id': round_id, 'ends_at': ends_at}
+            await db.crazy_time_rounds.insert_one({
+                'round_id': round_id, 'phase': 'betting',
+                'created_at': datetime.now(timezone.utc).isoformat(),
+            })
+            await asyncio.sleep(BET_WINDOW)
+            winner = _pick_result()
+            await db.crazy_time_rounds.update_one(
+                {'round_id': round_id},
+                {'$set': {'phase': 'reveal', 'winner': winner, 'payout_mult': SEGMENTS[winner][1]}}
+            )
+            await asyncio.sleep(ROUND_TOTAL - BET_WINDOW - 1)
+            await _settle_round(round_id, winner)
+            await db.crazy_time_rounds.update_one(
+                {'round_id': round_id},
+                {'$set': {'phase': 'ended', 'settled_at': datetime.now(timezone.utc).isoformat()}}
+            )
+            await asyncio.sleep(1)
+        except Exception:
+            await asyncio.sleep(2)

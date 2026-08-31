@@ -27,6 +27,7 @@ import CoinPage from "./pages/CoinPage";
 import DragonTigerPage from "./pages/DragonTigerPage";
 import ColorGamePage from "./pages/ColorGamePage";
 import ChickenRoadPage from "./pages/ChickenRoadPage";
+import CrazyTimePage from "./pages/CrazyTimePage";
 import LudoLobbyPage from "./pages/LudoLobbyPage";
 import LudoGamePage from "./pages/LudoGamePage";
 import WalletPage from "./pages/WalletPage";
@@ -162,6 +163,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <ChickenRoadPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/crazy-time"
+        element={
+          <ProtectedRoute>
+            <CrazyTimePage />
           </ProtectedRoute>
         }
       />

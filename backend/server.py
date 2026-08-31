@@ -32,6 +32,7 @@ from routes.coin_routes import router as coin_router, coin_round_loop
 from routes.dragon_tiger_routes import router as dt_router, dragon_tiger_round_loop
 from routes.color_game_routes import router as color_game_router, color_game_round_loop
 from routes.chicken_road_routes import router as chicken_road_router
+from routes.crazy_time_routes import router as crazy_time_router, crazy_time_round_loop
 from routes.ludo_routes import router as ludo_router, ludo_watchdog
 from routes.game_toggles import router as game_toggles_router
 from routes.fake_ticker import router as fake_ticker_router
@@ -70,6 +71,7 @@ api_router.include_router(coin_router)
 api_router.include_router(dt_router)
 api_router.include_router(color_game_router)
 api_router.include_router(chicken_road_router)
+api_router.include_router(crazy_time_router)
 api_router.include_router(ludo_router)
 api_router.include_router(game_toggles_router)
 api_router.include_router(fake_ticker_router)
@@ -245,6 +247,8 @@ async def start_auto_fetch():
     logger.info("Dragon Tiger round loop started (30s rounds, D/T=2x, Tie=50x)")
     asyncio.create_task(color_game_round_loop())
     logger.info("Color Prediction round loop started (30s rounds, R/G=2x, Violet=4.5x)")
+    asyncio.create_task(crazy_time_round_loop())
+    logger.info("Crazy Time round loop started (30s rounds, wheel with 8 segments)")
 
 
 @app.on_event("shutdown")

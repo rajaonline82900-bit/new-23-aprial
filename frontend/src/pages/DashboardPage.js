@@ -388,6 +388,38 @@ const ChickenRoadIcon = ({ size = 26 }) => (
     <path d="M 54 54 L 55 56 L 57 57 L 55 58 L 54 60 L 53 58 L 51 57 L 53 56 Z" fill="#FDE047" opacity="0.9" />
   </svg>
 );
+
+const CrazyTimeIcon = ({ size = 26 }) => (
+  <svg width={size} height={size} viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id="ctHub" cx="50%" cy="50%">
+        <stop offset="0%" stopColor="#FEF3C7" />
+        <stop offset="70%" stopColor="#FBBF24" />
+        <stop offset="100%" stopColor="#B45309" />
+      </radialGradient>
+    </defs>
+    {/* Wheel sections */}
+    {['#DC2626','#F59E0B','#22C55E','#3B82F6','#EC4899','#8B5CF6','#0EA5E9','#EAB308'].map((c, i) => {
+      const a1 = (i * 45 - 90) * Math.PI / 180;
+      const a2 = ((i + 1) * 45 - 90) * Math.PI / 180;
+      const r = 26;
+      const x1 = 32 + r * Math.cos(a1), y1 = 32 + r * Math.sin(a1);
+      const x2 = 32 + r * Math.cos(a2), y2 = 32 + r * Math.sin(a2);
+      return <path key={i} d={`M 32 32 L ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2} Z`} fill={c} stroke="#0F172A" strokeWidth="0.8" />;
+    })}
+    {/* Outer gold ring */}
+    <circle cx="32" cy="32" r="27" fill="none" stroke="#FDE047" strokeWidth="2" />
+    {/* Hub */}
+    <circle cx="32" cy="32" r="6" fill="url(#ctHub)" stroke="#78350F" strokeWidth="1.2" />
+    <circle cx="32" cy="32" r="3" fill="#DC2626" />
+    {/* Pointer at top */}
+    <path d="M 32 4 L 28 12 L 36 12 Z" fill="#DC2626" stroke="#0F172A" strokeWidth="1.2" />
+    <circle cx="32" cy="9" r="1.2" fill="#FDE047" />
+    {/* Sparkles */}
+    <path d="M 6 8 L 7 10 L 9 11 L 7 12 L 6 14 L 5 12 L 3 11 L 5 10 Z" fill="#FDE047" opacity="0.9" />
+    <circle cx="58" cy="52" r="1.4" fill="#FDE047" />
+  </svg>
+);
 import FooterNav from '../components/FooterNav';
 import { speak } from '../utils/voice';
 import SidebarMenu from '../components/SidebarMenu';
@@ -1005,6 +1037,22 @@ const DashboardPage = () => {
                     countSuffix: '2x / 4.5x Payout',
                     isLink: true,
                     linkTo: '/color-game',
+                  },
+                  {
+                    id: 'crazy_time',
+                    label: 'Crazy Time',
+                    hi: 'क्रेजी टाइम',
+                    Icon: CrazyTimeIcon,
+                    bg: 'linear-gradient(155deg, #3D0F1A 0%, #200710 55%, #0A0208 100%)',
+                    border: '#DC2626',
+                    accent: '#FCA5A5',
+                    badgeBg: 'linear-gradient(135deg, #DC2626 0%, #7F1D1D 100%)',
+                    badgeColor: '#FEF3C7',
+                    stripe: 'linear-gradient(90deg, #DC2626 0%, #FDE047 30%, #EC4899 60%, #22C55E 90%)',
+                    liveLabel: 'WHEEL',
+                    countSuffix: 'Up to 45x',
+                    isLink: true,
+                    linkTo: '/crazy-time',
                   },
                 ].map((cat) => {
                   const isDisabled = gameToggles[cat.id] === false;
