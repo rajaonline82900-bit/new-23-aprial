@@ -143,6 +143,18 @@ const ColorGamePage = () => {
   const isBetting = current?.phase === 'betting';
   const remaining = current?.remaining || 0;
 
+  // User's bets in current round — sum by side
+  const myBetsThisRound = React.useMemo(() => {
+    const map = { red: 0, white: 0, orange: 0 };
+    if (!current?.round_id) return map;
+    history.forEach((b) => {
+      if (b.round_id === current.round_id && map[b.side] !== undefined) {
+        map[b.side] += Number(b.amount || 0);
+      }
+    });
+    return map;
+  }, [history, current?.round_id]);
+
   return (
     <div className="min-h-screen pb-24" style={{
       background: 'radial-gradient(ellipse 80% 60% at 50% 20%, rgba(249, 115, 22, 0.15) 0%, transparent 55%), radial-gradient(ellipse 80% 60% at 50% 80%, rgba(220, 38, 38, 0.14) 0%, transparent 55%), #0A0A14',
@@ -211,27 +223,44 @@ const ColorGamePage = () => {
 
         {/* Bet buttons — Red / White / Orange */}
         <div className="grid grid-cols-3 gap-2">
-          {COLORS.map((c) => (
-            <button
-              key={c.key}
-              disabled={!isBetting || placing}
-              onClick={() => placeBet(c.key)}
-              data-testid={`bet-${c.key}`}
-              className="rounded-2xl py-5 active:scale-95 disabled:opacity-50"
-              style={{
-                background: `linear-gradient(135deg, ${c.hex} 0%, ${c.hex}99 100%)`,
-                border: `2.5px solid ${c.key === 'white' ? '#78716C' : '#FEF3C7'}`,
-                boxShadow: `0 6px 16px ${c.hex}80`,
-              }}>
-              <div className="w-10 h-10 mx-auto mb-1 rounded-full"
+          {COLORS.map((c) => {
+            const myBet = myBetsThisRound[c.key] || 0;
+            return (
+              <button
+                key={c.key}
+                disabled={!isBetting || placing}
+                onClick={() => placeBet(c.key)}
+                data-testid={`bet-${c.key}`}
+                className="relative rounded-2xl py-5 active:scale-95 disabled:opacity-60"
                 style={{
-                  background: `radial-gradient(circle at 35% 30%, #FFFFFF 0%, ${c.hex} 60%, ${c.hex} 100%)`,
-                  border: '2px solid #FEF3C7',
-                }} />
-              <div className="font-black text-sm tracking-widest" style={{ color: c.text, textShadow: c.key === 'white' ? 'none' : '0 1px 2px rgba(0,0,0,0.5)' }}>{c.label}</div>
-              <div className="text-[10px] font-bold" style={{ color: c.key === 'white' ? '#7C2D12' : '#FEF3C7' }}>3x Payout</div>
-            </button>
-          ))}
+                  background: `linear-gradient(135deg, ${c.hex} 0%, ${c.hex}99 100%)`,
+                  border: `2.5px solid ${c.key === 'white' ? '#78716C' : '#FEF3C7'}`,
+                  boxShadow: `0 6px 16px ${c.hex}80`,
+                }}>
+                {/* Lock overlay during reveal */}
+                {!isBetting && (
+                  <div className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center"
+                    style={{ background: 'rgba(0,0,0,0.75)', border: '1.5px solid #FDE047' }}>
+                    <span className="text-[11px]">🔒</span>
+                  </div>
+                )}
+                {/* My bet badge */}
+                {myBet > 0 && (
+                  <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-full text-[9px] font-black tabular-nums"
+                    style={{ background: '#0A0A14', color: '#FDE047', border: '1px solid #FDE047' }} data-testid={`my-bet-${c.key}`}>
+                    You: ₹{Math.floor(myBet)}
+                  </div>
+                )}
+                <div className="w-10 h-10 mx-auto mb-1 rounded-full"
+                  style={{
+                    background: `radial-gradient(circle at 35% 30%, #FFFFFF 0%, ${c.hex} 60%, ${c.hex} 100%)`,
+                    border: '2px solid #FEF3C7',
+                  }} />
+                <div className="font-black text-sm tracking-widest" style={{ color: c.text, textShadow: c.key === 'white' ? 'none' : '0 1px 2px rgba(0,0,0,0.5)' }}>{c.label}</div>
+                <div className="text-[10px] font-bold" style={{ color: c.key === 'white' ? '#7C2D12' : '#FEF3C7' }}>3x Payout</div>
+              </button>
+            );
+          })}
         </div>
 
         {/* Last 15 Results */}

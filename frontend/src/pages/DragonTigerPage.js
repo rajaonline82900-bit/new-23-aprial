@@ -214,6 +214,18 @@ const DragonTigerPage = () => {
   const isBetting = current?.phase === 'betting';
   const remaining = current?.remaining || 0;
 
+  // User bets in current round — total per side
+  const myBetsThisRound = React.useMemo(() => {
+    const map = { dragon: 0, tie: 0, tiger: 0 };
+    if (!current?.round_id) return map;
+    history.forEach((b) => {
+      if (b.round_id === current.round_id && map[b.side] !== undefined) {
+        map[b.side] += Number(b.amount || 0);
+      }
+    });
+    return map;
+  }, [history, current?.round_id]);
+
   return (
     <div className="min-h-screen pb-24" style={{
       background: 'radial-gradient(ellipse 80% 60% at 50% 20%, rgba(220, 38, 38, 0.18) 0%, transparent 55%), radial-gradient(ellipse 80% 60% at 50% 80%, rgba(255, 215, 0, 0.14) 0%, transparent 55%), #0A0A14',
@@ -298,30 +310,35 @@ const DragonTigerPage = () => {
 
         {/* Bet buttons — Dragon / Tie / Tiger */}
         <div className="grid grid-cols-3 gap-2">
-          <button disabled={!isBetting || placing} onClick={() => placeBet('dragon')}
-            data-testid="bet-dragon"
-            className="rounded-2xl py-4 active:scale-95 disabled:opacity-50"
-            style={{ background: 'linear-gradient(135deg, #DC2626 0%, #7F1D1D 100%)', border: '2px solid #FCA5A5', boxShadow: '0 6px 16px rgba(220,38,38,0.5)' }}>
-            <div className="text-3xl mb-1">🐉</div>
-            <div className="text-white font-black text-sm">DRAGON</div>
-            <div className="text-[10px] font-bold text-yellow-200">2x</div>
-          </button>
-          <button disabled={!isBetting || placing} onClick={() => placeBet('tie')}
-            data-testid="bet-tie"
-            className="rounded-2xl py-4 active:scale-95 disabled:opacity-50"
-            style={{ background: 'linear-gradient(135deg, #FFD700 0%, #B45309 100%)', border: '2px solid #FEF3C7', boxShadow: '0 6px 16px rgba(255,215,0,0.5)' }}>
-            <div className="text-3xl mb-1">🤝</div>
-            <div className="text-black font-black text-sm">TIE</div>
-            <div className="text-[10px] font-bold text-red-900">50x</div>
-          </button>
-          <button disabled={!isBetting || placing} onClick={() => placeBet('tiger')}
-            data-testid="bet-tiger"
-            className="rounded-2xl py-4 active:scale-95 disabled:opacity-50"
-            style={{ background: 'linear-gradient(135deg, #F97316 0%, #7C2D12 100%)', border: '2px solid #FED7AA', boxShadow: '0 6px 16px rgba(249,115,22,0.5)' }}>
-            <div className="text-3xl mb-1">🐯</div>
-            <div className="text-white font-black text-sm">TIGER</div>
-            <div className="text-[10px] font-bold text-yellow-200">2x</div>
-          </button>
+          {[
+            { key: 'dragon', label: 'DRAGON', emoji: '🐉', payout: '2x', bg: 'linear-gradient(135deg, #DC2626 0%, #7F1D1D 100%)', border: '#FCA5A5', shadow: 'rgba(220,38,38,0.5)', text: '#FFFFFF', pay: '#FDE68A' },
+            { key: 'tie', label: 'TIE', emoji: '🤝', payout: '50x', bg: 'linear-gradient(135deg, #FFD700 0%, #B45309 100%)', border: '#FEF3C7', shadow: 'rgba(255,215,0,0.5)', text: '#0A0A14', pay: '#7F1D1D' },
+            { key: 'tiger', label: 'TIGER', emoji: '🐯', payout: '2x', bg: 'linear-gradient(135deg, #F97316 0%, #7C2D12 100%)', border: '#FED7AA', shadow: 'rgba(249,115,22,0.5)', text: '#FFFFFF', pay: '#FDE68A' },
+          ].map((opt) => {
+            const myBet = myBetsThisRound[opt.key] || 0;
+            return (
+              <button key={opt.key} disabled={!isBetting || placing} onClick={() => placeBet(opt.key)}
+                data-testid={`bet-${opt.key}`}
+                className="relative rounded-2xl py-4 active:scale-95 disabled:opacity-60"
+                style={{ background: opt.bg, border: `2px solid ${opt.border}`, boxShadow: `0 6px 16px ${opt.shadow}` }}>
+                {!isBetting && (
+                  <div className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center"
+                    style={{ background: 'rgba(0,0,0,0.75)', border: '1.5px solid #FDE047' }}>
+                    <span className="text-[11px]">🔒</span>
+                  </div>
+                )}
+                {myBet > 0 && (
+                  <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-full text-[9px] font-black tabular-nums"
+                    style={{ background: '#0A0A14', color: '#FDE047', border: '1px solid #FDE047' }} data-testid={`my-bet-${opt.key}`}>
+                    You: ₹{Math.floor(myBet)}
+                  </div>
+                )}
+                <div className="text-3xl mb-1">{opt.emoji}</div>
+                <div className="font-black text-sm" style={{ color: opt.text }}>{opt.label}</div>
+                <div className="text-[10px] font-bold" style={{ color: opt.pay }}>{opt.payout}</div>
+              </button>
+            );
+          })}
         </div>
 
         {/* Recent rounds strip */}

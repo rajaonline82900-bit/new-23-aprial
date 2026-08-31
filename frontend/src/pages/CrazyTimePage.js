@@ -167,6 +167,18 @@ const CrazyTimePage = () => {
   const isBetting = current?.phase === 'betting';
   const remaining = current?.remaining || 0;
 
+  // User bets in current round — total per segment
+  const myBetsThisRound = React.useMemo(() => {
+    const map = {};
+    if (!current?.round_id) return map;
+    history.forEach((b) => {
+      if (b.round_id === current.round_id) {
+        map[b.segment] = (map[b.segment] || 0) + Number(b.amount || 0);
+      }
+    });
+    return map;
+  }, [history, current?.round_id]);
+
   return (
     <div className="min-h-screen pb-24" style={{
       background: 'radial-gradient(ellipse 80% 60% at 50% 20%, rgba(220, 38, 38, 0.15) 0%, transparent 55%), radial-gradient(ellipse 80% 60% at 50% 80%, rgba(251, 191, 36, 0.14) 0%, transparent 55%), #0A0A14',
@@ -250,22 +262,37 @@ const CrazyTimePage = () => {
 
         {/* Bet buttons — 10 numbers (1-10) in 5×2 grid, each pays 10x */}
         <div className="grid grid-cols-5 gap-2">
-          {BET_OPTIONS.map((b) => (
-            <button
-              key={b.key}
-              disabled={!isBetting || placing}
-              onClick={() => placeBet(b.key)}
-              data-testid={`bet-${b.key}`}
-              className="rounded-xl py-3 active:scale-95 disabled:opacity-50 flex flex-col items-center"
-              style={{
-                background: `linear-gradient(180deg, ${b.color} 0%, ${b.color}99 100%)`,
-                border: '2px solid rgba(255,255,255,0.25)',
-                boxShadow: `0 4px 12px ${b.color}66`,
-              }}>
-              <span className="text-white font-black text-lg tracking-wider" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>{b.label}</span>
-              <span className="text-[10px] font-bold text-yellow-100">{b.payout}</span>
-            </button>
-          ))}
+          {BET_OPTIONS.map((b) => {
+            const myBet = myBetsThisRound[b.key] || 0;
+            return (
+              <button
+                key={b.key}
+                disabled={!isBetting || placing}
+                onClick={() => placeBet(b.key)}
+                data-testid={`bet-${b.key}`}
+                className="relative rounded-xl py-3 active:scale-95 disabled:opacity-60 flex flex-col items-center"
+                style={{
+                  background: `linear-gradient(180deg, ${b.color} 0%, ${b.color}99 100%)`,
+                  border: '2px solid rgba(255,255,255,0.25)',
+                  boxShadow: `0 4px 12px ${b.color}66`,
+                }}>
+                {!isBetting && (
+                  <div className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full flex items-center justify-center"
+                    style={{ background: 'rgba(0,0,0,0.75)', border: '1px solid #FDE047' }}>
+                    <span className="text-[9px]">🔒</span>
+                  </div>
+                )}
+                {myBet > 0 && (
+                  <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded-full text-[8px] font-black tabular-nums whitespace-nowrap"
+                    style={{ background: '#0A0A14', color: '#FDE047', border: '1px solid #FDE047' }} data-testid={`my-bet-${b.key}`}>
+                    ₹{Math.floor(myBet)}
+                  </div>
+                )}
+                <span className="text-white font-black text-lg tracking-wider" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>{b.label}</span>
+                <span className="text-[10px] font-bold text-yellow-100">{b.payout}</span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Recent results */}
