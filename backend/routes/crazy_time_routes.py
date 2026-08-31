@@ -22,21 +22,16 @@ from auth import get_current_user
 router = APIRouter()
 
 # Segment name -> (weight, payout multiplier)
-SEGMENTS = {
-    '1':          (23, 2),
-    '2':          (15, 3),
-    '5':          (7,  6),
-    '10':         (4,  11),
-    'coin_flip':  (3,  10),
-    'cash_hunt':  (2,  20),
-    'pachinko':   (1,  40),
-    'crazy_time': (1,  45),
-}
+# Wheel has 10 equal segments (numbers 1-10). Payout = 10x for any winner.
+# House edge is baked in via a ~20% biased-pick step in _pick_result (picks the LEAST-bet
+# number that round) so on average the house keeps ~20% over infinite play.
+SEGMENTS = {str(n): (1, 10) for n in range(1, 11)}
 SEG_NAMES = list(SEGMENTS.keys())
 SEG_WEIGHTS = [SEGMENTS[k][0] for k in SEG_NAMES]
 
 ROUND_TOTAL = 30
 BET_WINDOW = 25
+_HOUSE_EDGE = 0.20   # 20% of rounds bias against majority bet
 _current_round_cache = {}
 
 
@@ -53,8 +48,21 @@ async def _get_config():
     return doc
 
 
-def _pick_result():
-    return random.choices(SEG_NAMES, weights=SEG_WEIGHTS, k=1)[0]
+async def _pick_result(round_id: str):
+    """Uniform random, but 20% of rounds pick the LEAST-bet number (house edge)."""
+    if random.random() < _HOUSE_EDGE:
+        totals = {k: 0.0 for k in SEG_NAMES}
+        cursor = db.crazy_time_bets.find({'round_id': round_id})
+        async for b in cursor:
+            s = b.get('segment')
+            if s in totals:
+                totals[s] += float(b.get('amount', 0))
+        if any(v > 0 for v in totals.values()):
+            # Return the least-bet segment (or a random tie-breaker among those tied at 0)
+            min_val = min(totals.values())
+            candidates = [k for k, v in totals.items() if v == min_val]
+            return random.choice(candidates)
+    return random.choice(SEG_NAMES)
 
 
 @router.get('/crazy-time/config')
@@ -172,7 +180,7 @@ async def crazy_time_round_loop():
                 'created_at': datetime.now(timezone.utc).isoformat(),
             })
             await asyncio.sleep(BET_WINDOW)
-            winner = _pick_result()
+            winner = await _pick_result(round_id)
             await db.crazy_time_rounds.update_one(
                 {'round_id': round_id},
                 {'$set': {'phase': 'reveal', 'winner': winner, 'payout_mult': SEGMENTS[winner][1]}}

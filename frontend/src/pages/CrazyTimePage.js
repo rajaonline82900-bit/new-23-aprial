@@ -8,39 +8,20 @@ import { useAuth } from '../context/AuthContext';
 const API = process.env.REACT_APP_BACKEND_URL;
 const CHIPS = [20, 50, 100, 500, 1000];
 
-// Segment order around wheel (matches display). Backend uses same names.
-const SEGMENTS = [
-  { key: '1',          label: '1',      color: '#3B82F6', text: '#FFF', payout: 2 },
-  { key: '2',          label: '2',      color: '#F59E0B', text: '#0A0A14', payout: 3 },
-  { key: '5',          label: '5',      color: '#EC4899', text: '#FFF', payout: 6 },
-  { key: 'coin_flip',  label: 'COIN',   color: '#0EA5E9', text: '#FFF', payout: 10 },
-  { key: '1',          label: '1',      color: '#3B82F6', text: '#FFF', payout: 2, isDupe: true },
-  { key: '10',         label: '10',     color: '#8B5CF6', text: '#FFF', payout: 11 },
-  { key: 'cash_hunt',  label: 'CASH',   color: '#22C55E', text: '#FFF', payout: 20 },
-  { key: '2',          label: '2',      color: '#F59E0B', text: '#0A0A14', payout: 3, isDupe: true },
-  { key: '1',          label: '1',      color: '#3B82F6', text: '#FFF', payout: 2, isDupe: true },
-  { key: 'pachinko',   label: 'PACH',   color: '#EAB308', text: '#0A0A14', payout: 40 },
-  { key: '5',          label: '5',      color: '#EC4899', text: '#FFF', payout: 6, isDupe: true },
-  { key: '2',          label: '2',      color: '#F59E0B', text: '#0A0A14', payout: 3, isDupe: true },
-  { key: '1',          label: '1',      color: '#3B82F6', text: '#FFF', payout: 2, isDupe: true },
-  { key: 'crazy_time', label: 'CRAZY',  color: '#DC2626', text: '#FEF3C7', payout: 45 },
-  { key: '10',         label: '10',     color: '#8B5CF6', text: '#FFF', payout: 11, isDupe: true },
-  { key: '2',          label: '2',      color: '#F59E0B', text: '#0A0A14', payout: 3, isDupe: true },
-];
+// 10 wheel segments — numbers 1-10, alternating rainbow colors
+const SEG_COLORS = ['#DC2626','#F59E0B','#22C55E','#3B82F6','#EC4899','#8B5CF6','#EAB308','#0EA5E9','#F97316','#14B8A6'];
+const SEGMENTS = Array.from({ length: 10 }, (_, i) => ({
+  key: String(i + 1),
+  label: String(i + 1),
+  color: SEG_COLORS[i],
+  text: '#FFFFFF',
+  payout: 10,
+}));
 const NSEG = SEGMENTS.length;
 const SEG_ANGLE = 360 / NSEG;
 
-// Betting buttons (unique segments only)
-const BET_OPTIONS = [
-  { key: '1',          label: '1',      color: '#3B82F6', payout: '2x' },
-  { key: '2',          label: '2',      color: '#F59E0B', payout: '3x' },
-  { key: '5',          label: '5',      color: '#EC4899', payout: '6x' },
-  { key: '10',         label: '10',     color: '#8B5CF6', payout: '11x' },
-  { key: 'coin_flip',  label: 'COIN',   color: '#0EA5E9', payout: '10x' },
-  { key: 'cash_hunt',  label: 'CASH',   color: '#22C55E', payout: '20x' },
-  { key: 'pachinko',   label: 'PACH',   color: '#EAB308', payout: '40x' },
-  { key: 'crazy_time', label: 'CRAZY',  color: '#DC2626', payout: '45x' },
-];
+// Betting buttons — numbers 1-10, all pay 10x
+const BET_OPTIONS = SEGMENTS.map((s) => ({ key: s.key, label: s.label, color: s.color, payout: '10x' }));
 
 // Big spinning wheel SVG
 const Wheel = ({ rotation }) => {
@@ -73,9 +54,10 @@ const Wheel = ({ rotation }) => {
                     fill={s.color} stroke="#0A0A14" strokeWidth="1.5" />
               <g transform={`translate(${tx} ${ty}) rotate(${textRot})`}>
                 <text textAnchor="middle" dominantBaseline="central"
-                      fontSize={s.label.length > 3 ? 10 : 14}
+                      fontSize="22"
                       fontWeight="900" fill={s.text}
-                      style={{ fontFamily: 'Outfit, sans-serif' }}>{s.label}</text>
+                      style={{ fontFamily: 'Outfit, sans-serif', textShadow: '0 1px 2px rgba(0,0,0,0.6)' }}
+                      stroke="#0A0A14" strokeWidth="0.6" paintOrder="stroke">{s.label}</text>
               </g>
             </g>
           );
@@ -243,7 +225,7 @@ const CrazyTimePage = () => {
                 border: '2px solid #FEF3C7',
                 boxShadow: '0 4px 12px rgba(255,215,0,0.5)',
               }}>
-              {revealed.winner.replace('_', ' ').toUpperCase()} · {revealed.payout_mult}x
+              {revealed.winner.toUpperCase()} · {revealed.payout_mult}x
             </div>
           )}
         </div>
@@ -266,8 +248,8 @@ const CrazyTimePage = () => {
           ))}
         </div>
 
-        {/* Bet buttons — 8 options in 4x2 grid */}
-        <div className="grid grid-cols-4 gap-2">
+        {/* Bet buttons — 10 numbers (1-10) in 5×2 grid, each pays 10x */}
+        <div className="grid grid-cols-5 gap-2">
           {BET_OPTIONS.map((b) => (
             <button
               key={b.key}
@@ -280,7 +262,7 @@ const CrazyTimePage = () => {
                 border: '2px solid rgba(255,255,255,0.25)',
                 boxShadow: `0 4px 12px ${b.color}66`,
               }}>
-              <span className="text-white font-black text-sm tracking-widest">{b.label}</span>
+              <span className="text-white font-black text-lg tracking-wider" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>{b.label}</span>
               <span className="text-[10px] font-bold text-yellow-100">{b.payout}</span>
             </button>
           ))}
@@ -359,7 +341,7 @@ const CrazyTimePage = () => {
                     </div>
                     {!isPending && (
                       <div className="mt-2 pt-2 border-t border-dashed border-white/10 flex items-center justify-between text-[10px]">
-                        <span className="text-gray-400">Winner: <span className="font-black text-white uppercase">{(b.winner || '').replace('_', ' ')}</span></span>
+                        <span className="text-gray-400">Winner: <span className="font-black text-white">{b.winner || ''}</span></span>
                         {isWin
                           ? <span className="font-black text-emerald-400">🏆 +₹{Math.floor(b.payout)}</span>
                           : <span className="font-black text-red-400">-₹{Math.floor(b.amount)}</span>}
