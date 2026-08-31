@@ -297,7 +297,7 @@ const UpdateAvailableBanner = () => {
 };
 
 function App() {
-  // Show Lucky Bet branded splash once per session load
+  // Show Shiv Shakti Club branded splash once per session load
   const [splashDone, setSplashDone] = useState(false);
 
   // Run version check on app boot — will attempt at most 1 auto-reload per

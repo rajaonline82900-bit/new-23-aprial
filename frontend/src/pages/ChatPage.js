@@ -178,13 +178,13 @@ const ChatPage = () => {
           <div className="relative">
             <img
               src="/lucky-bet-logo.jpg"
-              alt="Lucky Bet"
+              alt="Shiv Shakti Club"
               className="w-10 h-10 rounded-full ring-2 ring-white/50 object-cover"
             />
             <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-[#25D366] border-2 border-[#075E54]" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-white font-bold text-[15px] leading-tight truncate">Lucky Bet Support</p>
+            <p className="text-white font-bold text-[15px] leading-tight truncate">Shiv Shakti Club Support</p>
             <p className="text-emerald-100 text-[11px] leading-tight">online</p>
           </div>
           {/* Optional call/video icons (visual only for authenticity) */}

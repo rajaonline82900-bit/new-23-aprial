@@ -76,7 +76,7 @@ const LandingPage = () => {
               <span className="text-4xl font-black font-['Unbounded'] tracking-tight lucky-emerald-text drop-shadow-2xl">BET</span>
             </div>
           </div>
-          <h1 className="hidden" data-testid="landing-title">Lucky Bet</h1>
+          <h1 className="hidden" data-testid="landing-title">Shiv Shakti Club</h1>
           <p className="text-gray-300 text-sm font-semibold tracking-wide">India&apos;s Most Trusted Gaming Platform</p>
           <p className="text-[10px] tracking-[0.32em] font-bold mt-2 uppercase" style={{ color: '#FFD700' }}>
             More Bets • More Wins • More Luck
@@ -290,7 +290,7 @@ const LandingPage = () => {
             </svg>
             www.matka11.online
           </a>
-          <p className="text-gray-600 text-[10px] mt-2">Lucky Bet &copy; 2026. All Rights Reserved.</p>
+          <p className="text-gray-600 text-[10px] mt-2">Shiv Shakti Club &copy; 2026. All Rights Reserved.</p>
         </div>
       </div>
     </div>

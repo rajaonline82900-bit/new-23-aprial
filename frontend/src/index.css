@@ -196,7 +196,7 @@ button:active > div > .game-medallion {
 
 
 /* Full-screen animated gradient used on Landing / Login / Signup pages.
-   Colors sampled directly from the Lucky Bet logo (gold + emerald + rich black). */
+   Colors sampled directly from the Shiv Shakti Club logo (gold + emerald + rich black). */
 @keyframes luckyBgShift {
   0%   { background-position: 0% 50%, 100% 50%, 50% 0%; }
   50%  { background-position: 100% 50%, 0% 50%, 50% 100%; }
@@ -329,7 +329,7 @@ button:active > div > .game-medallion {
 .border-emerald-lucky { border-color: rgba(20, 169, 76, 0.5) !important; }
 .bg-emerald-lucky { background: linear-gradient(135deg, #0F9938 0%, #14A94C 100%) !important; }
 
-/* Gold text gradient — matches Lucky Bet "LUCKY" wordmark */
+/* Gold text gradient — matches Shiv Shakti Club "LUCKY" wordmark */
 .lucky-gold-text {
   background: linear-gradient(135deg, #FFC700 0%, #FFD700 40%, #FDE047 70%, #FFC700 100%);
   -webkit-background-clip: text;
@@ -337,7 +337,7 @@ button:active > div > .game-medallion {
   -webkit-text-fill-color: transparent;
   color: transparent;
 }
-/* Emerald text gradient — matches Lucky Bet "BET" wordmark */
+/* Emerald text gradient — matches Shiv Shakti Club "BET" wordmark */
 .lucky-emerald-text {
   background: linear-gradient(135deg, #0F9938 0%, #14A94C 40%, #22C55E 70%, #14A94C 100%);
   -webkit-background-clip: text;

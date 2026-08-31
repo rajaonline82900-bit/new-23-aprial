@@ -1,6 +1,6 @@
 import React from 'react';
 
-// LUCKY BET brand logo — uses the uploaded logo image with a golden glow ring.
+// SHIV SHAKTI CLUB brand logo — uses the uploaded logo image with a golden glow ring.
 // Component name preserved as "MatkaLogo" for backwards compat (imported everywhere).
 const MatkaLogo = ({ size = 'md', showText = true }) => {
   const sizes = {
@@ -14,12 +14,12 @@ const MatkaLogo = ({ size = 'md', showText = true }) => {
   return (
     <div className={`flex items-center ${s.gap}`} data-testid="matka-logo">
       <div className="relative">
-        {/* Soft dual glow — gold + emerald (matches Lucky Bet palette) */}
+        {/* Soft dual glow — gold + emerald (matches Shiv Shakti Club palette) */}
         <div className="absolute -inset-2 rounded-full blur-xl opacity-70"
              style={{ background: 'conic-gradient(from 0deg, #FFD700, #14A94C, #FFD700, #FDE047, #14A94C, #FFD700)' }} />
         <img
-          src="/lucky-bet-logo.jpg"
-          alt="Lucky Bet"
+          src="/shivshakti-logo.jpg"
+          alt="Shiv Shakti Club"
           className={`relative ${s.icon} rounded-full object-cover ring-2 ring-[#FFD700]/70 shadow-2xl shadow-black/60`}
           draggable="false"
         />
@@ -32,15 +32,15 @@ const MatkaLogo = ({ size = 'md', showText = true }) => {
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                 }}>
-            LUCKY
+            SHIV
           </span>
           <span className={`${s.accent} font-black font-['Unbounded'] tracking-tight drop-shadow-lg`}
                 style={{
-                  backgroundImage: 'linear-gradient(135deg, #0F9938 0%, #14A94C 40%, #22C55E 70%, #14A94C 100%)',
+                  backgroundImage: 'linear-gradient(135deg, #0EA5E9 0%, #38BDF8 40%, #7DD3FC 70%, #0EA5E9 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                 }}>
-            BET
+            SHAKTI
           </span>
         </div>
       )}

@@ -79,9 +79,9 @@ const ReferPage = () => {
 
   const shareCode = () => {
     const referralLink = `${window.location.origin}/signup?ref=${referralInfo?.code}`;
-    const text = `Lucky Bet पर खेलें और जीतें!\n\nइस लिंक से साइनअप करें:\n${referralLink}\n\n📱 App Download: ${APK_LINK}\n🌐 iPhone Website: ${WEB_LINK}\n\nपहली जमा पर आपको 5% बोनस मिलेगा!`;
+    const text = `Shiv Shakti Club पर खेलें और जीतें!\n\nइस लिंक से साइनअप करें:\n${referralLink}\n\n📱 App Download: ${APK_LINK}\n🌐 iPhone Website: ${WEB_LINK}\n\nपहली जमा पर आपको 5% बोनस मिलेगा!`;
     if (navigator.share) {
-      navigator.share({ title: 'Lucky Bet - Refer & Earn', text, url: referralLink }).catch(() => {
+      navigator.share({ title: 'Shiv Shakti Club - Refer & Earn', text, url: referralLink }).catch(() => {
         copyToClipboard(text).then((ok) => toast[ok ? 'success' : 'error'](ok ? 'शेयर टेक्स्ट कॉपी हुआ!' : 'कॉपी नहीं हुआ'));
       });
     } else {
@@ -91,7 +91,7 @@ const ReferPage = () => {
 
   const shareWhatsApp = () => {
     const referralLink = `${window.location.origin}/signup?ref=${referralInfo?.code}`;
-    const text = `Lucky Bet पर खेलें और जीतें! 🎯\n\nइस लिंक से साइनअप करें:\n${referralLink}\n\n📱 App Download: ${APK_LINK}\n🌐 iPhone Website: ${WEB_LINK}\n\nपहली जमा पर आपको 5% बोनस मिलेगा! 💰`;
+    const text = `Shiv Shakti Club पर खेलें और जीतें! 🎯\n\nइस लिंक से साइनअप करें:\n${referralLink}\n\n📱 App Download: ${APK_LINK}\n🌐 iPhone Website: ${WEB_LINK}\n\nपहली जमा पर आपको 5% बोनस मिलेगा! 💰`;
     const waUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
     // Try window.open first (works in browsers); fallback to navigation for WebView APK.
     const win = window.open(waUrl, '_blank', 'noopener,noreferrer');

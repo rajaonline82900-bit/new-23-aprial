@@ -35,7 +35,7 @@ const SignupPage = () => {
         name: name.trim(), phone, password, referral_code: refCode || undefined
       }, { withCredentials: true });
       if (resp.data?.token) localStorage.setItem('matka11_token', resp.data.token);
-      toast.success('अकाउंट बन गया! Lucky Bet में स्वागत है 🎉');
+      toast.success('अकाउंट बन गया! Shiv Shakti Club में स्वागत है 🎉');
       await refreshUser();
       navigate('/dashboard');
     } catch (e) {
@@ -53,11 +53,15 @@ const SignupPage = () => {
           <div className="inline-flex flex-col items-center mb-3">
             <MatkaLogo size="xl" showText={false} />
             <div className="mt-3 flex items-baseline gap-1.5">
-              <span className="text-3xl font-black font-['Unbounded'] tracking-tight lucky-gold-text drop-shadow-2xl">LUCKY</span>
-              <span className="text-3xl font-black font-['Unbounded'] tracking-tight lucky-emerald-text drop-shadow-2xl">BET</span>
+              <span className="text-3xl font-black font-['Unbounded'] tracking-tight lucky-gold-text drop-shadow-2xl">SHIV</span>
+              <span className="text-3xl font-black font-['Unbounded'] tracking-tight drop-shadow-2xl"
+                style={{ backgroundImage: 'linear-gradient(135deg, #38BDF8 0%, #7DD3FC 50%, #38BDF8 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                SHAKTI
+              </span>
+              <span className="text-2xl font-black font-['Unbounded'] tracking-tight lucky-gold-text drop-shadow-2xl">CLUB</span>
             </div>
             <p className="text-[10px] tracking-[0.28em] font-bold mt-1 uppercase" style={{ color: '#FFD700' }}>
-              More Bets • More Wins • More Luck
+              Play • Win • Prosper
             </p>
           </div>
           <h1 className="font-['Unbounded'] text-xl font-black tracking-tight mt-4">

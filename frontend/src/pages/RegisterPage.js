@@ -24,7 +24,7 @@ const RegisterPage = () => {
     if (password.length < 6) { toast.error('पासवर्ड कम से कम 6 अक्षरों का होना चाहिए'); return; }
     setLoading(true);
     const result = await register(name, email, password, phone);
-    if (result.success) { toast.success('Welcome to Lucky Bet! 🎉'); navigate('/dashboard'); }
+    if (result.success) { toast.success('Welcome to Shiv Shakti Club! 🎉'); navigate('/dashboard'); }
     else { toast.error(result.error); }
     setLoading(false);
   };
@@ -47,7 +47,7 @@ const RegisterPage = () => {
         {/* Glass Card */}
         <div className="lucky-glass-card p-6">
           <h1 className="lucky-gold-text text-2xl font-black font-['Unbounded'] mb-1">नया अकाउंट</h1>
-          <p className="text-gray-400 text-sm mb-5">Lucky Bet में आपका स्वागत है</p>
+          <p className="text-gray-400 text-sm mb-5">Shiv Shakti Club में आपका स्वागत है</p>
 
           <form onSubmit={handleSubmit} className="space-y-3">
             <div className="relative">
