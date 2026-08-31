@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, BookOpen } from 'lucide-react';
+import { ArrowLeft, Book } from 'lucide-react';
 import { Card, CardContent } from '../components/ui/card';
 import FooterNav from '../components/FooterNav';
 
