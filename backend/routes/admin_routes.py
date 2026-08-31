@@ -560,8 +560,14 @@ async def admin_approve_deposit(order_id: str, request: Request):
         {"order_id": order_id},
         {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc), "approved_by_admin": True}}
     )
-    logger.info(f"Admin approved deposit: order={order_id}, amount={transaction['amount']}, user={transaction['user_id']}")
-    return {"message": f"₹{transaction['amount']} जमा approve हो गया"}
+    # Apply 5% bonus if amount >= ₹1000
+    from routes.wallet_routes import apply_deposit_bonus
+    bonus = await apply_deposit_bonus(transaction["user_id"], transaction["amount"], order_id)
+    logger.info(f"Admin approved deposit: order={order_id}, amount={transaction['amount']}, user={transaction['user_id']}, bonus={bonus}")
+    msg = f"₹{transaction['amount']} जमा approve हो गया"
+    if bonus > 0:
+        msg += f" (+ ₹{bonus} बोनस)"
+    return {"message": msg}
 
 
 @router.post("/admin/deposits/{order_id}/reject")

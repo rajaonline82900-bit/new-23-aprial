@@ -14,6 +14,44 @@ from models import DepositRequest, WithdrawRequest
 
 router = APIRouter()
 
+# Deposit bonus: 5% credited automatically when a deposit of ₹1000+ completes
+DEPOSIT_BONUS_MIN = 1000
+DEPOSIT_BONUS_PCT = 0.05
+
+
+async def apply_deposit_bonus(user_id: str, amount: float, order_id: str):
+    """If amount >= ₹1000, credit 5% bonus to user balance and log a bonus transaction.
+    Idempotent by order_id — safe to call multiple times per deposit."""
+    try:
+        if amount < DEPOSIT_BONUS_MIN:
+            return 0
+        # Idempotency check
+        existing = await db.transactions.find_one({
+            'type': 'deposit_bonus', 'order_id': order_id
+        })
+        if existing:
+            return 0
+        bonus = round(float(amount) * DEPOSIT_BONUS_PCT, 2)
+        if bonus <= 0:
+            return 0
+        await db.users.update_one({'_id': ObjectId(user_id)}, {'$inc': {'balance': bonus}})
+        await db.transactions.insert_one({
+            'id': str(uuid.uuid4()),
+            'user_id': user_id,
+            'order_id': order_id,
+            'type': 'deposit_bonus',
+            'amount': bonus,
+            'status': 'completed',
+            'created_at': datetime.now(timezone.utc),
+            'completed_at': datetime.now(timezone.utc),
+            'note': f'डिपॉजिट बोनस (5% of ₹{int(amount)})',
+        })
+        logging.info(f"Deposit bonus ₹{bonus} credited to user {user_id} for order {order_id}")
+        return bonus
+    except Exception as e:
+        logging.error(f"apply_deposit_bonus failed: {e}")
+        return 0
+
 
 async def process_referral_reward(user_id: str, deposit_amount: float):
     """Check if user was referred and this is their first completed deposit. If yes, give 5% to referrer."""
@@ -207,6 +245,7 @@ async def imb_callback(request: Request):
                     {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc)}}
                 )
                 logging.info(f"Deposit completed: order={order_id}, amount={transaction['amount']}, prev_status={transaction['status']}")
+                await apply_deposit_bonus(transaction["user_id"], transaction["amount"], order_id)
                 await process_referral_reward(transaction["user_id"], transaction["amount"])
     else:
         # User cancelled or payment genuinely failed. DO NOT auto-mark as failed here —
@@ -239,6 +278,7 @@ async def imb_callback(request: Request):
                                 {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc)}}
                             )
                             logging.info(f"Deposit completed via non-success callback verify: {order_id}")
+                            await apply_deposit_bonus(transaction["user_id"], transaction["amount"], order_id)
                             await process_referral_reward(transaction["user_id"], transaction["amount"])
                             # Override redirect status so frontend shows success
                             status = "success"
@@ -279,6 +319,7 @@ async def imb_webhook(request: Request):
                 {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc)}}
             )
             logging.info(f"Webhook deposit completed: order={order_id}, amount={transaction['amount']}")
+            await apply_deposit_bonus(transaction["user_id"], transaction["amount"], order_id)
             await process_referral_reward(transaction["user_id"], transaction["amount"])
     elif order_id:
         # Only mark failed if IMB confirms via check-order-status
@@ -334,6 +375,7 @@ async def check_deposit_status(order_id: str, request: Request):
                     {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc)}}
                 )
                 await process_referral_reward(user["_id"], transaction["amount"])
+                await apply_deposit_bonus(user["_id"], transaction["amount"], order_id)
             return {"status": "completed", "amount": transaction["amount"]}
 
         # Only return "failed" if IMB explicitly says so. Otherwise keep pending.
@@ -514,7 +556,7 @@ async def export_transactions(request: Request):
             time_str = ist.strftime("%I:%M %p")
         else:
             date_str = time_str = ""
-        tx_type = "Deposit" if tx["type"] == "deposit" else "Withdrawal" if tx["type"] == "withdrawal" else "Bonus"
+        tx_type = "Deposit" if tx["type"] == "deposit" else "Withdrawal" if tx["type"] == "withdrawal" else ("Deposit Bonus" if tx["type"] == "deposit_bonus" else "Bonus")
         csv_lines.append(f"{date_str},{time_str},{tx_type},{tx['amount']},{tx['status']}")
 
     csv_content = "\n".join(csv_lines)

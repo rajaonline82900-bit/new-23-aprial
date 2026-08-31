@@ -29,6 +29,7 @@ import AdminWinnersTab from './admin/AdminWinnersTab';
 import AdminReferralsTab from './admin/AdminReferralsTab';
 import AdminGameTogglesTab from './admin/AdminGameTogglesTab';
 import AdminFakeTickerTab from './admin/AdminFakeTickerTab';
+import AdminHelpVideosTab from './admin/AdminHelpVideosTab';
 import AdminKalyanResultsTab from './admin/AdminKalyanResultsTab';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -201,6 +202,7 @@ const AdminPage = () => {
                 { value: 'referrals', label: 'Referrals' },
                 { value: 'users', label: 'यूजर्स' },
                 { value: 'settings', label: 'सेटिंग्स' },
+                { value: 'help_videos', label: 'Help Videos' },
                 { value: 'help', label: 'Chat' },
               ].map(tab => (
                 <TabsTrigger
@@ -230,6 +232,7 @@ const AdminPage = () => {
           <TabsContent value="referrals"><AdminReferralsTab /></TabsContent>
           <TabsContent value="users"><AdminUsersTab /></TabsContent>
           <TabsContent value="settings"><AdminSettingsTab /></TabsContent>
+          <TabsContent value="help_videos"><AdminHelpVideosTab /></TabsContent>
           <TabsContent value="help"><AdminChatInbox API={API_URL} /></TabsContent>
         </Tabs>
       </main>

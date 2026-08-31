@@ -33,6 +33,7 @@ from routes.dragon_tiger_routes import router as dt_router, dragon_tiger_round_l
 from routes.color_game_routes import router as color_game_router, color_game_round_loop
 from routes.chicken_road_routes import router as chicken_road_router
 from routes.crazy_time_routes import router as crazy_time_router, crazy_time_round_loop
+from routes.help_videos_routes import router as help_videos_router
 from routes.ludo_routes import router as ludo_router, ludo_watchdog
 from routes.game_toggles import router as game_toggles_router
 from routes.fake_ticker import router as fake_ticker_router
@@ -72,6 +73,7 @@ api_router.include_router(dt_router)
 api_router.include_router(color_game_router)
 api_router.include_router(chicken_road_router)
 api_router.include_router(crazy_time_router)
+api_router.include_router(help_videos_router)
 api_router.include_router(ludo_router)
 api_router.include_router(game_toggles_router)
 api_router.include_router(fake_ticker_router)

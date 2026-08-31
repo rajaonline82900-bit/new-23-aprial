@@ -63,6 +63,20 @@ const WalletPage = () => {
   const [scannerImage, setScannerImage] = useState(null);
   const [scannerPreview, setScannerPreview] = useState('');
   const [uploadingScanner, setUploadingScanner] = useState(false);
+  const [helpVideos, setHelpVideos] = useState({ deposit: null, withdraw: null });
+  const [videoModal, setVideoModal] = useState(null); // 'deposit' | 'withdraw' | null
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [d, w] = await Promise.all([
+          axios.get(`${API_URL}/api/help-videos/deposit`),
+          axios.get(`${API_URL}/api/help-videos/withdraw`),
+        ]);
+        setHelpVideos({ deposit: d.data.url, withdraw: w.data.url });
+      } catch { /* noop */ }
+    })();
+  }, []);
 
   const fetchWallet = useCallback(async () => {
     try {
@@ -455,18 +469,24 @@ const WalletPage = () => {
                   >
                     <div className="flex items-center gap-3">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                        tx.type === 'deposit' 
-                          ? 'bg-emerald-500/20' 
-                          : 'bg-red-500/20'
+                        tx.type === 'deposit_bonus'
+                          ? 'bg-yellow-500/20'
+                          : tx.type === 'deposit'
+                            ? 'bg-emerald-500/20'
+                            : 'bg-red-500/20'
                       }`}>
-                        {tx.type === 'deposit' 
-                          ? <ArrowDownLeft className="w-5 h-5 text-emerald-400" />
-                          : <ArrowUpRight className="w-5 h-5 text-red-400" />
+                        {tx.type === 'deposit_bonus'
+                          ? <span className="text-lg">🎁</span>
+                          : tx.type === 'deposit'
+                            ? <ArrowDownLeft className="w-5 h-5 text-emerald-400" />
+                            : <ArrowUpRight className="w-5 h-5 text-red-400" />
                         }
                       </div>
                       <div>
                         <p className="text-white font-medium">
-                          {tx.type === 'deposit' ? 'जमा' : 'निकासी'}
+                          {tx.type === 'deposit_bonus'
+                            ? 'डिपॉजिट बोनस (+5%)'
+                            : tx.type === 'deposit' ? 'जमा' : 'निकासी'}
                           {tx.type === 'withdrawal' && tx.upi_id && (
                             <span className="text-gray-400 text-xs ml-2">({tx.upi_id})</span>
                           )}
@@ -479,9 +499,10 @@ const WalletPage = () => {
                     </div>
                     <div className="text-right flex flex-col items-end gap-1">
                       <p className={`font-bold ${
+                        tx.type === 'deposit_bonus' ? 'text-yellow-300' :
                         tx.type === 'deposit' ? 'text-emerald-400' : 'text-red-400'
                       }`}>
-                        {tx.type === 'deposit' ? '+' : '-'}₹{tx.amount}
+                        {tx.type === 'withdrawal' ? '-' : '+'}₹{tx.amount}
                       </p>
                       {getStatusBadge(tx.status)}
                       {tx.type === 'withdrawal' && tx.status === 'pending' && (
@@ -545,18 +566,31 @@ const WalletPage = () => {
               </p>
             </div>
 
+            {/* Bonus preview when amount ≥ ₹1000 */}
+            {depositAmount && parseFloat(depositAmount) >= 1000 && (
+              <div className="rounded-xl px-3 py-2 flex items-center justify-between"
+                style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.45)' }}
+                data-testid="deposit-bonus-preview">
+                <span className="text-[11px] font-black text-emerald-300 uppercase tracking-widest">🎁 +5% Bonus</span>
+                <span className="text-sm font-black text-emerald-300 tabular-nums">
+                  +₹{Math.round(parseFloat(depositAmount) * 0.05)}
+                </span>
+              </div>
+            )}
+
             {/* Quick amount chips */}
             <div>
               <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Quick select</p>
-              <div className="grid grid-cols-4 gap-2">
-                {[200, 500, 1000, 2000, 5000, 10000, 20000, 50000].map((amt) => {
+              <div className="grid grid-cols-3 gap-2">
+                {[100, 200, 500, 1000, 2000, 5000].map((amt) => {
                   const active = depositAmount === String(amt);
+                  const showBonus = amt >= 1000;
                   return (
                     <button
                       key={amt}
                       onClick={() => setDepositAmount(String(amt))}
                       data-testid={`deposit-quick-${amt}`}
-                      className="py-2.5 rounded-xl text-xs font-black transition-all active:scale-95 tabular-nums"
+                      className="relative py-3 rounded-xl text-sm font-black transition-all active:scale-95 tabular-nums"
                       style={{
                         background: active
                           ? 'linear-gradient(135deg, #FFD700 0%, #D4AF37 100%)'
@@ -566,12 +600,40 @@ const WalletPage = () => {
                         boxShadow: active ? '0 4px 12px rgba(212,175,55,0.4)' : 'none',
                       }}
                     >
-                      ₹{amt >= 1000 ? `${amt / 1000}k` : amt}
+                      ₹{amt}
+                      {showBonus && (
+                        <span className="absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded-md text-[9px] font-black"
+                          style={{
+                            background: '#22C55E',
+                            color: '#0A0A14',
+                            border: '1px solid #14532D',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                          }}>+5%</span>
+                      )}
                     </button>
                   );
                 })}
               </div>
             </div>
+
+            {/* How to Deposit? — video guide */}
+            {helpVideos.deposit && (
+              <button
+                onClick={() => setVideoModal('deposit')}
+                data-testid="how-to-deposit-btn"
+                className="w-full flex items-center gap-3 rounded-xl p-3 active:scale-[0.98] transition-all"
+                style={{ background: 'rgba(212,175,55,0.08)', border: '1.5px dashed rgba(212,175,55,0.4)' }}>
+                <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                  style={{ background: 'rgba(255,215,0,0.15)', border: '1.5px solid #FDE047' }}>
+                  <span className="text-lg">▶</span>
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="font-black text-sm text-yellow-300">How to Deposit?</p>
+                  <p className="text-[10px] text-yellow-200/70">डिपॉजिट कैसे करें (वीडियो गाइड देखें)</p>
+                </div>
+                <span className="text-yellow-300">›</span>
+              </button>
+            )}
           </div>
 
           <div className="px-5 pb-5 space-y-3">
@@ -681,6 +743,25 @@ const WalletPage = () => {
           })()}
           
           <div className="space-y-4 mt-4">
+            {/* How to Withdraw? — video guide */}
+            {helpVideos.withdraw && (
+              <button
+                onClick={() => setVideoModal('withdraw')}
+                data-testid="how-to-withdraw-btn"
+                className="w-full flex items-center gap-3 rounded-xl p-3 active:scale-[0.98] transition-all"
+                style={{ background: 'rgba(212,175,55,0.08)', border: '1.5px dashed rgba(212,175,55,0.4)' }}>
+                <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                  style={{ background: 'rgba(255,215,0,0.15)', border: '1.5px solid #FDE047' }}>
+                  <span className="text-lg">▶</span>
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="font-black text-sm text-yellow-300">How to Withdraw?</p>
+                  <p className="text-[10px] text-yellow-200/70">विड्रॉल कैसे करें (वीडियो गाइड देखें)</p>
+                </div>
+                <span className="text-yellow-300">›</span>
+              </button>
+            )}
+
             <div>
               <Label className="text-gray-300">राशि (₹)</Label>
               <Input
@@ -854,6 +935,38 @@ const WalletPage = () => {
           />
         </div>
       )}
+
+      {/* Help Video Modal — plays admin-uploaded video for deposit/withdraw guide */}
+      {videoModal && (() => {
+        const url = helpVideos[videoModal];
+        if (!url) return null;
+        // Convert YouTube watch/short URLs to embed
+        let embedUrl = url;
+        const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/);
+        if (ytMatch) embedUrl = `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1`;
+        const isVideoFile = /\.(mp4|webm|ogg|mov)(\?|$)/i.test(url);
+        return (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-3" style={{ background: 'rgba(0,0,0,0.85)' }}
+               onClick={() => setVideoModal(null)} data-testid="help-video-modal">
+            <div className="relative w-full max-w-md rounded-2xl overflow-hidden" style={{ background: '#0A0A14', border: '2px solid #FDE047' }} onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between px-3 py-2" style={{ background: '#141418', borderBottom: '1px solid rgba(255,215,0,0.3)' }}>
+                <p className="font-black text-yellow-300 text-sm">
+                  {videoModal === 'deposit' ? '▶ How to Deposit?' : '▶ How to Withdraw?'}
+                </p>
+                <button onClick={() => setVideoModal(null)} data-testid="close-help-video" className="text-white text-lg font-black px-2">✕</button>
+              </div>
+              <div className="relative w-full bg-black" style={{ aspectRatio: '16 / 9' }}>
+                {isVideoFile ? (
+                  <video src={url} controls autoPlay className="w-full h-full" />
+                ) : (
+                  <iframe src={embedUrl} title="Help Video" className="w-full h-full" frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };
