@@ -47,17 +47,20 @@ const AdminUsersTab = () => {
     setSelectedUser(u); setUserModalOpen(true); setLoadingUserDetails(true); setUserDetailTab('deposits');
     setWalletTxGameFilter(''); setWalletTxTypeFilter('');
     try {
-      const [depositsRes, withdrawalsRes, betsRes, winningsRes] = await Promise.all([
+      const [depositsRes, withdrawalsRes, betsRes, winningsRes, gameHistRes] = await Promise.all([
         axios.get(`${API_URL}/api/admin/users/${u._id}/deposits`, { withCredentials: true }),
         axios.get(`${API_URL}/api/admin/users/${u._id}/withdrawals`, { withCredentials: true }),
         axios.get(`${API_URL}/api/admin/users/${u._id}/bets`, { withCredentials: true }),
-        axios.get(`${API_URL}/api/admin/users/${u._id}/winnings`, { withCredentials: true })
+        axios.get(`${API_URL}/api/admin/users/${u._id}/winnings`, { withCredentials: true }),
+        axios.get(`${API_URL}/api/admin/users/${u._id}/game-history?limit=500`, { withCredentials: true }),
       ]);
       setUserDetails({
         deposits: depositsRes.data.deposits, totalDeposited: depositsRes.data.total_deposited,
         withdrawals: withdrawalsRes.data.withdrawals, totalWithdrawn: withdrawalsRes.data.total_withdrawn, pendingWithdrawal: withdrawalsRes.data.pending_amount,
         bets: betsRes.data.bets, betStats: betsRes.data.stats,
         winnings: winningsRes.data.winnings, totalWinnings: winningsRes.data.total_winnings,
+        gameHistory: gameHistRes.data.entries || [],
+        gameHistoryStats: gameHistRes.data.stats || {},
         walletTx: [],
       });
     } catch (error) { toast.error('User details load नहीं हो पाए'); }
@@ -319,6 +322,7 @@ const AdminUsersTab = () => {
                   <TabsTrigger value="bets" className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black text-xs">बेट्स</TabsTrigger>
                   <TabsTrigger value="winnings" className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black text-xs">जीत</TabsTrigger>
                   <TabsTrigger value="wallet_tx" data-testid="user-detail-wallet-tx-tab" className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black text-xs">Wallet Tx</TabsTrigger>
+                  <TabsTrigger value="game_history" data-testid="user-detail-game-history-tab" className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black text-xs">Game History</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="deposits" className="mt-4">
@@ -514,6 +518,70 @@ const AdminUsersTab = () => {
                                 {isWin ? 'Win' : isBet ? 'Debit' : 'Amt'}
                               </p>
                               <p>{isWin ? '+' : (isLoss ? '' : '−')}₹{Math.floor(amt).toLocaleString('en-IN')}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="game_history" className="mt-4">
+                  {/* Game History — all games combined (Matka, Aviator, Coin, Dragon Tiger, Color, Crazy Time) */}
+                  {userDetails.gameHistoryStats && Object.keys(userDetails.gameHistoryStats).length > 0 && (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                      <div className="rounded-lg p-2 text-center" style={{ background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)' }}>
+                        <p className="text-[10px] text-gray-400 uppercase font-black">Total Bets</p>
+                        <p className="text-lg font-black text-[#FFD700] tabular-nums">{userDetails.gameHistoryStats.total_bets || 0}</p>
+                      </div>
+                      <div className="rounded-lg p-2 text-center" style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.3)' }}>
+                        <p className="text-[10px] text-gray-400 uppercase font-black">Won</p>
+                        <p className="text-lg font-black text-emerald-400 tabular-nums">{userDetails.gameHistoryStats.won || 0}</p>
+                      </div>
+                      <div className="rounded-lg p-2 text-center" style={{ background: 'rgba(220,38,38,0.12)', border: '1px solid rgba(220,38,38,0.3)' }}>
+                        <p className="text-[10px] text-gray-400 uppercase font-black">Lost</p>
+                        <p className="text-lg font-black text-red-400 tabular-nums">{userDetails.gameHistoryStats.lost || 0}</p>
+                      </div>
+                      <div className="rounded-lg p-2 text-center" style={{ background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.3)' }}>
+                        <p className="text-[10px] text-gray-400 uppercase font-black">Total Won ₹</p>
+                        <p className="text-lg font-black text-blue-400 tabular-nums">₹{Math.floor(userDetails.gameHistoryStats.total_won || 0).toLocaleString('en-IN')}</p>
+                      </div>
+                    </div>
+                  )}
+                  {(userDetails.gameHistory || []).length === 0 ? (
+                    <p className="text-center text-gray-500 py-6 text-sm">कोई game history नहीं मिली</p>
+                  ) : (
+                    <div className="space-y-1.5 max-h-[420px] overflow-y-auto">
+                      {(userDetails.gameHistory || []).map((e, idx) => {
+                        const isWin = e.status === 'won';
+                        const isLoss = e.status === 'lost';
+                        const isPending = e.status === 'pending';
+                        const statusColor = isWin ? '#22C55E' : isLoss ? '#EF4444' : '#FBBF24';
+                        return (
+                          <div key={idx} className="rounded-lg p-2.5 flex items-center gap-2 text-xs" style={{
+                            background: `linear-gradient(90deg, rgba(0,0,0,0.4) 0%, ${statusColor}18 100%)`,
+                            border: `1px solid ${statusColor}55`,
+                          }} data-testid={`game-history-row-${idx}`}>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="font-black text-white truncate">{e.game}</span>
+                                <span className="px-1.5 py-0.5 rounded text-[9px] font-black" style={{ background: statusColor, color: '#0A0A14' }}>
+                                  {isWin ? 'WON' : isLoss ? 'LOST' : 'LIVE'}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 text-[10px] text-gray-400 mt-0.5">
+                                {e.pick && <span>Pick: <span className="text-yellow-300 font-bold">{e.pick}</span></span>}
+                                <span>{e.created_at ? utcDate(e.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true }) : '-'}</span>
+                              </div>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <p className="text-[10px] text-gray-400">Bet</p>
+                              <p className="font-black text-white tabular-nums">₹{Math.floor(e.amount).toLocaleString('en-IN')}</p>
+                              {!isPending && (
+                                <p className="text-[10px] font-black tabular-nums" style={{ color: statusColor }}>
+                                  {isWin ? '+' : '−'}₹{Math.floor(isWin ? e.payout : e.amount).toLocaleString('en-IN')}
+                                </p>
+                              )}
                             </div>
                           </div>
                         );

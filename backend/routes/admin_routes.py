@@ -166,6 +166,110 @@ async def get_user_bets(user_id: str, request: Request):
     return {"bets": bets, "stats": stats}
 
 
+@router.get("/admin/users/{user_id}/game-history")
+async def get_user_game_history(user_id: str, request: Request, limit: int = 500):
+    """Complete cross-game history for a user — Kalyan/Gali, Aviator, Coin, Dragon Tiger,
+    Color Game, Crazy Time — with win/lose, game name, amount, payout, created_at."""
+    await get_admin_user(request)
+
+    def _iso(dt):
+        if dt is None:
+            return None
+        if isinstance(dt, str):
+            return dt
+        try:
+            return dt.isoformat()
+        except Exception:
+            return str(dt)
+
+    entries = []
+
+    # Regular matka/gali bets
+    async for b in db.bets.find({"user_id": user_id}, {"_id": 0}).sort("created_at", -1).limit(limit):
+        entries.append({
+            "game": b.get("market_name") or b.get("game_name") or "Matka/Gali",
+            "game_key": "matka",
+            "pick": b.get("number") or b.get("pana") or b.get("game_type") or "",
+            "amount": float(b.get("amount", 0)),
+            "status": b.get("status", "pending"),
+            "payout": float(b.get("payout", 0)),
+            "created_at": _iso(b.get("created_at")),
+        })
+
+    # Aviator
+    async for b in db.aviator_bets.find({"user_id": user_id}, {"_id": 0}).sort("created_at", -1).limit(limit):
+        entries.append({
+            "game": "Aviator",
+            "game_key": "aviator",
+            "pick": f"@{b.get('cashout_multiplier', 0):.2f}x" if b.get("cashout_multiplier") else "—",
+            "amount": float(b.get("amount", 0)),
+            "status": b.get("status", "pending"),
+            "payout": float(b.get("payout", 0)),
+            "created_at": _iso(b.get("created_at")),
+        })
+
+    # Coin toss
+    async for b in db.coin_bets.find({"user_id": user_id}, {"_id": 0}).sort("created_at", -1).limit(limit):
+        entries.append({
+            "game": "Coin Toss",
+            "game_key": "coin",
+            "pick": (b.get("side") or "").upper(),
+            "amount": float(b.get("amount", 0)),
+            "status": b.get("status", "pending"),
+            "payout": float(b.get("payout", 0)),
+            "created_at": _iso(b.get("created_at")),
+        })
+
+    # Dragon Tiger
+    async for b in db.dragon_tiger_bets.find({"user_id": user_id}, {"_id": 0}).sort("created_at", -1).limit(limit):
+        entries.append({
+            "game": "Dragon Tiger",
+            "game_key": "dragon_tiger",
+            "pick": (b.get("side") or "").title(),
+            "amount": float(b.get("amount", 0)),
+            "status": b.get("status", "pending"),
+            "payout": float(b.get("payout", 0)),
+            "created_at": _iso(b.get("created_at")),
+        })
+
+    # Color Game
+    async for b in db.color_game_bets.find({"user_id": user_id}, {"_id": 0}).sort("created_at", -1).limit(limit):
+        entries.append({
+            "game": "Color Game",
+            "game_key": "color",
+            "pick": (b.get("side") or "").upper(),
+            "amount": float(b.get("amount", 0)),
+            "status": b.get("status", "pending"),
+            "payout": float(b.get("payout", 0)),
+            "created_at": _iso(b.get("created_at")),
+        })
+
+    # Crazy Time
+    async for b in db.crazy_time_bets.find({"user_id": user_id}, {"_id": 0}).sort("created_at", -1).limit(limit):
+        entries.append({
+            "game": "Crazy Time",
+            "game_key": "crazy_time",
+            "pick": str(b.get("segment") or ""),
+            "amount": float(b.get("amount", 0)),
+            "status": b.get("status", "pending"),
+            "payout": float(b.get("payout", 0)),
+            "created_at": _iso(b.get("created_at")),
+        })
+
+    # Sort combined by created_at desc
+    entries.sort(key=lambda e: e.get("created_at") or "", reverse=True)
+
+    stats = {
+        "total_bets": len(entries),
+        "total_wagered": sum(e["amount"] for e in entries),
+        "total_won": sum(e["payout"] for e in entries if e["status"] == "won"),
+        "won": len([e for e in entries if e["status"] == "won"]),
+        "lost": len([e for e in entries if e["status"] == "lost"]),
+        "pending": len([e for e in entries if e["status"] == "pending"]),
+    }
+    return {"entries": entries[:limit], "stats": stats}
+
+
 # ---------------------------------------------------------------------------
 # Full bet history — every bet across every game + Aviator, with filters.
 # Used by the admin "बेट रिपोर्ट → History" table.
