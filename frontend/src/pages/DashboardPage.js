@@ -851,59 +851,124 @@ const DashboardPage = () => {
             );
           })()}
 
-          {/* Quick Actions - Deposit / Withdrawal / Telegram / WhatsApp */}
-          <div className="grid grid-cols-4 gap-2.5 mb-5">
+          {/* Quick Actions — Reference-style cards: colored border, icon left, title+subtitle, arrow bottom-right */}
+          <div className="grid grid-cols-4 gap-2 mb-5">
             {/* DEPOSIT */}
             <Link to="/wallet?action=deposit" data-testid="deposit-quick-link">
-              <div className="flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3 active:scale-95"
-                style={{ background: '#16162A', border: '1px solid rgba(212, 175, 55, 0.3)' }}>
-                <div className="w-11 h-11 rounded-2xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #34D399 0%, #10B981 50%, #047857 100%)' }}>
-                  <HandCoins className="w-6 h-6 text-white" strokeWidth={2.2} />
+              <div className="relative rounded-2xl p-2.5 active:scale-95 flex flex-col justify-between overflow-hidden"
+                style={{
+                  background: 'linear-gradient(155deg, #052E1F 0%, #011710 55%, #000A06 100%)',
+                  border: '2px solid #22C55E',
+                  boxShadow: '0 0 12px rgba(34,197,94,0.35), inset 0 1px 0 rgba(52,211,153,0.35)',
+                  minHeight: 100,
+                }}>
+                <div className="w-9 h-9 rounded-full flex items-center justify-center"
+                  style={{
+                    background: 'radial-gradient(circle at 35% 30%, #6EE7B7 0%, #22C55E 55%, #047857 100%)',
+                    border: '1.5px solid #FEF3C7',
+                    boxShadow: '0 3px 8px rgba(34,197,94,0.6)',
+                  }}>
+                  <HandCoins className="w-5 h-5 text-white" strokeWidth={2.4} />
                 </div>
-                <span className="text-[#FFD700] font-bold text-[10px] tracking-wide">Deposit</span>
+                <div>
+                  <p className="text-white font-black text-[11px] tracking-wide leading-tight mt-1">DEPOSIT</p>
+                  <p className="text-[9px] font-bold" style={{ color: '#4ADE80' }}>Instant</p>
+                </div>
+                <div className="absolute bottom-1.5 right-1.5 w-5 h-5 rounded-full flex items-center justify-center"
+                  style={{ background: '#22C55E', border: '1.5px solid #14532D' }}>
+                  <span className="text-[10px] font-black text-white">›</span>
+                </div>
               </div>
             </Link>
 
-            {/* WITHDRAWAL */}
+            {/* WITHDRAW */}
             <Link to="/wallet?action=withdraw" data-testid="withdraw-quick-link">
-              <div className="flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3 active:scale-95"
-                style={{ background: '#16162A', border: '1px solid rgba(212, 175, 55, 0.3)' }}>
-                <div className="w-11 h-11 rounded-2xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #FB923C 0%, #F97316 50%, #C2410C 100%)' }}>
-                  <BanknoteArrowUp className="w-6 h-6 text-white" strokeWidth={2.2} />
+              <div className="relative rounded-2xl p-2.5 active:scale-95 flex flex-col justify-between overflow-hidden"
+                style={{
+                  background: 'linear-gradient(155deg, #3A2708 0%, #1A0F04 55%, #0A0602 100%)',
+                  border: '2px solid #F97316',
+                  boxShadow: '0 0 12px rgba(249,115,22,0.35), inset 0 1px 0 rgba(251,146,60,0.35)',
+                  minHeight: 100,
+                }}>
+                <div className="w-9 h-9 rounded-full flex items-center justify-center"
+                  style={{
+                    background: 'radial-gradient(circle at 35% 30%, #FED7AA 0%, #F97316 55%, #7C2D12 100%)',
+                    border: '1.5px solid #FEF3C7',
+                    boxShadow: '0 3px 8px rgba(249,115,22,0.6)',
+                  }}>
+                  <BanknoteArrowUp className="w-5 h-5 text-white" strokeWidth={2.4} />
                 </div>
-                <span className="text-[#FFD700] font-bold text-[10px] tracking-wide">Withdraw</span>
+                <div>
+                  <p className="text-white font-black text-[11px] tracking-wide leading-tight mt-1">WITHDRAW</p>
+                  <p className="text-[9px] font-bold" style={{ color: '#FB923C' }}>Fast Payout</p>
+                </div>
+                <div className="absolute bottom-1.5 right-1.5 w-5 h-5 rounded-full flex items-center justify-center"
+                  style={{ background: '#F97316', border: '1.5px solid #7C2D12' }}>
+                  <span className="text-[10px] font-black text-white">›</span>
+                </div>
               </div>
             </Link>
 
             {/* TELEGRAM */}
             <a href={telegramLink || '#'} target="_blank" rel="noopener noreferrer" data-testid="telegram-quick-link" onClick={(e) => { if (!telegramLink) e.preventDefault(); }}>
-              <div className="flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3 active:scale-95"
-                style={{ background: '#16162A', border: '1px solid rgba(212, 175, 55, 0.3)' }}>
-                <div className="w-11 h-11 rounded-2xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #2AABEE 0%, #229ED9 100%)' }}>
-                  <svg viewBox="0 0 240 240" className="w-6 h-6" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <div className="relative rounded-2xl p-2.5 active:scale-95 flex flex-col justify-between overflow-hidden"
+                style={{
+                  background: 'linear-gradient(155deg, #082F49 0%, #0A1428 55%, #050810 100%)',
+                  border: '2px solid #22D3EE',
+                  boxShadow: '0 0 12px rgba(34,211,238,0.35), inset 0 1px 0 rgba(103,232,249,0.35)',
+                  minHeight: 100,
+                }}>
+                <div className="w-9 h-9 rounded-full flex items-center justify-center"
+                  style={{
+                    background: 'radial-gradient(circle at 35% 30%, #A5F3FC 0%, #22D3EE 45%, #164E63 100%)',
+                    border: '1.5px solid #FEF3C7',
+                    boxShadow: '0 3px 8px rgba(34,211,238,0.55)',
+                  }}>
+                  <svg viewBox="0 0 240 240" className="w-5 h-5" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M186.054 71.196 158.5 200.952c-2.08 9.184-7.512 11.464-15.232 7.144l-42.064-31-20.296 19.528c-2.248 2.248-4.128 4.128-8.456 4.128l3.024-42.864 78.04-70.504c3.392-3.024-.736-4.704-5.272-1.68L52.74 138.504l-41.512-12.984c-9.024-2.816-9.184-9.024 1.88-13.36L174.5 60.876c7.512-2.816 14.08 1.68 11.554 10.32Z" fill="#FFFFFF" />
                   </svg>
                 </div>
-                <span className="text-[#FFD700] font-bold text-[10px] tracking-wide">Telegram</span>
+                <div>
+                  <p className="text-white font-black text-[11px] tracking-wide leading-tight mt-1">TELEGRAM</p>
+                  <p className="text-[9px] font-bold" style={{ color: '#67E8F9' }}>Join Now</p>
+                </div>
+                <div className="absolute bottom-1.5 right-1.5 w-5 h-5 rounded-full flex items-center justify-center"
+                  style={{ background: '#22D3EE', border: '1.5px solid #164E63' }}>
+                  <span className="text-[10px] font-black text-white">›</span>
+                </div>
               </div>
             </a>
 
-            {/* WHATSAPP → Internal Live Chat (all messages visible in admin panel) */}
-            <Link
-              to="/chat"
-              data-testid="whatsapp-quick-link"
-            >
-              <div className="flex flex-col items-center justify-center gap-1.5 rounded-2xl p-3 active:scale-95 relative"
-                style={{ background: '#16162A', border: '1px solid rgba(212, 175, 55, 0.3)' }}>
-                <div className="w-11 h-11 rounded-2xl flex items-center justify-center relative" style={{ background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)' }}>
-                  <svg viewBox="0 0 24 24" className="w-6 h-6" fill="#FFFFFF" xmlns="http://www.w3.org/2000/svg">
+            {/* LIVE CHAT → internal chat */}
+            <Link to="/chat" data-testid="whatsapp-quick-link">
+              <div className="relative rounded-2xl p-2.5 active:scale-95 flex flex-col justify-between overflow-hidden"
+                style={{
+                  background: 'linear-gradient(155deg, #2A0B3D 0%, #1A0625 55%, #0A0410 100%)',
+                  border: '2px solid #A855F7',
+                  boxShadow: '0 0 12px rgba(168,85,247,0.35), inset 0 1px 0 rgba(216,180,254,0.35)',
+                  minHeight: 100,
+                }}>
+                <div className="w-9 h-9 rounded-full flex items-center justify-center relative"
+                  style={{
+                    background: 'radial-gradient(circle at 35% 30%, #86EFAC 0%, #25D366 55%, #128C7E 100%)',
+                    border: '1.5px solid #FEF3C7',
+                    boxShadow: '0 3px 8px rgba(37,211,102,0.5)',
+                  }}>
+                  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="#FFFFFF" xmlns="http://www.w3.org/2000/svg">
                     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.297-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
                   </svg>
                   {unreadChat > 0 && (
                     <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[8px] font-bold flex items-center justify-center border border-[#1A1A2E]" data-testid="chat-unread-badge">{unreadChat > 9 ? '9+' : unreadChat}</span>
                   )}
                 </div>
-                <span className="text-[#FFD700] font-bold text-[10px] tracking-wide">Live Chat</span>
+                <div>
+                  <p className="text-white font-black text-[11px] tracking-wide leading-tight mt-1">LIVE CHAT</p>
+                  <p className="text-[9px] font-bold" style={{ color: '#D8B4FE' }}>24/7 Support</p>
+                </div>
+                <div className="absolute bottom-1.5 right-1.5 w-5 h-5 rounded-full flex items-center justify-center"
+                  style={{ background: '#A855F7', border: '1.5px solid #581C87' }}>
+                  <span className="text-[10px] font-black text-white">›</span>
+                </div>
               </div>
             </Link>
           </div>
@@ -915,15 +980,40 @@ const DashboardPage = () => {
               ═══════════════════════════════════════════════════════════════ */}
           {gameCategory === null && (
             <>
-              {/* Gateway header */}
+              {/* Gateway header — reference style: controller icon + CHOOSE GAME left, "सभी गेम देखें" pill on right */}
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <span className="w-1.5 h-6 rounded-full" style={{ background: 'linear-gradient(180deg, #FFD700 0%, #D4AF37 50%, #B8860B 100%)' }}></span>
-                  <h3 className="text-xl font-black tracking-tight" style={{ color: '#FFFFFF' }}>Choose Game</h3>
+                  {/* Game controller icon */}
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center"
+                    style={{
+                      background: 'linear-gradient(135deg, #FFD700 0%, #D4AF37 60%, #B8860B 100%)',
+                      border: '1.5px solid #FEF3C7',
+                      boxShadow: '0 3px 8px rgba(212,175,55,0.5)',
+                    }}>
+                    <svg viewBox="0 0 24 24" className="w-5 h-5" fill="#0A0A14" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M7.97 16H16.03C18.77 16 21 13.77 21 11.03V10.87C21 8.13 18.77 5.9 16.03 5.9H7.97C5.23 5.9 3 8.13 3 10.87V11.03C3 13.77 5.23 16 7.97 16ZM6 10.4H8V9H9.5V10.4H10.9V11.9H9.5V13.3H8V11.9H6V10.4ZM16 12.5C15.45 12.5 15 12.05 15 11.5C15 10.95 15.45 10.5 16 10.5C16.55 10.5 17 10.95 17 11.5C17 12.05 16.55 12.5 16 12.5ZM14 10.5C13.45 10.5 13 10.05 13 9.5C13 8.95 13.45 8.5 14 8.5C14.55 8.5 15 8.95 15 9.5C15 10.05 14.55 10.5 14 10.5Z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-black tracking-wider"
+                    style={{
+                      backgroundImage: 'linear-gradient(90deg, #FEF3C7 0%, #FFFFFF 50%, #FEF3C7 100%)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                    }}>CHOOSE GAME</h3>
+                  <span className="text-yellow-400 text-lg leading-none">◄</span>
                 </div>
-                <span className="text-[10px] px-2.5 py-1 rounded-full font-black tracking-widest uppercase" style={{ background: 'rgba(212, 175, 55, 0.15)', border: '1px solid rgba(212, 175, 55, 0.5)', color: '#FFD700' }}>
-                  खेल चुनें
-                </span>
+                <button className="flex items-center gap-1 px-3 py-1.5 rounded-full font-black text-xs active:scale-95"
+                  style={{
+                    background: 'transparent',
+                    border: '1.5px solid #FDE047',
+                    color: '#FDE047',
+                    boxShadow: '0 0 10px rgba(253,224,71,0.25)',
+                  }}
+                  onClick={() => document.querySelector('[data-testid="home-gateway-grid"]')?.scrollIntoView({ behavior: 'smooth' })}
+                  data-testid="see-all-games-btn">
+                  <span>सभी गेम देखें</span>
+                  <span className="text-sm">›</span>
+                </button>
               </div>
 
               <div className="grid grid-cols-1 gap-3 mb-5" data-testid="home-gateway-grid">
