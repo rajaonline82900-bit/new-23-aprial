@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
@@ -6,73 +6,64 @@ import { ArrowLeft, Wallet as WalletIcon, Clock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const API = process.env.REACT_APP_BACKEND_URL;
-const CHIPS = [50, 100, 500, 1000, 5000];
+const CHIPS = [20, 50, 100, 500, 1000];
 
-// Number → color mapping
-const NUM_COLORS = {
-  0: ['red', 'violet'],
-  5: ['green', 'violet'],
-};
-[1, 3, 7, 9].forEach((n) => (NUM_COLORS[n] = ['red']));
-[2, 4, 6, 8].forEach((n) => (NUM_COLORS[n] = ['green']));
+const COLORS = [
+  { key: 'red',    label: 'RED',    hex: '#DC2626', text: '#FFFFFF' },
+  { key: 'white',  label: 'WHITE',  hex: '#F3F4F6', text: '#0A0A14' },
+  { key: 'orange', label: 'ORANGE', hex: '#F97316', text: '#FFFFFF' },
+];
+const COLOR_HEX = { red: '#DC2626', white: '#F3F4F6', orange: '#F97316' };
+const PAYOUT = 3;
 
-const COLOR_HEX = {
-  red: '#DC2626',
-  green: '#16A34A',
-  violet: '#9333EA',
-};
-
-// Reveal ball — big glowing number with color ring
-const RevealBall = ({ number, colors, phase }) => {
-  const isRevealed = number !== null && number !== undefined && phase !== 'betting';
-  const showColors = isRevealed ? colors || [] : [];
-  const ringGradient = showColors.length === 2
-    ? `conic-gradient(${COLOR_HEX[showColors[0]]} 0deg 180deg, ${COLOR_HEX[showColors[1]]} 180deg 360deg)`
-    : showColors.length === 1
-      ? `radial-gradient(circle, ${COLOR_HEX[showColors[0]]} 0%, ${COLOR_HEX[showColors[0]]}88 100%)`
-      : 'conic-gradient(#DC2626 0deg 120deg, #16A34A 120deg 240deg, #9333EA 240deg 360deg)';
+// Reveal ball — shows the single winning color
+const RevealBall = ({ color, phase }) => {
+  const isRevealed = !!color && phase !== 'betting';
+  const hex = isRevealed ? COLOR_HEX[color] : '#374151';
   return (
-    <div className="relative flex items-center justify-center" style={{ width: 140, height: 140 }} data-testid="reveal-ball">
+    <div className="relative flex items-center justify-center" style={{ width: 150, height: 150 }} data-testid="reveal-ball">
       <style>{`
         @keyframes cg-spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
-        @keyframes cg-pulse { 0%,100% { box-shadow: 0 0 24px rgba(255,215,0,0.5), 0 0 48px rgba(255,215,0,0.3) } 50% { box-shadow: 0 0 40px rgba(255,215,0,0.85), 0 0 80px rgba(255,215,0,0.5) } }
-        @keyframes cg-bounce { 0% { transform: scale(0.2); opacity: 0 } 50% { transform: scale(1.15); opacity: 1 } 80% { transform: scale(0.95) } 100% { transform: scale(1); opacity: 1 } }
-        .cg-ring-spin { animation: cg-spin 1.6s linear infinite }
-        .cg-ball-pulse { animation: cg-pulse 1.8s ease-in-out infinite }
-        .cg-num-bounce { animation: cg-bounce 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) both }
+        @keyframes cg-pulse { 0%,100% { box-shadow: 0 0 24px rgba(255,215,0,0.5) } 50% { box-shadow: 0 0 48px rgba(255,215,0,0.9) } }
+        @keyframes cg-pop { 0% { transform: scale(0.3); opacity:0 } 60% { transform: scale(1.2); opacity:1 } 100% { transform: scale(1); opacity:1 } }
+        .cg-ring-spin { animation: cg-spin 1.4s linear infinite }
+        .cg-ball-pulse { animation: cg-pulse 1.6s ease-in-out infinite }
+        .cg-label-pop { animation: cg-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both }
       `}</style>
-      {/* Outer color ring */}
+      {/* Outer tricolor spinning ring while betting; static color-matched when revealed */}
       <div
         className={isRevealed ? '' : 'cg-ring-spin'}
         style={{
-          position: 'absolute', width: 140, height: 140, borderRadius: '50%',
-          background: ringGradient,
-          padding: 6,
-          filter: 'drop-shadow(0 6px 12px rgba(0,0,0,0.4))',
-        }}
-      >
-        <div style={{
-          width: '100%', height: '100%', borderRadius: '50%',
-          background: '#0A0A14',
-        }} />
+          position: 'absolute', width: 150, height: 150, borderRadius: '50%',
+          background: isRevealed
+            ? `radial-gradient(circle, ${hex} 0%, ${hex}55 70%, transparent 100%)`
+            : 'conic-gradient(#DC2626 0deg 120deg, #F3F4F6 120deg 240deg, #F97316 240deg 360deg)',
+          padding: 8,
+          filter: 'drop-shadow(0 6px 12px rgba(0,0,0,0.5))',
+        }}>
+        <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: '#0A0A14' }} />
       </div>
-      {/* Inner ball */}
+      {/* Inner ball with color */}
       <div
         className="cg-ball-pulse relative flex items-center justify-center"
         style={{
-          width: 108, height: 108, borderRadius: '50%',
+          width: 116, height: 116, borderRadius: '50%',
           background: isRevealed
-            ? `radial-gradient(circle at 35% 30%, ${COLOR_HEX[showColors[0]] || '#FDE047'} 0%, ${COLOR_HEX[showColors[showColors.length - 1]] || '#B45309'} 100%)`
+            ? `radial-gradient(circle at 35% 30%, #FFFFFF 0%, ${hex} 45%, ${hex} 100%)`
             : 'radial-gradient(circle at 35% 30%, #1F2937 0%, #0A0A14 100%)',
           border: '3px solid #FDE047',
-        }}
-      >
+        }}>
         {isRevealed ? (
-          <span className="cg-num-bounce font-black text-white" style={{ fontSize: 56, textShadow: '0 2px 8px rgba(0,0,0,0.6)', fontFamily: 'Georgia, serif' }}>
-            {number}
+          <span className="cg-label-pop font-black tracking-widest"
+                style={{
+                  fontSize: 20,
+                  color: color === 'white' ? '#0A0A14' : '#FFFFFF',
+                  textShadow: color === 'white' ? 'none' : '0 2px 6px rgba(0,0,0,0.6)',
+                }}>
+            {color.toUpperCase()}
           </span>
         ) : (
-          <span className="font-black text-yellow-300 tabular-nums" style={{ fontSize: 40, opacity: 0.6 }}>?</span>
+          <span className="font-black text-yellow-300" style={{ fontSize: 34, opacity: 0.7 }}>?</span>
         )}
       </div>
     </div>
@@ -81,14 +72,15 @@ const RevealBall = ({ number, colors, phase }) => {
 
 const ColorGamePage = () => {
   const { user, refreshUser } = useAuth();
-  const [config, setConfig] = useState(null);
+  const [config, setConfig] = useState({ min_bet: 20 });
   const [current, setCurrent] = useState(null);
   const [recentRounds, setRecentRounds] = useState([]);
   const [liveFeed, setLiveFeed] = useState([]);
   const [history, setHistory] = useState([]);
   const [chip, setChip] = useState(50);
   const [placing, setPlacing] = useState(false);
-  const [reveal, setReveal] = useState({ round_id: null, number: null, colors: null });
+  const [reveal, setReveal] = useState({ round_id: null, color: null });
+  const revealedRoundRef = useRef(null);
 
   const token = localStorage.getItem('matka11_token') || '';
   const authH = { headers: { Authorization: `Bearer ${token}` } };
@@ -98,21 +90,21 @@ const ColorGamePage = () => {
       const [c, cur, rec, feed] = await Promise.all([
         axios.get(`${API}/api/color-game/config`),
         axios.get(`${API}/api/color-game/current`),
-        axios.get(`${API}/api/color-game/recent-rounds?limit=10`),
+        axios.get(`${API}/api/color-game/recent-rounds?limit=15`),
         axios.get(`${API}/api/color-game/live-feed?limit=8`),
       ]);
       setConfig(c.data);
       setCurrent(cur.data);
       setRecentRounds(rec.data.rounds || []);
       setLiveFeed(feed.data.feed || []);
-    } catch (e) { /* noop */ }
+    } catch { /* noop */ }
   }, []);
 
   const fetchMyHistory = useCallback(async () => {
     try {
       const r = await axios.get(`${API}/api/color-game/history?limit=20`, authH);
       setHistory(r.data.bets || []);
-    } catch (e) { /* noop */ }
+    } catch { /* noop */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -124,14 +116,14 @@ const ColorGamePage = () => {
     return () => { clearInterval(iv); clearInterval(iv2); };
   }, [fetchAll, fetchMyHistory]);
 
-  // Watch reveal
   useEffect(() => {
     const latest = recentRounds[0];
-    if (latest && latest.number !== undefined && latest.round_id !== reveal.round_id) {
-      setReveal({ round_id: latest.round_id, number: latest.number, colors: latest.colors });
+    if (latest?.color && latest.round_id !== revealedRoundRef.current) {
+      revealedRoundRef.current = latest.round_id;
+      setReveal({ round_id: latest.round_id, color: latest.color });
       setTimeout(() => refreshUser(), 3500);
     }
-  }, [recentRounds, reveal.round_id, refreshUser]);
+  }, [recentRounds, refreshUser]);
 
   const placeBet = async (side) => {
     if (placing) return;
@@ -153,9 +145,8 @@ const ColorGamePage = () => {
 
   return (
     <div className="min-h-screen pb-24" style={{
-      background: 'radial-gradient(ellipse 80% 60% at 50% 20%, rgba(147, 51, 234, 0.18) 0%, transparent 55%), radial-gradient(ellipse 80% 60% at 50% 80%, rgba(220, 38, 38, 0.14) 0%, transparent 55%), #0A0A14',
+      background: 'radial-gradient(ellipse 80% 60% at 50% 20%, rgba(249, 115, 22, 0.15) 0%, transparent 55%), radial-gradient(ellipse 80% 60% at 50% 80%, rgba(220, 38, 38, 0.14) 0%, transparent 55%), #0A0A14',
     }} data-testid="color-game-page">
-      {/* Header */}
       <header className="sticky top-0 z-40 backdrop-blur-lg" style={{ background: 'rgba(10, 10, 20, 0.8)', borderBottom: '1px solid rgba(255, 215, 0, 0.25)' }}>
         <div className="px-3 py-3 flex items-center gap-2" style={{ maxWidth: '480px', margin: '0 auto' }}>
           <Link to="/dashboard">
@@ -165,11 +156,11 @@ const ColorGamePage = () => {
           </Link>
           <div className="flex-1">
             <h1 className="text-xl font-black tracking-tight leading-none"
-              style={{ backgroundImage: 'linear-gradient(90deg, #DC2626 0%, #FDE047 50%, #16A34A 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', filter: 'drop-shadow(0 0 12px rgba(255,215,0,0.5))' }}>
+              style={{ backgroundImage: 'linear-gradient(90deg, #DC2626 0%, #F3F4F6 50%, #F97316 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', filter: 'drop-shadow(0 0 12px rgba(255,215,0,0.5))' }}>
               🎨 COLOR GAME
             </h1>
             <p className="text-[10px] font-bold uppercase tracking-widest mt-0.5" style={{ color: '#FDE047', opacity: 0.85 }}>
-              30 sec • R/G 2x • Violet 4.5x • Min ₹{config?.min_bet || 50}
+              30 sec • Red / White / Orange • All 3x • Min ₹{config?.min_bet || 20}
             </p>
           </div>
           <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg" style={{ background: 'rgba(20, 169, 76, 0.15)', border: '1px solid rgba(34, 197, 94, 0.45)' }}>
@@ -193,87 +184,69 @@ const ColorGamePage = () => {
 
         {/* Reveal Ball */}
         <div className="rounded-2xl p-6 flex items-center justify-center" style={{
-          background: 'linear-gradient(180deg, rgba(6,78,59,0.4) 0%, rgba(6,10,15,0.6) 100%)',
+          background: 'linear-gradient(180deg, rgba(6,10,15,0.6) 0%, rgba(6,10,15,0.9) 100%)',
           border: '2px solid rgba(255,215,0,0.4)',
-          boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.6), 0 8px 20px rgba(147,51,234,0.15)',
+          boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.6), 0 8px 20px rgba(249,115,22,0.15)',
         }}>
-          <RevealBall
-            number={isBetting ? null : reveal.number}
-            colors={isBetting ? null : reveal.colors}
-            phase={current?.phase || 'waiting'}
-          />
+          <RevealBall color={isBetting ? null : reveal.color} phase={current?.phase || 'waiting'} />
         </div>
 
         {/* Chip selector */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1">
           {CHIPS.map((c) => (
             <button key={c} onClick={() => setChip(c)}
-              className={`shrink-0 w-14 h-14 rounded-full font-black text-xs tabular-nums active:scale-95 transition-all`}
+              className="shrink-0 w-14 h-14 rounded-full font-black text-xs tabular-nums active:scale-95 transition-all"
               style={{
                 background: chip === c
-                  ? 'conic-gradient(from 45deg, #FFD700 0deg 45deg, #DC2626 45deg 90deg, #FFD700 90deg 135deg, #16A34A 135deg 180deg, #FFD700 180deg 225deg, #9333EA 225deg 270deg, #FFD700 270deg 315deg, #DC2626 315deg 360deg)'
+                  ? 'conic-gradient(from 45deg, #FFD700 0deg 60deg, #DC2626 60deg 120deg, #FFD700 120deg 180deg, #F3F4F6 180deg 240deg, #FFD700 240deg 300deg, #F97316 300deg 360deg)'
                   : 'rgba(31,41,55,0.6)',
                 color: chip === c ? '#0A0A14' : '#FDE047',
                 border: chip === c ? '2px solid #FFF' : '2px solid rgba(255,215,0,0.35)',
                 boxShadow: chip === c ? '0 6px 16px rgba(255,215,0,0.55)' : 'none',
               }}
               data-testid={`chip-${c}`}
-            >
-              ₹{c}
+            >₹{c}</button>
+          ))}
+        </div>
+
+        {/* Bet buttons — Red / White / Orange */}
+        <div className="grid grid-cols-3 gap-2">
+          {COLORS.map((c) => (
+            <button
+              key={c.key}
+              disabled={!isBetting || placing}
+              onClick={() => placeBet(c.key)}
+              data-testid={`bet-${c.key}`}
+              className="rounded-2xl py-5 active:scale-95 disabled:opacity-50"
+              style={{
+                background: `linear-gradient(135deg, ${c.hex} 0%, ${c.hex}99 100%)`,
+                border: `2.5px solid ${c.key === 'white' ? '#78716C' : '#FEF3C7'}`,
+                boxShadow: `0 6px 16px ${c.hex}80`,
+              }}>
+              <div className="w-10 h-10 mx-auto mb-1 rounded-full"
+                style={{
+                  background: `radial-gradient(circle at 35% 30%, #FFFFFF 0%, ${c.hex} 60%, ${c.hex} 100%)`,
+                  border: '2px solid #FEF3C7',
+                }} />
+              <div className="font-black text-sm tracking-widest" style={{ color: c.text, textShadow: c.key === 'white' ? 'none' : '0 1px 2px rgba(0,0,0,0.5)' }}>{c.label}</div>
+              <div className="text-[10px] font-bold" style={{ color: c.key === 'white' ? '#7C2D12' : '#FEF3C7' }}>3x Payout</div>
             </button>
           ))}
         </div>
 
-        {/* Bet buttons — Red / Violet / Green */}
-        <div className="grid grid-cols-3 gap-2">
-          <button disabled={!isBetting || placing} onClick={() => placeBet('red')}
-            data-testid="bet-red"
-            className="rounded-2xl py-5 active:scale-95 disabled:opacity-50"
-            style={{ background: 'linear-gradient(135deg, #DC2626 0%, #7F1D1D 100%)', border: '2px solid #FCA5A5', boxShadow: '0 6px 16px rgba(220,38,38,0.5)' }}>
-            <div className="w-10 h-10 mx-auto mb-1 rounded-full" style={{ background: 'radial-gradient(circle at 35% 30%, #FEE2E2 0%, #DC2626 60%, #7F1D1D 100%)', border: '2px solid #FEF3C7' }} />
-            <div className="text-white font-black text-sm tracking-wider">RED</div>
-            <div className="text-[10px] font-bold text-yellow-200">2x</div>
-          </button>
-          <button disabled={!isBetting || placing} onClick={() => placeBet('violet')}
-            data-testid="bet-violet"
-            className="rounded-2xl py-5 active:scale-95 disabled:opacity-50"
-            style={{ background: 'linear-gradient(135deg, #9333EA 0%, #4C1D95 100%)', border: '2px solid #DDD6FE', boxShadow: '0 6px 16px rgba(147,51,234,0.5)' }}>
-            <div className="w-10 h-10 mx-auto mb-1 rounded-full" style={{ background: 'radial-gradient(circle at 35% 30%, #EDE9FE 0%, #9333EA 60%, #4C1D95 100%)', border: '2px solid #FEF3C7' }} />
-            <div className="text-white font-black text-sm tracking-wider">VIOLET</div>
-            <div className="text-[10px] font-bold text-yellow-200">4.5x</div>
-          </button>
-          <button disabled={!isBetting || placing} onClick={() => placeBet('green')}
-            data-testid="bet-green"
-            className="rounded-2xl py-5 active:scale-95 disabled:opacity-50"
-            style={{ background: 'linear-gradient(135deg, #16A34A 0%, #14532D 100%)', border: '2px solid #86EFAC', boxShadow: '0 6px 16px rgba(22,163,74,0.5)' }}>
-            <div className="w-10 h-10 mx-auto mb-1 rounded-full" style={{ background: 'radial-gradient(circle at 35% 30%, #D1FAE5 0%, #16A34A 60%, #14532D 100%)', border: '2px solid #FEF3C7' }} />
-            <div className="text-white font-black text-sm tracking-wider">GREEN</div>
-            <div className="text-[10px] font-bold text-yellow-200">2x</div>
-          </button>
-        </div>
-
-        {/* Info strip: number → color mapping */}
-        <div className="rounded-xl p-2 text-center text-[10px] font-bold tracking-wide"
-          style={{ background: 'rgba(31,41,55,0.4)', border: '1px solid rgba(255,215,0,0.2)', color: '#FDE047' }}>
-          <span style={{ color: '#F87171' }}>0</span> = <span style={{ color: '#F87171' }}>RED</span>+<span style={{ color: '#C4B5FD' }}>VIOLET</span> · <span style={{ color: '#4ADE80' }}>5</span> = <span style={{ color: '#4ADE80' }}>GREEN</span>+<span style={{ color: '#C4B5FD' }}>VIOLET</span> · Odd = Red · Even = Green
-        </div>
-
-        {/* Last 10 results strip */}
+        {/* Last 15 Results */}
         <div>
-          <p className="text-[10px] font-black uppercase tracking-widest text-yellow-400 mb-1">Last 10 Results</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-yellow-400 mb-1">Last 15 Results</p>
           <div className="flex gap-1.5 overflow-x-auto pb-1">
-            {recentRounds.filter(r => r.number !== undefined).slice(0, 10).map((r, i) => {
-              const cs = r.colors || [];
-              const bg = cs.length === 2
-                ? `conic-gradient(${COLOR_HEX[cs[0]]} 0deg 180deg, ${COLOR_HEX[cs[1]]} 180deg 360deg)`
-                : `radial-gradient(circle, ${COLOR_HEX[cs[0]] || '#666'} 0%, ${COLOR_HEX[cs[0]] || '#333'}88 100%)`;
-              return (
-                <div key={i} className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-black text-white"
-                  style={{ background: bg, border: '2px solid rgba(0,0,0,0.4)', textShadow: '0 1px 2px rgba(0,0,0,0.6)' }}
-                  title={`${r.number} — ${cs.join('+')}`}
-                >{r.number}</div>
-              );
-            })}
+            {recentRounds.filter(r => r.color).slice(0, 15).map((r, i) => (
+              <div key={i} className="shrink-0 w-9 h-9 rounded-full"
+                style={{
+                  background: `radial-gradient(circle at 35% 30%, #FFFFFF 0%, ${COLOR_HEX[r.color]} 60%, ${COLOR_HEX[r.color]} 100%)`,
+                  border: '2px solid rgba(0,0,0,0.4)',
+                }}
+                title={r.color}
+              />
+            ))}
           </div>
         </div>
 
@@ -281,7 +254,7 @@ const ColorGamePage = () => {
         {liveFeed.length > 0 && (
           <div className="rounded-xl p-2" style={{ background: 'rgba(31,41,55,0.4)', border: '1px solid rgba(255,215,0,0.2)' }}>
             <p className="text-[10px] font-black uppercase tracking-widest text-yellow-400 mb-1">🔴 Live Bets</p>
-            <div className="space-y-1 max-h-20 overflow-y-auto">
+            <div className="space-y-1 max-h-24 overflow-y-auto">
               {liveFeed.map((b, i) => (
                 <div key={i} className="flex items-center justify-between text-[11px]">
                   <span className="text-gray-300">{b.name}</span>
@@ -322,7 +295,7 @@ const ColorGamePage = () => {
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full" style={{ background: `radial-gradient(circle at 35% 30%, ${COLOR_HEX[b.side]}dd 0%, ${COLOR_HEX[b.side]} 100%)`, border: '2px solid #FEF3C7' }} />
+                        <div className="w-8 h-8 rounded-full" style={{ background: `radial-gradient(circle at 35% 30%, #FFFFFF 0%, ${COLOR_HEX[b.side]} 60%, ${COLOR_HEX[b.side]} 100%)`, border: '2px solid #FEF3C7' }} />
                         <div>
                           <p className="text-[9px] uppercase tracking-widest font-black text-gray-400">Your Pick</p>
                           <p className="text-sm font-black uppercase" style={{ color: COLOR_HEX[b.side] }}>{b.side}</p>
@@ -336,10 +309,7 @@ const ColorGamePage = () => {
                     {!isPending && (
                       <div className="mt-2 pt-2 border-t border-dashed border-white/10 flex items-center justify-between">
                         <span className="text-[10px] text-gray-400">
-                          Result: <span className="font-black text-white">{b.number}</span> ·
-                          {(b.colors || []).map((c, k) => (
-                            <span key={k} className="ml-1 font-black uppercase" style={{ color: COLOR_HEX[c] }}>{c}</span>
-                          ))}
+                          Winner: <span className="font-black uppercase" style={{ color: COLOR_HEX[b.color] || '#FFF' }}>{b.color}</span>
                         </span>
                         {isWin
                           ? <span className="text-xs font-black text-emerald-400">🏆 +₹{Math.floor(b.payout)}</span>

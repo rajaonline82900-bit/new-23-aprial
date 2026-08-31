@@ -1,15 +1,10 @@
-"""Color Prediction (Wingo-style) — 30s rounds.
+"""Color Prediction — Red/White/Orange, all pay 3x.
 
 Mechanics:
 - Round = 30 s (25 s betting + 5 s reveal)
-- Result: a number 0-9 mapped to color(s)
-  • 0        -> Red + Violet
-  • 5        -> Green + Violet
-  • 1,3,7,9  -> Red
-  • 2,4,6,8  -> Green
-- Bets: 'red', 'green', 'violet'
-- Payouts: red 2x, green 2x, violet 4.5x
-- House-edge tuning: ~35% biased rounds skew result AWAY from majority-bet color
+- Wheel picks ONE color: red | white | orange
+- Payout: 3x for any winning bet
+- House-edge tuning: ~30% biased rounds skew result AWAY from majority-bet color
 """
 import asyncio
 import random
@@ -26,64 +21,45 @@ from auth import get_current_user
 
 router = APIRouter()
 
-BET_SIDES = {'red', 'green', 'violet'}
-PAYOUTS = {'red': 2, 'green': 2, 'violet': 4.5}
+BET_SIDES = {'red', 'white', 'orange'}
+PAYOUTS = {'red': 3, 'white': 3, 'orange': 3}
 
 ROUND_TOTAL = 30
-BET_WINDOW = 25  # first 25s = betting
-_HOUSE_EDGE = 0.35
+BET_WINDOW = 25
+_HOUSE_EDGE = 0.30
 _current_round_cache = {}
-
-RED_NUMBERS = {1, 3, 7, 9}       # pure red
-GREEN_NUMBERS = {2, 4, 6, 8}     # pure green
-VIOLET_MIXED = {0: 'red', 5: 'green'}  # 0 = red+violet, 5 = green+violet
 
 
 class ColorBet(BaseModel):
-    side: str  # red | green | violet
+    side: str  # red | white | orange
     amount: float = Field(gt=0)
-
-
-def _colors_for(number: int):
-    """Return the set of colors this number pays out on."""
-    if number in RED_NUMBERS:
-        return {'red'}
-    if number in GREEN_NUMBERS:
-        return {'green'}
-    if number == 0:
-        return {'red', 'violet'}
-    if number == 5:
-        return {'green', 'violet'}
-    return set()
 
 
 async def _get_config():
     doc = await db.color_game_config.find_one({'_id': 'config'})
     if not doc:
-        doc = {'_id': 'config', 'min_bet': 50, 'enabled': True}
+        doc = {'_id': 'config', 'min_bet': 20, 'enabled': True}
         await db.color_game_config.insert_one(doc)
     return doc
 
 
 async def _pick_result(round_id: str):
-    """Draw 0-9. With `_HOUSE_EDGE` probability, bias result AWAY from majority-bet color."""
+    """Pick a color. With `_HOUSE_EDGE` probability, bias AWAY from majority-bet color."""
     cursor = db.color_game_bets.find({'round_id': round_id})
-    totals = {'red': 0.0, 'green': 0.0, 'violet': 0.0}
+    totals = {'red': 0.0, 'white': 0.0, 'orange': 0.0}
     async for b in cursor:
         s = b.get('side')
         if s in totals:
             totals[s] += float(b.get('amount', 0))
 
-    number = random.randint(0, 9)
+    colors = ['red', 'white', 'orange']
     if random.random() < _HOUSE_EDGE and any(totals.values()):
         majority = max(totals, key=lambda k: totals[k])
-        # Pick a number whose colors do NOT include the majority color
-        candidates = [n for n in range(10) if majority not in _colors_for(n)]
-        if candidates:
-            number = random.choice(candidates)
-
-    colors = _colors_for(number)
-    return number, sorted(colors)
+        candidates = [c for c in colors if c != majority]
+        color = random.choice(candidates)
+    else:
+        color = random.choice(colors)
+    return color
 
 
 @router.get('/color-game/config')
@@ -157,7 +133,7 @@ async def my_history(request: Request, limit: int = 30):
 
 @router.get('/color-game/recent-rounds')
 async def recent_rounds(limit: int = 10):
-    cursor = db.color_game_rounds.find({'number': {'$exists': True}}).sort('created_at', -1).limit(limit)
+    cursor = db.color_game_rounds.find({'color': {'$exists': True}}).sort('created_at', -1).limit(limit)
     rounds = []
     async for r in cursor:
         r['_id'] = str(r.get('_id', ''))
@@ -179,10 +155,10 @@ async def live_feed(limit: int = 12):
     return {'feed': feed}
 
 
-async def _settle_round(round_id: str, number: int, colors):
+async def _settle_round(round_id: str, color: str):
     cursor = db.color_game_bets.find({'round_id': round_id, 'status': 'pending'})
     async for b in cursor:
-        won = b.get('side') in colors
+        won = b.get('side') == color
         payout = float(b['amount']) * PAYOUTS.get(b.get('side'), 0) if won else 0
         if won and payout > 0:
             await db.users.update_one({'_id': ObjectId(b['user_id'])}, {'$inc': {'balance': payout}})
@@ -190,8 +166,7 @@ async def _settle_round(round_id: str, number: int, colors):
             {'_id': b['_id']},
             {'$set': {
                 'status': 'won' if won else 'lost',
-                'number': number,
-                'colors': colors,
+                'color': color,
                 'payout': payout,
                 'settled_at': datetime.now(timezone.utc).isoformat(),
             }}
@@ -211,13 +186,13 @@ async def color_game_round_loop():
                 'created_at': datetime.now(timezone.utc).isoformat(),
             })
             await asyncio.sleep(BET_WINDOW)
-            number, colors = await _pick_result(round_id)
+            color = await _pick_result(round_id)
             await db.color_game_rounds.update_one(
                 {'round_id': round_id},
-                {'$set': {'phase': 'reveal', 'number': number, 'colors': colors}}
+                {'$set': {'phase': 'reveal', 'color': color}}
             )
             await asyncio.sleep(ROUND_TOTAL - BET_WINDOW - 1)
-            await _settle_round(round_id, number, colors)
+            await _settle_round(round_id, color)
             await db.color_game_rounds.update_one(
                 {'round_id': round_id},
                 {'$set': {'phase': 'ended', 'settled_at': datetime.now(timezone.utc).isoformat()}}
