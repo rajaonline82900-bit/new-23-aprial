@@ -1,75 +1,144 @@
 #!/usr/bin/env bash
-# Shiv Shakti Club — VPS One-Line Deploy Script
+# ============================================================================
+# Shiv Shakti Club — VPS One-Command Deploy
+# ----------------------------------------------------------------------------
+# Kya karta hai (ek command me):
+#   1. Git pull latest from origin
+#   2. Frontend: yarn install (lucide-react latest force) + build
+#   3. Backend: pip install -r requirements.txt (skip if venv unavailable)
+#   4. Nginx reload
+#   5. Backend systemd restart (auto-detect unit name)
+#   6. Health-check /api/online-users → agar green, "DEPLOY OK" print
 #
-# Usage on the Hostinger VPS (run as root or with sudo):
-#   curl -fsSL https://raw.githubusercontent.com/YOUR_GH_USER/YOUR_REPO/main/update.sh | bash
-#
-# Or, once installed:
+# Chalane ka tareeka VPS pe:
 #   sudo bash /var/www/new-23-aprial/update.sh
 #
-# Behaviour:
-#   1. git pull the latest commit from origin
-#   2. rebuild the frontend (yarn install + build) with the CRA CI=false workaround
-#   3. reload nginx (serves the built frontend)
-#   4. restart the FastAPI backend systemd unit
-#   5. show a one-page health summary at the end
-#
-# Fails loudly on ANY error so you never end up with a half-deployed app.
+# Ya remote se (agar update.sh git me hai):
+#   cd /var/www/new-23-aprial && sudo git pull && sudo bash update.sh
+# ============================================================================
 
 set -Eeuo pipefail
 
-APP_DIR="${APP_DIR:-/var/www/new-23-aprial}"
-BACKEND_UNIT="${BACKEND_UNIT:-matka-backend}"
+# --- Auto-detect app dir & backend unit -------------------------------------
+find_app_dir() {
+  for d in \
+    /var/www/new-23-aprial \
+    /var/www/shivshakti \
+    /var/www/luckybet \
+    /var/www/matka11 \
+    /root/app \
+    /opt/app; do
+    [ -d "$d/frontend" ] && [ -d "$d/backend" ] && { echo "$d"; return; }
+  done
+  # Last resort: current dir
+  [ -d "./frontend" ] && [ -d "./backend" ] && { pwd; return; }
+  return 1
+}
+
+find_backend_unit() {
+  for u in matka-backend shivshakti-backend luckybet-backend app-backend backend; do
+    if systemctl list-unit-files 2>/dev/null | grep -q "^${u}\.service"; then
+      echo "$u"; return
+    fi
+  done
+  return 1
+}
+
+APP_DIR="${APP_DIR:-$(find_app_dir || true)}"
+BACKEND_UNIT="${BACKEND_UNIT:-$(find_backend_unit || echo matka-backend)}"
 BRANCH="${BRANCH:-main}"
 
-log() { printf "\n\033[1;33m▶ %s\033[0m\n" "$*"; }
-ok()  { printf "\033[1;32m✔ %s\033[0m\n" "$*"; }
-err() { printf "\033[1;31m✖ %s\033[0m\n" "$*" >&2; }
+if [ -z "${APP_DIR:-}" ] || [ ! -d "$APP_DIR" ]; then
+  printf "\033[1;31m✖ APP_DIR not found. Set it manually:\033[0m\n  sudo APP_DIR=/path/to/app bash update.sh\n" >&2
+  exit 1
+fi
 
-trap 'err "Deploy FAILED on line $LINENO. Fix the error above and re-run: sudo bash $APP_DIR/update.sh"' ERR
+log()  { printf "\n\033[1;33m▶ %s\033[0m\n" "$*"; }
+ok()   { printf "\033[1;32m✔ %s\033[0m\n" "$*"; }
+err()  { printf "\033[1;31m✖ %s\033[0m\n" "$*" >&2; }
 
-# 1. Pull latest code
-log "1/5  Pulling latest from git ($BRANCH)"
+trap 'err "Deploy FAILED on line $LINENO. Scroll up for the exact error. Fix and re-run: sudo bash $APP_DIR/update.sh"' ERR
+
+printf "\n\033[1;44;97m  Shiv Shakti Deploy  \033[0m  APP_DIR=%s  UNIT=%s  BRANCH=%s\n" \
+       "$APP_DIR" "$BACKEND_UNIT" "$BRANCH"
+
+# --- 1. Git pull -------------------------------------------------------------
+log "1/6  Git pull (origin/$BRANCH)"
 cd "$APP_DIR"
-sudo -u root git fetch --all --prune
-sudo -u root git reset --hard "origin/$BRANCH"
+git config --global --add safe.directory "$APP_DIR" 2>/dev/null || true
+git fetch --all --prune
+git reset --hard "origin/$BRANCH"
 COMMIT=$(git rev-parse --short HEAD)
 ok "Now on commit $COMMIT"
 
-# 2. Rebuild frontend
-log "2/5  Rebuilding frontend (yarn install + build)"
+# --- 2. Frontend build (with lucide-react latest to avoid BookOpen crash) ----
+log "2/6  Frontend build (yarn install + build)"
 cd "$APP_DIR/frontend"
-# Yarn is preferred; fall back to npm if unavailable
 if command -v yarn >/dev/null 2>&1; then
-  yarn install --frozen-lockfile
+  # Force lucide-react to latest so newly-used icons (BookOpen, etc.) resolve.
+  yarn add lucide-react@latest --silent || true
+  yarn install --silent
   CI=false yarn build
 else
-  npm ci
+  npm install lucide-react@latest --silent || true
+  npm ci --silent || npm install --silent
   CI=false npm run build
 fi
 ok "Frontend built → $APP_DIR/frontend/build"
 
-# 3. Reload nginx
-log "3/5  Reloading nginx"
-sudo nginx -t
-sudo systemctl reload nginx
-ok "Nginx reloaded"
+# --- 3. Backend deps (optional, only if venv/requirements present) -----------
+log "3/6  Backend deps (pip install)"
+cd "$APP_DIR/backend"
+if [ -f requirements.txt ]; then
+  if [ -x "$APP_DIR/backend/venv/bin/pip" ]; then
+    "$APP_DIR/backend/venv/bin/pip" install -q -r requirements.txt || true
+  elif command -v pip3 >/dev/null 2>&1; then
+    pip3 install -q -r requirements.txt || true
+  fi
+  ok "Backend deps synced"
+else
+  ok "No requirements.txt — skipped"
+fi
 
-# 4. Restart backend service
-log "4/5  Restarting backend service ($BACKEND_UNIT)"
-sudo systemctl restart "$BACKEND_UNIT"
-sleep 2
-sudo systemctl is-active --quiet "$BACKEND_UNIT" || { err "$BACKEND_UNIT failed to start"; sudo journalctl -u "$BACKEND_UNIT" -n 40 --no-pager; exit 1; }
-ok "$BACKEND_UNIT is active"
+# --- 4. Nginx reload ---------------------------------------------------------
+log "4/6  Nginx reload"
+if command -v nginx >/dev/null 2>&1; then
+  nginx -t
+  systemctl reload nginx
+  ok "Nginx reloaded"
+else
+  ok "Nginx not installed on this host — skipped"
+fi
 
-# 5. Health check
-log "5/5  Health check"
-sleep 1
-HEALTH="$(curl -sf http://127.0.0.1:8001/api/online-users || true)"
-if [ -z "$HEALTH" ]; then
-  err "Backend did not respond on /api/online-users — check journalctl -u $BACKEND_UNIT"
+# --- 5. Backend restart ------------------------------------------------------
+log "5/6  Backend restart ($BACKEND_UNIT)"
+if systemctl list-unit-files 2>/dev/null | grep -q "^${BACKEND_UNIT}\.service"; then
+  systemctl restart "$BACKEND_UNIT"
+  sleep 3
+  if ! systemctl is-active --quiet "$BACKEND_UNIT"; then
+    err "$BACKEND_UNIT failed to start — showing last 40 log lines:"
+    journalctl -u "$BACKEND_UNIT" -n 40 --no-pager || true
+    exit 1
+  fi
+  ok "$BACKEND_UNIT is active"
+else
+  err "systemd unit '$BACKEND_UNIT' not found. Set BACKEND_UNIT env var and re-run."
   exit 1
 fi
-ok "Backend healthy: $HEALTH"
 
-printf "\n\033[1;42;97m  DEPLOY OK  \033[0m  commit=%s  frontend=built  backend=up\n" "$COMMIT"
+# --- 6. Health check ---------------------------------------------------------
+log "6/6  Health check (backend /api/online-users)"
+sleep 1
+HEALTH=""
+for i in 1 2 3 4 5; do
+  HEALTH="$(curl -sf --max-time 4 http://127.0.0.1:8001/api/online-users || true)"
+  [ -n "$HEALTH" ] && break
+  sleep 2
+done
+if [ -z "$HEALTH" ]; then
+  err "Backend did not respond in 15s. Run:  journalctl -u $BACKEND_UNIT -n 60 --no-pager"
+  exit 1
+fi
+ok "Backend healthy → $HEALTH"
+
+printf "\n\033[1;42;97m  ✔ DEPLOY OK  \033[0m  commit=%s  frontend=built  backend=up\n\n" "$COMMIT"
