@@ -1,8 +1,8 @@
-"""Color Prediction — Red/White/Orange, all pay 3x.
+"""Color Prediction — Red/Blue/Black, all pay 3x.
 
 Mechanics:
 - Round = 30 s (25 s betting + 5 s reveal)
-- Wheel picks ONE color: red | white | orange
+- Wheel picks ONE color: red | blue | black
 - Payout: 3x for any winning bet
 - House-edge tuning: ~30% biased rounds skew result AWAY from majority-bet color
 """
@@ -21,8 +21,8 @@ from auth import get_current_user
 
 router = APIRouter()
 
-BET_SIDES = {'red', 'white', 'orange'}
-PAYOUTS = {'red': 3, 'white': 3, 'orange': 3}
+BET_SIDES = {'red', 'blue', 'black'}
+PAYOUTS = {'red': 3, 'blue': 3, 'black': 3}
 
 ROUND_TOTAL = 30
 BET_WINDOW = 25
@@ -46,13 +46,13 @@ async def _get_config():
 async def _pick_result(round_id: str):
     """Pick a color. With `_HOUSE_EDGE` probability, bias AWAY from majority-bet color."""
     cursor = db.color_game_bets.find({'round_id': round_id})
-    totals = {'red': 0.0, 'white': 0.0, 'orange': 0.0}
+    totals = {'red': 0.0, 'blue': 0.0, 'black': 0.0}
     async for b in cursor:
         s = b.get('side')
         if s in totals:
             totals[s] += float(b.get('amount', 0))
 
-    colors = ['red', 'white', 'orange']
+    colors = ['red', 'blue', 'black']
     if random.random() < _HOUSE_EDGE and any(totals.values()):
         majority = max(totals, key=lambda k: totals[k])
         candidates = [c for c in colors if c != majority]
@@ -168,7 +168,7 @@ async def live_feed(limit: int = 12):
     fake_count = max(0, limit - len(real))
     fake = [{
         'name': random.choice(FAKE_NAMES_CG),
-        'side': random.choice(['red', 'white', 'orange']),
+        'side': random.choice(['red', 'blue', 'black']),
         'amount': random.choice(FAKE_AMOUNTS_CG),
         'fake': True,
     } for _ in range(fake_count)]

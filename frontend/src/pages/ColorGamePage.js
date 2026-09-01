@@ -12,17 +12,17 @@ const API = process.env.REACT_APP_BACKEND_URL;
 const CHIPS = [20, 50, 100, 500, 1000];
 
 const COLORS = [
-  { key: 'red',    label: 'RED',    hex: '#DC2626', text: '#FFFFFF' },
-  { key: 'white',  label: 'WHITE',  hex: '#F3F4F6', text: '#0A0A14' },
-  { key: 'orange', label: 'ORANGE', hex: '#F97316', text: '#FFFFFF' },
+  { key: 'red',   label: 'RED',   hex: '#DC2626', text: '#FFFFFF' },
+  { key: 'blue',  label: 'BLUE',  hex: '#2563EB', text: '#FFFFFF' },
+  { key: 'black', label: 'BLACK', hex: '#171717', text: '#FEF3C7' },
 ];
-const COLOR_HEX = { red: '#DC2626', white: '#F3F4F6', orange: '#F97316' };
+const COLOR_HEX = { red: '#DC2626', blue: '#2563EB', black: '#171717' };
 const PAYOUT = 3;
 
-// 6 wheel segments — R, W, O, R, W, O — so pointer landing on ANY of the two
+// 6 wheel segments — R, B, K, R, B, K — pointer landing on ANY of the two
 // segments of a colour still yields the same winner.
-const WHEEL_SEGMENTS = ['red', 'white', 'orange', 'red', 'white', 'orange'];
-const WHEEL_TEXT = { red: '#FFFFFF', white: '#0A0A14', orange: '#FFFFFF' };
+const WHEEL_SEGMENTS = ['red', 'blue', 'black', 'red', 'blue', 'black'];
+const WHEEL_TEXT = { red: '#FFFFFF', blue: '#FEF3C7', black: '#FEF3C7' };
 const NSEG = WHEEL_SEGMENTS.length;
 const SEG_ANGLE = 360 / NSEG;
 
@@ -212,7 +212,7 @@ const ColorGamePage = () => {
 
   // User's bets in current round — sum by side
   const myBetsThisRound = React.useMemo(() => {
-    const map = { red: 0, white: 0, orange: 0 };
+    const map = { red: 0, blue: 0, black: 0 };
     if (!current?.round_id) return map;
     history.forEach((b) => {
       if (b.round_id === current.round_id && map[b.side] !== undefined) {
@@ -240,7 +240,7 @@ const ColorGamePage = () => {
               🎨 COLOR GAME
             </h1>
             <p className="text-[10px] font-bold uppercase tracking-widest mt-0.5" style={{ color: '#FDE047', opacity: 0.85 }}>
-              30 sec • Red / White / Orange • All 3x • Min ₹{config?.min_bet || 20}
+              30 sec • Red / Blue / Black • All 3x • Min ₹{config?.min_bet || 20}
             </p>
           </div>
           <div className="flex items-center gap-1.5">
@@ -331,7 +331,7 @@ const ColorGamePage = () => {
           ))}
         </div>
 
-        {/* Bet buttons — Red / White / Orange */}
+        {/* Bet buttons — Red / Blue / Black */}
         <div className="grid grid-cols-3 gap-2">
           {COLORS.map((c) => {
             const myBet = myBetsThisRound[c.key] || 0;
@@ -344,7 +344,7 @@ const ColorGamePage = () => {
                 className="relative rounded-2xl py-5 active:scale-95 disabled:opacity-60"
                 style={{
                   background: `linear-gradient(135deg, ${c.hex} 0%, ${c.hex}99 100%)`,
-                  border: `2.5px solid ${c.key === 'white' ? '#78716C' : '#FEF3C7'}`,
+                  border: `2.5px solid #FEF3C7`,
                   boxShadow: `0 6px 16px ${c.hex}80`,
                 }}>
                 {/* Lock overlay during reveal */}
@@ -366,8 +366,8 @@ const ColorGamePage = () => {
                     background: `radial-gradient(circle at 35% 30%, #FFFFFF 0%, ${c.hex} 60%, ${c.hex} 100%)`,
                     border: '2px solid #FEF3C7',
                   }} />
-                <div className="font-black text-sm tracking-widest" style={{ color: c.text, textShadow: c.key === 'white' ? 'none' : '0 1px 2px rgba(0,0,0,0.5)' }}>{c.label}</div>
-                <div className="text-[10px] font-bold" style={{ color: c.key === 'white' ? '#7C2D12' : '#FEF3C7' }}>3x Payout</div>
+                <div className="font-black text-sm tracking-widest" style={{ color: c.text, textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>{c.label}</div>
+                <div className="text-[10px] font-bold" style={{ color: '#FEF3C7' }}>3x Payout</div>
               </button>
             );
           })}

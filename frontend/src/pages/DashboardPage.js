@@ -304,28 +304,27 @@ const ColorGameIcon = ({ size = 26 }) => (
         <stop offset="60%" stopColor="#DC2626" />
         <stop offset="100%" stopColor="#7F1D1D" />
       </radialGradient>
-      <radialGradient id="cgGreen" cx="35%" cy="30%">
-        <stop offset="0%" stopColor="#D1FAE5" />
-        <stop offset="60%" stopColor="#16A34A" />
-        <stop offset="100%" stopColor="#14532D" />
+      <radialGradient id="cgBlue" cx="35%" cy="30%">
+        <stop offset="0%" stopColor="#DBEAFE" />
+        <stop offset="60%" stopColor="#2563EB" />
+        <stop offset="100%" stopColor="#1E3A8A" />
       </radialGradient>
-      <radialGradient id="cgViolet" cx="35%" cy="30%">
-        <stop offset="0%" stopColor="#EDE9FE" />
-        <stop offset="60%" stopColor="#9333EA" />
-        <stop offset="100%" stopColor="#4C1D95" />
+      <radialGradient id="cgBlack" cx="35%" cy="30%">
+        <stop offset="0%" stopColor="#525252" />
+        <stop offset="60%" stopColor="#171717" />
+        <stop offset="100%" stopColor="#000000" />
       </radialGradient>
     </defs>
-    {/* Table shadow */}
     <ellipse cx="32" cy="56" rx="24" ry="3" fill="rgba(0,0,0,0.35)" />
-    {/* Three overlapping color balls */}
+    {/* Three overlapping color balls — Red / Blue / Black */}
     <circle cx="20" cy="32" r="15" fill="url(#cgRed)" stroke="#FDE047" strokeWidth="1.5" />
-    <circle cx="44" cy="32" r="15" fill="url(#cgGreen)" stroke="#FDE047" strokeWidth="1.5" />
-    <circle cx="32" cy="22" r="13" fill="url(#cgViolet)" stroke="#FDE047" strokeWidth="1.5" />
+    <circle cx="44" cy="32" r="15" fill="url(#cgBlue)" stroke="#FDE047" strokeWidth="1.5" />
+    <circle cx="32" cy="22" r="13" fill="url(#cgBlack)" stroke="#FDE047" strokeWidth="1.5" />
     {/* Highlight shines */}
     <ellipse cx="14" cy="26" rx="4" ry="2" fill="#FFFFFF" opacity="0.5" />
     <ellipse cx="38" cy="26" rx="4" ry="2" fill="#FFFFFF" opacity="0.5" />
     <ellipse cx="28" cy="16" rx="3.5" ry="1.8" fill="#FFFFFF" opacity="0.55" />
-    {/* Number on violet ball */}
+    {/* Question mark on black ball */}
     <text x="32" y="26" textAnchor="middle" fontSize="10" fontWeight="900" fill="#FEF3C7" fontFamily="Outfit, sans-serif">?</text>
     {/* Sparkles */}
     <path d="M 8 10 L 9 13 L 12 14 L 9 15 L 8 18 L 7 15 L 4 14 L 7 13 Z" fill="#FDE047" opacity="0.95" />
@@ -1131,7 +1130,7 @@ const DashboardPage = () => {
                     accent: '#DDD6FE',
                     badgeBg: 'linear-gradient(135deg, #9333EA 0%, #4C1D95 100%)',
                     badgeColor: '#FEF3C7',
-                    stripe: 'linear-gradient(90deg, #DC2626 0%, #F3F4F6 50%, #F97316 100%)',
+                    stripe: 'linear-gradient(90deg, #DC2626 0%, #2563EB 50%, #171717 100%)',
                     liveLabel: '30 SEC',
                     countSuffix: '3x Payout',
                     isLink: true,
