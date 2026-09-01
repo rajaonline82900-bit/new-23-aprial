@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { ArrowLeft, Wallet as WalletIcon, Clock } from 'lucide-react';
+import { ArrowLeft, Wallet as WalletIcon, Clock, Lock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { playCardFlip, playLockClick, playCoinClink, fireWinnerConfetti } from '../utils/casinoFx';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 const CHIPS = [50, 100, 500, 1000, 5000];
@@ -148,6 +149,9 @@ const DragonTigerPage = () => {
   const [placing, setPlacing] = useState(false);
   const [flip, setFlip] = useState({ d: false, t: false });
   const [revealCards, setRevealCards] = useState({ dragon: null, tiger: null, winner: null });
+  const [lockFlash, setLockFlash] = useState(false);
+  const prevPhaseRef = useRef(null);
+  const winCelebratedRef = useRef(null);
 
   const token = localStorage.getItem('matka11_token') || '';
   const authH = { headers: { Authorization: `Bearer ${token}` } };
@@ -189,12 +193,36 @@ const DragonTigerPage = () => {
     if (latest?.winner && latest.round_id !== revealCards.round_id) {
       setRevealCards({ round_id: latest.round_id, dragon: latest.dragon, tiger: latest.tiger, winner: latest.winner });
       setFlip({ d: false, t: false });
-      setTimeout(() => setFlip((f) => ({ ...f, d: true })), 200);
-      setTimeout(() => setFlip((f) => ({ ...f, t: true })), 900);
+      setTimeout(() => { setFlip((f) => ({ ...f, d: true })); playCardFlip(); }, 200);
+      setTimeout(() => { setFlip((f) => ({ ...f, t: true })); playCardFlip(); }, 900);
       // Reset flip for next round after 4s
       setTimeout(() => { setFlip({ d: false, t: false }); refreshUser(); }, 4500);
     }
   }, [recentRounds, revealCards.round_id, refreshUser]);
+
+  // Detect timer transition betting → reveal → lock flash + click sound
+  useEffect(() => {
+    const phase = current?.phase;
+    if (prevPhaseRef.current === 'betting' && phase === 'reveal') {
+      setLockFlash(true);
+      playLockClick();
+      setTimeout(() => setLockFlash(false), 900);
+    }
+    prevPhaseRef.current = phase;
+  }, [current?.phase]);
+
+  // Win celebration: user wins Tie (50x) → confetti + coin clink (once per round)
+  useEffect(() => {
+    if (!revealCards.round_id || !revealCards.winner) return;
+    if (winCelebratedRef.current === revealCards.round_id) return;
+    const userTieBet = history.find(
+      (b) => b.round_id === revealCards.round_id && b.side === 'tie' && b.status === 'won'
+    );
+    if (userTieBet && revealCards.winner === 'tie') {
+      winCelebratedRef.current = revealCards.round_id;
+      setTimeout(() => { fireWinnerConfetti(); playCoinClink(); }, 1400);
+    }
+  }, [history, revealCards]);
 
   const placeBet = async (side) => {
     if (placing) return;
@@ -230,6 +258,29 @@ const DragonTigerPage = () => {
     <div className="min-h-screen pb-24" style={{
       background: 'radial-gradient(ellipse 80% 60% at 50% 20%, rgba(220, 38, 38, 0.18) 0%, transparent 55%), radial-gradient(ellipse 80% 60% at 50% 80%, rgba(255, 215, 0, 0.14) 0%, transparent 55%), #0A0A14',
     }} data-testid="dragon-tiger-page">
+      {/* Bets-Locked Flash Overlay — fires briefly when timer hits 00 */}
+      {lockFlash && (
+        <div
+          data-testid="lock-flash-overlay"
+          className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
+          style={{ animation: 'dt-lock-fade 0.9s ease-out forwards' }}
+        >
+          <style>{`
+            @keyframes dt-lock-fade { 0% { opacity: 0; transform: scale(0.6); } 25% { opacity: 1; transform: scale(1.15); } 60% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1); } }
+          `}</style>
+          <div className="flex flex-col items-center gap-2 px-8 py-6 rounded-3xl"
+            style={{
+              background: 'radial-gradient(circle, rgba(220,38,38,0.95) 0%, rgba(127,29,29,0.9) 100%)',
+              border: '3px solid #FDE047',
+              boxShadow: '0 0 60px rgba(255,215,0,0.9), inset 0 -6px 20px rgba(0,0,0,0.4)',
+            }}>
+            <Lock className="w-14 h-14" style={{ color: '#FDE047', filter: 'drop-shadow(0 0 6px #FFD700)' }} />
+            <span className="text-2xl font-black tracking-widest" style={{ color: '#FEF3C7', textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>
+              BETS LOCKED
+            </span>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <header className="sticky top-0 z-40 backdrop-blur-lg" style={{ background: 'rgba(10, 10, 20, 0.8)', borderBottom: '1px solid rgba(255, 215, 0, 0.25)' }}>
         <div className="px-3 py-3 flex items-center gap-2" style={{ maxWidth: '480px', margin: '0 auto' }}>

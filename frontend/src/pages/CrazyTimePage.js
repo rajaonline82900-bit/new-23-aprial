@@ -4,6 +4,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { ArrowLeft, Wallet as WalletIcon, Clock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { fireWinnerConfetti, playCoinClink } from '../utils/casinoFx';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 const CHIPS = [20, 50, 100, 500, 1000];
@@ -90,6 +91,7 @@ const CrazyTimePage = () => {
   const [revealed, setRevealed] = useState(null);
   const revealedRoundRef = useRef(null);
   const initializedRef = useRef(false);
+  const winCelebratedRef = useRef(null);
 
   const token = localStorage.getItem('matka11_token') || '';
   const authH = { headers: { Authorization: `Bearer ${token}` } };
@@ -162,6 +164,20 @@ const CrazyTimePage = () => {
       }
     }
   }, [recentRounds, refreshUser]);
+
+  // Win celebration: user wins Crazy Time (10x) → confetti + coin clink (once per round)
+  useEffect(() => {
+    if (!revealed?.winner || !revealedRoundRef.current) return;
+    if (winCelebratedRef.current === revealedRoundRef.current) return;
+    const userWin = history.find(
+      (b) => b.round_id === revealedRoundRef.current && b.segment === revealed.winner && b.status === 'won'
+    );
+    if (userWin) {
+      winCelebratedRef.current = revealedRoundRef.current;
+      // Fire after wheel-spin completes (~4s)
+      setTimeout(() => { fireWinnerConfetti(); playCoinClink(); }, 3800);
+    }
+  }, [history, revealed]);
 
   const placeBet = async (segment) => {
     if (placing) return;

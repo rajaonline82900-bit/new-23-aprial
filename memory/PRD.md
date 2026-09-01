@@ -80,6 +80,12 @@
 - **Registered**: `chicken_road_router` in `server.py`, route `/chicken-road` in `App.js`, card in dashboard
 - **Verified**: E2E flow via curl — balance 4900 → START -100 → STEP 1.10x → CASHOUT +110 → balance 4910 ✓; also crash scenario at step 6 correctly settles
 
+## ✅ Feb 2026 — Casino FX + VPS Deploy (Session 40)
+- **Dragon Tiger — Bets Locked Flash**: When timer hits 00 (betting → reveal transition), full-screen red overlay with Lock icon + "BETS LOCKED" text pulses for 900 ms. Playing a synthesized "click" via Web Audio API. Card flips also fire a whoosh sound in sequence.
+- **Winner Confetti + Coin-Clink**: Crazy Time 10x wins and Dragon Tiger Tie 50x wins trigger gold + red confetti burst (canvas-confetti) plus a three-note "cha-ching" bell via Web Audio API. Once-per-round via `winCelebratedRef`.
+- **Shared FX helper**: `/app/frontend/src/utils/casinoFx.js` exposes `playCardFlip`, `playLockClick`, `playCoinClink`, `fireWinnerConfetti`. All sounds are synthesised — no external mp3 files.
+- **VPS One-Line Deploy**: `/app/update.sh` — bash script that git-pulls, yarn-builds frontend, reloads nginx, restarts systemd backend, then health-checks `/api/online-users`. Fails loudly on any error. Usage: `sudo bash /var/www/new-23-aprial/update.sh`.
+
 ## ✅ Feb 2026 — P0 Refinements (Session 39)
 - **Bet Aggregation (Atomic)**: All 4 casino games — Dragon Tiger, Crazy Time, Color Game, Coin Toss — now aggregate bets. Same user + same round + same option → single MongoDB document with `$inc: {amount, bet_count}` via atomic `update_one({...}, upsert=True, $setOnInsert:{...})`. Verified with 3 concurrent bets → 1 ticket, amount summed, bet_count=3.
 - **Live Bets Feed with Fake Indian Names**: Dragon Tiger, Crazy Time, Color Game `/live-feed` endpoints now return a mix of real (name masked as `Abc***`) and 20-30 fake Indian names (Rohit, Priya, Vikram, Sneha…) with `fake: bool` flag on each item.
