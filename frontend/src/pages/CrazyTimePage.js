@@ -158,15 +158,17 @@ const CrazyTimePage = () => {
     const latest = recentRounds[0];
     if (latest?.winner && latest.round_id !== revealedRoundRef.current) {
       revealedRoundRef.current = latest.round_id;
-      const idx = SEGMENTS.findIndex((s) => s.key === latest.winner);
+      const idx = SEGMENTS.findIndex((s) => s.key === String(latest.winner));
       if (idx >= 0) {
         const targetAngle = -((idx + 0.5) * SEG_ANGLE);
-        // IMPORTANT: spins MUST be an integer so the final rotation ends exactly on target.
-        // Fractional spins (e.g. 5.7 × 360) leave a residual offset → wheel visually
-        // stops at the wrong segment even though the backend winner is correct.
+        // IMPORTANT: spins MUST be an integer so final rotation ends EXACTLY on target.
+        // Also normalise the base rotation to its exact multiple of 360 so any
+        // accumulated float drift from earlier spins can't offset the pointer.
         const spins = 5 + Math.floor(Math.random() * 3);  // 5..7 full turns
         setRotation((r) => {
-          const base = Math.floor(r / 360) * 360;
+          // Round to nearest full turn to eliminate any residual drift.
+          const currentTurns = Math.round(r / 360);
+          const base = currentTurns * 360;
           return base + spins * 360 + targetAngle;
         });
         // Hide any previous reveal while wheel is spinning

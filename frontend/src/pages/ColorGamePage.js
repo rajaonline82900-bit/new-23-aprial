@@ -153,9 +153,12 @@ const ColorGamePage = () => {
         .filter((i) => i >= 0);
       const idx = validIdxs[Math.floor(Math.random() * validIdxs.length)] ?? 0;
       const targetAngle = -((idx + 0.5) * SEG_ANGLE);
-      // Integer spins so the wheel ends exactly on the winning segment.
+      // Integer spins + rounded base — eliminates any accumulated float drift.
       const spins = 5 + Math.floor(Math.random() * 3);
-      setRotation((r) => Math.floor(r / 360) * 360 + spins * 360 + targetAngle);
+      setRotation((r) => {
+        const currentTurns = Math.round(r / 360);
+        return currentTurns * 360 + spins * 360 + targetAngle;
+      });
       // Hide previous reveal during spin
       setReveal({ round_id: latest.round_id, color: null });
       setTimeout(() => {
