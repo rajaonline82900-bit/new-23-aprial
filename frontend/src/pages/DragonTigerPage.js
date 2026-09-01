@@ -6,7 +6,6 @@ import { ArrowLeft, Wallet as WalletIcon, Clock, Lock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { playCardFlip, playLockClick, playCoinClink, fireWinnerConfetti } from '../utils/casinoFx';
 import SoundToggle from '../components/SoundToggle';
-import BigWinPopup from '../components/BigWinPopup';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 const CHIPS = [50, 100, 500, 1000, 5000];
@@ -153,7 +152,6 @@ const DragonTigerPage = () => {
   const [revealCards, setRevealCards] = useState({ dragon: null, tiger: null, winner: null });
   const [lockFlash, setLockFlash] = useState(false);
   const [livePlayers, setLivePlayers] = useState(null);
-  const [bigWin, setBigWin] = useState(null);
   const [visibleRoundIds, setVisibleRoundIds] = useState(new Set());
   const prevPhaseRef = useRef(null);
   const winCelebratedRef = useRef(null);
@@ -250,9 +248,6 @@ const DragonTigerPage = () => {
     if (userTieBet && revealCards.winner === 'tie') {
       winCelebratedRef.current = revealCards.round_id;
       setTimeout(() => { fireWinnerConfetti(); playCoinClink(); }, 1400);
-      if ((userTieBet.payout || 0) >= 1000) {
-        setTimeout(() => setBigWin({ amount: userTieBet.payout }), 1600);
-      }
     }
     // Also fire for large Dragon/Tiger wins (2x payout, so needs ₹500+ bet)
     if (!userTieBet) {
@@ -261,7 +256,7 @@ const DragonTigerPage = () => {
       );
       if (userWin && (userWin.payout || 0) >= 1000) {
         winCelebratedRef.current = revealCards.round_id;
-        setTimeout(() => { fireWinnerConfetti(); playCoinClink(); setBigWin({ amount: userWin.payout }); }, 1600);
+        setTimeout(() => { fireWinnerConfetti(); playCoinClink(); }, 1600);
       }
     }
   }, [history, revealCards]);
@@ -300,7 +295,6 @@ const DragonTigerPage = () => {
     <div className="min-h-screen pb-24" style={{
       background: 'radial-gradient(ellipse 80% 60% at 50% 20%, rgba(220, 38, 38, 0.18) 0%, transparent 55%), radial-gradient(ellipse 80% 60% at 50% 80%, rgba(255, 215, 0, 0.14) 0%, transparent 55%), #0A0A14',
     }} data-testid="dragon-tiger-page">
-      <BigWinPopup payout={bigWin?.amount} game="dragon_tiger" onClose={() => setBigWin(null)} />
       {/* Bets-Locked Flash Overlay — fires briefly when timer hits 00 */}
       {lockFlash && (
         <div

@@ -6,7 +6,6 @@ import { ArrowLeft, Wallet as WalletIcon, Clock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { fireWinnerConfetti, playCoinClink } from '../utils/casinoFx';
 import SoundToggle from '../components/SoundToggle';
-import BigWinPopup from '../components/BigWinPopup';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 const CHIPS = [20, 50, 100, 500, 1000];
@@ -92,7 +91,6 @@ const CrazyTimePage = () => {
   const [rotation, setRotation] = useState(0);
   const [revealed, setRevealed] = useState(null);
   const [livePlayers, setLivePlayers] = useState(null);
-  const [bigWin, setBigWin] = useState(null);
   // Set of round_ids already visible in Latest Results (i.e., wheel has finished
   // spinning for that round). A newly-completed round is added ONLY after the
   // 4-second wheel animation ends so the strip doesn't spoil the winner.
@@ -211,10 +209,6 @@ const CrazyTimePage = () => {
       winCelebratedRef.current = revealedRoundRef.current;
       fireWinnerConfetti();
       playCoinClink();
-      // Big Win popup fires only for ≥ ₹1000 payouts
-      if ((userWin.payout || 0) >= 1000) {
-        setBigWin({ amount: userWin.payout });
-      }
     }
   }, [history, revealed]);
 
@@ -240,7 +234,6 @@ const CrazyTimePage = () => {
     <div className="min-h-screen pb-24" style={{
       background: 'radial-gradient(ellipse 80% 60% at 50% 20%, rgba(220, 38, 38, 0.15) 0%, transparent 55%), radial-gradient(ellipse 80% 60% at 50% 80%, rgba(251, 191, 36, 0.14) 0%, transparent 55%), #0A0A14',
     }} data-testid="crazy-time-page">
-      <BigWinPopup payout={bigWin?.amount} game="crazy_time" onClose={() => setBigWin(null)} />
       {/* Header */}
       <header className="sticky top-0 z-40 backdrop-blur-lg" style={{ background: 'rgba(10, 10, 20, 0.8)', borderBottom: '1px solid rgba(255, 215, 0, 0.25)' }}>
         <div className="px-3 py-3 flex items-center gap-2" style={{ maxWidth: '480px', margin: '0 auto' }}>

@@ -6,7 +6,6 @@ import { ArrowLeft, Wallet as WalletIcon, Clock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { fireWinnerConfetti, playCoinClink } from '../utils/casinoFx';
 import SoundToggle from '../components/SoundToggle';
-import BigWinPopup from '../components/BigWinPopup';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 const CHIPS = [20, 50, 100, 500, 1000];
@@ -83,7 +82,6 @@ const ColorGamePage = () => {
   const [reveal, setReveal] = useState({ round_id: null, color: null });
   const [rotation, setRotation] = useState(0);
   const [livePlayers, setLivePlayers] = useState(null);
-  const [bigWin, setBigWin] = useState(null);
   const [visibleRoundIds, setVisibleRoundIds] = useState(new Set());
   const revealedRoundRef = useRef(null);
   const initializedRef = useRef(false);
@@ -186,9 +184,6 @@ const ColorGamePage = () => {
       winCelebratedRef.current = reveal.round_id;
       fireWinnerConfetti();
       playCoinClink();
-      if ((userWin.payout || 0) >= 1000) {
-        setBigWin({ amount: userWin.payout });
-      }
     }
   }, [history, reveal]);
 
@@ -226,7 +221,6 @@ const ColorGamePage = () => {
     <div className="min-h-screen pb-24" style={{
       background: 'radial-gradient(ellipse 80% 60% at 50% 20%, rgba(249, 115, 22, 0.15) 0%, transparent 55%), radial-gradient(ellipse 80% 60% at 50% 80%, rgba(220, 38, 38, 0.14) 0%, transparent 55%), #0A0A14',
     }} data-testid="color-game-page">
-      <BigWinPopup payout={bigWin?.amount} game="color_game" onClose={() => setBigWin(null)} />
       <header className="sticky top-0 z-40 backdrop-blur-lg" style={{ background: 'rgba(10, 10, 20, 0.8)', borderBottom: '1px solid rgba(255, 215, 0, 0.25)' }}>
         <div className="px-3 py-3 flex items-center gap-2" style={{ maxWidth: '480px', margin: '0 auto' }}>
           <Link to="/dashboard">
