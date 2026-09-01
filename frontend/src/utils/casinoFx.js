@@ -5,9 +5,21 @@
 
 import confetti from 'canvas-confetti';
 
+const MUTE_KEY = 'shiv_shakti_sound_muted';
+
+export const isMuted = () => {
+  try { return localStorage.getItem(MUTE_KEY) === '1'; } catch { return false; }
+};
+
+export const setMuted = (v) => {
+  try { localStorage.setItem(MUTE_KEY, v ? '1' : '0'); } catch { /* ignore */ }
+  try { window.dispatchEvent(new Event('shiv-shakti-mute-changed')); } catch { /* ignore */ }
+};
+
 let _audioCtx = null;
 const getAudio = () => {
   if (typeof window === 'undefined') return null;
+  if (isMuted()) return null;
   try {
     if (!_audioCtx) {
       const Ctx = window.AudioContext || window.webkitAudioContext;

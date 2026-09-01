@@ -5,6 +5,8 @@ import { toast } from 'sonner';
 import { ArrowLeft, Wallet as WalletIcon, Clock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { fireWinnerConfetti, playCoinClink } from '../utils/casinoFx';
+import SoundToggle from '../components/SoundToggle';
+import BigWinPopup from '../components/BigWinPopup';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 const CHIPS = [20, 50, 100, 500, 1000];
@@ -90,6 +92,7 @@ const CrazyTimePage = () => {
   const [rotation, setRotation] = useState(0);
   const [revealed, setRevealed] = useState(null);
   const [livePlayers, setLivePlayers] = useState(null);
+  const [bigWin, setBigWin] = useState(null);
   const revealedRoundRef = useRef(null);
   const initializedRef = useRef(false);
   const winCelebratedRef = useRef(null);
@@ -188,6 +191,10 @@ const CrazyTimePage = () => {
       winCelebratedRef.current = revealedRoundRef.current;
       fireWinnerConfetti();
       playCoinClink();
+      // Big Win popup fires only for ≥ ₹1000 payouts
+      if ((userWin.payout || 0) >= 1000) {
+        setBigWin({ amount: userWin.payout });
+      }
     }
   }, [history, revealed]);
 
@@ -225,6 +232,7 @@ const CrazyTimePage = () => {
     <div className="min-h-screen pb-24" style={{
       background: 'radial-gradient(ellipse 80% 60% at 50% 20%, rgba(220, 38, 38, 0.15) 0%, transparent 55%), radial-gradient(ellipse 80% 60% at 50% 80%, rgba(251, 191, 36, 0.14) 0%, transparent 55%), #0A0A14',
     }} data-testid="crazy-time-page">
+      <BigWinPopup payout={bigWin?.amount} game="crazy_time" onClose={() => setBigWin(null)} />
       {/* Header */}
       <header className="sticky top-0 z-40 backdrop-blur-lg" style={{ background: 'rgba(10, 10, 20, 0.8)', borderBottom: '1px solid rgba(255, 215, 0, 0.25)' }}>
         <div className="px-3 py-3 flex items-center gap-2" style={{ maxWidth: '480px', margin: '0 auto' }}>
@@ -242,9 +250,12 @@ const CrazyTimePage = () => {
               30 sec • Money Wheel • Min ₹{config?.min_bet || 20}
             </p>
           </div>
-          <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg" style={{ background: 'rgba(20, 169, 76, 0.15)', border: '1px solid rgba(34, 197, 94, 0.45)' }}>
-            <WalletIcon className="w-3.5 h-3.5 text-[#4ADE80]" />
-            <span className="text-xs font-black text-[#4ADE80] tabular-nums">₹{Math.floor(user?.balance || 0)}</span>
+          <div className="flex items-center gap-1.5">
+            <SoundToggle />
+            <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg" style={{ background: 'rgba(20, 169, 76, 0.15)', border: '1px solid rgba(34, 197, 94, 0.45)' }}>
+              <WalletIcon className="w-3.5 h-3.5 text-[#4ADE80]" />
+              <span className="text-xs font-black text-[#4ADE80] tabular-nums">₹{Math.floor(user?.balance || 0)}</span>
+            </div>
           </div>
         </div>
         {livePlayers !== null && (

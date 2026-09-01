@@ -80,6 +80,12 @@
 - **Registered**: `chicken_road_router` in `server.py`, route `/chicken-road` in `App.js`, card in dashboard
 - **Verified**: E2E flow via curl — balance 4900 → START -100 → STEP 1.10x → CASHOUT +110 → balance 4910 ✓; also crash scenario at step 6 correctly settles
 
+## ✅ Feb 2026 — Wheel Fix + Big Win Popup + Sound Toggle (Session 42)
+- **Wheel Alignment Bug Fixed**: `spins = 5 + Math.random() * 2` (fractional) tha → residual offset ke wajah se wheel exact winner segment pe nahi rukta tha. Fix: `spins = 5 + Math.floor(Math.random() * 3)` (integer full turns) → pointer bilkul winning number pe rukega ab.
+- **Bet Aggregation Display**: Har ticket pe yellow "**N× BETS**" badge + "Total Bet (N combined)" label added — Crazy Time, Color Game, Dragon Tiger. Bettor ko clearly dikhta hai ki multiple bets 1 ticket me merge huye.
+- **Big Win Popup**: New `<BigWinPopup>` component (`/app/frontend/src/components/BigWinPopup.js`) — full-screen amber overlay with slot-machine count-up reel + 24 falling gold coins + Trophy icon. Fires for wins ≥ ₹1000 in Crazy Time, Color Game, Dragon Tiger. Auto-dismiss after 5.5s or tap.
+- **Sound Toggle**: New `<SoundToggle>` component (`/app/frontend/src/components/SoundToggle.js`) — speaker icon in every game header. Persists mute state in localStorage. `casinoFx.js` respects the mute flag globally, so card-flip, coin-clink, lock-click all silent when muted.
+
 ## ✅ Feb 2026 — Live Counts + Wheel Timing + Latest Results (Session 41)
 - **Per-Game Live Players Counter**: New `GET /api/live-players` returns `{dragon_tiger, crazy_time, color_game, coin_toss, aviator, kalyan, gali_disawar}` — each = per-game baseline + real distinct bettors in last 3 min + jitter. Rendered as green pulsing pill on every game card on Dashboard AND in each game page header ("X playing now").
 - **Wheel Reveal Timing Fix**: Crazy Time & Color Game — winner banner + confetti + coin-clink now trigger ONLY after 4-second wheel spin completes (was firing simultaneously with spin start).
