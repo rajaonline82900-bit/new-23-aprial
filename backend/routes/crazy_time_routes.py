@@ -7,6 +7,7 @@ Mechanics:
 - Payouts (total return, includes stake): 2x, 3x, 6x, 11x, 10x, 20x, 40x, 45x
 """
 import asyncio
+import logging
 import random
 import time
 import secrets
@@ -19,6 +20,7 @@ from bson import ObjectId
 from database import db
 from auth import get_current_user
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # Segment name -> (weight, payout multiplier)
@@ -86,8 +88,12 @@ async def get_current():
 @router.post('/crazy-time/bet')
 async def place_bet(bet: CTBet, request: Request):
     user = await get_current_user(request)
+    # Normalise + validate segment against server-side truth. Prevents any
+    # frontend drift (e.g. sending ' 6', 6 as int, '11') from silently
+    # storing a bet that can never match the winner.
+    bet.segment = str(bet.segment).strip()
     if bet.segment not in SEGMENTS:
-        raise HTTPException(400, 'invalid segment')
+        raise HTTPException(400, f'invalid segment {bet.segment!r}. Must be one of {list(SEGMENTS.keys())}')
     cfg = await _get_config()
     if not cfg.get('enabled', True):
         raise HTTPException(400, 'game disabled')
@@ -177,13 +183,22 @@ async def live_feed(limit: int = 10):
 
 
 async def _settle_round(round_id: str, winner: str):
+    # Defensive: normalise winner and confirm it's a known segment.
+    winner = str(winner).strip()
+    if winner not in SEGMENTS:
+        logger.error(f'[CrazyTime] settle FAILED — winner {winner!r} not in SEGMENTS {list(SEGMENTS.keys())}')
+        return
     payout_mult = SEGMENTS[winner][1]
+    settled = 0
+    won_count = 0
     cursor = db.crazy_time_bets.find({'round_id': round_id, 'status': 'pending'})
     async for b in cursor:
-        won = b.get('segment') == winner
+        seg = str(b.get('segment', '')).strip()
+        won = seg == winner
         payout = float(b['amount']) * payout_mult if won else 0
         if won and payout > 0:
             await db.users.update_one({'_id': ObjectId(b['user_id'])}, {'$inc': {'balance': payout}})
+            won_count += 1
         await db.crazy_time_bets.update_one(
             {'_id': b['_id']},
             {'$set': {
@@ -193,6 +208,8 @@ async def _settle_round(round_id: str, winner: str):
                 'settled_at': datetime.now(timezone.utc).isoformat(),
             }}
         )
+        settled += 1
+    logger.info(f'[CrazyTime] round {round_id[:8]} winner={winner!r} settled={settled} won={won_count}')
 
 
 async def crazy_time_round_loop():
