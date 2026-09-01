@@ -150,6 +150,7 @@ const DragonTigerPage = () => {
   const [flip, setFlip] = useState({ d: false, t: false });
   const [revealCards, setRevealCards] = useState({ dragon: null, tiger: null, winner: null });
   const [lockFlash, setLockFlash] = useState(false);
+  const [livePlayers, setLivePlayers] = useState(null);
   const prevPhaseRef = useRef(null);
   const winCelebratedRef = useRef(null);
 
@@ -184,7 +185,15 @@ const DragonTigerPage = () => {
     fetchMyHistory();
     const iv = setInterval(fetchAll, 500);
     const iv2 = setInterval(fetchMyHistory, 3000);
-    return () => { clearInterval(iv); clearInterval(iv2); };
+    const fetchLive = async () => {
+      try {
+        const r = await axios.get(`${API}/api/live-players`);
+        setLivePlayers(r.data?.dragon_tiger || null);
+      } catch { /* ignore */ }
+    };
+    fetchLive();
+    const iv3 = setInterval(fetchLive, 10000);
+    return () => { clearInterval(iv); clearInterval(iv2); clearInterval(iv3); };
   }, [fetchAll, fetchMyHistory]);
 
   // Watch reveal: when latest recent round has winner, animate flip
@@ -303,6 +312,14 @@ const DragonTigerPage = () => {
             <span className="text-xs font-black text-[#4ADE80] tabular-nums">₹{Math.floor(user?.balance || 0)}</span>
           </div>
         </div>
+        {livePlayers !== null && (
+          <div className="px-3 pb-2 flex items-center gap-1.5" style={{ maxWidth: '480px', margin: '0 auto' }}>
+            <span className="inline-block w-2 h-2 rounded-full" style={{ background: '#22C55E', boxShadow: '0 0 8px #22C55E', animation: 'pulse 2s ease-in-out infinite' }} />
+            <span className="text-[10px] font-black tabular-nums text-[#4ADE80] uppercase tracking-widest" data-testid="live-players-count">
+              {livePlayers.toLocaleString('en-IN')} playing now
+            </span>
+          </div>
+        )}
       </header>
 
       <main className="px-3 py-4 space-y-4" style={{ maxWidth: '480px', margin: '0 auto' }}>
@@ -336,6 +353,26 @@ const DragonTigerPage = () => {
             <span className="text-[10px] font-black tracking-widest uppercase" style={{ color: '#F97316' }}>🐯 Tiger</span>
             <CardFace card={revealCards.tiger} flipped={flip.t} delay={700} side="tiger" />
             {revealCards.winner === 'tiger' && flip.t && <span className="text-[10px] font-black text-[#FDE047] animate-pulse">WINNER 🏆</span>}
+          </div>
+        </div>
+
+        {/* Latest Results — moved to front (right after cards) */}
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-yellow-400 mb-1">Latest Results (newest → left)</p>
+          <div className="flex gap-1.5 overflow-x-auto pb-1">
+            {recentRounds.filter(r => r.winner).slice(0, 10).map((r, i) => (
+              <div key={i} className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-black"
+                style={{
+                  background: r.winner === 'dragon' ? '#DC2626' : r.winner === 'tiger' ? '#F97316' : '#FFD700',
+                  color: r.winner === 'tie' ? '#0A0A14' : '#FFF',
+                  border: i === 0 ? '2.5px solid #FDE047' : '2px solid rgba(0,0,0,0.4)',
+                  boxShadow: i === 0 ? '0 0 12px rgba(255,215,0,0.6)' : 'none',
+                }}
+                title={`${r.winner}: D=${r.dragon?.rank}${r.dragon?.suit} T=${r.tiger?.rank}${r.tiger?.suit}`}
+              >
+                {r.winner === 'dragon' ? 'D' : r.winner === 'tiger' ? 'T' : 'T='}
+              </div>
+            ))}
           </div>
         </div>
 
@@ -392,24 +429,7 @@ const DragonTigerPage = () => {
           })}
         </div>
 
-        {/* Recent rounds strip */}
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-widest text-yellow-400 mb-1">Last 10 Results</p>
-          <div className="flex gap-1.5 overflow-x-auto pb-1">
-            {recentRounds.filter(r => r.winner).slice(0, 10).map((r, i) => (
-              <div key={i} className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-black"
-                style={{
-                  background: r.winner === 'dragon' ? '#DC2626' : r.winner === 'tiger' ? '#F97316' : '#FFD700',
-                  color: r.winner === 'tie' ? '#0A0A14' : '#FFF',
-                  border: '2px solid rgba(0,0,0,0.4)',
-                }}
-                title={`${r.winner}: D=${r.dragon?.rank}${r.dragon?.suit} T=${r.tiger?.rank}${r.tiger?.suit}`}
-              >
-                {r.winner === 'dragon' ? 'D' : r.winner === 'tiger' ? 'T' : 'T='}
-              </div>
-            ))}
-          </div>
-        </div>
+        {/* Bottom recent rounds strip removed — now at top under 'Latest Results' */}
 
         {/* Live feed */}
         {liveFeed.length > 0 && (

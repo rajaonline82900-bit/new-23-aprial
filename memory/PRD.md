@@ -80,6 +80,12 @@
 - **Registered**: `chicken_road_router` in `server.py`, route `/chicken-road` in `App.js`, card in dashboard
 - **Verified**: E2E flow via curl — balance 4900 → START -100 → STEP 1.10x → CASHOUT +110 → balance 4910 ✓; also crash scenario at step 6 correctly settles
 
+## ✅ Feb 2026 — Live Counts + Wheel Timing + Latest Results (Session 41)
+- **Per-Game Live Players Counter**: New `GET /api/live-players` returns `{dragon_tiger, crazy_time, color_game, coin_toss, aviator, kalyan, gali_disawar}` — each = per-game baseline + real distinct bettors in last 3 min + jitter. Rendered as green pulsing pill on every game card on Dashboard AND in each game page header ("X playing now").
+- **Wheel Reveal Timing Fix**: Crazy Time & Color Game — winner banner + confetti + coin-clink now trigger ONLY after 4-second wheel spin completes (was firing simultaneously with spin start).
+- **Color Game Wheel**: Replaced RevealBall with Crazy-Time-style 6-segment wheel (R-W-O-R-W-O), top pointer, exact rotation math (`-((idx + 0.5) * 60°)`). Two segments per colour = each spin picks a random valid segment for variety.
+- **Latest Results Moved Up**: Dragon Tiger, Crazy Time, Color Game — "Latest Results" strip now appears right below the game arena (before chips/bets), with the newest result on the LEFT and highlighted in gold border + glow.
+
 ## ✅ Feb 2026 — Casino FX + VPS Deploy (Session 40)
 - **Dragon Tiger — Bets Locked Flash**: When timer hits 00 (betting → reveal transition), full-screen red overlay with Lock icon + "BETS LOCKED" text pulses for 900 ms. Playing a synthesized "click" via Web Audio API. Card flips also fire a whoosh sound in sequence.
 - **Winner Confetti + Coin-Clink**: Crazy Time 10x wins and Dragon Tiger Tie 50x wins trigger gold + red confetti burst (canvas-confetti) plus a three-note "cha-ching" bell via Web Audio API. Once-per-round via `winCelebratedRef`.

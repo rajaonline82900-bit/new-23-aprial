@@ -113,6 +113,50 @@ async def get_online_users():
     return {"count": real + fake, "real": real}
 
 
+# ---------- Per-Game Live Players (real recent bettors + fake baseline) ----------
+_GAME_BASELINES = {
+    "dragon_tiger": 180,
+    "crazy_time":   210,
+    "color_game":   145,
+    "coin_toss":    120,
+    "aviator":      165,
+    "kalyan":        95,
+    "gali_disawar":  85,
+}
+
+
+@api_router.get("/live-players")
+async def get_game_live_users():
+    """Live-player count per game.
+    Real component = distinct users who placed a bet in the last 3 min per
+    game collection. Fake component = per-game baseline ± jitter so every
+    card always feels busy.
+    """
+    from datetime import timedelta
+    cutoff = datetime.now(timezone.utc) - timedelta(minutes=3)
+    cutoff_iso = cutoff.isoformat()
+    counts = {}
+
+    async def _distinct_count(coll, ts_field, iso: bool):
+        try:
+            q = {ts_field: {"$gte": (cutoff_iso if iso else cutoff)}}
+            ids = await coll.distinct("user_id", q)
+            return len(ids)
+        except Exception:
+            return 0
+
+    counts["dragon_tiger"] = await _distinct_count(db.dragon_tiger_bets, "created_at", True)
+    counts["crazy_time"]   = await _distinct_count(db.crazy_time_bets,   "created_at", True)
+    counts["color_game"]   = await _distinct_count(db.color_game_bets,   "created_at", True)
+    counts["coin_toss"]    = await _distinct_count(db.coin_bets,          "created_at", False)
+
+    result = {}
+    for game, base in _GAME_BASELINES.items():
+        real = counts.get(game, 0)
+        result[game] = base + real + _rand.randint(-25, 45)
+    return result
+
+
 # Serve uploaded files: new files come from Emergent Object Storage, but
 # legacy files still live on disk during transition — try local first, fall
 # back to storage.

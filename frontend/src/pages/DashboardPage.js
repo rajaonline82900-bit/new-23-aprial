@@ -454,6 +454,7 @@ const DashboardPage = () => {
   const [tickerVisible, setTickerVisible] = useState(true);
   const [gameToggles, setGameToggles] = useState({ gali_disawar: true, kalyan: true, aviator: true, ludo: true });
   const [onlineCount, setOnlineCount] = useState(null);
+  const [gamePlayers, setGamePlayers] = useState({});
   const tickerRef = useRef(null);
   const gamesRef = useRef(null);
 
@@ -466,9 +467,16 @@ const DashboardPage = () => {
         if (!cancelled) setOnlineCount(data.count);
       } catch { /* ignore */ }
     };
+    const fetchGamePlayers = async () => {
+      try {
+        const { data } = await axios.get(`${API_URL}/api/live-players`);
+        if (!cancelled) setGamePlayers(data || {});
+      } catch { /* ignore */ }
+    };
     fetchOnline();
+    fetchGamePlayers();
     const iv = setInterval(() => {
-      if (document.visibilityState === 'visible') fetchOnline();
+      if (document.visibilityState === 'visible') { fetchOnline(); fetchGamePlayers(); }
     }, 8000);
     return () => { cancelled = true; clearInterval(iv); };
   }, []);
@@ -1238,6 +1246,20 @@ const DashboardPage = () => {
                           >
                             {cat.hi}
                           </div>
+                          {/* Per-game live players — small green dot + count. Hidden if data not yet loaded. */}
+                          {(() => {
+                            const gKey = cat.id === 'coin' ? 'coin_toss' : cat.id;
+                            const n = gamePlayers[gKey];
+                            if (!n) return null;
+                            return (
+                              <div className="mt-1 flex items-center gap-1" data-testid={`game-live-players-${cat.id}`}>
+                                <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: '#22C55E', boxShadow: '0 0 6px #22C55E' }} />
+                                <span className="text-[10px] font-black tabular-nums" style={{ color: '#4ADE80' }}>
+                                  {n.toLocaleString('en-IN')} playing
+                                </span>
+                              </div>
+                            );
+                          })()}
                           <div className="mt-1.5 inline-flex items-center px-2 py-0.5 rounded-full"
                                style={{
                                  background: cat.badgeBg || cat.stripe,

@@ -4,6 +4,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { ArrowLeft, Wallet as WalletIcon, Clock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { fireWinnerConfetti, playCoinClink } from '../utils/casinoFx';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 const CHIPS = [20, 50, 100, 500, 1000];
@@ -16,57 +17,55 @@ const COLORS = [
 const COLOR_HEX = { red: '#DC2626', white: '#F3F4F6', orange: '#F97316' };
 const PAYOUT = 3;
 
-// Reveal ball — shows the single winning color
-const RevealBall = ({ color, phase }) => {
-  const isRevealed = !!color && phase !== 'betting';
-  const hex = isRevealed ? COLOR_HEX[color] : '#374151';
+// 6 wheel segments — R, W, O, R, W, O — so pointer landing on ANY of the two
+// segments of a colour still yields the same winner.
+const WHEEL_SEGMENTS = ['red', 'white', 'orange', 'red', 'white', 'orange'];
+const WHEEL_TEXT = { red: '#FFFFFF', white: '#0A0A14', orange: '#FFFFFF' };
+const NSEG = WHEEL_SEGMENTS.length;
+const SEG_ANGLE = 360 / NSEG;
+
+// Wheel component (same math as CrazyTime — 6 slices, pointer at top)
+const Wheel = ({ rotation }) => {
+  const R = 130;
   return (
-    <div className="relative flex items-center justify-center" style={{ width: 150, height: 150 }} data-testid="reveal-ball">
-      <style>{`
-        @keyframes cg-spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
-        @keyframes cg-pulse { 0%,100% { box-shadow: 0 0 24px rgba(255,215,0,0.5) } 50% { box-shadow: 0 0 48px rgba(255,215,0,0.9) } }
-        @keyframes cg-pop { 0% { transform: scale(0.3); opacity:0 } 60% { transform: scale(1.2); opacity:1 } 100% { transform: scale(1); opacity:1 } }
-        .cg-ring-spin { animation: cg-spin 1.4s linear infinite }
-        .cg-ball-pulse { animation: cg-pulse 1.6s ease-in-out infinite }
-        .cg-label-pop { animation: cg-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both }
-      `}</style>
-      {/* Outer tricolor spinning ring while betting; static color-matched when revealed */}
-      <div
-        className={isRevealed ? '' : 'cg-ring-spin'}
-        style={{
-          position: 'absolute', width: 150, height: 150, borderRadius: '50%',
-          background: isRevealed
-            ? `radial-gradient(circle, ${hex} 0%, ${hex}55 70%, transparent 100%)`
-            : 'conic-gradient(#DC2626 0deg 120deg, #F3F4F6 120deg 240deg, #F97316 240deg 360deg)',
-          padding: 8,
-          filter: 'drop-shadow(0 6px 12px rgba(0,0,0,0.5))',
-        }}>
-        <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: '#0A0A14' }} />
-      </div>
-      {/* Inner ball with color */}
-      <div
-        className="cg-ball-pulse relative flex items-center justify-center"
-        style={{
-          width: 116, height: 116, borderRadius: '50%',
-          background: isRevealed
-            ? `radial-gradient(circle at 35% 30%, #FFFFFF 0%, ${hex} 45%, ${hex} 100%)`
-            : 'radial-gradient(circle at 35% 30%, #1F2937 0%, #0A0A14 100%)',
-          border: '3px solid #FDE047',
-        }}>
-        {isRevealed ? (
-          <span className="cg-label-pop font-black tracking-widest"
-                style={{
-                  fontSize: 20,
-                  color: color === 'white' ? '#0A0A14' : '#FFFFFF',
-                  textShadow: color === 'white' ? 'none' : '0 2px 6px rgba(0,0,0,0.6)',
-                }}>
-            {color.toUpperCase()}
-          </span>
-        ) : (
-          <span className="font-black text-yellow-300" style={{ fontSize: 34, opacity: 0.7 }}>?</span>
-        )}
-      </div>
-    </div>
+    <svg viewBox="-150 -150 300 300" width="100%" height="100%" style={{
+      display: 'block',
+      filter: 'drop-shadow(0 8px 20px rgba(0,0,0,0.6))',
+    }}>
+      <g style={{ transform: `rotate(${rotation}deg)`, transition: 'transform 4s cubic-bezier(0.15, 0.85, 0.35, 1)', transformOrigin: '0 0' }}>
+        {WHEEL_SEGMENTS.map((c, i) => {
+          const a1 = (i * SEG_ANGLE - 90) * Math.PI / 180;
+          const a2 = ((i + 1) * SEG_ANGLE - 90) * Math.PI / 180;
+          const x1 = R * Math.cos(a1), y1 = R * Math.sin(a1);
+          const x2 = R * Math.cos(a2), y2 = R * Math.sin(a2);
+          const mid = ((i + 0.5) * SEG_ANGLE - 90) * Math.PI / 180;
+          const tx = R * 0.68 * Math.cos(mid);
+          const ty = R * 0.68 * Math.sin(mid);
+          const textRot = (i + 0.5) * SEG_ANGLE;
+          return (
+            <g key={i}>
+              <path d={`M 0 0 L ${x1} ${y1} A ${R} ${R} 0 0 1 ${x2} ${y2} Z`}
+                    fill={COLOR_HEX[c]} stroke="#0A0A14" strokeWidth="1.5" />
+              <g transform={`translate(${tx} ${ty}) rotate(${textRot})`}>
+                <text textAnchor="middle" dominantBaseline="central"
+                      fontSize="15"
+                      fontWeight="900" fill={WHEEL_TEXT[c]}
+                      style={{ fontFamily: 'Outfit, sans-serif' }}
+                      stroke="#0A0A14" strokeWidth="0.4" paintOrder="stroke">{c.toUpperCase()}</text>
+              </g>
+            </g>
+          );
+        })}
+        <circle cx="0" cy="0" r="22" fill="#FBBF24" stroke="#78350F" strokeWidth="2" />
+        <circle cx="0" cy="0" r="10" fill="#DC2626" stroke="#7F1D1D" strokeWidth="1.5" />
+      </g>
+      <circle cx="0" cy="0" r={R + 2} fill="none" stroke="#FDE047" strokeWidth="4" />
+      {/* Pointer at top */}
+      <g>
+        <path d="M 0 -145 L -10 -125 L 10 -125 Z" fill="#DC2626" stroke="#0A0A14" strokeWidth="2" />
+        <circle cx="0" cy="-135" r="3" fill="#FDE047" />
+      </g>
+    </svg>
   );
 };
 
@@ -80,7 +79,11 @@ const ColorGamePage = () => {
   const [chip, setChip] = useState(50);
   const [placing, setPlacing] = useState(false);
   const [reveal, setReveal] = useState({ round_id: null, color: null });
+  const [rotation, setRotation] = useState(0);
+  const [livePlayers, setLivePlayers] = useState(null);
   const revealedRoundRef = useRef(null);
+  const initializedRef = useRef(false);
+  const winCelebratedRef = useRef(null);
 
   const token = localStorage.getItem('matka11_token') || '';
   const authH = { headers: { Authorization: `Bearer ${token}` } };
@@ -95,7 +98,18 @@ const ColorGamePage = () => {
       ]);
       setConfig(c.data);
       setCurrent(cur.data);
-      setRecentRounds(rec.data.rounds || []);
+      const rounds = rec.data.rounds || [];
+      // On first mount align wheel to last winner so it doesn't spin from a stale round
+      if (!initializedRef.current) {
+        initializedRef.current = true;
+        if (rounds[0]?.color) {
+          revealedRoundRef.current = rounds[0].round_id;
+          const idx = WHEEL_SEGMENTS.findIndex((c2) => c2 === rounds[0].color);
+          if (idx >= 0) setRotation(-((idx + 0.5) * SEG_ANGLE));
+          setReveal({ round_id: rounds[0].round_id, color: rounds[0].color });
+        }
+      }
+      setRecentRounds(rounds);
       setLiveFeed(feed.data.feed || []);
     } catch { /* noop */ }
   }, []);
@@ -113,17 +127,53 @@ const ColorGamePage = () => {
     fetchMyHistory();
     const iv = setInterval(fetchAll, 500);
     const iv2 = setInterval(fetchMyHistory, 3000);
-    return () => { clearInterval(iv); clearInterval(iv2); };
+    const fetchLive = async () => {
+      try {
+        const r = await axios.get(`${API}/api/live-players`);
+        setLivePlayers(r.data?.color_game || null);
+      } catch { /* ignore */ }
+    };
+    fetchLive();
+    const iv3 = setInterval(fetchLive, 10000);
+    return () => { clearInterval(iv); clearInterval(iv2); clearInterval(iv3); };
   }, [fetchAll, fetchMyHistory]);
 
+  // Spin wheel + delay reveal until animation completes (4s)
   useEffect(() => {
     const latest = recentRounds[0];
     if (latest?.color && latest.round_id !== revealedRoundRef.current) {
       revealedRoundRef.current = latest.round_id;
-      setReveal({ round_id: latest.round_id, color: latest.color });
-      setTimeout(() => refreshUser(), 3500);
+      // Pick the segment matching this colour that is FARTHEST from current pointer
+      // so the spin always feels dynamic (2 valid segments per colour).
+      const validIdxs = WHEEL_SEGMENTS
+        .map((c, i) => c === latest.color ? i : -1)
+        .filter((i) => i >= 0);
+      const idx = validIdxs[Math.floor(Math.random() * validIdxs.length)] ?? 0;
+      const targetAngle = -((idx + 0.5) * SEG_ANGLE);
+      const spins = 5 + Math.random() * 2;
+      setRotation((r) => Math.floor(r / 360) * 360 + spins * 360 + targetAngle);
+      // Hide previous reveal during spin
+      setReveal({ round_id: latest.round_id, color: null });
+      setTimeout(() => {
+        setReveal({ round_id: latest.round_id, color: latest.color });
+        refreshUser();
+      }, 4100);
     }
   }, [recentRounds, refreshUser]);
+
+  // Win celebration after banner shows
+  useEffect(() => {
+    if (!reveal.color || !reveal.round_id) return;
+    if (winCelebratedRef.current === reveal.round_id) return;
+    const userWin = history.find(
+      (b) => b.round_id === reveal.round_id && b.side === reveal.color && b.status === 'won'
+    );
+    if (userWin) {
+      winCelebratedRef.current = reveal.round_id;
+      fireWinnerConfetti();
+      playCoinClink();
+    }
+  }, [history, reveal]);
 
   const placeBet = async (side) => {
     if (placing) return;
@@ -180,6 +230,14 @@ const ColorGamePage = () => {
             <span className="text-xs font-black text-[#4ADE80] tabular-nums">₹{Math.floor(user?.balance || 0)}</span>
           </div>
         </div>
+        {livePlayers !== null && (
+          <div className="px-3 pb-2 flex items-center gap-1.5" style={{ maxWidth: '480px', margin: '0 auto' }}>
+            <span className="inline-block w-2 h-2 rounded-full" style={{ background: '#22C55E', boxShadow: '0 0 8px #22C55E', animation: 'pulse 2s ease-in-out infinite' }} />
+            <span className="text-[10px] font-black tabular-nums text-[#4ADE80] uppercase tracking-widest" data-testid="live-players-count">
+              {livePlayers.toLocaleString('en-IN')} playing now
+            </span>
+          </div>
+        )}
       </header>
 
       <main className="px-3 py-4 space-y-4" style={{ maxWidth: '480px', margin: '0 auto' }}>
@@ -194,13 +252,44 @@ const ColorGamePage = () => {
           </div>
         </div>
 
-        {/* Reveal Ball */}
-        <div className="rounded-2xl p-6 flex items-center justify-center" style={{
-          background: 'linear-gradient(180deg, rgba(6,10,15,0.6) 0%, rgba(6,10,15,0.9) 100%)',
+        {/* Wheel */}
+        <div className="rounded-2xl p-4 flex items-center justify-center relative" style={{
+          background: 'radial-gradient(ellipse at center, rgba(31,41,55,0.6) 0%, rgba(6,10,15,0.9) 100%)',
           border: '2px solid rgba(255,215,0,0.4)',
           boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.6), 0 8px 20px rgba(249,115,22,0.15)',
         }}>
-          <RevealBall color={isBetting ? null : reveal.color} phase={current?.phase || 'waiting'} />
+          <div style={{ width: 280, height: 280 }}>
+            <Wheel rotation={rotation} />
+          </div>
+          {/* Winner banner — appears only AFTER wheel stops (reveal.color is set post-timeout) */}
+          {reveal.color && (
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full font-black text-sm tracking-widest"
+              style={{
+                background: `linear-gradient(90deg, ${COLOR_HEX[reveal.color]} 0%, #FDE047 50%, ${COLOR_HEX[reveal.color]} 100%)`,
+                color: '#0A0A14',
+                border: '2px solid #FEF3C7',
+                boxShadow: '0 4px 12px rgba(255,215,0,0.5)',
+              }} data-testid="winner-banner">
+              {reveal.color.toUpperCase()} · {PAYOUT}x
+            </div>
+          )}
+        </div>
+
+        {/* Latest Results — moved to front */}
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-yellow-400 mb-1">Latest Results (newest → left)</p>
+          <div className="flex gap-1.5 overflow-x-auto pb-1">
+            {recentRounds.filter(r => r.color).slice(0, 15).map((r, i) => (
+              <div key={i} className="shrink-0 w-10 h-10 rounded-full"
+                style={{
+                  background: `radial-gradient(circle at 35% 30%, #FFFFFF 0%, ${COLOR_HEX[r.color]} 60%, ${COLOR_HEX[r.color]} 100%)`,
+                  border: i === 0 ? '2.5px solid #FDE047' : '2px solid rgba(0,0,0,0.4)',
+                  boxShadow: i === 0 ? '0 0 12px rgba(255,215,0,0.6)' : 'none',
+                }}
+                title={r.color}
+              />
+            ))}
+          </div>
         </div>
 
         {/* Chip selector */}
@@ -263,21 +352,7 @@ const ColorGamePage = () => {
           })}
         </div>
 
-        {/* Last 15 Results */}
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-widest text-yellow-400 mb-1">Last 15 Results</p>
-          <div className="flex gap-1.5 overflow-x-auto pb-1">
-            {recentRounds.filter(r => r.color).slice(0, 15).map((r, i) => (
-              <div key={i} className="shrink-0 w-9 h-9 rounded-full"
-                style={{
-                  background: `radial-gradient(circle at 35% 30%, #FFFFFF 0%, ${COLOR_HEX[r.color]} 60%, ${COLOR_HEX[r.color]} 100%)`,
-                  border: '2px solid rgba(0,0,0,0.4)',
-                }}
-                title={r.color}
-              />
-            ))}
-          </div>
-        </div>
+        {/* Old bottom Results block removed — see Latest Results above wheel */}
 
         {/* Live feed */}
         {liveFeed.length > 0 && (

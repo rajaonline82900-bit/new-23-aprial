@@ -89,6 +89,7 @@ const CrazyTimePage = () => {
   const [placing, setPlacing] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [revealed, setRevealed] = useState(null);
+  const [livePlayers, setLivePlayers] = useState(null);
   const revealedRoundRef = useRef(null);
   const initializedRef = useRef(false);
   const winCelebratedRef = useRef(null);
@@ -137,35 +138,43 @@ const CrazyTimePage = () => {
     fetchMyHistory();
     const iv = setInterval(fetchAll, 500);
     const iv2 = setInterval(fetchMyHistory, 3000);
-    return () => { clearInterval(iv); clearInterval(iv2); };
+    // Poll live-players every 10s
+    const fetchLive = async () => {
+      try {
+        const r = await axios.get(`${API}/api/live-players`);
+        setLivePlayers(r.data?.crazy_time || null);
+      } catch { /* ignore */ }
+    };
+    fetchLive();
+    const iv3 = setInterval(fetchLive, 10000);
+    return () => { clearInterval(iv); clearInterval(iv2); clearInterval(iv3); };
   }, [fetchAll, fetchMyHistory]);
 
-  // Spin wheel when new round has winner
+  // Spin wheel when new round has winner. Reveal banner ONLY after wheel stops.
   useEffect(() => {
     const latest = recentRounds[0];
     if (latest?.winner && latest.round_id !== revealedRoundRef.current) {
       revealedRoundRef.current = latest.round_id;
-      // Find first index of winner in SEGMENTS
       const idx = SEGMENTS.findIndex((s) => s.key === latest.winner);
       if (idx >= 0) {
-        // Target: pointer at top, need segment idx centered at top
-        // Segment i occupies angle [i*SEG_ANGLE .. (i+1)*SEG_ANGLE] starting from -90 (top).
-        // Center of segment idx is at angle (idx + 0.5) * SEG_ANGLE from -90 pointing right.
-        // We want that to be at -90 (top). Rotate by: -((idx + 0.5) * SEG_ANGLE)
-        // Add multiple full rotations for animation feel
         const targetAngle = -((idx + 0.5) * SEG_ANGLE);
         const spins = 5 + Math.random() * 2;
         setRotation((r) => {
           const base = Math.floor(r / 360) * 360;
           return base + spins * 360 + targetAngle;
         });
-        setRevealed({ winner: latest.winner, payout_mult: latest.payout_mult });
-        setTimeout(() => refreshUser(), 4500);
+        // Hide any previous reveal while wheel is spinning
+        setRevealed(null);
+        // Reveal winner banner AFTER spin animation completes (4s CSS transition)
+        setTimeout(() => {
+          setRevealed({ winner: latest.winner, payout_mult: latest.payout_mult });
+          refreshUser();
+        }, 4100);
       }
     }
   }, [recentRounds, refreshUser]);
 
-  // Win celebration: user wins Crazy Time (10x) → confetti + coin clink (once per round)
+  // Win celebration: fires only after banner shows (post-spin)
   useEffect(() => {
     if (!revealed?.winner || !revealedRoundRef.current) return;
     if (winCelebratedRef.current === revealedRoundRef.current) return;
@@ -174,8 +183,8 @@ const CrazyTimePage = () => {
     );
     if (userWin) {
       winCelebratedRef.current = revealedRoundRef.current;
-      // Fire after wheel-spin completes (~4s)
-      setTimeout(() => { fireWinnerConfetti(); playCoinClink(); }, 3800);
+      fireWinnerConfetti();
+      playCoinClink();
     }
   }, [history, revealed]);
 
@@ -235,6 +244,14 @@ const CrazyTimePage = () => {
             <span className="text-xs font-black text-[#4ADE80] tabular-nums">₹{Math.floor(user?.balance || 0)}</span>
           </div>
         </div>
+        {livePlayers !== null && (
+          <div className="px-3 pb-2 flex items-center gap-1.5" style={{ maxWidth: '480px', margin: '0 auto' }}>
+            <span className="inline-block w-2 h-2 rounded-full" style={{ background: '#22C55E', boxShadow: '0 0 8px #22C55E', animation: 'pulse 2s ease-in-out infinite' }} />
+            <span className="text-[10px] font-black tabular-nums text-[#4ADE80] uppercase tracking-widest" data-testid="live-players-count">
+              {livePlayers.toLocaleString('en-IN')} playing now
+            </span>
+          </div>
+        )}
       </header>
 
       <main className="px-3 py-4 space-y-4" style={{ maxWidth: '480px', margin: '0 auto' }}>
@@ -270,6 +287,26 @@ const CrazyTimePage = () => {
               {revealed.winner.toUpperCase()} · {revealed.payout_mult}x
             </div>
           )}
+        </div>
+
+        {/* Latest Results — moved to front (right after wheel) */}
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-yellow-400 mb-1">Latest Results (newest → left)</p>
+          <div className="flex gap-1.5 overflow-x-auto pb-1">
+            {recentRounds.filter(r => r.winner).slice(0, 15).map((r, i) => {
+              const seg = BET_OPTIONS.find(x => x.key === r.winner);
+              return (
+                <div key={i} className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-[10px] font-black text-white"
+                  style={{
+                    background: seg?.color || '#666',
+                    border: i === 0 ? '2.5px solid #FDE047' : '2px solid rgba(0,0,0,0.4)',
+                    boxShadow: i === 0 ? '0 0 12px rgba(255,215,0,0.6)' : 'none',
+                  }}
+                  title={`${r.winner} · ${r.payout_mult}x`}
+                >{seg?.label || '?'}</div>
+              );
+            })}
+          </div>
         </div>
 
         {/* Chip selector */}
@@ -325,21 +362,7 @@ const CrazyTimePage = () => {
           })}
         </div>
 
-        {/* Recent results */}
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-widest text-yellow-400 mb-1">Last 15 Results</p>
-          <div className="flex gap-1.5 overflow-x-auto pb-1">
-            {recentRounds.filter(r => r.winner).slice(0, 15).map((r, i) => {
-              const seg = BET_OPTIONS.find(x => x.key === r.winner);
-              return (
-                <div key={i} className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-[10px] font-black text-white"
-                  style={{ background: seg?.color || '#666', border: '2px solid rgba(0,0,0,0.4)' }}
-                  title={`${r.winner} · ${r.payout_mult}x`}
-                >{seg?.label || '?'}</div>
-              );
-            })}
-          </div>
-        </div>
+        {/* Recent results (removed — now shown at top under 'Latest Results') */}
 
         {/* Live feed */}
         {liveFeed.length > 0 && (
