@@ -158,7 +158,10 @@ const CrazyTimePage = () => {
       const idx = SEGMENTS.findIndex((s) => s.key === latest.winner);
       if (idx >= 0) {
         const targetAngle = -((idx + 0.5) * SEG_ANGLE);
-        const spins = 5 + Math.random() * 2;
+        // IMPORTANT: spins MUST be an integer so the final rotation ends exactly on target.
+        // Fractional spins (e.g. 5.7 × 360) leave a residual offset → wheel visually
+        // stops at the wrong segment even though the backend winner is correct.
+        const spins = 5 + Math.floor(Math.random() * 3);  // 5..7 full turns
         setRotation((r) => {
           const base = Math.floor(r / 360) * 360;
           return base + spins * 360 + targetAngle;
@@ -408,6 +411,11 @@ const CrazyTimePage = () => {
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-[9px] font-black tracking-widest px-2 py-0.5 rounded" style={{ background: statusColor, color: '#0A0A14' }}>{label}</span>
                       <span className="text-[9px] text-gray-400">LB-CT-{String(b.bet_id).slice(-6).toUpperCase()}</span>
+                      {b.bet_count > 1 && (
+                        <span className="text-[9px] font-black px-1.5 py-0.5 rounded ml-auto" style={{ background: '#FDE047', color: '#0A0A14' }}>
+                          {b.bet_count}× BETS
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center justify-between">
                       <div>
@@ -415,7 +423,7 @@ const CrazyTimePage = () => {
                         <p className="text-sm font-black" style={{ color: seg?.color || '#FDE047' }}>{seg?.label || b.segment}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-[9px] text-gray-400">Bet</p>
+                        <p className="text-[9px] text-gray-400">Total Bet {b.bet_count > 1 ? `(${b.bet_count} combined)` : ''}</p>
                         <p className="text-sm font-black text-yellow-300">₹{Math.floor(b.amount)}</p>
                       </div>
                     </div>
