@@ -713,17 +713,6 @@ const DashboardPage = () => {
                 <Menu className="w-5 h-5" />
               </button>
               <MatkaLogo size="sm" />
-              {/* Live Online Users pill — small green dot + count. Hidden if fetch hasn't landed yet. */}
-              {onlineCount !== null && (
-                <div
-                  data-testid="online-users-pill"
-                  className="flex items-center gap-1.5 px-2 py-1 rounded-full"
-                  style={{ background: 'rgba(34, 197, 94, 0.12)', border: '1px solid rgba(74, 222, 128, 0.45)' }}
-                >
-                  <span className="inline-block w-2 h-2 rounded-full" style={{ background: '#22C55E', boxShadow: '0 0 8px #22C55E' }} />
-                  <span className="text-[10px] font-black tabular-nums text-[#4ADE80] leading-none">{onlineCount.toLocaleString('en-IN')}</span>
-                </div>
-              )}
             </div>
 
             <div className="flex items-center gap-2">

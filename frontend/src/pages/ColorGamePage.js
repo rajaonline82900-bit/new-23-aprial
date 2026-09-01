@@ -84,6 +84,7 @@ const ColorGamePage = () => {
   const [rotation, setRotation] = useState(0);
   const [livePlayers, setLivePlayers] = useState(null);
   const [bigWin, setBigWin] = useState(null);
+  const [visibleRoundIds, setVisibleRoundIds] = useState(new Set());
   const revealedRoundRef = useRef(null);
   const initializedRef = useRef(false);
   const winCelebratedRef = useRef(null);
@@ -111,6 +112,7 @@ const ColorGamePage = () => {
           if (idx >= 0) setRotation(-((idx + 0.5) * SEG_ANGLE));
           setReveal({ round_id: rounds[0].round_id, color: rounds[0].color });
         }
+        setVisibleRoundIds(new Set(rounds.filter(r => r.color).map(r => r.round_id)));
       }
       setRecentRounds(rounds);
       setLiveFeed(feed.data.feed || []);
@@ -163,6 +165,11 @@ const ColorGamePage = () => {
       setReveal({ round_id: latest.round_id, color: null });
       setTimeout(() => {
         setReveal({ round_id: latest.round_id, color: latest.color });
+        setVisibleRoundIds((prev) => {
+          const next = new Set(prev);
+          next.add(latest.round_id);
+          return next;
+        });
         refreshUser();
       }, 4100);
     }
@@ -293,7 +300,7 @@ const ColorGamePage = () => {
         <div>
           <p className="text-[10px] font-black uppercase tracking-widest text-yellow-400 mb-1">Latest Results (newest → left)</p>
           <div className="flex gap-1.5 overflow-x-auto pb-1">
-            {recentRounds.filter(r => r.color).slice(0, 15).map((r, i) => (
+            {recentRounds.filter(r => r.color && visibleRoundIds.has(r.round_id)).slice(0, 15).map((r, i) => (
               <div key={i} className="shrink-0 w-10 h-10 rounded-full"
                 style={{
                   background: `radial-gradient(circle at 35% 30%, #FFFFFF 0%, ${COLOR_HEX[r.color]} 60%, ${COLOR_HEX[r.color]} 100%)`,
@@ -349,8 +356,8 @@ const ColorGamePage = () => {
                 )}
                 {/* My bet badge */}
                 {myBet > 0 && (
-                  <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-full text-[9px] font-black tabular-nums"
-                    style={{ background: '#0A0A14', color: '#FDE047', border: '1px solid #FDE047' }} data-testid={`my-bet-${c.key}`}>
+                  <div className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-[10px] font-black tabular-nums whitespace-nowrap"
+                    style={{ background: '#0A0A14', color: '#FDE047', border: '1.5px solid #FDE047', boxShadow: '0 2px 6px rgba(0,0,0,0.6)' }} data-testid={`my-bet-${c.key}`}>
                     You: ₹{Math.floor(myBet)}
                   </div>
                 )}

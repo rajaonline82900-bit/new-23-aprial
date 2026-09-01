@@ -93,9 +93,25 @@ const CrazyTimePage = () => {
   const [revealed, setRevealed] = useState(null);
   const [livePlayers, setLivePlayers] = useState(null);
   const [bigWin, setBigWin] = useState(null);
+  // Set of round_ids already visible in Latest Results (i.e., wheel has finished
+  // spinning for that round). A newly-completed round is added ONLY after the
+  // 4-second wheel animation ends so the strip doesn't spoil the winner.
+  const [visibleRoundIds, setVisibleRoundIds] = useState(new Set());
   const revealedRoundRef = useRef(null);
   const initializedRef = useRef(false);
   const winCelebratedRef = useRef(null);
+
+  // My aggregated bet per segment for the CURRENT round (frontend sum in case
+  // the /history refresh lags). Backend also aggregates on the server side.
+  const myBetsThisRound = React.useMemo(() => {
+    const map = {};
+    history.forEach((b) => {
+      if (b.round_id === current?.round_id) {
+        map[b.segment] = (map[b.segment] || 0) + Number(b.amount || 0);
+      }
+    });
+    return map;
+  }, [history, current?.round_id]);
 
   const token = localStorage.getItem('matka11_token') || '';
   const authH = { headers: { Authorization: `Bearer ${token}` } };
@@ -118,10 +134,12 @@ const CrazyTimePage = () => {
         if (rounds[0]?.winner) {
           revealedRoundRef.current = rounds[0].round_id;
           // Align wheel to that winner without animation feel
-          const idx = SEGMENTS.findIndex((s) => s.key === rounds[0].winner);
+          const idx = SEGMENTS.findIndex((s) => s.key === String(rounds[0].winner));
           if (idx >= 0) setRotation(-((idx + 0.5) * SEG_ANGLE));
           setRevealed({ winner: rounds[0].winner, payout_mult: rounds[0].payout_mult });
         }
+        // On first mount, all fetched rounds are already-completed → mark them all visible
+        setVisibleRoundIds(new Set(rounds.filter(r => r.winner).map(r => r.round_id)));
       }
       setRecentRounds(rounds);
       setLiveFeed(feed.data.feed || []);
@@ -153,7 +171,7 @@ const CrazyTimePage = () => {
     return () => { clearInterval(iv); clearInterval(iv2); clearInterval(iv3); };
   }, [fetchAll, fetchMyHistory]);
 
-  // Spin wheel when new round has winner. Reveal banner ONLY after wheel stops.
+  // Spin wheel when new round has winner. Reveal banner + Latest Results ONLY after wheel stops.
   useEffect(() => {
     const latest = recentRounds[0];
     if (latest?.winner && latest.round_id !== revealedRoundRef.current) {
@@ -161,21 +179,21 @@ const CrazyTimePage = () => {
       const idx = SEGMENTS.findIndex((s) => s.key === String(latest.winner));
       if (idx >= 0) {
         const targetAngle = -((idx + 0.5) * SEG_ANGLE);
-        // IMPORTANT: spins MUST be an integer so final rotation ends EXACTLY on target.
-        // Also normalise the base rotation to its exact multiple of 360 so any
-        // accumulated float drift from earlier spins can't offset the pointer.
-        const spins = 5 + Math.floor(Math.random() * 3);  // 5..7 full turns
+        const spins = 5 + Math.floor(Math.random() * 3);  // 5..7 full integer turns
         setRotation((r) => {
-          // Round to nearest full turn to eliminate any residual drift.
           const currentTurns = Math.round(r / 360);
-          const base = currentTurns * 360;
-          return base + spins * 360 + targetAngle;
+          return currentTurns * 360 + spins * 360 + targetAngle;
         });
         // Hide any previous reveal while wheel is spinning
         setRevealed(null);
-        // Reveal winner banner AFTER spin animation completes (4s CSS transition)
+        // Reveal winner banner + add to Latest Results AFTER spin animation completes.
         setTimeout(() => {
           setRevealed({ winner: latest.winner, payout_mult: latest.payout_mult });
+          setVisibleRoundIds((prev) => {
+            const next = new Set(prev);
+            next.add(latest.round_id);
+            return next;
+          });
           refreshUser();
         }, 4100);
       }
@@ -217,18 +235,6 @@ const CrazyTimePage = () => {
 
   const isBetting = current?.phase === 'betting';
   const remaining = current?.remaining || 0;
-
-  // User bets in current round — total per segment
-  const myBetsThisRound = React.useMemo(() => {
-    const map = {};
-    if (!current?.round_id) return map;
-    history.forEach((b) => {
-      if (b.round_id === current.round_id) {
-        map[b.segment] = (map[b.segment] || 0) + Number(b.amount || 0);
-      }
-    });
-    return map;
-  }, [history, current?.round_id]);
 
   return (
     <div className="min-h-screen pb-24" style={{
@@ -309,7 +315,7 @@ const CrazyTimePage = () => {
         <div>
           <p className="text-[10px] font-black uppercase tracking-widest text-yellow-400 mb-1">Latest Results (newest → left)</p>
           <div className="flex gap-1.5 overflow-x-auto pb-1">
-            {recentRounds.filter(r => r.winner).slice(0, 15).map((r, i) => {
+            {recentRounds.filter(r => r.winner && visibleRoundIds.has(r.round_id)).slice(0, 15).map((r, i) => {
               const seg = BET_OPTIONS.find(x => x.key === r.winner);
               return (
                 <div key={i} className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-[10px] font-black text-white"
@@ -366,9 +372,9 @@ const CrazyTimePage = () => {
                   </div>
                 )}
                 {myBet > 0 && (
-                  <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded-full text-[8px] font-black tabular-nums whitespace-nowrap"
-                    style={{ background: '#0A0A14', color: '#FDE047', border: '1px solid #FDE047' }} data-testid={`my-bet-${b.key}`}>
-                    ₹{Math.floor(myBet)}
+                  <div className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-[10px] font-black tabular-nums whitespace-nowrap"
+                    style={{ background: '#0A0A14', color: '#FDE047', border: '1.5px solid #FDE047', boxShadow: '0 2px 6px rgba(0,0,0,0.6)' }} data-testid={`my-bet-${b.key}`}>
+                    You: ₹{Math.floor(myBet)}
                   </div>
                 )}
                 <span className="text-white font-black text-lg tracking-wider" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>{b.label}</span>

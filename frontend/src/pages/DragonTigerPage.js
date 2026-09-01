@@ -154,6 +154,7 @@ const DragonTigerPage = () => {
   const [lockFlash, setLockFlash] = useState(false);
   const [livePlayers, setLivePlayers] = useState(null);
   const [bigWin, setBigWin] = useState(null);
+  const [visibleRoundIds, setVisibleRoundIds] = useState(new Set());
   const prevPhaseRef = useRef(null);
   const winCelebratedRef = useRef(null);
 
@@ -207,10 +208,26 @@ const DragonTigerPage = () => {
       setFlip({ d: false, t: false });
       setTimeout(() => { setFlip((f) => ({ ...f, d: true })); playCardFlip(); }, 200);
       setTimeout(() => { setFlip((f) => ({ ...f, t: true })); playCardFlip(); }, 900);
-      // Reset flip for next round after 4s
-      setTimeout(() => { setFlip({ d: false, t: false }); refreshUser(); }, 4500);
+      // Reset flip for next round after 4s AND now reveal in Latest Results strip
+      setTimeout(() => {
+        setFlip({ d: false, t: false });
+        setVisibleRoundIds((prev) => {
+          const next = new Set(prev);
+          next.add(latest.round_id);
+          return next;
+        });
+        refreshUser();
+      }, 4500);
     }
   }, [recentRounds, revealCards.round_id, refreshUser]);
+
+  // On first mount, backfill visibleRoundIds with already-completed rounds
+  useEffect(() => {
+    if (recentRounds.length > 0 && visibleRoundIds.size === 0) {
+      setVisibleRoundIds(new Set(recentRounds.filter(r => r.winner).map(r => r.round_id)));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recentRounds.length > 0]);
 
   // Detect timer transition betting → reveal → lock flash + click sound
   useEffect(() => {
@@ -380,7 +397,7 @@ const DragonTigerPage = () => {
         <div>
           <p className="text-[10px] font-black uppercase tracking-widest text-yellow-400 mb-1">Latest Results (newest → left)</p>
           <div className="flex gap-1.5 overflow-x-auto pb-1">
-            {recentRounds.filter(r => r.winner).slice(0, 10).map((r, i) => (
+            {recentRounds.filter(r => r.winner && visibleRoundIds.has(r.round_id)).slice(0, 10).map((r, i) => (
               <div key={i} className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-black"
                 style={{
                   background: r.winner === 'dragon' ? '#DC2626' : r.winner === 'tiger' ? '#F97316' : '#FFD700',
@@ -436,8 +453,8 @@ const DragonTigerPage = () => {
                   </div>
                 )}
                 {myBet > 0 && (
-                  <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-full text-[9px] font-black tabular-nums"
-                    style={{ background: '#0A0A14', color: '#FDE047', border: '1px solid #FDE047' }} data-testid={`my-bet-${opt.key}`}>
+                  <div className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-[10px] font-black tabular-nums whitespace-nowrap"
+                    style={{ background: '#0A0A14', color: '#FDE047', border: '1.5px solid #FDE047', boxShadow: '0 2px 6px rgba(0,0,0,0.6)' }} data-testid={`my-bet-${opt.key}`}>
                     You: ₹{Math.floor(myBet)}
                   </div>
                 )}
