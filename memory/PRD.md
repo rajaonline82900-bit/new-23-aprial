@@ -80,14 +80,21 @@
 - **Registered**: `chicken_road_router` in `server.py`, route `/chicken-road` in `App.js`, card in dashboard
 - **Verified**: E2E flow via curl — balance 4900 → START -100 → STEP 1.10x → CASHOUT +110 → balance 4910 ✓; also crash scenario at step 6 correctly settles
 
+## ✅ Feb 2026 — P0 Refinements (Session 39)
+- **Bet Aggregation (Atomic)**: All 4 casino games — Dragon Tiger, Crazy Time, Color Game, Coin Toss — now aggregate bets. Same user + same round + same option → single MongoDB document with `$inc: {amount, bet_count}` via atomic `update_one({...}, upsert=True, $setOnInsert:{...})`. Verified with 3 concurrent bets → 1 ticket, amount summed, bet_count=3.
+- **Live Bets Feed with Fake Indian Names**: Dragon Tiger, Crazy Time, Color Game `/live-feed` endpoints now return a mix of real (name masked as `Abc***`) and 20-30 fake Indian names (Rohit, Priya, Vikram, Sneha…) with `fake: bool` flag on each item.
+- **Global Online Users Counter**: New `GET /api/online-users` returns `{count, real}`. Count = real users active last 5 min + randomized baseline ~1130-1470. Rendered as green pulsing pill next to logo on `DashboardPage`.
+- **Crazy Time Wheel**: Fixed stale-winner spin on mount. `initializedRef` marks the latest completed round as already-revealed on first fetch so the wheel does NOT auto-spin for historical rounds. Rotation math (`-((idx + 0.5) * 36°) + 5 full spins`) confirmed correct.
+- **Update Banner Removed**: `UpdateAvailableBanner` no longer rendered inside `App.js`.
+
 ## Games currently in codebase (7 total)
-1. Gali/Disawar (Kalyan-style single number bets)
-2. Kalyan Matka (Jodi/Panna)
-3. Aviator (crash multiplier)
-4. Coin Toss (Head/Tail)
+1. Gali/Disawar
+2. Kalyan Matka
+3. Aviator
+4. Coin Toss
 5. Dragon Tiger (30s cards)
-6. Color Prediction (30s Wingo)
-7. **Chicken Road (NEW — Feb 2026)**
+6. Color Prediction (30s wheel — Red/White/Orange, all 3x)
+7. Crazy Time (30s money wheel, 10 numbers, all 10x)
 
 ## Credentials
 - Admin: `admin@sattamatka.com` / `Admin@123`

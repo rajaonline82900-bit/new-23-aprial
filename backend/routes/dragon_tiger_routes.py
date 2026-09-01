@@ -131,20 +131,28 @@ async def place_bet(bet: DTBet, request: Request):
         raise HTTPException(400, 'insufficient balance')
     # Deduct
     await db.users.update_one({'_id': ObjectId(user['_id'])}, {'$inc': {'balance': -bet.amount}})
+    # Atomic aggregation upsert: same user + round + side → single ticket.
     bet_id = secrets.token_hex(6)
-    doc = {
-        'bet_id': bet_id,
-        'round_id': cache['round_id'],
-        'user_id': user['_id'],
-        'user_phone': user_doc.get('phone', ''),
-        'user_name': user_doc.get('name', 'Player'),
-        'side': bet.side,
-        'amount': bet.amount,
-        'status': 'pending',
-        'created_at': datetime.now(timezone.utc).isoformat(),
-    }
-    await db.dragon_tiger_bets.insert_one(doc)
-    return {'ok': True, 'bet_id': bet_id}
+    now_iso = datetime.now(timezone.utc).isoformat()
+    await db.dragon_tiger_bets.update_one(
+        {'round_id': cache['round_id'], 'user_id': user['_id'], 'side': bet.side},
+        {
+            '$inc': {'amount': bet.amount, 'bet_count': 1},
+            '$setOnInsert': {
+                'bet_id': bet_id,
+                'user_phone': user_doc.get('phone', ''),
+                'user_name': user_doc.get('name', 'Player'),
+                'status': 'pending',
+                'created_at': now_iso,
+            },
+        },
+        upsert=True,
+    )
+    doc = await db.dragon_tiger_bets.find_one(
+        {'round_id': cache['round_id'], 'user_id': user['_id'], 'side': bet.side},
+        {'bet_id': 1}
+    )
+    return {'ok': True, 'bet_id': doc.get('bet_id') if doc else bet_id}
 
 
 @router.get('/dragon-tiger/history')
@@ -168,17 +176,39 @@ async def recent_rounds(limit: int = 10):
     return {'rounds': rounds}
 
 
+FAKE_NAMES_DT = [
+    "Rohit", "Priya", "Vikram", "Sneha", "Amit", "Kavya", "Rahul", "Anjali",
+    "Karan", "Divya", "Suresh", "Meena", "Arjun", "Pooja", "Manoj", "Ritu",
+    "Sanjay", "Neha", "Rajesh", "Isha", "Deepak", "Nisha", "Aakash", "Sonia",
+    "Nitin", "Preeti", "Harsh", "Shalini", "Ravi", "Anita",
+]
+FAKE_AMOUNTS_DT = [50, 100, 200, 500, 1000, 2000]
+FAKE_SIDES_DT = ["dragon", "dragon", "tiger", "tiger", "tie"]  # tie less frequent
+
+
 @router.get('/dragon-tiger/live-feed')
 async def live_feed(limit: int = 12):
+    real = []
     cursor = db.dragon_tiger_bets.find({}).sort('created_at', -1).limit(limit)
-    feed = []
     async for b in cursor:
-        feed.append({
-            'name': (b.get('user_name') or 'Player')[:3] + '***',
+        _n = (b.get('user_name') or 'Player')
+        real.append({
+            'name': _n[:3] + '***' if len(_n) > 3 else _n,
             'side': b.get('side'),
             'amount': b.get('amount'),
+            'fake': False,
         })
-    return {'feed': feed}
+    # Mix in fake bets
+    fake_count = max(0, limit - len(real))
+    fake = [{
+        'name': random.choice(FAKE_NAMES_DT),
+        'side': random.choice(FAKE_SIDES_DT),
+        'amount': random.choice(FAKE_AMOUNTS_DT),
+        'fake': True,
+    } for _ in range(fake_count)]
+    combined = real + fake
+    random.shuffle(combined)
+    return {'feed': combined[:limit]}
 
 
 async def _settle_round(round_id: str, dragon: dict, tiger: dict, winner: str):

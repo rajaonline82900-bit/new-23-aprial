@@ -89,6 +89,7 @@ const CrazyTimePage = () => {
   const [rotation, setRotation] = useState(0);
   const [revealed, setRevealed] = useState(null);
   const revealedRoundRef = useRef(null);
+  const initializedRef = useRef(false);
 
   const token = localStorage.getItem('matka11_token') || '';
   const authH = { headers: { Authorization: `Bearer ${token}` } };
@@ -103,7 +104,20 @@ const CrazyTimePage = () => {
       ]);
       setConfig(c.data);
       setCurrent(cur.data);
-      setRecentRounds(rec.data.rounds || []);
+      const rounds = rec.data.rounds || [];
+      // On first load: mark the latest completed round as already-revealed so
+      // the wheel does NOT spin on mount for a stale historical winner.
+      if (!initializedRef.current) {
+        initializedRef.current = true;
+        if (rounds[0]?.winner) {
+          revealedRoundRef.current = rounds[0].round_id;
+          // Align wheel to that winner without animation feel
+          const idx = SEGMENTS.findIndex((s) => s.key === rounds[0].winner);
+          if (idx >= 0) setRotation(-((idx + 0.5) * SEG_ANGLE));
+          setRevealed({ winner: rounds[0].winner, payout_mult: rounds[0].payout_mult });
+        }
+      }
+      setRecentRounds(rounds);
       setLiveFeed(feed.data.feed || []);
     } catch { /* noop */ }
   }, []);

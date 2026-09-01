@@ -308,7 +308,6 @@ function App() {
           {!splashDone && <LuckyBetSplash onDone={() => setSplashDone(true)} />}
           <AppRoutes />
           <AuthedOverlays />
-          <UpdateAvailableBanner />
           <Toaster 
             position="bottom-right"
             toastOptions={{

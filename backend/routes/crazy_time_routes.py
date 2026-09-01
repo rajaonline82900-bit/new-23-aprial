@@ -104,19 +104,27 @@ async def place_bet(bet: CTBet, request: Request):
     if not user_doc or user_doc.get('balance', 0) < bet.amount:
         raise HTTPException(400, 'insufficient balance')
     await db.users.update_one({'_id': ObjectId(user['_id'])}, {'$inc': {'balance': -bet.amount}})
+    # Atomic aggregation upsert: same user + round + segment → single ticket.
     bet_id = secrets.token_hex(6)
-    doc = {
-        'bet_id': bet_id,
-        'round_id': cache['round_id'],
-        'user_id': user['_id'],
-        'user_name': user_doc.get('name', 'Player'),
-        'segment': bet.segment,
-        'amount': bet.amount,
-        'status': 'pending',
-        'created_at': datetime.now(timezone.utc).isoformat(),
-    }
-    await db.crazy_time_bets.insert_one(doc)
-    return {'ok': True, 'bet_id': bet_id}
+    now_iso = datetime.now(timezone.utc).isoformat()
+    await db.crazy_time_bets.update_one(
+        {'round_id': cache['round_id'], 'user_id': user['_id'], 'segment': bet.segment},
+        {
+            '$inc': {'amount': bet.amount, 'bet_count': 1},
+            '$setOnInsert': {
+                'bet_id': bet_id,
+                'user_name': user_doc.get('name', 'Player'),
+                'status': 'pending',
+                'created_at': now_iso,
+            },
+        },
+        upsert=True,
+    )
+    doc = await db.crazy_time_bets.find_one(
+        {'round_id': cache['round_id'], 'user_id': user['_id'], 'segment': bet.segment},
+        {'bet_id': 1}
+    )
+    return {'ok': True, 'bet_id': doc.get('bet_id') if doc else bet_id}
 
 
 @router.get('/crazy-time/history')
@@ -140,14 +148,32 @@ async def recent_rounds(limit: int = 15):
     return {'rounds': rounds}
 
 
+FAKE_NAMES_CT = [
+    "Rohit", "Priya", "Vikram", "Sneha", "Amit", "Kavya", "Rahul", "Anjali",
+    "Karan", "Divya", "Suresh", "Meena", "Arjun", "Pooja", "Manoj", "Ritu",
+    "Sanjay", "Neha", "Rajesh", "Isha", "Deepak", "Nisha", "Aakash", "Sonia",
+    "Nitin", "Preeti", "Harsh", "Shalini", "Ravi", "Anita",
+]
+FAKE_AMOUNTS_CT = [20, 50, 100, 200, 500, 1000]
+
+
 @router.get('/crazy-time/live-feed')
 async def live_feed(limit: int = 10):
+    real = []
     cursor = db.crazy_time_bets.find({}).sort('created_at', -1).limit(limit)
-    feed = []
     async for b in cursor:
-        name = b.get('user_name') or 'Player'
-        feed.append({'name': name[:3] + '***', 'segment': b.get('segment'), 'amount': b.get('amount')})
-    return {'feed': feed}
+        _n = b.get('user_name') or 'Player'
+        real.append({'name': _n[:3] + '***' if len(_n) > 3 else _n, 'segment': b.get('segment'), 'amount': b.get('amount'), 'fake': False})
+    fake_count = max(0, limit - len(real))
+    fake = [{
+        'name': random.choice(FAKE_NAMES_CT),
+        'segment': random.choice(SEG_NAMES),
+        'amount': random.choice(FAKE_AMOUNTS_CT),
+        'fake': True,
+    } for _ in range(fake_count)]
+    combined = real + fake
+    random.shuffle(combined)
+    return {'feed': combined[:limit]}
 
 
 async def _settle_round(round_id: str, winner: str):

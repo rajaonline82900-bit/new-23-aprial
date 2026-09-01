@@ -157,26 +157,35 @@ async def coin_place_bet(request: Request):
         "created_at": datetime.now(timezone.utc),
     })
 
-    bet_doc = {
-        "_id": uuid.uuid4().hex,
-        "round_id": r["_id"],
-        "user_id": user["_id"],
-        "name": user.get("name") or user.get("phone", "Player"),
-        "side": side,
-        "amount": amount,
-        "status": "pending",
-        "payout": 0.0,
-        "commission_pct": cfg["commission_pct"],
-        "created_at": datetime.now(timezone.utc),
-    }
-    await db.coin_bets.insert_one(bet_doc)
+    # Atomic aggregation upsert: same user + round + side → single ticket.
+    bet_id_new = uuid.uuid4().hex
+    await db.coin_bets.update_one(
+        {"round_id": r["_id"], "user_id": user["_id"], "side": side},
+        {
+            "$inc": {"amount": amount, "bet_count": 1},
+            "$setOnInsert": {
+                "_id": bet_id_new,
+                "name": user.get("name") or user.get("phone", "Player"),
+                "status": "pending",
+                "payout": 0.0,
+                "commission_pct": cfg["commission_pct"],
+                "created_at": datetime.now(timezone.utc),
+            },
+        },
+        upsert=True,
+    )
+    existing_doc = await db.coin_bets.find_one(
+        {"round_id": r["_id"], "user_id": user["_id"], "side": side},
+        {"_id": 1}
+    )
+    bet_id = existing_doc["_id"] if existing_doc else bet_id_new
 
     # Update round totals
     field = "total_head" if side == "head" else "total_tail"
     await db.coin_rounds.update_one({"_id": r["_id"]}, {"$inc": {field: amount}})
 
     # Return success — frontend will refresh balance via /auth/me
-    return {"ok": True, "bet_id": bet_doc["_id"], "amount": amount, "side": side}
+    return {"ok": True, "bet_id": bet_id, "amount": amount, "side": side}
 
 
 # ---------- My active bet(s) in current round ----------
@@ -187,10 +196,19 @@ async def coin_my_current(request: Request):
     if not r:
         return {"bets": []}
     cur = db.coin_bets.find({"round_id": r["_id"], "user_id": user["_id"]}).sort("created_at", 1)
-    bets = await cur.to_list(20)
-    for b in bets:
-        b.pop("user_id", None)
-        b["created_at"] = b["created_at"].isoformat() if isinstance(b["created_at"], datetime) else b.get("created_at")
+    raw = await cur.to_list(20)
+    bets = []
+    for b in raw:
+        bets.append({
+            "_id": str(b.get("_id", "")),
+            "round_id": b.get("round_id"),
+            "side": b.get("side"),
+            "amount": b.get("amount", 0.0),
+            "bet_count": b.get("bet_count", 1),
+            "status": b.get("status", "pending"),
+            "payout": b.get("payout", 0.0),
+            "created_at": b["created_at"].isoformat() if isinstance(b.get("created_at"), datetime) else b.get("created_at"),
+        })
     return {"bets": bets, "round_id": r["_id"]}
 
 

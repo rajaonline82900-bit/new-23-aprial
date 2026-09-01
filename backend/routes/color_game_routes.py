@@ -104,20 +104,28 @@ async def place_bet(bet: ColorBet, request: Request):
     if not user_doc or user_doc.get('balance', 0) < bet.amount:
         raise HTTPException(400, 'insufficient balance')
     await db.users.update_one({'_id': ObjectId(user['_id'])}, {'$inc': {'balance': -bet.amount}})
+    # Atomic aggregation upsert: same user + round + side → single ticket.
     bet_id = secrets.token_hex(6)
-    doc = {
-        'bet_id': bet_id,
-        'round_id': cache['round_id'],
-        'user_id': user['_id'],
-        'user_phone': user_doc.get('phone', ''),
-        'user_name': user_doc.get('name', 'Player'),
-        'side': bet.side,
-        'amount': bet.amount,
-        'status': 'pending',
-        'created_at': datetime.now(timezone.utc).isoformat(),
-    }
-    await db.color_game_bets.insert_one(doc)
-    return {'ok': True, 'bet_id': bet_id}
+    now_iso = datetime.now(timezone.utc).isoformat()
+    await db.color_game_bets.update_one(
+        {'round_id': cache['round_id'], 'user_id': user['_id'], 'side': bet.side},
+        {
+            '$inc': {'amount': bet.amount, 'bet_count': 1},
+            '$setOnInsert': {
+                'bet_id': bet_id,
+                'user_phone': user_doc.get('phone', ''),
+                'user_name': user_doc.get('name', 'Player'),
+                'status': 'pending',
+                'created_at': now_iso,
+            },
+        },
+        upsert=True,
+    )
+    doc = await db.color_game_bets.find_one(
+        {'round_id': cache['round_id'], 'user_id': user['_id'], 'side': bet.side},
+        {'bet_id': 1}
+    )
+    return {'ok': True, 'bet_id': doc.get('bet_id') if doc else bet_id}
 
 
 @router.get('/color-game/history')
@@ -141,18 +149,32 @@ async def recent_rounds(limit: int = 10):
     return {'rounds': rounds}
 
 
+FAKE_NAMES_CG = [
+    "Rohit", "Priya", "Vikram", "Sneha", "Amit", "Kavya", "Rahul", "Anjali",
+    "Karan", "Divya", "Suresh", "Meena", "Arjun", "Pooja", "Manoj", "Ritu",
+    "Sanjay", "Neha", "Rajesh", "Isha", "Deepak", "Nisha", "Aakash", "Sonia",
+    "Nitin", "Preeti", "Harsh", "Shalini", "Ravi", "Anita",
+]
+FAKE_AMOUNTS_CG = [20, 50, 100, 200, 500, 1000]
+
+
 @router.get('/color-game/live-feed')
 async def live_feed(limit: int = 12):
+    real = []
     cursor = db.color_game_bets.find({}).sort('created_at', -1).limit(limit)
-    feed = []
     async for b in cursor:
-        name = b.get('user_name') or 'Player'
-        feed.append({
-            'name': name[:3] + '***',
-            'side': b.get('side'),
-            'amount': b.get('amount'),
-        })
-    return {'feed': feed}
+        _n = b.get('user_name') or 'Player'
+        real.append({'name': _n[:3] + '***' if len(_n) > 3 else _n, 'side': b.get('side'), 'amount': b.get('amount'), 'fake': False})
+    fake_count = max(0, limit - len(real))
+    fake = [{
+        'name': random.choice(FAKE_NAMES_CG),
+        'side': random.choice(['red', 'white', 'orange']),
+        'amount': random.choice(FAKE_AMOUNTS_CG),
+        'fake': True,
+    } for _ in range(fake_count)]
+    combined = real + fake
+    random.shuffle(combined)
+    return {'feed': combined[:limit]}
 
 
 async def _settle_round(round_id: str, color: str):

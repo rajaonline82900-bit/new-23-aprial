@@ -10,6 +10,7 @@ import aiohttp
 from database import db
 from auth import get_current_user
 from config import IST, IMB_API_TOKEN, IMB_API_URL, UPLOADS_PATH
+from storage_utils import put_object
 from models import DepositRequest, WithdrawRequest
 
 router = APIRouter()
@@ -460,14 +461,12 @@ async def upload_scanner(file: UploadFile = File(...), request: Request = None):
 
     ext = file.filename.split(".")[-1] if "." in file.filename else "png"
     filename = f"{uuid.uuid4()}.{ext}"
-    filepath = os.path.join(UPLOADS_PATH, filename)
 
     content = await file.read()
     if len(content) > 5 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="फाइल 5MB से बड़ी नहीं होनी चाहिए")
 
-    with open(filepath, "wb") as f:
-        f.write(content)
+    put_object(filename, content, file.content_type or "image/png")
 
     return {"url": f"/api/uploads/{filename}"}
 

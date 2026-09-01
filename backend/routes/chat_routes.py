@@ -7,6 +7,7 @@ import os
 from database import db
 from auth import get_current_user, get_admin_user
 from config import UPLOADS_PATH
+from storage_utils import put_object
 from models import ChatMessageSend
 
 router = APIRouter()
@@ -65,12 +66,10 @@ async def upload_chat_file(file: UploadFile = File(...), request: Request = None
     if ext not in allowed:
         raise HTTPException(status_code=400, detail="File type not allowed")
     filename = f"chat_{uuid.uuid4()}.{ext}"
-    filepath = os.path.join(UPLOADS_PATH, filename)
     content = await file.read()
     if len(content) > 10 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="File too large (max 10MB)")
-    with open(filepath, "wb") as f:
-        f.write(content)
+    put_object(filename, content, file.content_type or "application/octet-stream")
     return {"url": f"/api/uploads/{filename}"}
 
 

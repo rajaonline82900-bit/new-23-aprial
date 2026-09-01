@@ -92,11 +92,50 @@ async def get_app_version():
     return {"version": APP_BUILD_VERSION}
 
 
-app.include_router(api_router)
+# ---------- Global Online Users (real recent activity + fake baseline) ----------
+import random as _rand
+_ONLINE_BASE = 1250   # fake baseline so counter always feels active
 
-# Serve uploaded files (use relative path so it works on any deployment)
+
+@api_router.get("/online-users")
+async def get_online_users():
+    """Return an approximate live-user count.
+    Base = real users active in last 5 min via /auth/me heartbeat, plus a randomised
+    fake baseline that drifts around ~1200-1400 so the counter always looks busy.
+    """
+    from datetime import timedelta
+    cutoff = datetime.now(timezone.utc) - timedelta(minutes=5)
+    try:
+        real = await db.users.count_documents({"last_active": {"$gte": cutoff}})
+    except Exception:
+        real = 0
+    fake = _ONLINE_BASE + _rand.randint(-120, 220)
+    return {"count": real + fake, "real": real}
+
+
+# Serve uploaded files: new files come from Emergent Object Storage, but
+# legacy files still live on disk during transition — try local first, fall
+# back to storage.
 from config import UPLOADS_PATH
-app.mount("/api/uploads", StaticFiles(directory=UPLOADS_PATH), name="uploads")
+from storage_utils import get_object as storage_get
+
+
+@api_router.get("/uploads/{filename:path}")
+async def serve_upload(filename: str):
+    from starlette.responses import Response, FileResponse
+    import os as _os
+    local = _os.path.join(UPLOADS_PATH, filename)
+    if _os.path.isfile(local):
+        return FileResponse(local)
+    try:
+        data, ctype = storage_get(filename)
+        return Response(content=data, media_type=ctype)
+    except Exception:
+        from fastapi import HTTPException as _E
+        raise _E(status_code=404, detail="Not Found")
+
+
+app.include_router(api_router)
 
 
 @app.on_event("startup")
