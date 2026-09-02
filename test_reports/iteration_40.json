@@ -1,0 +1,32 @@
+{
+  "summary": "PREVIEW ENVIRONMENT IS 100% FUNCTIONAL. Ran 8 backend tests (all passed) + full UI flow of admin login/panel. App loads (splash + auth), admin login API returns valid JWT, admin panel UI renders with all stats cards + tabs (गली/कल्याण/जंतरी/सेटिंग्स/etc), payment-gateway GET/POST toggle works for both imb & trustope, wallet deposit correctly routes to Trustope when active (returns Trustope-shaped response), and Crazy Time settled correctly (10 bets placed on segments 1-10, exactly 1 won with payout ₹200 = ₹20×10x, 9 lost). Conclusion: code is fine — the user's VPS deployment is the problem, not the codebase.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "AdminLoginPage", "issues": ["React console warning: 'Cannot update a component (BrowserRouter) while rendering a different component (AdminLoginPage)' — likely a setState during render / navigate() call. Not blocking, login still works."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter40_deploy_verify.py",
+    "/app/test_reports/pytest/iter40_results.xml"
+  ],
+  "action_items": [
+    "None required for preview. Tell user: preview works end-to-end → VPS deployment side has issue (env vars, build output, nginx routing, MongoDB connection, or REACT_APP_BACKEND_URL misconfig on their build).",
+    "Optional: fix AdminLoginPage setState-during-render warning (guard navigate() inside useEffect)."
+  ],
+  "critical_code_review_comments": [
+    "AdminLoginPage triggers setState/navigate during render (React warning). Move any post-login redirect into useEffect watching auth state.",
+    "Wallet deposit endpoint requires origin_url in body — front-end must always pass window.location.origin. Confirmed working in preview but VPS builds must ensure REACT_APP_BACKEND_URL is set at build time (baked into bundle).",
+    "Non-atomic bet aggregation (previously noted in iter39) — still applicable but not a regression."
+  ],
+  "updated_files": ["/app/backend/tests/test_iter40_deploy_verify.py"],
+  "success_rate": {"backend": "100% (8/8)", "frontend": "100% (admin flow verified end-to-end)"},
+  "test_credentials": "admin@sattamatka.com / Admin@123 via POST /api/auth/admin/login",
+  "seed_data_creation": "Auto top-up admin balance +₹5000 via direct Mongo if <₹500 (for Crazy Time bets).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Preview is confirmed healthy. If retesting VPS-specific issues, need SSH/logs from user's Hostinger VPS — cannot reproduce here. Backend test file test_iter40_deploy_verify.py is reusable regression suite for these 4 flows.",
+  "rca of the issue": "User's complaint 'App aur Admin panel dono kaam nahi kar rahe' does NOT reproduce in preview. Preview URL https://matka-numbers-bet.preview.emergentagent.com works fully: splash → auth, admin login → /admin panel with stats+tabs, all recent features (payment gateway toggle, Trustope routing, Crazy Time fixes) working. Root cause is on user's VPS deploy — most likely: (1) REACT_APP_BACKEND_URL not baked into production build (React envs must be present at BUILD time, not just runtime), (2) nginx /api reverse-proxy misconfigured, (3) MongoDB URL/creds wrong in backend .env on VPS, or (4) frontend built against wrong backend URL. Recommend user: rebuild frontend on VPS with correct REACT_APP_BACKEND_URL, verify backend .env has MONGO_URL/DB_NAME, verify nginx routes /api/* → backend:8001."
+}
