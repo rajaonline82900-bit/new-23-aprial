@@ -37,10 +37,29 @@ fi
 say "✅ Python deps installed"
 
 # 4. .env sanity
-[ -f .env ] || { say "❌ backend/.env nahi hai — pehle fix_vps.sh chalao"; exit 1; }
-grep -q "^MONGO_URL=" .env || echo 'MONGO_URL="mongodb://localhost:27017"' >> .env
-grep -q "^DB_NAME=" .env || echo 'DB_NAME="matka_prod"' >> .env
-grep -q "^JWT_SECRET=" .env || echo "JWT_SECRET=\"$(head -c 48 /dev/urandom | base64 | tr -d '/+=\n')\"" >> .env
+touch .env
+# force-set KEY if missing OR empty
+force(){ v=$(grep "^$1=" .env | cut -d= -f2- | tr -d '"'"'" ); if [ -z "$v" ]; then sed -i "/^$1=/d" .env; echo "$1=\"$2\"" >> .env; fi; }
+DBN=$("$PY" - <<'PYEOF' 2>/dev/null
+from pymongo import MongoClient
+c = MongoClient("mongodb://localhost:27017", serverSelectionTimeoutMS=3000)
+best, best_n = None, -1
+for name in c.list_database_names():
+    if name in ("admin", "config", "local"): continue
+    n = c[name]["users"].estimated_document_count() if "users" in c[name].list_collection_names() else 0
+    if n > best_n: best, best_n = name, n
+print(best or "matka_prod")
+PYEOF
+)
+[ -z "$DBN" ] && DBN="matka_prod"
+force MONGO_URL "mongodb://localhost:27017"
+force DB_NAME "$DBN"
+force JWT_SECRET "$(head -c 48 /dev/urandom | base64 | tr -d '/+=\n')"
+force CORS_ORIGINS "*"
+force FRONTEND_URL "$DOMAIN"
+force TRUSTOPE_API_TOKEN "2d7c4102e2be80b8ce3412cd0c7de211"
+force TRUSTOPE_API_URL "https://trustope.com"
+force IMB_API_URL "https://secure-stage.imb.org.in"
 say "✅ .env OK (DB: $(grep ^DB_NAME= .env | cut -d= -f2))"
 
 # 5. MongoDB running?

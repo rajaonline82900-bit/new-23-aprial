@@ -49,8 +49,10 @@ echo "✅ Database: $DB_NAME"
 
 # ---------- 3. backend/.env (existing values preserve, missing add) ----------
 touch "$BE/.env"
-setenv() {  # setenv KEY VALUE  -> only add if missing
-  if grep -q "^$1=" "$BE/.env"; then return; fi
+setenv() {  # setenv KEY VALUE  -> add if missing or empty
+  v=$(grep "^$1=" "$BE/.env" | cut -d= -f2- | tr -d '"'"'")
+  [ -n "$v" ] && return
+  sed -i "/^$1=/d" "$BE/.env"
   echo "$1=\"$2\"" >> "$BE/.env"
 }
 setenv MONGO_URL "mongodb://localhost:27017"
