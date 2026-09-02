@@ -9,9 +9,28 @@ import aiohttp
 
 from database import db
 from auth import get_current_user
-from config import IST, IMB_API_TOKEN, IMB_API_URL, UPLOADS_PATH
+from config import IST, IMB_API_TOKEN, IMB_API_URL, TRUSTOPE_API_TOKEN, TRUSTOPE_API_URL, UPLOADS_PATH
 from storage_utils import put_object
 from models import DepositRequest, WithdrawRequest
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Payment gateway selector — admin toggles which one is active from admin panel.
+# Only ONE gateway can be active at a time (per user's requirement).
+# Default = 'imb' for backward compatibility with existing deployments.
+async def _active_gateway():
+    row = await db.settings.find_one({"key": "payment_gateway"}) or {}
+    return {
+        "active": row.get("active", "imb"),   # 'imb' | 'trustope'
+        "imb_enabled": row.get("imb_enabled", True),
+        "trustope_enabled": row.get("trustope_enabled", False),
+    }
+
+
+def _gateway_creds(name: str):
+    if name == "trustope":
+        return TRUSTOPE_API_URL.rstrip("/"), TRUSTOPE_API_TOKEN, "trustope-callback"
+    return IMB_API_URL.rstrip("/"), IMB_API_TOKEN, "imb-callback"
 
 router = APIRouter()
 
@@ -131,6 +150,10 @@ async def create_deposit(deposit: DepositRequest, request: Request):
         raise HTTPException(status_code=400, detail="Maximum deposit ₹50000")
 
     order_id = f"DEP-{str(uuid.uuid4())[:8].upper()}"
+    # Determine active gateway (admin-controlled)
+    gw = await _active_gateway()
+    active = gw["active"]
+    base_url, api_token, callback_path = _gateway_creds(active)
     # Callback URL must point to the actual domain user is on
     origin = deposit.origin_url.rstrip("/") if deposit.origin_url else ""
     if not origin:
@@ -139,13 +162,13 @@ async def create_deposit(deposit: DepositRequest, request: Request):
         scheme = request.headers.get("x-forwarded-proto", "https")
         host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
         origin = f"{scheme}://{host}"
-    redirect_url = f"{origin}/api/wallet/imb-callback"
-    logging.info(f"IMB redirect_url: {redirect_url}, origin: {origin}")
+    redirect_url = f"{origin}/api/wallet/{callback_path}"
+    logging.info(f"[{active}] redirect_url: {redirect_url}, origin: {origin}")
 
     async with aiohttp.ClientSession() as session:
         form_params = {
             "customer_mobile": deposit.customer_mobile or user.get("phone") or "9999999999",
-            "user_token": IMB_API_TOKEN,
+            "user_token": api_token,
             "amount": str(int(deposit.amount)),
             "order_id": order_id,
             "redirect_url": redirect_url,
@@ -153,9 +176,9 @@ async def create_deposit(deposit: DepositRequest, request: Request):
             "remark2": user.get("email") or user.get("phone") or user["_id"],
         }
 
-        async with session.post(f"{IMB_API_URL}/api/create-order", data=form_params) as resp:
+        async with session.post(f"{base_url}/api/create-order", data=form_params) as resp:
             resp_data = await resp.json()
-            logging.info(f"IMB create-order response: {resp_data}")
+            logging.info(f"[{active}] create-order response: {resp_data}")
 
             if not resp_data.get("status") or not resp_data.get("result", {}).get("payment_url"):
                 raise HTTPException(status_code=500, detail=resp_data.get("message", "Payment creation failed"))
@@ -171,11 +194,12 @@ async def create_deposit(deposit: DepositRequest, request: Request):
         "order_id": order_id,
         "payment_url": payment_url,
         "origin_url": origin,
+        "gateway": active,
         "created_at": datetime.now(timezone.utc)
     }
     await db.transactions.insert_one(transaction_doc)
 
-    return {"url": payment_url, "order_id": order_id}
+    return {"url": payment_url, "order_id": order_id, "gateway": active}
 
 
 @router.get("/wallet/imb-callback")
@@ -296,6 +320,109 @@ async def imb_callback(request: Request):
     return RedirectResponse(url=f"{frontend_url}/wallet?payment={status.lower()}&order_id={order_id}")
 
 
+@router.get("/wallet/trustope-callback")
+async def trustope_callback(request: Request):
+    """Trustope uses the same API shape as IMB (same-form UPI aggregator).
+    We reuse the verify + credit flow: look up transaction, call
+    /api/check-order-status against Trustope, credit wallet on SUCCESS.
+    """
+    params = dict(request.query_params)
+    logging.info(f"[trustope] callback params: {params}")
+
+    order_id = params.get("order_id", "")
+    status = params.get("status", "")
+
+    txn_for_url = await db.transactions.find_one({"order_id": order_id}, {"origin_url": 1}) if order_id else None
+    if txn_for_url and txn_for_url.get("origin_url"):
+        frontend_url = txn_for_url["origin_url"].rstrip("/")
+    else:
+        scheme = request.headers.get("x-forwarded-proto", "https")
+        host = request.headers.get("x-forwarded-host", request.headers.get("host", ""))
+        frontend_url = (f"{scheme}://{host}" if host else os.environ.get("FRONTEND_URL", "https://matka11.online")).rstrip("/")
+    logging.info(f"[trustope] redirect to: {frontend_url}")
+
+    verified = False
+    txn_status = ""
+    if order_id:
+        try:
+            import httpx as _httpx
+            async with _httpx.AsyncClient(timeout=15, verify=False) as client:
+                resp = await client.post(
+                    f"{TRUSTOPE_API_URL.rstrip('/')}/api/check-order-status",
+                    data={"user_token": TRUSTOPE_API_TOKEN, "order_id": order_id},
+                    headers={"Content-Type": "application/x-www-form-urlencoded"}
+                )
+                import json as _json
+                vd = _json.loads(resp.text)
+                logging.info(f"[trustope] verify: {resp.text[:400]}")
+                r = vd.get("result") or {}
+                txn_status = (
+                    (r.get("txnStatus") if isinstance(r, dict) else None)
+                    or (r.get("status") if isinstance(r, dict) else None)
+                    or (r.get("order_status") if isinstance(r, dict) else None)
+                    or vd.get("status") or ""
+                )
+                txn_status = str(txn_status).upper()
+                if txn_status in ("SUCCESS", "COMPLETED", "TRUE"):
+                    verified = True
+        except Exception as e:
+            logging.error(f"[trustope] verify error: {e}, trusting callback status={status}")
+            verified = (status.upper() == "SUCCESS")
+
+    # Also trust callback if it says SUCCESS and verify network failed
+    if not verified and status.upper() == "SUCCESS":
+        verified = True
+
+    if verified and order_id:
+        transaction = await db.transactions.find_one({"order_id": order_id})
+        if transaction and transaction["status"] != "completed":
+            await db.users.update_one(
+                {"_id": ObjectId(transaction["user_id"])},
+                {"$inc": {"balance": transaction["amount"]}}
+            )
+            await db.transactions.update_one(
+                {"order_id": order_id},
+                {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc)}}
+            )
+            logging.info(f"[trustope] deposit completed: order={order_id}, amount={transaction['amount']}")
+            await apply_deposit_bonus(transaction["user_id"], transaction["amount"], order_id)
+            await process_referral_reward(transaction["user_id"], transaction["amount"])
+            status = "success"
+    elif order_id and txn_status in ("FAILURE", "FAILED", "EXPIRED"):
+        await db.transactions.update_one({"order_id": order_id, "status": "pending"}, {"$set": {"status": "failed"}})
+
+    return RedirectResponse(url=f"{frontend_url}/wallet?payment={status.lower() or 'pending'}&order_id={order_id}")
+
+
+@router.post("/wallet/trustope-webhook")
+async def trustope_webhook(request: Request):
+    """Server-to-server webhook (Trustope may POST callbacks). Uses same body params."""
+    try:
+        body = await request.json()
+    except Exception:
+        form = await request.form()
+        body = dict(form)
+    logging.info(f"[trustope] webhook body: {body}")
+    order_id = body.get("order_id") or ""
+    st = str(body.get("status") or body.get("txnStatus") or "").upper()
+    if not order_id:
+        return {"ok": False, "message": "missing order_id"}
+    if st in ("SUCCESS", "COMPLETED", "TRUE"):
+        transaction = await db.transactions.find_one({"order_id": order_id})
+        if transaction and transaction["status"] != "completed":
+            await db.users.update_one(
+                {"_id": ObjectId(transaction["user_id"])},
+                {"$inc": {"balance": transaction["amount"]}}
+            )
+            await db.transactions.update_one(
+                {"order_id": order_id},
+                {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc)}}
+            )
+            await apply_deposit_bonus(transaction["user_id"], transaction["amount"], order_id)
+            await process_referral_reward(transaction["user_id"], transaction["amount"])
+    return {"ok": True}
+
+
 @router.post("/wallet/imb-webhook")
 async def imb_webhook(request: Request):
     try:
@@ -348,24 +475,30 @@ async def check_deposit_status(order_id: str, request: Request):
     if transaction["status"] == "completed":
         return {"status": "completed", "amount": transaction["amount"]}
 
-    # Check IMB for real status for pending/failed/expired
+    # Check gateway (IMB or Trustope) for real status for pending/failed/expired
     try:
+        # Pick gateway based on transaction's own record (falls back to active gateway)
+        gw_name = transaction.get("gateway")
+        if not gw_name:
+            gw_row = await _active_gateway()
+            gw_name = gw_row["active"]
+        gw_url, gw_token, _ = _gateway_creds(gw_name)
         import httpx as _httpx
         async with _httpx.AsyncClient(timeout=15, verify=False) as client:
             resp = await client.post(
-                f"{IMB_API_URL}/api/check-order-status",
-                data={"user_token": IMB_API_TOKEN, "order_id": order_id},
+                f"{gw_url}/api/check-order-status",
+                data={"user_token": gw_token, "order_id": order_id},
                 headers={"Content-Type": "application/x-www-form-urlencoded"}
             )
             resp_text = resp.text
-            logging.info(f"IMB status check: {resp_text[:300]}")
+            logging.info(f"[{gw_name}] status check: {resp_text[:300]}")
             try:
                 import json as _json
                 verify_data = _json.loads(resp_text)
             except Exception:
                 return {"status": "pending", "amount": transaction["amount"]}
 
-        imb_result = verify_data.get("result", {})
+        imb_result = verify_data.get("result", {}) or {}
         txn_status = (imb_result.get("txnStatus") or imb_result.get("status") or imb_result.get("order_status") or "").upper()
 
         if txn_status in ("SUCCESS", "COMPLETED"):

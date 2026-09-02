@@ -27,6 +27,37 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Payment gateway toggle — only ONE gateway can be active at a time.
+@router.get("/admin/payment-gateway")
+async def get_payment_gateway(request: Request):
+    await get_admin_user(request)
+    row = await db.settings.find_one({"key": "payment_gateway"}, {"_id": 0}) or {}
+    return {
+        "active": row.get("active", "imb"),
+        "options": [
+            {"key": "imb", "label": "IMB Payment Gateway"},
+            {"key": "trustope", "label": "Trustope UPI Gateway"},
+        ],
+    }
+
+
+@router.post("/admin/payment-gateway")
+async def set_payment_gateway(request: Request):
+    await get_admin_user(request)
+    body = await request.json()
+    active = body.get("active")
+    if active not in ("imb", "trustope"):
+        raise HTTPException(400, "active must be 'imb' or 'trustope'")
+    await db.settings.update_one(
+        {"key": "payment_gateway"},
+        {"$set": {"active": active, "updated_at": datetime.now(timezone.utc)}},
+        upsert=True,
+    )
+    logger.info(f"[admin] payment gateway switched to {active!r}")
+    return {"ok": True, "active": active}
+
+
 # ===== SMS diagnostics (helps debug OTP issues on VPS) =====
 
 @router.get("/admin/system/sms-status")

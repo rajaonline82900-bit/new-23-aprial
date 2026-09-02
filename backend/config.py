@@ -12,6 +12,8 @@ UPLOADS_PATH = str(UPLOADS_DIR)
 # IMB Payment Gateway config
 IMB_API_TOKEN = os.environ.get("IMB_API_TOKEN", "")
 IMB_API_URL = os.environ.get("IMB_API_URL", "https://secure-stage.imb.org.in")
+TRUSTOPE_API_TOKEN = os.environ.get("TRUSTOPE_API_TOKEN", "2d7c4102e2be80b8ce3412cd0c7de211")
+TRUSTOPE_API_URL = os.environ.get("TRUSTOPE_API_URL", "https://trustope.com")
 
 # DVHosting SMS API
 DVHOSTING_API_KEY = os.environ.get("DVHOSTING_API_KEY")

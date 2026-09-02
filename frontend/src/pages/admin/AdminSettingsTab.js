@@ -32,6 +32,30 @@ const AdminSettingsTab = () => {
   const [sendingPush, setSendingPush] = useState(false);
   const [pushStats, setPushStats] = useState(null);
   const [testingPush, setTestingPush] = useState(false);
+  const [gatewayActive, setGatewayActive] = useState('imb');
+  const [savingGateway, setSavingGateway] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await axios.get(`${API_URL}/api/admin/payment-gateway`, { withCredentials: true });
+        setGatewayActive(data.active || 'imb');
+      } catch { /* ignore */ }
+    })();
+  }, []);
+
+  const saveGateway = async (next) => {
+    setSavingGateway(true);
+    try {
+      await axios.post(`${API_URL}/api/admin/payment-gateway`, { active: next }, { withCredentials: true });
+      setGatewayActive(next);
+      toast.success(`Payment gateway → ${next.toUpperCase()}`);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Gateway update failed');
+    } finally {
+      setSavingGateway(false);
+    }
+  };
 
   const fetchSettings = useCallback(async () => {
     const applyData = (data) => {
@@ -159,6 +183,51 @@ const AdminSettingsTab = () => {
         <CardDescription className="text-gray-400">Telegram और WhatsApp लिंक सेट करें</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Payment Gateway toggle — only ONE active at a time */}
+        <div className="p-4 rounded-lg border border-emerald-500/30 bg-emerald-500/5" data-testid="admin-payment-gateway-section">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-white font-bold text-sm">Payment Gateway</p>
+              <p className="text-gray-400 text-xs">Ek time me sirf ek gateway active rahega — deposit is se hi hoga</p>
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded" style={{ background: 'rgba(34,197,94,0.15)', color: '#4ADE80', border: '1px solid rgba(34,197,94,0.4)' }}>
+              Active: {gatewayActive.toUpperCase()}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { key: 'imb', label: 'IMB Gateway', desc: 'secure-stage.imb.org.in' },
+              { key: 'trustope', label: 'Trustope UPI', desc: 'trustope.com' },
+            ].map((g) => {
+              const isActive = gatewayActive === g.key;
+              return (
+                <button
+                  key={g.key}
+                  onClick={() => !savingGateway && !isActive && saveGateway(g.key)}
+                  disabled={savingGateway || isActive}
+                  data-testid={`gateway-btn-${g.key}`}
+                  className={`p-3 rounded-lg border transition-all text-left ${isActive ? 'cursor-default' : 'active:scale-95 hover:brightness-110'}`}
+                  style={{
+                    background: isActive
+                      ? 'linear-gradient(135deg, rgba(34,197,94,0.25) 0%, rgba(20,169,76,0.15) 100%)'
+                      : 'rgba(20,20,24,0.6)',
+                    borderColor: isActive ? '#22C55E' : 'rgba(255,255,255,0.1)',
+                    boxShadow: isActive ? '0 0 0 2px rgba(34,197,94,0.35) inset, 0 4px 12px rgba(34,197,94,0.2)' : 'none',
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className={`w-4 h-4 rounded-full border-2 ${isActive ? 'border-emerald-400' : 'border-gray-500'} flex items-center justify-center`}>
+                      {isActive && <span className="w-2 h-2 rounded-full bg-emerald-400" />}
+                    </span>
+                    <span className="text-white font-black text-sm">{g.label}</span>
+                  </div>
+                  <p className="text-gray-400 text-[10px] mt-1 ml-6 truncate">{g.desc}</p>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         <div>
           <Label className="text-gray-300 mb-2 block">Telegram Channel/Group Link</Label>
           <Input type="url" placeholder="https://t.me/yourchannel" value={telegramLink} onChange={(e) => setTelegramLink(e.target.value)} data-testid="settings-telegram-link" className="bg-[#0A0A0C] border-white/10 text-white" />
