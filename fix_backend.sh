@@ -60,7 +60,18 @@ force FRONTEND_URL "$DOMAIN"
 force TRUSTOPE_API_TOKEN "2d7c4102e2be80b8ce3412cd0c7de211"
 force TRUSTOPE_API_URL "https://trustope.com"
 force IMB_API_URL "https://secure-stage.imb.org.in"
+# Sync build version with the frontend bundle → stops WebView reload loop / "update" banner
+FEV=$(grep -oE "APP_BUILD_VERSION = '[^']+'" "$REPO_DIR/frontend/src/utils/versionCheck.js" 2>/dev/null | cut -d"'" -f2)
+if [ -n "$FEV" ]; then sed -i "/^APP_BUILD_VERSION=/d" .env; echo "APP_BUILD_VERSION=\"$FEV\"" >> .env; say "✅ Build version synced → $FEV"; fi
 say "✅ .env OK (DB: $(grep ^DB_NAME= .env | cut -d= -f2))"
+
+# Nginx: never cache index.html (old cached HTML → missing JS chunks → blank app)
+NGX=$(grep -rl "proxy_pass" /etc/nginx/sites-enabled/ 2>/dev/null | head -1)
+if [ -n "$NGX" ] && ! grep -q "no-store" "$NGX"; then
+  cp "$NGX" "$NGX.bak.$(date +%s)"
+  sed -i '0,/try_files \$uri \/index.html;/s||try_files $uri /index.html;\n        add_header Cache-Control "no-store, no-cache, must-revalidate" always;|' "$NGX"
+  if nginx -t >/dev/null 2>&1; then say "✅ Nginx no-cache for HTML added"; else cp "$(ls -t $NGX.bak.* | head -1)" "$NGX"; say "⚠️  nginx edit reverted"; fi
+fi
 
 # 5. MongoDB running?
 if ! systemctl is-active --quiet mongod 2>/dev/null; then

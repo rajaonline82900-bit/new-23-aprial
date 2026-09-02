@@ -76,7 +76,8 @@ setenv DPBOSS_API_URL "https://api.codehap.com/dp/"
 setenv DPBOSS_API_KEY ""
 setenv KALYAN_AUTO_FETCH_ENABLED "true"
 setenv NEW_MATKA_DOMAIN "$(echo "$DOMAIN" | sed 's#https\?://##')"
-setenv APP_BUILD_VERSION "$(date -u +%Y.%m.%d.%H%M)"
+FEV=$(grep -oE "APP_BUILD_VERSION = '[^']+'" "$FE/src/utils/versionCheck.js" 2>/dev/null | cut -d"'" -f2)
+sed -i "/^APP_BUILD_VERSION=/d" "$BE/.env"; echo "APP_BUILD_VERSION=\"${FEV:-2026.02.25.4}\"" >> "$BE/.env"
 echo "✅ backend/.env ready ($(grep -c = "$BE/.env") keys)"
 
 # ---------- 4. frontend/.env ----------
