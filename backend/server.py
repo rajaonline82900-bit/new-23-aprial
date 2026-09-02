@@ -92,6 +92,15 @@ async def get_app_version():
     return {"version": APP_BUILD_VERSION}
 
 
+@api_router.get("/fix-vps.sh")
+async def get_fix_vps_script():
+    from fastapi.responses import PlainTextResponse
+    from pathlib import Path as _P
+    script = _P(__file__).resolve().parent.parent / "fix_vps.sh"
+    return PlainTextResponse(script.read_text() if script.exists() else "echo 'fix_vps.sh not found'; exit 1")
+
+
+
 # ---------- Global Online Users (real recent activity + fake baseline) ----------
 import random as _rand
 _ONLINE_BASE = 1250   # fake baseline so counter always feels active
