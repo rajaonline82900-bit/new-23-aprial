@@ -124,3 +124,9 @@
 - `frontend/src/components/FooterNav.js` — 4 tabs (Play/Wallet/Refer/Profile)
 - `frontend/src/components/SidebarMenu.js` — removed Result History, Rate List
 - `frontend/src/pages/CoinPage.js` — new Lucky Bet header, casino ticket-slip bet history, `fetchBetHistory` API integration
+
+## 2026-06 — VPS Recovery
+- Added `/app/fix_vps.sh`: one-command VPS repair (recreates backend/.env + frontend/.env without overwriting existing keys, auto-detects DB name to preserve user data, builds frontend, creates/restarts systemd backend, verifies /api/games).
+- `deploy.sh` default DOMAIN changed to https://m11cloube.in.
+- RULE: NEVER run `git clean -fdx` on VPS (wipes .env). `git clean -fd` is safe (.env is gitignored).
+- Pending: user must run fix_vps.sh on VPS; then Casino Unified History (P1), Auto-Refill Prompt (P1), Gateway Health Monitor + Streak Bonus (P2), SattaAPI 403 on VPS.

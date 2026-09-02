@@ -23,7 +23,7 @@ set -e
 trap 'echo "❌ Deploy FAILED at line $LINENO"; exit 1' ERR
 
 REPO_DIR="${REPO_DIR:-/var/www/new-23-aprial}"
-DOMAIN="${DOMAIN:-https://matka11.online}"
+DOMAIN="${DOMAIN:-https://m11cloube.in}"
 BRANCH="${BRANCH:-main}"
 
 echo ""
