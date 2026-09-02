@@ -130,3 +130,4 @@
 - `deploy.sh` default DOMAIN changed to https://m11cloube.in.
 - RULE: NEVER run `git clean -fdx` on VPS (wipes .env). `git clean -fd` is safe (.env is gitignored).
 - Pending: user must run fix_vps.sh on VPS; then Casino Unified History (P1), Auto-Refill Prompt (P1), Gateway Health Monitor + Streak Bonus (P2), SattaAPI 403 on VPS.
+- 2026-06: VPS RESTORED. Root cause of 2nd failure: stale `DB_NAME=""` in backend/.env; scripts now override empty values. Added `/app/fix_backend.sh`; both scripts served at `GET /api/fix-vps.sh` and `GET /api/fix-backend.sh` (preview) for one-line `curl | bash` on VPS. Verified live: /api/games 200, /api/version 200, admin login OK (data preserved, DB matka_prod).
