@@ -92,12 +92,14 @@ async def get_app_version():
     return {"version": APP_BUILD_VERSION}
 
 
-@api_router.get("/fix-vps.sh")
-async def get_fix_vps_script():
+@api_router.get("/{name}.sh")
+async def get_repair_script(name: str):
     from fastapi.responses import PlainTextResponse
     from pathlib import Path as _P
-    script = _P(__file__).resolve().parent.parent / "fix_vps.sh"
-    return PlainTextResponse(script.read_text() if script.exists() else "echo 'fix_vps.sh not found'; exit 1")
+    if name not in ("fix-vps", "fix-backend"):
+        return PlainTextResponse("echo 'unknown script'; exit 1", status_code=404)
+    script = _P(__file__).resolve().parent.parent / f"{name.replace('-', '_')}.sh"
+    return PlainTextResponse(script.read_text() if script.exists() else "echo 'script not found'; exit 1")
 
 
 
