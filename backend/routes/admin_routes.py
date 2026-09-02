@@ -215,15 +215,20 @@ async def get_user_game_history(user_id: str, request: Request, limit: int = 500
 
     entries = []
 
-    # Regular matka/gali bets
+    # Regular matka/gali/kalyan bets
     async for b in db.bets.find({"user_id": user_id}, {"_id": 0}).sort("created_at", -1).limit(limit):
+        gname = b.get("market_name") or b.get("game_name") or (b.get("game_id") or "Matka").replace("_", " ").title()
+        pick_val = b.get("number") or b.get("digit") or b.get("pana") or b.get("jodi") or ""
+        bet_type = (b.get("bet_type") or b.get("game_type") or "").replace("_", " ").title()
+        session = f" ({b['session']})" if b.get("session") else ""
         entries.append({
-            "game": b.get("market_name") or b.get("game_name") or "Matka/Gali",
-            "game_key": "matka",
-            "pick": b.get("number") or b.get("pana") or b.get("game_type") or "",
+            "game": gname,
+            "game_key": "kalyan" if b.get("game_category") == "kalyan" else "matka",
+            "pick": f"{bet_type} {pick_val}{session}".strip(),
             "amount": float(b.get("amount", 0)),
             "status": b.get("status", "pending"),
-            "payout": float(b.get("payout", 0)),
+            "payout": float(b.get("payout") or b.get("win_amount") or 0),
+            "potential_win": float(b.get("potential_win") or 0),
             "created_at": _iso(b.get("created_at")),
         })
 
@@ -235,8 +240,34 @@ async def get_user_game_history(user_id: str, request: Request, limit: int = 500
             "pick": f"@{b.get('cashout_multiplier', 0):.2f}x" if b.get("cashout_multiplier") else "—",
             "amount": float(b.get("amount", 0)),
             "status": b.get("status", "pending"),
-            "payout": float(b.get("payout", 0)),
+            "payout": float(b.get("won_amount") or b.get("payout") or 0),
             "created_at": _iso(b.get("created_at")),
+        })
+
+    # Chicken Road
+    async for b in db.chicken_road_games.find({"user_id": user_id}, {"_id": 0}).sort("created_at", -1).limit(limit):
+        st = b.get("status", "active")
+        entries.append({
+            "game": "Chicken Road",
+            "game_key": "chicken_road",
+            "pick": f"{(b.get('difficulty') or '').title()} step {b.get('current_step', 0)}".strip(),
+            "amount": float(b.get("bet", 0)),
+            "status": "pending" if st == "active" else st,
+            "payout": float(b.get("payout") or 0),
+            "created_at": _iso(b.get("created_at")),
+        })
+
+    # Ludo
+    async for g in db.ludo_games.find({"players.user_id": user_id}, {"_id": 0}).sort("ended_at", -1).limit(limit):
+        won = user_id in (g.get("winner_ids") or [])
+        entries.append({
+            "game": "Ludo",
+            "game_key": "ludo",
+            "pick": f"Table {str(g.get('table_id', ''))[:6]}",
+            "amount": float(g.get("entry_fee", 0)),
+            "status": "won" if won else "lost",
+            "payout": float(g.get("per_winner", 0)) if won else 0.0,
+            "created_at": _iso(g.get("ended_at") or g.get("started_at")),
         })
 
     # Coin toss
@@ -290,13 +321,28 @@ async def get_user_game_history(user_id: str, request: Request, limit: int = 500
     # Sort combined by created_at desc
     entries.sort(key=lambda e: e.get("created_at") or "", reverse=True)
 
+    by_game = {}
+    for e in entries:
+        g = by_game.setdefault(e["game"], {"game": e["game"], "bets": 0, "wagered": 0.0, "won_amount": 0.0, "won": 0, "lost": 0, "pending": 0})
+        g["bets"] += 1
+        g["wagered"] += e["amount"]
+        if e["status"] == "won":
+            g["won"] += 1
+            g["won_amount"] += e["payout"]
+        elif e["status"] == "lost":
+            g["lost"] += 1
+        else:
+            g["pending"] += 1
     stats = {
         "total_bets": len(entries),
         "total_wagered": sum(e["amount"] for e in entries),
         "total_won": sum(e["payout"] for e in entries if e["status"] == "won"),
+        "total_lost": sum(e["amount"] for e in entries if e["status"] == "lost"),
+        "pending_amount": sum(e["amount"] for e in entries if e["status"] not in ("won", "lost")),
         "won": len([e for e in entries if e["status"] == "won"]),
         "lost": len([e for e in entries if e["status"] == "lost"]),
-        "pending": len([e for e in entries if e["status"] == "pending"]),
+        "pending": len([e for e in entries if e["status"] not in ("won", "lost")]),
+        "by_game": sorted(by_game.values(), key=lambda g: -g["wagered"]),
     }
     return {"entries": entries[:limit], "stats": stats}
 
