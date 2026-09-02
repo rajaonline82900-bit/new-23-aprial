@@ -28,8 +28,24 @@ def init_storage(force: bool = False):
     return _storage_key
 
 
+def _put_local(filename: str, data: bytes) -> str:
+    from config import UPLOADS_PATH
+    with open(os.path.join(UPLOADS_PATH, filename), "wb") as f:
+        f.write(data)
+    return filename
+
+
 def put_object(filename: str, data: bytes, content_type: str) -> str:
-    """Upload `data` under `shivshakti/uploads/{filename}`. Returns the filename."""
+    """Upload to object storage; on VPS (no EMERGENT key) or any storage error, save to local uploads dir."""
+    if not EMERGENT_KEY:
+        return _put_local(filename, data)
+    try:
+        return _put_remote(filename, data, content_type)
+    except Exception:
+        return _put_local(filename, data)
+
+
+def _put_remote(filename: str, data: bytes, content_type: str) -> str:
     key = init_storage()
     path = f"{APP_PREFIX}/{filename}"
     resp = requests.put(

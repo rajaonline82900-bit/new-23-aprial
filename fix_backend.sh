@@ -65,8 +65,13 @@ FEV=$(grep -oE "APP_BUILD_VERSION = '[^']+'" "$REPO_DIR/frontend/src/utils/versi
 if [ -n "$FEV" ]; then sed -i "/^APP_BUILD_VERSION=/d" .env; echo "APP_BUILD_VERSION=\"$FEV\"" >> .env; say "✅ Build version synced → $FEV"; fi
 say "✅ .env OK (DB: $(grep ^DB_NAME= .env | cut -d= -f2))"
 
-# Nginx: never cache index.html (old cached HTML → missing JS chunks → blank app)
+# Nginx: never cache index.html (old cached HTML → missing JS chunks → blank app) + allow 50MB uploads (chat photos/voice)
 NGX=$(grep -rl "proxy_pass" /etc/nginx/sites-enabled/ 2>/dev/null | head -1)
+if [ -n "$NGX" ] && ! grep -q "client_max_body_size" "$NGX"; then
+  cp "$NGX" "$NGX.bak.$(date +%s)"
+  sed -i '0,/server_name/s||client_max_body_size 50M;\n    server_name|' "$NGX"
+  if nginx -t >/dev/null 2>&1; then say "✅ Nginx upload limit 50M set"; else cp "$(ls -t $NGX.bak.* | head -1)" "$NGX"; say "⚠️  nginx body-size edit reverted"; fi
+fi
 if [ -n "$NGX" ] && ! grep -q "no-store" "$NGX"; then
   cp "$NGX" "$NGX.bak.$(date +%s)"
   sed -i '0,/try_files \$uri \/index.html;/s||try_files $uri /index.html;\n        add_header Cache-Control "no-store, no-cache, must-revalidate" always;|' "$NGX"

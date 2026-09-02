@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send, Mic, Image, Square, Check, CheckCheck, Trash2, X, Video } from 'lucide-react';
+import { ArrowLeft, Send, Image, Check, CheckCheck, Trash2, X, Video } from 'lucide-react';
 import axios from 'axios';
+import { toast } from 'sonner';
+import { VoiceRecordButton } from '../components/chat/VoiceRecordButton';
+import { VoiceBubble } from '../components/chat/VoiceBubble';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
@@ -9,14 +12,10 @@ const ChatPage = () => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
-  const [recording, setRecording] = useState(false);
-  const [recordTime, setRecordTime] = useState(0);
+  const [isRecording, setIsRecording] = useState(false);
   const [selectedMsg, setSelectedMsg] = useState(null);
   const bottomRef = useRef(null);
   const fileInputRef = useRef(null);
-  const mediaRecorderRef = useRef(null);
-  const chunksRef = useRef([]);
-  const timerRef = useRef(null);
   const navigate = useNavigate();
 
   const token = localStorage.getItem('matka11_token') || '';
@@ -29,6 +28,7 @@ const ChatPage = () => {
     } catch (err) {
       console.error('Chat fetch failed:', err);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -39,6 +39,8 @@ const ChatPage = () => {
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
+  const errMsg = (err) => err?.response?.data?.detail || err?.message || 'Network error';
+
   const sendTextMessage = async () => {
     if (!input.trim() || sending) return;
     setSending(true);
@@ -46,65 +48,33 @@ const ChatPage = () => {
       await axios.post(`${API}/api/chat/send`, { message: input.trim(), msg_type: 'text' }, { headers });
       setInput('');
       fetchMessages();
-    } catch (err) { console.error(err); }
+    } catch (err) { toast.error(`Message nahi gaya: ${errMsg(err)}`); }
+    setSending(false);
+  };
+
+  const uploadAndSend = async (file, msgType, filename) => {
+    setSending(true);
+    const tid = toast.loading(msgType === 'image' ? 'Photo bhej rahe hain…' : 'Voice bhej rahe hain…');
+    try {
+      const formData = new FormData();
+      if (filename) formData.append('file', file, filename); else formData.append('file', file);
+      const uploadRes = await axios.post(`${API}/api/chat/upload`, formData, { headers, timeout: 60000 });
+      await axios.post(`${API}/api/chat/send`, { message: '', msg_type: msgType, attachment_url: uploadRes.data.url }, { headers });
+      toast.success('Sent', { id: tid, duration: 1200 });
+      fetchMessages();
+    } catch (err) { toast.error(`Send fail: ${errMsg(err)}`, { id: tid }); }
     setSending(false);
   };
 
   const handleImageSelect = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setSending(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const uploadRes = await axios.post(`${API}/api/chat/upload`, formData, { headers });
-      await axios.post(`${API}/api/chat/send`, {
-        message: '', msg_type: 'image', attachment_url: uploadRes.data.url
-      }, { headers });
-      fetchMessages();
-    } catch (err) { console.error(err); }
-    setSending(false);
+    if (file.size > 10 * 1024 * 1024) { toast.error('Photo 10MB se badi hai'); e.target.value = ''; return; }
+    await uploadAndSend(file, 'image');
     e.target.value = '';
   };
 
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = recorder;
-      chunksRef.current = [];
-      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
-      recorder.onstop = async () => {
-        stream.getTracks().forEach(t => t.stop());
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        setSending(true);
-        try {
-          const formData = new FormData();
-          formData.append('file', blob, `voice_${Date.now()}.webm`);
-          const uploadRes = await axios.post(`${API}/api/chat/upload`, formData, { headers });
-          await axios.post(`${API}/api/chat/send`, {
-            message: '', msg_type: 'voice', attachment_url: uploadRes.data.url
-          }, { headers });
-          fetchMessages();
-        } catch (err) { console.error(err); }
-        setSending(false);
-      };
-      recorder.start();
-      setRecording(true);
-      setRecordTime(0);
-      timerRef.current = setInterval(() => setRecordTime(t => t + 1), 1000);
-    } catch (err) {
-      console.error('Mic access denied:', err);
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && recording) {
-      mediaRecorderRef.current.stop();
-      setRecording(false);
-      clearInterval(timerRef.current);
-    }
-  };
+  const handleVoiceRecorded = (blob, ext) => uploadAndSend(blob, 'voice', `voice_${Date.now()}.${ext}`);
 
   const deleteMessage = async (msgId) => {
     try {
@@ -126,8 +96,6 @@ const ChatPage = () => {
     if (d.toDateString() === yesterday.toDateString()) return 'YESTERDAY';
     return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
   };
-  const formatRecordTime = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
-
   const renderTicks = (msg) => {
     if (msg.sender !== 'user') return null;
     return msg.read ? (
@@ -143,7 +111,7 @@ const ChatPage = () => {
       return <img src={`${API}${msg.attachment_url}`} alt="photo" className="rounded-lg max-w-full max-h-[220px] object-cover" loading="lazy" />;
     }
     if (type === 'voice' && msg.attachment_url) {
-      return <audio controls src={`${API}${msg.attachment_url}`} className="max-w-[220px]" preload="none" />;
+      return <VoiceBubble src={`${API}${msg.attachment_url}`} mine={msg.sender === 'user'} testId={`voice-msg-${msg.id}`} />;
     }
     return <p className="text-[14px] whitespace-pre-wrap break-words leading-snug">{msg.message}</p>;
   };
@@ -305,60 +273,44 @@ const ChatPage = () => {
         }}
       >
         <input type="file" ref={fileInputRef} accept="image/*" onChange={handleImageSelect} className="hidden" data-testid="chat-file-input" />
-        {recording ? (
-          <div className="flex items-center gap-3">
-            <div className="flex-1 flex items-center gap-2 rounded-full px-4 py-2.5" style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.35)' }}>
-              <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
-              <span className="text-red-400 text-sm font-mono">{formatRecordTime(recordTime)}</span>
-              <span className="text-gray-400 text-xs">Recording...</span>
-            </div>
-            <button onClick={stopRecording} className="w-11 h-11 rounded-full bg-red-500 flex items-center justify-center shadow-lg" data-testid="chat-stop-record">
-              <Square className="w-4 h-4 text-white fill-white" />
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5">
+          {!isRecording && (
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={sending}
-              className="w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-95"
+              className="w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-95 shrink-0"
               style={{ color: '#AEBAC1' }}
               data-testid="chat-image-btn"
             >
               <Image className="w-5 h-5" strokeWidth={2} />
             </button>
+          )}
+          {!isRecording && (
             <input
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && sendTextMessage()}
               placeholder="Type a message"
-              className="flex-1 rounded-full px-4 py-2.5 text-white text-sm focus:outline-none placeholder-gray-500"
+              className="flex-1 min-w-0 rounded-full px-4 py-2.5 text-white text-sm focus:outline-none placeholder-gray-500"
               style={{ background: '#2A3942', border: 'none' }}
               data-testid="chat-input"
             />
-            {input.trim() ? (
-              <button
-                onClick={sendTextMessage}
-                disabled={sending}
-                className="w-11 h-11 rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-all"
-                style={{ background: '#25D366' }}
-                data-testid="chat-send-btn"
-              >
-                <Send className="w-4 h-4 text-white translate-x-[1px]" strokeWidth={2.5} />
-              </button>
-            ) : (
-              <button
-                onClick={startRecording}
-                disabled={sending}
-                className="w-11 h-11 rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-all"
-                style={{ background: '#25D366' }}
-                data-testid="chat-mic-btn"
-              >
-                <Mic className="w-4 h-4 text-white" strokeWidth={2.5} />
-              </button>
-            )}
-          </div>
-        )}
+          )}
+          {input.trim() ? (
+            <button
+              onClick={sendTextMessage}
+              disabled={sending}
+              className="w-11 h-11 rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-all shrink-0"
+              style={{ background: '#25D366' }}
+              data-testid="chat-send-btn"
+            >
+              <Send className="w-4 h-4 text-white translate-x-[1px]" strokeWidth={2.5} />
+            </button>
+          ) : (
+            <VoiceRecordButton onRecorded={handleVoiceRecorded} onRecordingChange={setIsRecording} disabled={sending} />
+          )}
+        </div>
+        <p className="text-center text-[10px] mt-1" style={{ color: 'rgba(174,186,193,0.5)' }}>Mic dabaye rakho → bolo → chhodo = send</p>
       </div>
 
       {/* Delete modal */}

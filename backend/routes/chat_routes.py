@@ -62,14 +62,17 @@ async def send_chat_message(msg: ChatMessageSend, request: Request):
 async def upload_chat_file(file: UploadFile = File(...), request: Request = None):
     await get_current_user(request)
     ext = file.filename.split(".")[-1].lower() if "." in file.filename else "bin"
-    allowed = {"jpg", "jpeg", "png", "gif", "webp", "mp3", "ogg", "webm", "wav", "m4a"}
+    allowed = {"jpg", "jpeg", "png", "gif", "webp", "heic", "mp3", "ogg", "oga", "webm", "wav", "m4a", "mp4", "aac", "3gp"}
     if ext not in allowed:
         raise HTTPException(status_code=400, detail="File type not allowed")
     filename = f"chat_{uuid.uuid4()}.{ext}"
     content = await file.read()
     if len(content) > 10 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="File too large (max 10MB)")
-    put_object(filename, content, file.content_type or "application/octet-stream")
+    try:
+        put_object(filename, content, file.content_type or "application/octet-stream")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Upload failed: {e}")
     return {"url": f"/api/uploads/{filename}"}
 
 
