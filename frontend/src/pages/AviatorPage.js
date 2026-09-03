@@ -856,7 +856,7 @@ const AviatorPage = () => {
         </div>
 
         <p className="text-center text-gray-500 text-[10px] mt-4 mb-2">
-          <span style={{ color: '#22D3EE' }}>✓</span>&nbsp;Provably Fair Game &nbsp;•&nbsp; matka11.online
+          <span style={{ color: '#22D3EE' }}>✓</span>&nbsp;Provably Fair Game &nbsp;•&nbsp; m11cloube.in
         </p>
       </div>
 

@@ -92,8 +92,8 @@ const LandingPage = () => {
         {/* Download Section */}
         <div className="mb-10">
           <a
-            href={`${process.env.REACT_APP_BACKEND_URL}/api/uploads/matka11.apk`}
-            download="Matka11.apk"
+            href="/shivshakti.apk"
+            download="ShivShakti.apk"
             className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#D4AF37] to-[#FDE047] text-black font-bold text-lg flex items-center justify-center gap-3 shadow-lg shadow-[#D4AF37]/30 hover:shadow-[#D4AF37]/50 active:scale-[0.98] transition-all"
             data-testid="landing-download-btn"
           >
@@ -149,7 +149,7 @@ const LandingPage = () => {
                       </div>
                       <div>
                         <p className="text-white text-sm font-bold">Safari me kholein</p>
-                        <p className="text-gray-400 text-xs">www.matka11.online ko <span className="text-blue-400 font-bold">Safari</span> browser me kholein (Chrome nahi!)</p>
+                        <p className="text-gray-400 text-xs">www.m11cloube.in ko <span className="text-blue-400 font-bold">Safari</span> browser me kholein (Chrome nahi!)</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
@@ -190,7 +190,7 @@ const LandingPage = () => {
                       </div>
                       <div>
                         <p className="text-white text-sm font-bold">Chrome me kholein</p>
-                        <p className="text-gray-400 text-xs">www.matka11.online Chrome browser me kholein</p>
+                        <p className="text-gray-400 text-xs">www.m11cloube.in Chrome browser me kholein</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
@@ -277,7 +277,7 @@ const LandingPage = () => {
         {/* Footer */}
         <div className="text-center pb-6">
           <a
-            href="https://www.google.com/search?q=matka11.online"
+            href="https://www.google.com/search?q=m11cloube.in"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 text-gray-500 text-xs hover:text-gray-400 transition-all"
@@ -288,7 +288,7 @@ const LandingPage = () => {
               <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
             </svg>
-            www.matka11.online
+            www.m11cloube.in
           </a>
           <p className="text-gray-600 text-[10px] mt-2">Shiv Shakti Club &copy; 2026. All Rights Reserved.</p>
         </div>

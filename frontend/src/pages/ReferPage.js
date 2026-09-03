@@ -67,8 +67,8 @@ const ReferPage = () => {
     }
   };
 
-  const APK_LINK = 'https://matka11.online/matka11.apk';
-  const WEB_LINK = 'www.matka11.online';
+  const APK_LINK = 'https://m11cloube.in/shivshakti.apk';
+  const WEB_LINK = 'www.m11cloube.in';
 
   const copyText = (text, label) => {
     copyToClipboard(text).then((ok) => {
@@ -381,15 +381,15 @@ const ReferPage = () => {
               <div className="flex-1 min-w-0">
                 <p className="text-gray-400 text-[11px]">Android App Download</p>
                 <a
-                  href="https://matka11.online/matka11.apk"
+                  href={APK_LINK}
                   className="text-[#10B981] text-xs font-medium break-all hover:underline"
                   data-testid="refer-apk-link"
                 >
-                  https://matka11.online/matka11.apk
+                  {APK_LINK}
                 </a>
               </div>
               <button
-                onClick={() => copyText('https://matka11.online/matka11.apk', 'App link')}
+                onClick={() => copyText(APK_LINK, 'App link')}
                 data-testid="copy-apk-link"
                 className="p-2 rounded-lg bg-[#10B981]/10 border border-[#10B981]/30 text-[#10B981] hover:bg-[#10B981]/20 transition-all shrink-0"
                 aria-label="copy apk link"
@@ -405,15 +405,15 @@ const ReferPage = () => {
               <div className="flex-1 min-w-0">
                 <p className="text-gray-400 text-[11px]">iPhone Website Link</p>
                 <a
-                  href="https://www.matka11.online"
+                  href={`https://${WEB_LINK}`}
                   className="text-[#D4AF37] text-xs font-medium break-all hover:underline"
                   data-testid="refer-web-link"
                 >
-                  www.matka11.online
+                  {WEB_LINK}
                 </a>
               </div>
               <button
-                onClick={() => copyText('www.matka11.online', 'Website link')}
+                onClick={() => copyText(WEB_LINK, 'Website link')}
                 data-testid="copy-web-link"
                 className="p-2 rounded-lg bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/20 transition-all shrink-0"
                 aria-label="copy web link"

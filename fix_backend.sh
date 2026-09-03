@@ -78,6 +78,15 @@ if [ -n "$NGX" ] && ! grep -q "no-store" "$NGX"; then
   if nginx -t >/dev/null 2>&1; then say "✅ Nginx no-cache for HTML added"; else cp "$(ls -t $NGX.bak.* | head -1)" "$NGX"; say "⚠️  nginx edit reverted"; fi
 fi
 
+# Nginx: APK direct download block (/shivshakti.apk → forces download with proper type)
+if [ -n "$NGX" ] && ! grep -q "shivshakti.apk" "$NGX"; then
+  ROOTDIR=$(grep -oE "root\s+[^;]+" "$NGX" | head -1 | awk '{print $2}')
+  [ -z "$ROOTDIR" ] && ROOTDIR="$REPO_DIR/frontend/build"
+  cp "$NGX" "$NGX.bak.$(date +%s)"
+  sed -i "0,/location \/api\//s||location = /shivshakti.apk {\n        root $ROOTDIR;\n        default_type application/vnd.android.package-archive;\n        add_header Content-Disposition 'attachment; filename=\"ShivShakti.apk\"';\n        add_header Cache-Control \"no-store\" always;\n    }\n\n    location /api/|" "$NGX"
+  if nginx -t >/dev/null 2>&1; then say "✅ Nginx APK download route added"; else cp "$(ls -t $NGX.bak.* | head -1)" "$NGX"; say "⚠️  nginx apk edit reverted"; fi
+fi
+
 # 5. MongoDB running?
 if ! systemctl is-active --quiet mongod 2>/dev/null; then
   systemctl start mongod >/dev/null 2>&1 || true

@@ -3,7 +3,7 @@ import axios from 'axios';
 import { X, Download, Loader2 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
-const APK_URL = `${API_URL}/api/uploads/matka11.apk`;
+const APK_URL = '/shivshakti.apk';
 // Android package name used by the WebView APK (for intent:// deep link).
 // This must match the APK's AndroidManifest package — kept conservative.
 const APK_PACKAGE = 'com.matka11.app';
